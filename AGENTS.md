@@ -1,6 +1,11 @@
-## 规则文件
+## Rule files
 
-`.claude/rules/`（含子目录）里每个 `.md` 是一条规则。会话里开始第一个任务前，读完这些文件并照做：frontmatter 带 `paths` 的，只管匹配这些 glob 的文件（相对项目根目录，即本文件所在目录）；不带的，管所有任务。Claude Code 会自己按 frontmatter 加载它们，跳过这一步。
+> **Claude Code: skip this section.** Claude Code loads these rules automatically based on their frontmatter.
+
+Every `.md` file in `.claude/rules/` (including subdirectories) is a rule. Before starting the first task in a session, read all rule files and follow them:
+
+- A rule whose frontmatter has `paths` applies only to files matching those globs (relative to the project root, the directory containing this file).
+- A rule without `paths` applies to every task.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

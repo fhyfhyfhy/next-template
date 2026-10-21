@@ -16,10 +16,10 @@ Skills live in `.agents/skills/<name>/`, the agent-neutral location that Codex a
 
 Read [PATCHES.md](PATCHES.md) before writing or applying a patch.
 
-A skill change is done when `.claude/skills/<name>/SKILL.md` resolves; mid-session, run `scripts/link-skills.sh` to get there.
+A skill change is done when `.agents/skills/<name>/SKILL.md` is in place and, in Claude Code, `.claude/skills/<name>/SKILL.md` resolves; mid-session, run `bash scripts/link-skills.sh` to get there.
 
 ## Rules
 
 - A short rule for every task goes in `AGENTS.md`, which `CLAUDE.md` imports.
-- A longer topic, or a rule for only some files, goes in its own `.claude/rules/<topic>.md`. It needs no pointer: Claude Code loads these files itself, and `AGENTS.md` § 规则文件 sends Codex and Cursor there.
+- A longer topic, or a rule for only some files, goes in its own `.claude/rules/<topic>.md`. It needs no pointer: Claude Code loads these files itself, and `AGENTS.md` § Rule files sends Codex and Cursor there.
 - Leave to the linter whatever it can check; a rule holds the judgment calls lint can't express.

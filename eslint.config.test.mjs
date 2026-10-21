@@ -1000,10 +1000,11 @@ test("架构依赖和 feature、组件导入约定", async (t) => {
       join(project, "tsconfig.json"),
       join(fixture, "tsconfig.json"),
     );
+    // Windows 上建目录 symlink 要管理员权限或开发者模式，junction 不用；其他系统忽略这个参数。
     symlinkSync(
       join(project, "node_modules"),
       join(fixture, "node_modules"),
-      "dir",
+      "junction",
     );
     for (const { files } of cases) {
       for (const [filename, content] of Object.entries(files)) {
