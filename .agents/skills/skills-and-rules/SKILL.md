@@ -7,7 +7,7 @@ Run these commands from the repo root.
 
 ## Skills
 
-Skills live in `.agents/skills/<name>/`, the agent-neutral location that Codex and other agents read. Claude Code reads only `.claude/skills/`, which holds local, git-ignored links to them. `scripts/link-skills.sh` makes those links.
+Skills live in `.agents/skills/<name>/`, the agent-neutral location that Codex and other agents read. Claude Code reads only `.claude/skills/`, which holds local, git-ignored links to them. `scripts/link-skills.sh` makes those links, and Claude Code runs it at every session start.
 
 - Add a third-party skill: `npx skills add <owner/repo> -s <skill> -a claude-code -a codex -y`. It records the source in `skills-lock.json`.
 - Update third-party skills: `npx skills update -p -y`. Apply the patch of every changed skill that has one, and tell the user what upstream changed in the rest.
@@ -16,7 +16,7 @@ Skills live in `.agents/skills/<name>/`, the agent-neutral location that Codex a
 
 Read [PATCHES.md](PATCHES.md) before writing or applying a patch.
 
-A skill change is done when `.claude/skills/<name>/SKILL.md` resolves; run `scripts/link-skills.sh` to get there.
+A skill change is done when `.claude/skills/<name>/SKILL.md` resolves; mid-session, run `scripts/link-skills.sh` to get there.
 
 ## Rules
 
