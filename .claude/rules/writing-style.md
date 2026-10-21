@@ -9,7 +9,7 @@ Which language the text written into files uses: code comments, test description
 | Body of specs, design docs, and plans | Simplified Chinese |
 | Code comments | Simplified Chinese |
 | `describe` / `it` / `test` descriptions in tests | Simplified Chinese |
-| Skills and rules (`.claude/rules/`): name, description, instructions, and every file in them | English |
+| Agent instructions: `AGENTS.md`, `CLAUDE.md`, rules (`.claude/rules/`), and skills (name, description, instructions, and every file in them) | English |
 
 ## Names and fixed terms
 

@@ -421,6 +421,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Claude Code 把 worktree 建在仓库内；每个 worktree 在自己的 checkout 里 lint。
+    ".claude/worktrees/**",
   ]),
   // 放在所有规则之后，关闭与 Prettier 重叠或冲突的格式规则。
   eslintConfigPrettier,
