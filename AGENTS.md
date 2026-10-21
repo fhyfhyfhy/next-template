@@ -7,6 +7,10 @@ Every `.md` file in `.claude/rules/` (including subdirectories) is a rule. Befor
 - A rule whose frontmatter has `paths` applies only to files matching those globs (relative to the project root, the directory containing this file).
 - A rule without `paths` applies to every task.
 
+## Knowledge
+
+Knowledge about this repo that later sessions need goes into the repo, placed per the `skills-and-rules` skill.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
