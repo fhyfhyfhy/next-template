@@ -1,0 +1,10 @@
+.next/
+out/
+build/
+coverage/
+next-env.d.ts
+pnpm-lock.yaml
+skills-lock.json
+.agents/
+.claude/
+**/*.md

@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* 颜色 token 遵循 https://ui.shadcn.com/docs/theming#theme-tokens，色值使用项目自己的配色。 */
+:root {
+  color-scheme: light;
+  --background: #f7f6f2;
+  --foreground: #252521;
+  --card: #ffffff;
+  --card-foreground: #252521;
+  --popover: #ffffff;
+  --popover-foreground: #252521;
+  --primary: #c83d21;
+  --primary-foreground: #ffffff;
+  --secondary: #252521;
+  --secondary-foreground: #f7f6f2;
+  --muted: #eeede7;
+  --muted-foreground: #73736a;
+  --accent: #eeede7;
+  --accent-foreground: #252521;
+  --destructive: #b72e36;
+  --border: #deded5;
+  --input: #deded5;
+  --ring: #c83d21;
+
+  /* 项目扩展 */
+  --primary-hover: #ad3018; /* 主要按钮悬停时的背景色 */
+  --switch-track: #c8c8bf; /* Switch 关闭时的轨道背景色 */
+  --overlay: rgb(0 0 0 / 35%); /* 模态弹层遮罩，明暗主题共用 */
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #191a18;
+  --foreground: #f0f0e8;
+  --card: #20221f;
+  --card-foreground: #f0f0e8;
+  --popover: #20221f;
+  --popover-foreground: #f0f0e8;
+  --primary: #f17854;
+  --primary-foreground: #25170f;
+  --secondary: #f0f0e8;
+  --secondary-foreground: #191a18;
+  --muted: #2c2e29;
+  --muted-foreground: #a2a59b;
+  --accent: #2c2e29;
+  --accent-foreground: #f0f0e8;
+  --destructive: #b72e36;
+  --border: #3b3e36;
+  --input: #3b3e36;
+  --ring: #f17854;
+  --primary-hover: #fc987b;
+  --switch-track: #51564a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary-hover: var(--primary-hover);
+  --color-switch-track: var(--switch-track);
+  --color-overlay: var(--overlay);
+  --blur-overlay: 2px;
+  --font-sans: var(--font-geist-sans), Arial, "PingFang SC", sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+  --spacing-control-sm: 2rem;
+  --spacing-control-md: 2.5rem;
+  --spacing-control-lg: 3rem;
+  --radius-control: 0.5rem;
+  --radius-panel: 0.875rem;
+  --shadow-popover: 0 12px 48px #00000020, 0 2px 8px #0000000a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply relative bg-background font-sans text-foreground;
+  }
+
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0s !important;
+      animation-duration: 0s !important;
+    }
+  }
+}

@@ -1,0 +1,2 @@
+# Git for Windows 默认按 CRLF 检出文本，行尾的 \r 会让 bash 出错。
+/scripts/*.sh text eol=lf
