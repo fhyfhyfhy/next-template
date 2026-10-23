@@ -1,7 +1,6 @@
 ---
 name: pick-ui-library
-description: Pick the right library for a given frontend task from a curated, opinionated list — numbers, OTP inputs, charts, command menus, virtualization, drag and drop, toasts, state, styling, and more. Only runs when explicitly invoked; it does not trigger on its own.
-disable-model-invocation: true
+description: Pick the right library for a given frontend task from a curated, opinionated list — icons, dates, forms, IDs, numbers, OTP inputs, charts, command menus, virtualization, drag and drop, toasts, state, styling, and more. Use when choosing a library or adding a dependency.
 ---
 
 # Picking The Right Library
@@ -30,6 +29,7 @@ A lookup skill. When invoked with a task ("I need toasts", "what should I use fo
 | Task | Library |
 | --- | --- |
 | Unstyled, accessible UI components (dialogs, popovers, menus, selects…) | [base-ui](https://base-ui.com) |
+| Icons | [Tabler Icons](https://tabler.io/icons) (`@tabler/icons-react`) |
 | Command menus (⌘K palettes) | [cmdk](https://cmdk.paco.me) |
 | Toasts / notifications | [Sonner](https://sonner.emilkowal.ski) |
 | One-time password / verification code inputs | [input-otp](https://input-otp.rodz.dev) |
@@ -74,6 +74,14 @@ The split: if data points arrive live and the chart scrolls with time, use Livel
 | Theme switching / dark mode (no flash on load) | [next-themes](https://github.com/pacocoursey/next-themes) |
 
 The styling split: clsx for ad-hoc conditional classes; cva when a component has real variants (size, intent, state) that deserve a typed API. They compose — cva uses clsx-style inputs internally.
+
+### Dates, forms & IDs
+
+| Task | Library |
+| --- | --- |
+| Dates | Native `Intl.DateTimeFormat` and `Date`; [Day.js](https://day.js.org) for what they can't handle |
+| Forms | [React Hook Form](https://react-hook-form.com) |
+| Generating IDs | [nanoid](https://github.com/ai/nanoid) |
 
 ## Common mismatches to catch
 
