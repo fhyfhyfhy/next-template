@@ -21,7 +21,7 @@ paths:
    | A capability that belongs to the same component's responsibility | Extend its public API and update affected callers. |
    | A distinct behavior or responsibility | Follow "Add or change a component" below. |
 
-3. Import through the owner's public entry, following [Component directories](architecture.md#component-directories), [Feature public API](architecture.md#feature-public-api), and [Import Paths](conventions.md#import-paths). Prefer existing project components whenever they meet the UI's requirements, including page structure and content. Preserve semantic HTML whether using project components or native elements.
+3. Import through the owner's public entry, following [Component directories](architecture.md#component-directories) and [Feature public API](architecture.md#feature-public-api). Prefer existing project components whenever they meet the UI's requirements, including page structure and content. Preserve semantic HTML whether using project components or native elements.
 4. Prefer existing variants and sizes for component appearance. See "Styles and variants" below for local customization.
 
 ## Add or change a component

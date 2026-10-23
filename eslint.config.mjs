@@ -1,5 +1,5 @@
 import { existsSync, statSync } from "node:fs";
-import { relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
@@ -261,6 +261,46 @@ const featureImportsRule = {
   },
 };
 
+const rootImportsRule = {
+  meta: {
+    type: "problem",
+    schema: [],
+    messages: {
+      relative:
+        "Use a relative path (./) for project imports from the same directory or its subdirectories.",
+      alias:
+        "Use @/ for project imports outside the current directory and its subdirectories.",
+    },
+  },
+  create(context) {
+    const filename = context.filename;
+    if (featurePath(PROJECT_ROOT, filename)) return {};
+    const sourceComponent = componentDirectory(filename);
+
+    return importVisitors((source) => {
+      const imported = projectImport(filename, source);
+      if (!imported) return;
+      const { target, isRelative } = imported;
+      // feature 由 feature-imports 检查，同一组件目录由 component-imports 检查，node_modules 由 import/no-relative-packages 检查。
+      if (
+        featurePath(PROJECT_ROOT, target) ||
+        (sourceComponent && componentDirectory(target) === sourceComponent) ||
+        relative(PROJECT_ROOT, target).split(sep).includes("node_modules")
+      )
+        return;
+      const fromDirectory = relative(dirname(filename), target);
+      const isNested =
+        !isAbsolute(fromDirectory) && fromDirectory.split(sep)[0] !== "..";
+      if (isNested !== isRelative) {
+        context.report({
+          node: source,
+          messageId: isNested ? "relative" : "alias",
+        });
+      }
+    });
+  },
+};
+
 const reactQueryWrappers = new Set(
   ["react-query", "react-query.client"].flatMap((name) =>
     SOURCE_EXTENSIONS.map((extension) =>
@@ -305,6 +345,50 @@ const wrapperImportsRule = {
   },
 };
 
+const kebabCase = /[a-z0-9]+(?:-[a-z0-9]+)*/.source;
+const routeParam = /[a-z][a-zA-Z0-9]*/.source;
+// 文件名按 . 分段检查（basic.example.tsx、index.d.ts）；允许 . 开头的目录和文件（.claude/）。
+const kebabCaseName = new RegExp(
+  String.raw`^\.?${kebabCase}(?:\.${kebabCase})*$`,
+);
+// app/ 下的目录还可以用 Next.js 路由写法：拦截前缀 (.)、(..)、(...)，(group)、@slot、_private，
+// 动态段 [param]、[...param]、[[...param]]。动态段名是 params 的 key，和 Next.js 文档一样用 camelCase。
+const appRouteDirectoryName = new RegExp(
+  String.raw`^(?:\(\.\)|\(\.\.\.\)|(?:\(\.\.\))+)?(?:${kebabCase}|\(${kebabCase}\)|@${kebabCase}|_${kebabCase}|\[(?:\.\.\.)?${routeParam}\]|\[\[\.\.\.${routeParam}\]\])$`,
+);
+
+// ESLint 只处理源码文件，所以只覆盖源码文件和它们所在的目录；CSS、图片、Markdown 等不在检查范围内。
+const kebabCasePathRule = {
+  meta: {
+    type: "suggestion",
+    schema: [],
+    messages: {
+      name: "Use kebab-case for file and directory names: {{names}} in {{path}}. Dots separate name segments (basic.example.tsx). Under app/, Next.js route folders such as (group), @slot, _private, [param] and [...param] are also allowed.",
+    },
+  },
+  create(context) {
+    const parts = relative(PROJECT_ROOT, context.filename).split(sep);
+    if (parts[0] === "..") return {};
+    const invalid = parts.filter((part, index) => {
+      if (kebabCaseName.test(part)) return false;
+      const isAppDirectory =
+        parts[0] === "app" && index > 0 && index < parts.length - 1;
+      return !(isAppDirectory && appRouteDirectoryName.test(part));
+    });
+    if (invalid.length === 0) return {};
+
+    return {
+      Program(node) {
+        context.report({
+          node,
+          messageId: "name",
+          data: { names: invalid.join(", "), path: parts.join("/") },
+        });
+      },
+    };
+  },
+};
+
 const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
 
@@ -334,18 +418,40 @@ const eslintConfig = defineConfig([
       : config,
   ),
   ...nextTs,
+  // any 和 @ts-ignore 由 nextTs 里 typescript-eslint recommended 的 no-explicit-any、ban-ts-comment 检查；enum 由 tsconfig 的 erasableSyntaxOnly 检查。
   {
     files: [SOURCE_GLOB],
+    rules: {
+      "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
+      // 用 warn：优先用 type guard 或 optional chaining，DOM、第三方类型等确实需要断言的地方可以保留。
+      "@typescript-eslint/consistent-type-assertions": [
+        "warn",
+        { assertionStyle: "never" },
+      ],
+      "@typescript-eslint/no-non-null-assertion": "warn",
+    },
+  },
+  {
+    files: [SOURCE_GLOB],
+    // node_modules 里的包不会反向 import 项目代码，不用解析它们的导出。不忽略的话，import/no-cycle 会逐个解析
+    // @tabler/icons-react 的几千个图标模块和 9MB 的 typescript.js，整体 lint 慢 5 倍以上。
+    settings: { "import/ignore": ["node_modules"] },
     plugins: {
       "simple-import-sort": simpleImportSort,
       architecture: {
         rules: {
           "feature-imports": featureImportsRule,
+          "root-imports": rootImportsRule,
           "no-feature-cycle": createFeatureCycleRule(PROJECT_ROOT),
           "component-imports": componentImportsRule,
           "component-entry": componentEntryRule,
           "component-exports": componentExportsRule,
           "wrapper-imports": wrapperImportsRule,
+        },
+      },
+      naming: {
+        rules: {
+          "kebab-case": kebabCasePathRule,
         },
       },
     },
@@ -356,6 +462,8 @@ const eslintConfig = defineConfig([
       "architecture/component-imports": "error",
       "architecture/component-entry": "error",
       "architecture/wrapper-imports": "error",
+      "naming/kebab-case": "error",
+      "import/no-relative-packages": "error",
       "import/no-cycle": ["error", { commonjs: true }],
       "import/no-restricted-paths": [
         "error",
@@ -368,6 +476,11 @@ const eslintConfig = defineConfig([
         },
       ],
     },
+  },
+  {
+    // 只查应用代码目录：scripts/ 和根目录配置文件不经过 Next.js 打包，解析不了 @/。
+    files: ROOT_LAYERS.flatMap((layer) => layer.files),
+    rules: { "architecture/root-imports": "error" },
   },
   {
     files: [
