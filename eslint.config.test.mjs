@@ -20,6 +20,8 @@ const componentRule = "architecture/component-imports";
 const componentEntryRule = "architecture/component-entry";
 const componentExportsRule = "architecture/component-exports";
 const wrapperRule = "architecture/wrapper-imports";
+const rootRule = "architecture/root-imports";
+const namingRule = "naming/kebab-case";
 const cases = [];
 const statements = {
   import: (source) =>
@@ -183,7 +185,7 @@ cases.push({
 addCase("根目录同层依赖允许", {
   from: "lib/CASE-main.ts",
   to: "lib/CASE-value.ts",
-  source: "@/lib/CASE-value",
+  source: "./CASE-value",
 });
 addCase("根目录下层依赖允许", {
   from: "hooks/CASE.ts",
@@ -220,8 +222,8 @@ cases.push({
 });
 
 for (const syntax of ["import", "importType"]) {
-  const first = `feature-cycle-${syntax}-a`;
-  const second = `feature-cycle-${syntax}-b`;
+  const first = `feature-cycle-${syntax.toLowerCase()}-a`;
+  const second = `feature-cycle-${syntax.toLowerCase()}-b`;
   const entry = "export const value = 1; export type Item = { value: number };";
   cases.push({
     name: `${syntax} 文件图无环时仍拒绝 feature 循环`,
@@ -248,9 +250,9 @@ addCase("根组件目录的私有文件不能通过别名直接访问", {
   rule: componentRule,
 });
 addCase("相对路径不能绕过组件私有边界", {
-  from: "app/CASE.ts",
-  to: "components/CASE/private.ts",
-  source: "../components/CASE/private",
+  from: "features/CASE/components/other/index.ts",
+  to: "features/CASE/components/panel/private.ts",
+  source: "../panel/private",
   rule: componentRule,
 });
 addCase("动态导入不能访问 UI 组件私有文件", {
@@ -548,8 +550,8 @@ for (const syntax of [
     rule: wrapperRule,
   });
   addCase(`${syntax} 禁止通过相对路径引用私有 React Query client 封装`, {
-    from: "app/CASE.ts",
-    source: "../lib/react-query.client",
+    from: "lib/CASE.ts",
+    source: "./react-query.client",
     syntax,
     rule: wrapperRule,
   });
@@ -980,6 +982,86 @@ cases.push({
   rules: [],
 });
 
+addCase("根目录代码跨目录用相对路径被拒绝", {
+  from: "lib/CASE.ts",
+  to: "utils/CASE.ts",
+  source: "../utils/CASE",
+  rule: rootRule,
+  messageId: "alias",
+});
+addCase("根目录代码同目录用 @/ 被拒绝", {
+  from: "utils/CASE-a.ts",
+  to: "utils/CASE-b.ts",
+  source: "@/utils/CASE-b",
+  rule: rootRule,
+  messageId: "relative",
+});
+addCase("app 引用子目录用 @/ 被拒绝", {
+  from: "app/CASE/page.tsx",
+  to: "app/CASE/parts/value.ts",
+  source: "@/app/CASE/parts/value",
+  rule: rootRule,
+  messageId: "relative",
+});
+addCase("根目录代码跨目录用 @/ 允许", {
+  from: "lib/CASE.ts",
+  to: "utils/CASE.ts",
+  source: "@/utils/CASE",
+});
+addCase("app 引用子目录用相对路径允许", {
+  from: "app/CASE/page.tsx",
+  to: "app/CASE/parts/value.ts",
+  source: "./parts/value",
+});
+addCase("scripts/ 跨目录可以用相对路径", {
+  from: "scripts/CASE/main.mjs",
+  to: "scripts/other-CASE/value.mjs",
+  source: "../other-CASE/value.mjs",
+});
+addCase("相对路径引用 npm 包被拒绝", {
+  from: "lib/CASE.ts",
+  source: "../node_modules/react",
+  rule: "import/no-relative-packages",
+});
+
+for (const [name, from, rules] of [
+  ["camelCase 文件名被拒绝", "utils/formatBytes.ts", [namingRule]],
+  [
+    "PascalCase 目录名被拒绝",
+    "features/TaskBoard/utils/value.ts",
+    [namingRule],
+  ],
+  ["点分段文件名和点开头的目录允许", ".config/naming.example.ts", []],
+  [
+    "app/ 下的路由组、并行路由、拦截路由和动态段允许",
+    "app/(shop)/@modal/(..)items/[itemId]/page.tsx",
+    [],
+  ],
+  [
+    "app/ 下的私有目录和 catch-all 段允许",
+    "app/_internal/[...catchAll]/[[...rest]]/page.tsx",
+    [],
+  ],
+  [
+    "Next.js 路由写法只在 app/ 下允许",
+    "components/_private/value.ts",
+    [namingRule],
+  ],
+  [
+    "app/ 下的文件名仍然要 kebab-case",
+    "app/[id]/PageContent.tsx",
+    [namingRule],
+  ],
+  ["动态段名用 snake_case 被拒绝", "app/[task_id]/page.tsx", [namingRule]],
+]) {
+  cases.push({
+    name: `文件命名：${name}`,
+    from,
+    files: { [from]: "export const value = 1;" },
+    rules,
+  });
+}
+
 test("架构依赖和 feature、组件导入约定", async (t) => {
   const project = dirname(fileURLToPath(import.meta.url));
   const previousCwd = process.cwd();
@@ -1000,6 +1082,8 @@ test("架构依赖和 feature、组件导入约定", async (t) => {
       join(project, "tsconfig.json"),
       join(fixture, "tsconfig.json"),
     );
+    // import/no-relative-packages 要找被 lint 文件所属的 package.json，找不到会直接抛错。
+    copyFileSync(join(project, "package.json"), join(fixture, "package.json"));
     // Windows 上建目录 symlink 要管理员权限或开发者模式，junction 不用；其他系统忽略这个参数。
     symlinkSync(
       join(project, "node_modules"),
@@ -1017,9 +1101,17 @@ test("架构依赖和 feature、组件导入约定", async (t) => {
     // Import resolvers also consult process.cwd(); all files must exist before graph traversal.
     process.chdir(fixture);
     // 架构用例只验证依赖边界；import 排序由下方独立用例验证。
+    // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
     const eslint = new ESLint({
       cwd: fixture,
-      overrideConfig: { rules: { "simple-import-sort/imports": "off" } },
+      overrideConfig: {
+        rules: {
+          "simple-import-sort/imports": "off",
+          "@typescript-eslint/consistent-type-definitions": "off",
+          "@typescript-eslint/consistent-type-assertions": "off",
+          "@typescript-eslint/no-non-null-assertion": "off",
+        },
+      },
     });
     for (const { name, from, rules, messageIds } of cases) {
       await t.test(name, async () => {
@@ -1086,8 +1178,9 @@ export const values = [local, helper, join, upstream, useState, scoped, styles];
   const fixer = new ESLint({ cwd: project, fix: true });
   for (const extension of ["js", "jsx", "mjs", "ts", "tsx", "mts", "cts"]) {
     await t.test(`.${extension} 应用同一套分组并支持自动修复`, async () => {
+      // 应用代码目录跨目录必须用 @/，../ 分组放在不受 root-imports 约束的 scripts/ 下演示。
       const options = {
-        filePath: join(project, `app/import-groups.${extension}`),
+        filePath: join(project, `scripts/import-groups.${extension}`),
       };
       const [before] = await eslint.lintText(source, options);
       assert.deepEqual(
