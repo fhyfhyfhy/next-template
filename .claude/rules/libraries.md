@@ -11,11 +11,9 @@ paths:
   - "package.json"
 ---
 
-# Third-party libraries
+# Libraries
 
-| Purpose | Use | Don't use |
-| --- | --- | --- |
-| Icons | `@tabler/icons-react` | lucide, heroicons, custom SVG icon components |
-| Dates | Native APIs (`Intl.DateTimeFormat`, `Date`) first; `dayjs` only for what they can't handle | moment, date-fns |
-| Forms | `react-hook-form` | formik |
-| ID generation | `nanoid` | `uuid`, `ulid`, `crypto.randomUUID()`, IDs built from `Math.random()` |
+- Icons: `@tabler/icons-react`
+- Dates: native `Intl.DateTimeFormat` and `Date`; `dayjs` for what they can't handle
+- Forms: `react-hook-form`
+- IDs: `nanoid`
