@@ -27,9 +27,7 @@ The repo has settled on these for needs the upstream list leaves out.
 ```
 
 ```diff
-@@ end of ### State & styling @@
- The styling split: clsx for ad-hoc conditional classes; cva when a component has real variants (size, intent, state) that deserve a typed API. They compose — cva uses clsx-style inputs internally.
- 
+@@ before ## Common mismatches to catch @@
 +### Dates, forms & IDs
 +
 +| Task | Library |
@@ -39,4 +37,29 @@ The repo has settled on these for needs the upstream list leaves out.
 +| Generating IDs | [nanoid](https://github.com/ai/nanoid) |
 +
  ## Common mismatches to catch
+```
+
+## Class names come from the project's `cn`
+
+`.claude/rules/components.md` sets `cn` from `@/lib/cn` for conditional and merged class names, so the skill leaves that choice to it.
+
+```diff
+@@ ### State & styling @@
+ | State management | [zustand](https://zustand.docs.pmnd.rs) |
+-| Constructing `className` strings conditionally | [clsx](https://github.com/lukeed/clsx) |
+ | Type-safe, variant-driven styling for Tailwind | [cva](https://cva.style) |
+```
+
+```diff
+@@ end of ### State & styling @@
+ | Theme switching / dark mode (no flash on load) | [next-themes](https://github.com/pacocoursey/next-themes) |
+ 
+-The styling split: clsx for ad-hoc conditional classes; cva when a component has real variants (size, intent, state) that deserve a typed API. They compose — cva uses clsx-style inputs internally.
+-
+```
+
+```diff
+@@ end of ## Common mismatches to catch @@
+ - **A `useState`-per-component web of props for shared state** → zustand.
+-- **Template-literal className ternaries three conditions deep** → clsx (or cva if it's variant-shaped).
 ```

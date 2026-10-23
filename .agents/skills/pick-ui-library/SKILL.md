@@ -69,11 +69,8 @@ The split: if data points arrive live and the chart scrolls with time, use Livel
 | Task | Library |
 | --- | --- |
 | State management | [zustand](https://zustand.docs.pmnd.rs) |
-| Constructing `className` strings conditionally | [clsx](https://github.com/lukeed/clsx) |
 | Type-safe, variant-driven styling for Tailwind | [cva](https://cva.style) |
 | Theme switching / dark mode (no flash on load) | [next-themes](https://github.com/pacocoursey/next-themes) |
-
-The styling split: clsx for ad-hoc conditional classes; cva when a component has real variants (size, intent, state) that deserve a typed API. They compose — cva uses clsx-style inputs internally.
 
 ### Dates, forms & IDs
 
@@ -90,4 +87,3 @@ The styling split: clsx for ad-hoc conditional classes; cva when a component has
 - **Animating a number by re-rendering text** → NumberFlow handles digit transitions properly.
 - **Rendering a 1,000+ row list directly** → Virtuoso before reaching for pagination hacks.
 - **A `useState`-per-component web of props for shared state** → zustand.
-- **Template-literal className ternaries three conditions deep** → clsx (or cva if it's variant-shaped).
