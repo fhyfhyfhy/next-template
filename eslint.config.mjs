@@ -433,6 +433,9 @@ const eslintConfig = defineConfig([
   },
   {
     files: [SOURCE_GLOB],
+    // node_modules 里的包不会反向 import 项目代码，不用解析它们的导出。不忽略的话，import/no-cycle 会逐个解析
+    // @tabler/icons-react 的几千个图标模块和 9MB 的 typescript.js，整体 lint 慢 5 倍以上。
+    settings: { "import/ignore": ["node_modules"] },
     plugins: {
       "simple-import-sort": simpleImportSort,
       architecture: {
