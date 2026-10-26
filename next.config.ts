@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
       "./features/component-showcase/components/*-examples/playground.tsx",
     ],
   },
+  experimental: {
+    agentUpgrade: "security",
+  },
 };
 
 export default nextConfig;
