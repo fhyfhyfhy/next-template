@@ -11,6 +11,20 @@ Every `.md` file in `.claude/rules/` (including subdirectories) is a rule. Befor
 
 Knowledge about this repo that later sessions need goes into the repo, placed per the `skills-and-rules` skill.
 
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repo's GitHub Issues, worked through the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five triage roles use their default label names. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
