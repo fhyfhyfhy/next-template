@@ -225,7 +225,7 @@ const { data: task } = useTask({ id });
 const status = task?.status;
 ```
 
-**为什么强制**：`select` 是 React Query 内建的按字段订阅机制。hook 一开始就把 select 通道搭好，消费方按需派生是零成本的；如果 hook 没开这个口，消费方就只能订阅整条记录，后期要补回来得改所有调用点。加上前三条的泛型/类型推导是环环相扣的：少一环，`select` 的返回类型就会降级到 `unknown`，得靠 `as` 补回来——那就又违反了 conventions.md 里「尽量不用 `as`」。
+**为什么强制**：`select` 是 React Query 内建的按字段订阅机制。hook 一开始就把 select 通道搭好，消费方按需派生是零成本的；如果 hook 没开这个口，消费方就只能订阅整条记录，后期要补回来得改所有调用点。加上前三条的泛型/类型推导是环环相扣的：少一环，`select` 的返回类型就会降级到 `unknown`，得靠 `as` 补回来——那就又会触发 lint 的 `@typescript-eslint/consistent-type-assertions`。
 
 ## Query Key 规范
 

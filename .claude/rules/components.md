@@ -21,7 +21,7 @@ paths:
    | A capability that belongs to the same component's responsibility | Extend its public API and update affected callers. |
    | A distinct behavior or responsibility | Follow "Add or change a component" below. |
 
-3. Import through the owner's public entry, following [Component directories](architecture.md#component-directories), [Feature public API](architecture.md#feature-public-api), and [Import Paths](conventions.md#import-paths). Prefer existing project components whenever they meet the UI's requirements, including page structure and content. Preserve semantic HTML whether using project components or native elements.
+3. Import through the owner's public entry, following [Component directories](architecture.md#component-directories) and [Feature public API](architecture.md#feature-public-api). Prefer existing project components whenever they meet the UI's requirements, including page structure and content. Preserve semantic HTML whether using project components or native elements.
 4. Prefer existing variants and sizes for component appearance. See "Styles and variants" below for local customization.
 
 ## Add or change a component
@@ -45,7 +45,7 @@ When designing or refactoring component APIs, composing public parts, sharing st
 ## Wrap a UI library
 
 - Before adding or changing a component in `components/ui/`, read the matching [shadcn/ui source](https://github.com/shadcn-ui/ui/tree/main/apps/v4/registry/bases) for the project's selected underlying library. Refer to its wrappers, prop handling, and variant organization. Project architecture and the underlying library's API and component boundaries take precedence when adapting the reference.
-- Place wrappers for the project's chosen UI library in `components/ui/`. Callers import UI components through the project's public entries. When a caller needs a part of the underlying library that the project component does not expose, add that part to the project component and its public exports.
+- Place wrappers for the project's UI libraries, listed in [libraries.md](libraries.md), in `components/ui/`. Callers import UI components through the project's public entries. When a caller needs a part of the underlying library that the project component does not expose, add that part to the project component and its public exports.
 - Preserve the library's original component boundaries: wrap and export each part separately, and let callers assemble them. For example, Base UI's `Dialog.Portal`, `Dialog.Backdrop`, and `Dialog.Popup` remain separate public components, each retaining its own props and styling entry points.
 - Before wrapping a library component or changing its behavior, read its official API reference and check the installed package's public types. Resolve differences against the installed version.
 - Use the library's documented composition and styling APIs. Let the underlying library handle the interactions it provides, such as keyboard navigation and focus management. The wrapper adds project styles, defaults, and required behavior that the library does not provide.

@@ -1,18 +1,9 @@
 ---
 name: pick-ui-library
-description: Pick the right library for a given frontend task from a curated, opinionated list — numbers, OTP inputs, charts, command menus, virtualization, drag and drop, toasts, state, styling, and more. Only runs when explicitly invoked; it does not trigger on its own.
-disable-model-invocation: true
+description: Choose the library for a task from a curated list. Use before adding a dependency or writing code that needs one: toasts, OTP inputs, command menus, animation, animated numbers, drag and drop, virtualization, state, styling, syntax highlighting, and more.
 ---
 
 # Picking The Right Library
-
-## Initial Response
-
-When this skill is first invoked without a specific question, respond only with:
-
-> I'm ready to pick the right library for your task, my picks come from Emil Kowalski's curated list.
-
-Do not provide any other information until the user asks a question.
 
 A lookup skill. When invoked with a task ("I need toasts", "what should I use for drag and drop?"), match the task to the curated list below and recommend the library. These are deliberate, taste-driven picks — don't substitute alternatives outside this list unless the user asks for one or the task genuinely isn't covered.
 
@@ -48,15 +39,6 @@ A lookup skill. When invoked with a task ("I need toasts", "what should I use fo
 
 Reach for motion when you need springs, layout animations, exit animations, or gesture-driven values. A simple hover or fade doesn't need it — plain CSS transitions are the right tool there.
 
-### Charts
-
-| Task | Library |
-| --- | --- |
-| Real-time / streaming charts | [Liveline](https://github.com/benjitaylor/liveline) |
-| General charts (static or interactive dashboards) | [recharts](https://recharts.org) |
-
-The split: if data points arrive live and the chart scrolls with time, use Liveline. Everything else is recharts.
-
 ### Interaction & performance
 
 | Task | Library |
@@ -69,11 +51,8 @@ The split: if data points arrive live and the chart scrolls with time, use Livel
 | Task | Library |
 | --- | --- |
 | State management | [zustand](https://zustand.docs.pmnd.rs) |
-| Constructing `className` strings conditionally | [clsx](https://github.com/lukeed/clsx) |
 | Type-safe, variant-driven styling for Tailwind | [cva](https://cva.style) |
 | Theme switching / dark mode (no flash on load) | [next-themes](https://github.com/pacocoursey/next-themes) |
-
-The styling split: clsx for ad-hoc conditional classes; cva when a component has real variants (size, intent, state) that deserve a typed API. They compose — cva uses clsx-style inputs internally.
 
 ## Common mismatches to catch
 
@@ -82,4 +61,3 @@ The styling split: clsx for ad-hoc conditional classes; cva when a component has
 - **Animating a number by re-rendering text** → NumberFlow handles digit transitions properly.
 - **Rendering a 1,000+ row list directly** → Virtuoso before reaching for pagination hacks.
 - **A `useState`-per-component web of props for shared state** → zustand.
-- **Template-literal className ternaries three conditions deep** → clsx (or cva if it's variant-shaped).
