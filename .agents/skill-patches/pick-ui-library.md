@@ -4,39 +4,35 @@ Upstream: `skills/pick-ui-library/` in `emilkowalski/skills`, as `npx skills upd
 
 ## Agents pick libraries on their own
 
-This list is where agents in this repo look up which library to use, so it has to load whenever an agent chooses one, not only when a user invokes it.
+`.claude/rules/libraries.md` sends agents here for any need its own list leaves out, so the skill has to load when an agent chooses a library, not only when a user invokes it. The description names the moment to reach for it and lists only needs the skill still covers.
 
 ```diff
 @@ frontmatter @@
  name: pick-ui-library
 -description: Pick the right library for a given frontend task from a curated, opinionated list — numbers, OTP inputs, charts, command menus, virtualization, drag and drop, toasts, state, styling, and more. Only runs when explicitly invoked; it does not trigger on its own.
 -disable-model-invocation: true
-+description: Pick the right library for a given frontend task from a curated, opinionated list — icons, dates, forms, IDs, numbers, OTP inputs, charts, command menus, virtualization, drag and drop, toasts, state, styling, and more. Use when choosing a library or adding a dependency.
++description: Choose the library for a task from a curated list. Use before adding a dependency or writing code that needs one: toasts, OTP inputs, command menus, animation, animated numbers, drag and drop, virtualization, state, styling, syntax highlighting, and more.
  ---
 ```
 
-## This repo's picks
+## Charts come from the repo's pick
 
-The repo has settled on these for needs the upstream list leaves out.
-
-```diff
-@@ ### UI components & primitives @@
- | Unstyled, accessible UI components (dialogs, popovers, menus, selects…) | [base-ui](https://base-ui.com) |
-+| Icons | [Tabler Icons](https://tabler.io/icons) (`@tabler/icons-react`) |
- | Command menus (⌘K palettes) | [cmdk](https://cmdk.paco.me) |
-```
+The repo uses `@tanstack/charts`, listed in `.claude/rules/libraries.md`, so the skill leaves charts to it.
 
 ```diff
-@@ before ## Common mismatches to catch @@
-+### Dates, forms & IDs
-+
-+| Task | Library |
-+| --- | --- |
-+| Dates | Native `Intl.DateTimeFormat` and `Date`; [Day.js](https://day.js.org) for what they can't handle |
-+| Forms | [React Hook Form](https://react-hook-form.com) |
-+| Generating IDs | [nanoid](https://github.com/ai/nanoid) |
-+
- ## Common mismatches to catch
+@@ ### Charts @@
+ Reach for motion when you need springs, layout animations, exit animations, or gesture-driven values. A simple hover or fade doesn't need it — plain CSS transitions are the right tool there.
+ 
+-### Charts
+-
+-| Task | Library |
+-| --- | --- |
+-| Real-time / streaming charts | [Liveline](https://github.com/benjitaylor/liveline) |
+-| General charts (static or interactive dashboards) | [recharts](https://recharts.org) |
+-
+-The split: if data points arrive live and the chart scrolls with time, use Liveline. Everything else is recharts.
+-
+ ### Interaction & performance
 ```
 
 ## Class names come from the project's `cn`

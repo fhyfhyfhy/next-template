@@ -1,6 +1,6 @@
 ---
 name: pick-ui-library
-description: Pick the right library for a given frontend task from a curated, opinionated list — icons, dates, forms, IDs, numbers, OTP inputs, charts, command menus, virtualization, drag and drop, toasts, state, styling, and more. Use when choosing a library or adding a dependency.
+description: Choose the library for a task from a curated list. Use before adding a dependency or writing code that needs one: toasts, OTP inputs, command menus, animation, animated numbers, drag and drop, virtualization, state, styling, syntax highlighting, and more.
 ---
 
 # Picking The Right Library
@@ -29,7 +29,6 @@ A lookup skill. When invoked with a task ("I need toasts", "what should I use fo
 | Task | Library |
 | --- | --- |
 | Unstyled, accessible UI components (dialogs, popovers, menus, selects…) | [base-ui](https://base-ui.com) |
-| Icons | [Tabler Icons](https://tabler.io/icons) (`@tabler/icons-react`) |
 | Command menus (⌘K palettes) | [cmdk](https://cmdk.paco.me) |
 | Toasts / notifications | [Sonner](https://sonner.emilkowal.ski) |
 | One-time password / verification code inputs | [input-otp](https://input-otp.rodz.dev) |
@@ -48,15 +47,6 @@ A lookup skill. When invoked with a task ("I need toasts", "what should I use fo
 
 Reach for motion when you need springs, layout animations, exit animations, or gesture-driven values. A simple hover or fade doesn't need it — plain CSS transitions are the right tool there.
 
-### Charts
-
-| Task | Library |
-| --- | --- |
-| Real-time / streaming charts | [Liveline](https://github.com/benjitaylor/liveline) |
-| General charts (static or interactive dashboards) | [recharts](https://recharts.org) |
-
-The split: if data points arrive live and the chart scrolls with time, use Liveline. Everything else is recharts.
-
 ### Interaction & performance
 
 | Task | Library |
@@ -71,14 +61,6 @@ The split: if data points arrive live and the chart scrolls with time, use Livel
 | State management | [zustand](https://zustand.docs.pmnd.rs) |
 | Type-safe, variant-driven styling for Tailwind | [cva](https://cva.style) |
 | Theme switching / dark mode (no flash on load) | [next-themes](https://github.com/pacocoursey/next-themes) |
-
-### Dates, forms & IDs
-
-| Task | Library |
-| --- | --- |
-| Dates | Native `Intl.DateTimeFormat` and `Date`; [Day.js](https://day.js.org) for what they can't handle |
-| Forms | [React Hook Form](https://react-hook-form.com) |
-| Generating IDs | [nanoid](https://github.com/ai/nanoid) |
 
 ## Common mismatches to catch
 
