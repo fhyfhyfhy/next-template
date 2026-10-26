@@ -1,5 +1,6 @@
 import { existsSync, statSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
@@ -421,7 +422,10 @@ const eslintConfig = defineConfig([
   // any 和 @ts-ignore 由 nextTs 里 typescript-eslint recommended 的 no-explicit-any、ban-ts-comment 检查；enum 由 tsconfig 的 erasableSyntaxOnly 检查。
   {
     files: [SOURCE_GLOB],
+    plugins: { "@eslint-community/eslint-comments": eslintComments },
     rules: {
+      // 用 eslint-disable 关掉 no-explicit-any 等规则时，要在 -- 后写明原因，和 ban-ts-comment 对 @ts-expect-error 的要求一致。
+      "@eslint-community/eslint-comments/require-description": "error",
       "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
       // 用 warn：优先用 type guard 或 optional chaining，DOM、第三方类型等确实需要断言的地方可以保留。
       "@typescript-eslint/consistent-type-assertions": [

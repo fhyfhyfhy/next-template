@@ -34,9 +34,9 @@ const statements = {
     `import type { Item } from "${source}"; export type Result = Item;`,
   tsImportType: (source) => `export type Result = import("${source}").Item;`,
   require: (source) =>
-    `/* eslint-disable @typescript-eslint/no-require-imports */\nexport const result = require("${source}");`,
+    `/* eslint-disable @typescript-eslint/no-require-imports -- 用例检查 require 写法的依赖 */\nexport const result = require("${source}");`,
   importEquals: (source) =>
-    `/* eslint-disable @typescript-eslint/no-require-imports */\nimport result = require("${source}"); export { result };`,
+    `/* eslint-disable @typescript-eslint/no-require-imports -- 用例检查 require 写法的依赖 */\nimport result = require("${source}"); export { result };`,
 };
 
 function addCase(
@@ -433,7 +433,7 @@ for (const extension of [
   const commonjs = extension === "cjs";
   const importStatement = (source) =>
     commonjs
-      ? `/* eslint-disable @typescript-eslint/no-require-imports */\nmodule.exports = require("${source}");`
+      ? `/* eslint-disable @typescript-eslint/no-require-imports -- 用例检查 require 写法的依赖 */\nmodule.exports = require("${source}");`
       : statements.import(source);
   const value = commonjs
     ? "module.exports = { value: 1 };"
@@ -616,7 +616,7 @@ for (const extension of [
       files: {
         [file]:
           (commonjs
-            ? '/* eslint-disable @typescript-eslint/no-require-imports */\nmodule.exports = require("@tanstack/react-query");'
+            ? '/* eslint-disable @typescript-eslint/no-require-imports -- 用例检查 require 写法的依赖 */\nmodule.exports = require("@tanstack/react-query");'
             : `import { value as packageValue } from "@tanstack/react-query"; export const value = packageValue;${["ts", "tsx", "mts", "cts"].includes(extension) ? " export type Item = { value: number };" : ""}`) +
           clientImport,
       },
@@ -1058,6 +1058,28 @@ for (const [name, from, rules] of [
     name: `文件命名：${name}`,
     from,
     files: { [from]: "export const value = 1;" },
+    rules,
+  });
+}
+
+for (const [name, from, directive, rules] of [
+  [
+    "eslint-disable 不写原因被拒绝",
+    "utils/disable-without-reason.ts",
+    "// eslint-disable-next-line @typescript-eslint/no-explicit-any",
+    ["@eslint-community/eslint-comments/require-description"],
+  ],
+  [
+    "eslint-disable 在 -- 后写明原因允许",
+    "utils/disable-with-reason.ts",
+    "// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 第三方回调的参数没有类型",
+    [],
+  ],
+]) {
+  cases.push({
+    name: `禁用注释：${name}`,
+    from,
+    files: { [from]: `${directive}\nexport const value: any = 1;` },
     rules,
   });
 }

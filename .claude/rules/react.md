@@ -95,7 +95,6 @@ function Heading({ children }: { children: ReactNode }) {
 ## 还在用旧 API 怎么办
 
 - 看到 `forwardRef` / `Context.Provider` / `useFormState` 等 deprecated API,改写成新 pattern 顺手做掉(在自己改的文件内)。
-- 不要批量重构 —— 跟 conventions.md "Surgical Changes" 对齐,只改你这次任务真正接触到的文件。
 - Validate changes with the project's lint and TypeScript checks, using its `package.json` and `tsconfig.json` to determine the commands.
 
 ## Refs

@@ -4,7 +4,7 @@ Upstream: `skills/pick-ui-library/` in `emilkowalski/skills`, as `npx skills upd
 
 ## Agents pick libraries on their own
 
-`.claude/rules/libraries.md` sends agents here for any need its own list leaves out, so the skill has to load when an agent chooses a library, not only when a user invokes it. The description names the moment to reach for it and lists only needs the skill still covers.
+`.claude/rules/libraries.md` sends agents here for any need its own list leaves out, so the skill has to load when an agent chooses a library, not only when a user invokes it. The description names the moment to reach for it and lists only needs the skill still covers. The canned first reply goes too: an agent that invokes the skill mid-task needs the pick, not a greeting that waits for a question.
 
 ```diff
 @@ frontmatter @@
@@ -15,9 +15,24 @@ Upstream: `skills/pick-ui-library/` in `emilkowalski/skills`, as `npx skills upd
  ---
 ```
 
+```diff
+@@ ## Initial Response @@
+ # Picking The Right Library
+ 
+-## Initial Response
+-
+-When this skill is first invoked without a specific question, respond only with:
+-
+-> I'm ready to pick the right library for your task, my picks come from Emil Kowalski's curated list.
+-
+-Do not provide any other information until the user asks a question.
+-
+ A lookup skill. When invoked with a task ("I need toasts", "what should I use for drag and drop?"), match the task to the curated list below and recommend the library. These are deliberate, taste-driven picks — don't substitute alternatives outside this list unless the user asks for one or the task genuinely isn't covered.
+```
+
 ## Charts come from the repo's pick
 
-The repo uses `@tanstack/charts`, listed in `.claude/rules/libraries.md`, so the skill leaves charts to it.
+The repo's chart pick is `@tanstack/react-charts`, listed in `.claude/rules/libraries.md`, so the skill leaves charts to it.
 
 ```diff
 @@ ### Charts @@
@@ -52,6 +67,7 @@ The repo uses `@tanstack/charts`, listed in `.claude/rules/libraries.md`, so the
  
 -The styling split: clsx for ad-hoc conditional classes; cva when a component has real variants (size, intent, state) that deserve a typed API. They compose — cva uses clsx-style inputs internally.
 -
+ ## Common mismatches to catch
 ```
 
 ```diff
