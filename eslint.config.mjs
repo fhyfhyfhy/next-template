@@ -1,6 +1,7 @@
 import { existsSync, statSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
+import pluginQuery from "@tanstack/eslint-plugin-query";
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
@@ -15,6 +16,7 @@ import {
   SOURCE_GLOB,
 } from "./scripts/architecture/imports.mjs";
 import createFeatureCycleRule from "./scripts/architecture/no-feature-cycle.mjs";
+import withWrapperImports from "./scripts/architecture/query-plugin.mjs";
 
 const PROJECT_ROOT = import.meta.dirname;
 const resolveProjectImport = createProjectResolver(PROJECT_ROOT);
@@ -303,15 +305,8 @@ const rootImportsRule = {
 };
 
 const reactQueryWrappers = new Set(
-  ["react-query", "react-query.client"].flatMap((name) =>
-    SOURCE_EXTENSIONS.map((extension) =>
-      resolve(PROJECT_ROOT, `lib/${name}.${extension}`),
-    ),
-  ),
-);
-const privateReactQueryFiles = new Set(
   SOURCE_EXTENSIONS.map((extension) =>
-    resolve(PROJECT_ROOT, `lib/react-query.client.${extension}`),
+    resolve(PROJECT_ROOT, `lib/react-query.${extension}`),
   ),
 );
 
@@ -321,30 +316,60 @@ const wrapperImportsRule = {
     schema: [],
     messages: {
       wrapper:
-        "Import from @/lib/react-query. Only the react-query wrapper files may access the original package or the private client module.",
+        "Import from @/lib/react-query. Only that wrapper may access the original package.",
     },
   },
   create(context) {
-    const filename = context.filename;
-    if (reactQueryWrappers.has(filename)) return {};
+    if (reactQueryWrappers.has(context.filename)) return {};
 
     return importVisitors((source) => {
       const specifier = importSpecifier(source);
-      if (!specifier) return;
-      const originalPackage =
+      if (
         specifier === "@tanstack/react-query" ||
-        specifier.startsWith("@tanstack/react-query/");
-      const imported = projectImport(filename, source);
-      const privateClient =
-        imported &&
-        (privateReactQueryFiles.has(imported.target) ||
-          imported.target === resolve(PROJECT_ROOT, "lib/react-query.client"));
-      if (originalPackage || privateClient) {
+        specifier?.startsWith("@tanstack/react-query/")
+      ) {
         context.report({ node: source, messageId: "wrapper" });
       }
     });
   },
 };
+
+const MUTATION_CALLBACKS = new Set([
+  "onMutate",
+  "onSuccess",
+  "onError",
+  "onSettled",
+]);
+
+// 传给 useMutation 的同名回调会整个替换 mutationOptions 工厂里的回调，工厂负责的缓存更新跟着丢失。
+const mutationCallbacksRule = {
+  meta: {
+    type: "problem",
+    schema: [],
+    messages: {
+      callback:
+        "Keep {{name}} out of useMutation: it replaces the mutationOptions factory's callback and the cache updates in it. Put cache updates in the factory, and this caller's reaction in mutate(variables, { {{name}} }).",
+    },
+  },
+  create(context) {
+    return {
+      'CallExpression[callee.name="useMutation"] > ObjectExpression > Property'(
+        node,
+      ) {
+        const name = node.computed
+          ? undefined
+          : (node.key.name ?? node.key.value);
+        if (MUTATION_CALLBACKS.has(name)) {
+          context.report({ node, messageId: "callback", data: { name } });
+        }
+      },
+    };
+  },
+};
+
+const queryPlugin = withWrapperImports(pluginQuery);
+const QUERY_LIBRARY_MESSAGE =
+  "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-fetching.md.";
 
 const kebabCase = /[a-z0-9]+(?:-[a-z0-9]+)*/.source;
 const routeParam = /[a-z][a-zA-Z0-9]*/.source;
@@ -458,6 +483,11 @@ const eslintConfig = defineConfig([
           "kebab-case": kebabCasePathRule,
         },
       },
+      "data-fetching": {
+        rules: {
+          "mutation-callbacks": mutationCallbacksRule,
+        },
+      },
     },
     rules: {
       "simple-import-sort/imports": ["error", { groups: importGroups }],
@@ -467,7 +497,20 @@ const eslintConfig = defineConfig([
       "architecture/component-entry": "error",
       "architecture/wrapper-imports": "error",
       "naming/kebab-case": "error",
+      "data-fetching/mutation-callbacks": "error",
       "import/no-relative-packages": "error",
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: ["axios", "swr"].map((name) => ({
+            name,
+            message: QUERY_LIBRARY_MESSAGE,
+          })),
+          patterns: [
+            { group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE },
+          ],
+        },
+      ],
       "import/no-cycle": ["error", { commonjs: true }],
       "import/no-restricted-paths": [
         "error",
@@ -481,6 +524,11 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  ...pluginQuery.configs["flat/recommended-strict"].map((config) => ({
+    ...config,
+    files: [SOURCE_GLOB],
+    plugins: { "@tanstack/query": queryPlugin },
+  })),
   {
     // 只查应用代码目录：scripts/ 和根目录配置文件不经过 Next.js 打包，解析不了 @/。
     files: ROOT_LAYERS.flatMap((layer) => layer.files),

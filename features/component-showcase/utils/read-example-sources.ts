@@ -1,6 +1,7 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { cacheLife } from "next/cache";
 
 import { catalog, type ComponentId } from "../constants/catalog";
 import { exampleFiles } from "../constants/example-files.generated";
@@ -10,6 +11,9 @@ import type { ExampleSources } from "../types/examples";
 export async function readExampleSources(
   component: ComponentId,
 ): Promise<ExampleSources> {
+  "use cache";
+  // 源文件只随部署变化，而缓存 key 含 build id，每次部署自动失效。
+  cacheLife("max");
   if (!catalog.some((item) => item.id === component))
     throw new Error("Unknown showcase component");
   const directory = join(

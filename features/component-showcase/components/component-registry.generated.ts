@@ -2,6 +2,7 @@
 
 import {
   IconAppWindow,
+  IconBell,
   IconCheckbox,
   IconClick,
   IconForms,
@@ -15,6 +16,7 @@ import { Demo as Component2Demo } from "./dialog-examples";
 import { Demo as Component3Demo } from "./input-examples";
 import { Demo as Component4Demo } from "./select-examples";
 import { Demo as Component5Demo } from "./switch-examples";
+import { Demo as Component6Demo } from "./toaster-examples";
 
 export const demosByComponent = {
   button: Component0Demo,
@@ -23,6 +25,7 @@ export const demosByComponent = {
   input: Component3Demo,
   select: Component4Demo,
   switch: Component5Demo,
+  toaster: Component6Demo,
 };
 
 export const iconsByComponent = {
@@ -32,4 +35,5 @@ export const iconsByComponent = {
   input: IconForms,
   select: IconSelector,
   switch: IconToggleRight,
+  toaster: IconBell,
 };

@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
+  partialPrefetching: true,
   outputFileTracingIncludes: {
     "/showcase": [
       "./features/component-showcase/components/*-examples/*.example.tsx",

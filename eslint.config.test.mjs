@@ -543,18 +543,6 @@ for (const syntax of [
     syntax,
     rule: wrapperRule,
   });
-  addCase(`${syntax} 禁止通过别名引用私有 React Query client 封装`, {
-    from: "app/CASE.ts",
-    source: "@/lib/react-query.client",
-    syntax,
-    rule: wrapperRule,
-  });
-  addCase(`${syntax} 禁止通过相对路径引用私有 React Query client 封装`, {
-    from: "lib/CASE.ts",
-    source: "./react-query.client",
-    syntax,
-    rule: wrapperRule,
-  });
   addCase(`${syntax} 允许通过公开 React Query 封装入口引用`, {
     from: "app/CASE.ts",
     source: "@/lib/react-query",
@@ -573,11 +561,6 @@ addCase("相似包名不被误认为 React Query 原包", {
 addCase("其他 lib 文件不能享有 React Query 原包豁免", {
   from: "lib/CASE.ts",
   source: "@tanstack/react-query",
-  rule: wrapperRule,
-});
-addCase("其他 lib 文件不能绕过私有 client 封装", {
-  from: "lib/CASE.ts",
-  source: "./react-query.client",
   rule: wrapperRule,
 });
 addCase("与封装同名前缀的文件不能享有豁免", {
@@ -601,32 +584,17 @@ for (const extension of [
   "mts",
   "cts",
 ]) {
-  for (const basename of ["react-query", "react-query.client"]) {
-    const file = `lib/${basename}.${extension}`;
-    const commonjs = extension === "cjs";
-    const clientImport =
-      basename === "react-query"
-        ? commonjs
-          ? `\nObject.assign(module.exports, require("./react-query.client.${extension}"));`
-          : `\nexport { value as clientValue } from "./react-query.client.${extension}";`
-        : "";
-    cases.push({
-      name: `${basename}.${extension} 封装文件可以引用原包`,
-      from: file,
-      files: {
-        [file]:
-          (commonjs
-            ? '/* eslint-disable @typescript-eslint/no-require-imports -- 用例检查 require 写法的依赖 */\nmodule.exports = require("@tanstack/react-query");'
-            : `import { value as packageValue } from "@tanstack/react-query"; export const value = packageValue;${["ts", "tsx", "mts", "cts"].includes(extension) ? " export type Item = { value: number };" : ""}`) +
-          clientImport,
-      },
-      rules: [],
-    });
-  }
-  addCase(`显式 .${extension} 路径不能绕过私有 client 封装`, {
-    from: "app/CASE.ts",
-    source: `@/lib/react-query.client.${extension}`,
-    rule: wrapperRule,
+  const file = `lib/react-query.${extension}`;
+  cases.push({
+    name: `react-query.${extension} 封装文件可以引用原包`,
+    from: file,
+    files: {
+      [file]:
+        extension === "cjs"
+          ? '/* eslint-disable @typescript-eslint/no-require-imports -- 用例检查 require 写法的依赖 */\nmodule.exports = require("@tanstack/react-query");'
+          : `import { value as packageValue } from "@tanstack/react-query"; export const value = packageValue;${["ts", "tsx", "mts", "cts"].includes(extension) ? " export type Item = { value: number };" : ""}`,
+    },
+    rules: [],
   });
 }
 
@@ -1215,6 +1183,141 @@ export const values = [local, helper, join, upstream, useState, scoped, styles];
       const [stable] = await fixer.lintText(expected, options);
       assert.equal(stable.output, undefined);
       assert.deepEqual(stable.messages, []);
+    });
+  }
+});
+
+test("TanStack Query 规则识别经 @/lib/react-query 引入的 API", async (t) => {
+  const project = dirname(fileURLToPath(import.meta.url));
+  // import/no-cycle 遍历依赖图时要求被检查的文件真实存在，lintText 的虚拟文件会让它崩溃。
+  const eslint = new ESLint({
+    cwd: project,
+    overrideConfig: { rules: { "import/no-cycle": "off" } },
+  });
+  const filePath = join(project, "app/query-rules.tsx");
+  const header = `import { useCallback } from "react";
+
+import {
+  QueryClient,
+  queryOptions,
+  useMutation,
+  useQuery,
+} from "@/lib/react-query";
+
+const options = queryOptions({ queryKey: ["a"], queryFn: () => 1 });
+`;
+  const examples = [
+    {
+      name: "内联 queryKey 和 queryFn 要求改用 queryOptions",
+      body: `export function Example() {
+  return useQuery({ queryKey: ["a"], queryFn: () => 1 }).data;
+}`,
+      rules: ["@tanstack/query/prefer-query-options"],
+    },
+    {
+      name: "对 query 结果做 rest 解构会订阅全部字段",
+      body: `export function Example() {
+  const { data, ...rest } = useQuery(options);
+  return [data, rest];
+}`,
+      rules: ["@tanstack/query/no-rest-destructuring"],
+    },
+    {
+      name: "mutation 结果对象不能作为依赖",
+      body: `export function Example() {
+  const mutation = useMutation({ mutationFn: () => Promise.resolve(1) });
+  return useCallback(() => mutation.mutate(), [mutation]);
+}`,
+      rules: ["@tanstack/query/no-unstable-deps"],
+    },
+    {
+      name: "客户端组件每次渲染新建 QueryClient",
+      body: `export function Example() {
+  const client = new QueryClient();
+  return client;
+}`,
+      rules: ["@tanstack/query/stable-query-client"],
+    },
+    {
+      name: "async Server Component 可以按渲染新建 QueryClient",
+      body: `export async function Example() {
+  const client = new QueryClient();
+  await client.query(options);
+  return client;
+}`,
+      rules: [],
+    },
+  ];
+  for (const { name, body, rules } of examples) {
+    await t.test(name, async () => {
+      const [result] = await eslint.lintText(`${header}\n${body}\n`, {
+        filePath,
+      });
+      assert.equal(result.fatalErrorCount, 0);
+      // 各示例共用 header 的 import，未使用的 import 不在这组用例的检查范围内。
+      assert.deepEqual(
+        result.messages
+          .map(({ ruleId }) => ruleId)
+          .filter((ruleId) => ruleId?.startsWith("@tanstack/query/"))
+          .sort(),
+        rules,
+        JSON.stringify(result.messages, null, 2),
+      );
+    });
+  }
+  for (const { name, body, reported } of [
+    {
+      name: "useMutation 里的回调会替换工厂的回调",
+      body: `export function Example() {
+  return useMutation({
+    ...mutationOptions({ mutationFn: () => Promise.resolve(1) }),
+    onMutate: () => undefined,
+    onSuccess: () => undefined,
+    "onError": () => undefined,
+    onSettled: () => undefined,
+  });
+}`,
+      reported: ["onMutate", "onSuccess", "onError", "onSettled"],
+    },
+    {
+      name: "回调写在 mutationOptions 工厂和 mutate 里不报错",
+      body: `const factory = () =>
+  mutationOptions({
+    mutationFn: () => Promise.resolve(1),
+    onSuccess: () => undefined,
+  });
+
+export function Example() {
+  const mutation = useMutation(factory());
+  return () => mutation.mutate(undefined, { onSuccess: () => undefined });
+}`,
+      reported: [],
+    },
+  ]) {
+    await t.test(name, async () => {
+      const [result] = await eslint.lintText(
+        `import { mutationOptions, useMutation } from "@/lib/react-query";\n\n${body}\n`,
+        { filePath },
+      );
+      assert.deepEqual(
+        result.messages
+          .filter(({ ruleId }) => ruleId === "data-fetching/mutation-callbacks")
+          .map(({ message }) => message.match(/^Keep (\w+)/)?.[1]),
+        reported,
+        JSON.stringify(result.messages, null, 2),
+      );
+    });
+  }
+  for (const source of ["axios", "swr", "swr/mutation"]) {
+    await t.test(`禁止引入 ${source}`, async () => {
+      const [result] = await eslint.lintText(
+        `import value from "${source}";\n\nexport const result = value;\n`,
+        { filePath },
+      );
+      assert.deepEqual(
+        result.messages.map(({ ruleId }) => ruleId),
+        ["no-restricted-imports"],
+      );
     });
   }
 });

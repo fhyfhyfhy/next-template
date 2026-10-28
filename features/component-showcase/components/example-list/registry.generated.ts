@@ -8,6 +8,7 @@ import { examples as component2Examples } from "../dialog-examples";
 import { examples as component3Examples } from "../input-examples";
 import { examples as component4Examples } from "../select-examples";
 import { examples as component5Examples } from "../switch-examples";
+import { examples as component6Examples } from "../toaster-examples";
 
 export const examplesByComponent = {
   button: component0Examples,
@@ -16,4 +17,5 @@ export const examplesByComponent = {
   input: component3Examples,
   select: component4Examples,
   switch: component5Examples,
+  toaster: component6Examples,
 };

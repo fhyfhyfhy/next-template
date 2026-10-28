@@ -33,4 +33,10 @@ export const catalog = [
     title: "Switch",
     description: "A control that indicates whether a setting is on or off.",
   },
+  {
+    id: "toaster",
+    title: "Toaster",
+    description:
+      "A brief message that appears temporarily and stacks with others.",
+  },
 ] as const;

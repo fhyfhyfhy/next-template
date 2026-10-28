@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 
+import { Providers } from "./providers";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,7 +35,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          <div className="isolate min-h-dvh">{children}</div>
+          <Providers>
+            <div className="isolate min-h-dvh">{children}</div>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

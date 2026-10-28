@@ -2,7 +2,7 @@
 
 // 源码内容变化也要更新此模块，让开发服务器重新读取展示和复制用的源码。
 export const exampleSourceRevision =
-  "8f0188647a85bb20328c3d0948b77182a27813da9169a2a3c28be737aa3216ba";
+  "b22d8b20ca4405e52566dcd9f6279d48ea27bf88275ec78b75e8dfc7e5846aba";
 
 export const exampleFiles = {
   button: [
@@ -33,5 +33,9 @@ export const exampleFiles = {
   switch: [
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
+  ],
+  toaster: [
+    { id: "action", filename: "action.example.tsx" },
+    { id: "basic", filename: "basic.example.tsx" },
   ],
 } as const;
