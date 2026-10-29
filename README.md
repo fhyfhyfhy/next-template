@@ -20,7 +20,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node process ([ADR 0001](docs/adr/0001-demos-use-standalone-mock-api.md)). `pnpm dev`, `pnpm build`, and `pnpm start` go through `scripts/run-next.mjs`, which starts it on `127.0.0.1:4010` and points `NEXT_PUBLIC_API_BASE_URL` at it whenever the project has no backend URL configured. Once a real backend is configured, the Mock API stays off and the Data demo pages show a notice instead of sending requests. `pnpm demos` runs the dev server against the Mock API regardless; during that run every page, including the project's own features, talks to the Mock API.
 
-`pnpm test:e2e` runs the Data demo's Playwright specs in `e2e/` against a production build with the Mock API. It reuses a server already listening on port 3000, so stop `pnpm demos` before the final run. Install the browser once with `pnpm exec playwright install chromium`.
+`pnpm test:e2e` runs the Data demo's Playwright specs in `e2e/` against a production build with the Mock API, so ports 3000 and 4010 must be free. While debugging, `E2E_REUSE_SERVER=1 pnpm test:e2e` reuses a running `pnpm demos` instead; specs that depend on production behavior, such as prefetching, fail there. Install the browser once with `pnpm exec playwright install chromium`.
 
 ## Backend API
 

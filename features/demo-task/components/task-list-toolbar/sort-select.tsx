@@ -17,10 +17,7 @@ import {
 } from "@/components/ui/select";
 
 import { TASK_SORT_LABELS, TASK_SORTS } from "../../constants/task-list";
-import {
-  taskListHref,
-  type TaskListParams,
-} from "../../utils/task-list-params";
+import { taskListHref, type TaskListParams } from "../../utils/task-urls";
 
 const items = TASK_SORTS.map((value) => ({
   value,

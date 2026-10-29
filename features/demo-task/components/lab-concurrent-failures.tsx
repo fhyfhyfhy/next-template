@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { useQueries } from "@/lib/react-query";
 
 import { getTaskQueryOptions } from "../api/get-task";
+import {
+  INJECTED_FAILURE_CODE,
+  TASK_DETAIL_ROUTE,
+} from "../constants/mock-faults";
 import { useInjectMockFault } from "../hooks/use-inject-mock-fault";
 import { LabSection } from "./lab-section";
 
@@ -37,8 +41,8 @@ export function LabConcurrentFailures() {
         onClick={async () => {
           await injectFault({
             method: "GET",
-            path: "/demo/tasks/:id",
-            code: 50010,
+            path: TASK_DETAIL_ROUTE,
+            code: INJECTED_FAILURE_CODE,
             times: TASK_IDS.length,
           });
           await Promise.all(tasks.map((task) => task.refetch()));

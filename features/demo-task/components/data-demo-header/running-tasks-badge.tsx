@@ -20,7 +20,7 @@ export function RunningTasksBadge() {
   if (!data) return null;
   return (
     <Badge
-      variant={data.total > 0 ? "default" : "secondary"}
+      variant={data.total > 0 ? "primary" : "muted"}
       aria-label={`进行中的任务 ${data.total} 个`}
     >
       {data.total > 0 && <IconLoader2 className="animate-spin" aria-hidden />}

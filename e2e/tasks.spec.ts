@@ -146,6 +146,18 @@ test("收藏失败时星标恢复原状并提示", async ({ page, mockApi }) => 
   await expect(star).toHaveAttribute("aria-pressed", "false");
 });
 
+test("详情链接进入视口后就被预取", async ({ page }) => {
+  // 生产构建里 Link 进入视口时预取目标路由；开发服务器不预取。
+  const prefetched = page.waitForRequest(
+    (request) =>
+      request.headers()["next-router-prefetch"] === "1" &&
+      new URL(request.url()).pathname.startsWith("/demos/tasks/task-"),
+  );
+  await page.goto("/demos/tasks");
+
+  await prefetched;
+});
+
 test("点进详情后 Back 回到原来的筛选和页码", async ({ page }) => {
   await page.goto("/demos/tasks?status=done&page=2");
   const link = rows(page).first().getByRole("link");

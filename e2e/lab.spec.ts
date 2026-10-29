@@ -69,11 +69,20 @@ test("5xx 会重试，4xx、业务 code 和 schema 不匹配不重试", async ({
     if (message.type() === "error") consoleErrors.push(message.text());
   });
 
+  // 重试按 React Query 默认的指数退避分别等 1、2、4 秒。
+  test.setTimeout(30_000);
   await demo.getByRole("button", { name: "5xx 两次后恢复" }).click();
-  // 两次重试分别等 1 秒和 2 秒（React Query 默认的指数退避）。
   await expect(
     demo.getByText("5xx 两次后恢复：成功，失败 2 次后重试成功"),
   ).toBeVisible({ timeout: 10_000 });
+
+  await demo.getByRole("button", { name: "5xx 一直失败" }).click();
+  await expect(demo.getByText("5xx 一直失败：失败，重试了 3 次")).toBeVisible({
+    timeout: 15_000,
+  });
+
+  await demo.getByRole("button", { name: "4xx" }).click();
+  await expect(demo.getByText("4xx：失败，没有重试")).toBeVisible();
 
   await demo.getByRole("button", { name: "业务 code" }).click();
   await expect(demo.getByText("业务 code：失败，没有重试")).toBeVisible();

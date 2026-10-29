@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import {
+  DemoNote,
   getCommentsQueryOptions,
   getTaskQueryOptions,
   isTaskNotFound,
@@ -38,11 +39,24 @@ export default function TaskDetailPage({
   params,
 }: PageProps<"/demos/tasks/[id]">) {
   return (
-    <Suspense fallback={<TaskDetailSkeleton />}>
-      {params.then(({ id }) => (
-        <TaskDetailHydration id={id} />
-      ))}
-    </Suspense>
+    <>
+      <DemoNote>
+        <p>
+          详情由 React Query
+          负责：任务在你停留时会自己推进，排队中和生成中的任务每 1.5
+          秒轮询一次，到终态后停止，并刷新 header
+          的进行中任务数。首屏数据由服务端 prefetch，评论随后流式送达。
+        </p>
+        <p>
+          试试：重试一个失败的任务；把它重命名成已存在的名称；换一张封面图后回到列表；在评论区发表和删除评论。
+        </p>
+      </DemoNote>
+      <Suspense fallback={<TaskDetailSkeleton />}>
+        {params.then(({ id }) => (
+          <TaskDetailHydration id={id} />
+        ))}
+      </Suspense>
+    </>
   );
 }
 

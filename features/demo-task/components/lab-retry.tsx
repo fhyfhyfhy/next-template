@@ -7,27 +7,32 @@ import { useQuery, useQueryClient } from "@/lib/react-query";
 
 import { getTaskQueryOptions } from "../api/get-task";
 import {
+  INJECTED_FAILURE_CODE,
+  TASK_DETAIL_ROUTE,
+} from "../constants/mock-faults";
+import {
   type MockFaultInput,
   useInjectMockFault,
 } from "../hooks/use-inject-mock-fault";
 import { LabSection } from "./lab-section";
 
 const TASK_ID = "task-07";
-const PATH = "/demo/tasks/:id";
+const detailFault = (fault: Omit<MockFaultInput, "method" | "path">) => ({
+  method: "GET",
+  path: TASK_DETAIL_ROUTE,
+  ...fault,
+});
 
 const scenarios: { label: string; fault: MockFaultInput }[] = [
-  {
-    label: "5xx 两次后恢复",
-    fault: { method: "GET", path: PATH, status: 503, times: 2 },
-  },
+  { label: "5xx 两次后恢复", fault: detailFault({ status: 503, times: 2 }) },
+  // 首次请求加 3 次重试，4 次都失败才放弃。
+  { label: "5xx 一直失败", fault: detailFault({ status: 503, times: 4 }) },
+  { label: "4xx", fault: detailFault({ status: 409, times: 1 }) },
   {
     label: "业务 code",
-    fault: { method: "GET", path: PATH, code: 50010, times: 1 },
+    fault: detailFault({ code: INJECTED_FAILURE_CODE, times: 1 }),
   },
-  {
-    label: "schema 不匹配",
-    fault: { method: "GET", path: PATH, malformed: true, times: 1 },
-  },
+  { label: "schema 不匹配", fault: detailFault({ malformed: true, times: 1 }) },
 ];
 
 /** `shouldRetryRequest`：5xx 和网络错误最多重试 3 次；4xx、2xx 上的业务 code、schema 不匹配重试也不会成功，直接失败。 */

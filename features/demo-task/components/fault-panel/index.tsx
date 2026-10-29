@@ -11,7 +11,7 @@ import { updateMockFaultsMutationOptions } from "../../api/update-mock-faults";
 import { LabSection } from "../lab-section";
 import { FaultForm } from "./fault-form";
 
-function describe(fault: MockFault) {
+function describeFault(fault: MockFault) {
   const effect = fault.status
     ? `返回 ${fault.status}`
     : fault.code
@@ -46,7 +46,9 @@ export function FaultPanel() {
                   key={`${fault.method} ${fault.path} ${index}`}
                   className="flex items-center justify-between gap-3"
                 >
-                  <span className="font-mono text-xs">{describe(fault)}</span>
+                  <span className="font-mono text-xs">
+                    {describeFault(fault)}
+                  </span>
                   <Button
                     variant="ghost"
                     size="sm"

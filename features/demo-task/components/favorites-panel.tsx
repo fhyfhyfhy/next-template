@@ -4,7 +4,8 @@ import Link from "next/link";
 
 import { useQuery } from "@/lib/react-query";
 
-import { favoriteTasksQueryOptions } from "../api/update-task-favorite";
+import { favoriteTasksQueryOptions } from "../api/get-tasks";
+import { taskDetailHref } from "../utils/task-urls";
 
 /** 和作品广场的卡片显示同一批任务的收藏状态；收藏的乐观更新会同时改这里。 */
 export function FavoritesPanel() {
@@ -20,7 +21,7 @@ export function FavoritesPanel() {
             {favorites.data.items.map((task) => (
               <li key={task.id}>
                 <Link
-                  href={`/demos/tasks/${task.id}`}
+                  href={taskDetailHref(task.id)}
                   className="hover:text-primary"
                 >
                   {task.name}

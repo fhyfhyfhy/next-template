@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
+import { INJECTED_FAILURE_CODE } from "../../constants/mock-faults";
 import {
   type MockFaultInput,
   useInjectMockFault,
@@ -30,6 +31,7 @@ type Endpoint = (typeof ENDPOINTS)[number];
 
 const KINDS = [
   { value: "latency", label: "延迟 2 秒" },
+  { value: "4xx", label: "返回 4xx" },
   { value: "5xx", label: "返回 5xx" },
   { value: "code", label: "2xx 但业务 code 失败" },
   { value: "malformed", label: "data 不符合 schema" },
@@ -49,8 +51,8 @@ function toFault(endpoint: Endpoint, kind: Kind, times: Times): MockFaultInput {
     method,
     path,
     latencyMs: kind === "latency" ? 2000 : 0,
-    status: kind === "5xx" ? 503 : null,
-    code: kind === "code" ? 50010 : null,
+    status: kind === "5xx" ? 503 : kind === "4xx" ? 409 : null,
+    code: kind === "code" ? INJECTED_FAILURE_CODE : null,
     malformed: kind === "malformed",
     times: times === "always" ? null : Number(times),
   };

@@ -6,17 +6,17 @@ import {
 
 import { unwrapActionResult } from "../utils/task-action-error";
 import { getTaskQueryOptions, type Task } from "./get-task";
-import { getTasksQueryOptions, taskListKey, type TaskPage } from "./get-tasks";
+import {
+  favoriteTasksQueryOptions,
+  taskListKey,
+  type TaskPage,
+} from "./get-tasks";
 import { updateTaskFavoriteAction } from "./update-task-favorite-action";
 
 interface UpdateTaskFavoriteVariables {
   task: Task;
   favorite: boolean;
 }
-
-/** “我的收藏”侧栏的 query，乐观更新时在这里加入或移除任务。 */
-export const favoriteTasksQueryOptions = () =>
-  getTasksQueryOptions({ favorite: true, pageSize: 50 });
 
 type CachedTaskList = TaskPage | InfiniteData<TaskPage> | Task[];
 

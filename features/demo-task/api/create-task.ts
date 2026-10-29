@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+import { taskNameSchema } from "./get-task";
+
 /** 创建表单的校验规则，浏览器里的 TanStack Form 和服务端的 `createTaskAction` 共用。 */
 export const createTaskInputSchema = z.object({
-  name: z.string().trim().min(1, "请输入名称").max(40, "名称最多 40 个字"),
+  name: taskNameSchema,
   prompt: z
     .string()
     .trim()

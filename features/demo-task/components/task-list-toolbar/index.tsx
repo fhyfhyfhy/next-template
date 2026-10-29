@@ -5,10 +5,7 @@ import Link from "next/link";
 import { cn } from "@/lib/cn";
 
 import { TASK_STATUS_LABELS, TASK_STATUSES } from "../../constants/task-list";
-import {
-  taskListHref,
-  type TaskListParams,
-} from "../../utils/task-list-params";
+import { taskListHref, type TaskListParams } from "../../utils/task-urls";
 import { SortSelect } from "./sort-select";
 
 const statusTabs = [

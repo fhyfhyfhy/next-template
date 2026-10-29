@@ -6,9 +6,10 @@ import { use } from "react";
 import type { TaskPage } from "../../api/get-tasks";
 import { formatDateTime } from "../../utils/format-date-time";
 import {
+  taskDetailHref,
   taskListHref,
   type TaskListParams,
-} from "../../utils/task-list-params";
+} from "../../utils/task-urls";
 import { TaskCover } from "../task-cover";
 import { TaskStatusBadge } from "../task-status-badge";
 import { FavoriteToggle } from "./favorite-toggle";
@@ -40,7 +41,7 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
               />
               <div className="min-w-0 flex-1">
                 <Link
-                  href={`/demos/tasks/${task.id}`}
+                  href={taskDetailHref(task.id)}
                   className="block truncate font-medium outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {task.name}

@@ -19,7 +19,7 @@ The Data demo under `/demos` is the runnable reference for this skill and its ru
 
 | # | Scenario | Rules | Code | Spec |
 | --- | --- | --- | --- | --- |
-| 1 | URL filters, sort, and pagination with a streamed skeleton | [Ownership](SKILL.md#ownership), [URL changes](refresh.md#url-changes) | `app/demos/(data)/tasks/page.tsx`, `utils/task-list-params.ts`, `components/task-list-toolbar/` | `e2e/tasks.spec.ts` |
+| 1 | URL filters, sort, and pagination with a streamed skeleton | [Ownership](SKILL.md#ownership), [URL changes](refresh.md#url-changes) | `app/demos/(data)/tasks/page.tsx`, `utils/task-urls.ts`, `components/task-list-toolbar/` | `e2e/tasks.spec.ts` |
 | 2 | Public read in `use cache` with a tag, expired by `updateTag` after writes | [Server invalidation](refresh.md#server-invalidation-and-refresh), [Files](../../../.claude/rules/data-fetching-api.md#files), [Requests](../../../.claude/rules/data-fetching-api.md#requests) | `api/cached-reads.ts`, `constants/cache-tags.ts`, `api/*-action.ts` | `e2e/tasks.spec.ts` |
 | 3 | Unawaited promise passed to a Client Component and read with `use()` | Installed `02-guides/streaming.md` | `app/demos/(data)/tasks/page.tsx`, `components/task-list/index.tsx` | `e2e/tasks.spec.ts` |
 | 4 | Not-found, metadata sharing the page's GET, segment `error.tsx` | [Response status](framework-notes.md#response-status) | `app/demos/(data)/tasks/[id]/page.tsx`, `app/demos/(data)/tasks/[id]/not-found.tsx`, `app/demos/(data)/error.tsx` | `e2e/task-detail.spec.ts`, `e2e/lab.spec.ts` |
@@ -38,11 +38,11 @@ The Data demo under `/demos` is the runnable reference for this skill and its ru
 | 17 | Browser-only write, then server-owned displays expired through an action | [After a write](refresh.md#after-a-write) | `api/update-task-cover.ts`, `api/expire-task-list-action.ts`, `components/task-detail/task-cover-panel.tsx` | `e2e/task-detail.spec.ts` |
 | 18 | Editing draft that starts from the data | [Copies](../../../.claude/rules/data-fetching.md#copies) | `components/task-detail/rename-task-form.tsx` | `e2e/task-detail.spec.ts` |
 | 19 | First-load failure versus failed refresh; data, error, loading order | [Errors](../../../.claude/rules/data-fetching.md#errors-in-react-queryowned-data) | `components/lab-query-states.tsx`, `components/task-detail/index.tsx` | `e2e/lab.spec.ts` |
-| 20 | Retry for 5xx only; schema mismatch logged | `shouldRetryRequest` in `lib/fetch.ts` | `components/lab-retry.tsx` | `e2e/lab.spec.ts` |
+| 20 | Retry for 5xx only, capped at 3; 4xx, business codes, and schema mismatches fail at once; schema mismatch logged | `shouldRetryRequest` in `lib/fetch.ts` | `components/lab-retry.tsx` | `e2e/lab.spec.ts` |
 | 21 | Concurrent failures share one toast; mutation failure rolls back without a second toast | [Errors](../../../.claude/rules/data-fetching.md#errors-in-react-queryowned-data) | `components/lab-concurrent-failures.tsx`, `api/create-comment.ts` | `e2e/lab.spec.ts`, `e2e/task-detail.spec.ts` |
 | 22 | Function `suppressErrorToast` omitted from dehydrated state | [Hydration](react-query-integration.md#hydration) | `utils/hydration-state.ts`, `api/get-task.ts`, `app/demos/(data)/tasks/[id]/page.tsx` | `e2e/task-detail.spec.ts` |
-| 23 | SSE read with raw `fetch` and `resolveApiUrl` | [Transport](../../../.claude/rules/data-fetching.md#transport) | `api/stream-task-logs.ts`, `components/task-logs/` | `e2e/task-detail.spec.ts` |
-| 24 | Binary download with raw `fetch` | [Transport](../../../.claude/rules/data-fetching.md#transport) | `api/download-task-model.ts`, `components/task-detail/task-actions.tsx` | `e2e/task-detail.spec.ts` |
+| 23 | SSE read with raw `fetch` and `resolveApiUrl` | [Transport](../../../.claude/rules/data-fetching.md#transport) | `api/get-task-logs.ts`, `components/task-logs/` | `e2e/task-detail.spec.ts` |
+| 24 | Binary download with raw `fetch` | [Transport](../../../.claude/rules/data-fetching.md#transport) | `api/get-task-model.ts`, `components/task-detail/task-actions.tsx` | `e2e/task-detail.spec.ts` |
 | 25 | `Link` navigation and Back/Forward restoring URL state | [URL changes](refresh.md#url-changes) | `components/task-list/index.tsx` | `e2e/tasks.spec.ts` |
 | 26 | Prerenderable hydration state from a cached snapshot | [Hydration](react-query-integration.md#hydration) | `app/demos/(data)/feed/page.tsx`, `api/cached-reads.ts`, `utils/hydration-state.ts` | `e2e/feed.spec.ts` |
 

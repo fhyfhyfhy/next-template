@@ -46,6 +46,10 @@ export function taskListHref({ status, sort, page }: TaskListParams) {
   return search ? `/demos/tasks?${search}` : "/demos/tasks";
 }
 
+export function taskDetailHref(taskId: string) {
+  return `/demos/tasks/${taskId}`;
+}
+
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }

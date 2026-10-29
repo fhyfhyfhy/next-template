@@ -3,10 +3,14 @@ import { z } from "zod";
 import { ApiError, fetchApi } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
 
-import { TASK_STATUSES } from "../constants/task-list";
-import type { TaskStatus } from "../types/task-filters";
+import { type TaskStatus, taskStatusSchema } from "../types/task-filters";
 
-export const taskStatusSchema = z.enum(TASK_STATUSES);
+/** 任务名称的规则：去掉首尾空白后 1 到 40 个字，和 Mock API 的校验一致。创建、重命名的表单和 action 共用。 */
+export const taskNameSchema = z
+  .string()
+  .trim()
+  .min(1, "请输入名称")
+  .max(40, "名称最多 40 个字");
 
 export const taskSchema = z
   .object({

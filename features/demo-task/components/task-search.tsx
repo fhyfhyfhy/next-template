@@ -1,7 +1,6 @@
 "use client";
 
 import { IconSearch } from "@tabler/icons-react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -11,7 +10,7 @@ import { cn } from "@/lib/cn";
 import { keepPreviousData, useQuery } from "@/lib/react-query";
 
 import { searchTasksQueryOptions } from "../api/search-tasks";
-import { TaskStatusBadge } from "./task-status-badge";
+import { TaskLinkRow } from "./task-link-row";
 
 const DEBOUNCE_MS = 300;
 
@@ -81,17 +80,12 @@ export function TaskSearch() {
           )}
         >
           {search.data.map((task) => (
-            <li
-              key={task.id}
-              className="flex items-center justify-between gap-3 p-3 text-sm"
-            >
-              <Link
-                href={`/demos/tasks/${task.id}`}
-                className="min-w-0 truncate font-medium hover:text-primary"
-              >
-                {task.name}
-              </Link>
-              <TaskStatusBadge status={task.status} />
+            <li key={task.id} className="p-3">
+              <TaskLinkRow
+                taskId={task.id}
+                name={task.name}
+                status={task.status}
+              />
             </li>
           ))}
         </ul>

@@ -9,6 +9,19 @@ const GLOBAL_ERROR_TOAST = "请求失败，请稍后重试";
 const comments = (page: Page) =>
   page.getByRole("list", { name: "评论" }).getByRole("listitem");
 
+/**
+ * 打开详情并等客户端接管：首屏 HTML 先到，hydration 之前的点击和文件选择没有事件处理。
+ * “同 prompt 的其他任务”只在浏览器里请求，它出现说明页面已经 hydrate。
+ */
+async function openTask(page: Page, taskId: string) {
+  await page.goto(`/demos/tasks/${taskId}`);
+  await expect(
+    page
+      .getByRole("list", { name: "同 prompt 的其他任务" })
+      .or(page.getByText("没有其他任务")),
+  ).toBeVisible();
+}
+
 async function expectTaskNotFound(page: Page) {
   // 静态 shell 先以 200 发出，状态码改不了；notFound() 流式送达提示页，并加上 noindex 防止被索引。
   await expect(page.getByRole("heading", { name: "任务不存在" })).toBeVisible();
@@ -79,7 +92,7 @@ test.describe("任务推进", () => {
     page,
     mockApi,
   }) => {
-    await page.goto("/demos/tasks/task-11");
+    await openTask(page, "task-11");
     await expect(page.getByText("进行中 4")).toBeVisible();
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
 
@@ -96,7 +109,7 @@ test.describe("任务推进", () => {
   });
 
   test("回到标签页时徽标立即刷新", async ({ page, mockApi }) => {
-    await page.goto("/demos/tasks/task-01");
+    await openTask(page, "task-01");
     await expect(page.getByText("进行中 4")).toBeVisible();
 
     await mockApi.advance("task-03", 3);
@@ -109,7 +122,7 @@ test.describe("任务推进", () => {
   });
 
   test("生成日志用 SSE 推送，到终态后结束", async ({ page, mockApi }) => {
-    await page.goto("/demos/tasks/task-11");
+    await openTask(page, "task-11");
     const logs = page.getByRole("log", { name: "生成日志" });
 
     await mockApi.advance("task-11", 2);
@@ -125,7 +138,7 @@ test.describe("任务推进", () => {
     page,
     mockApi,
   }) => {
-    await page.goto("/demos/tasks/task-03");
+    await openTask(page, "task-03");
     await expect(page.getByTestId("task-status")).toHaveText("生成中");
 
     await mockApi.call("DELETE", "/demo/tasks/task-03");
@@ -144,7 +157,7 @@ test.describe("写入", () => {
     page,
     mockApi,
   }) => {
-    await page.goto("/demos/tasks/task-05");
+    await openTask(page, "task-05");
     await page.getByRole("button", { name: "重试" }).click();
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
 
@@ -158,7 +171,7 @@ test.describe("写入", () => {
   });
 
   test("任务已在别处重试过时就地提示并刷新详情", async ({ page, mockApi }) => {
-    await page.goto("/demos/tasks/task-05");
+    await openTask(page, "task-05");
     await mockApi.call("POST", "/demo/tasks/task-05/retry");
 
     await page.getByRole("button", { name: "重试" }).click();
@@ -169,7 +182,7 @@ test.describe("写入", () => {
   });
 
   test("删除任务后回到列表，任务不再出现，详情显示不存在", async ({ page }) => {
-    await page.goto("/demos/tasks/task-02");
+    await openTask(page, "task-02");
     await page.getByRole("button", { name: "删除任务" }).click();
     await page
       .getByRole("dialog")
@@ -185,7 +198,7 @@ test.describe("写入", () => {
   });
 
   test("重命名表单从当前数据开始编辑，撞名时在字段上提示", async ({ page }) => {
-    await page.goto("/demos/tasks/task-01");
+    await openTask(page, "task-01");
     await page.getByRole("button", { name: "重命名" }).click();
     const input = page.getByLabel("新名称");
     await expect(input).toHaveValue("低多边形狐狸");
@@ -209,7 +222,7 @@ test.describe("写入", () => {
   });
 
   test("取消重命名后恢复显示原名称", async ({ page }) => {
-    await page.goto("/demos/tasks/task-01");
+    await openTask(page, "task-01");
     await page.getByRole("button", { name: "重命名" }).click();
     await page.getByLabel("新名称").fill("不保存的名称");
     await page.getByRole("button", { name: "取消" }).click();
@@ -222,7 +235,7 @@ test.describe("写入", () => {
   });
 
   test("浏览器直接上传封面图后，详情和列表的缩略图都更新", async ({ page }) => {
-    await page.goto("/demos/tasks/task-03");
+    await openTask(page, "task-03");
     const cover = page.getByTestId("task-cover");
     await expect(cover).not.toHaveAttribute("src", /.+/);
 
@@ -248,7 +261,7 @@ test.describe("写入", () => {
 
 test.describe("下载", () => {
   test("done 的任务可以下载 .glb 模型文件", async ({ page }) => {
-    await page.goto("/demos/tasks/task-01");
+    await openTask(page, "task-01");
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: "下载模型" }).click();
 
@@ -259,7 +272,7 @@ test.describe("下载", () => {
     await mockApi.setFaults([
       { method: "GET", path: "/demo/tasks/:id/model", status: 500 },
     ]);
-    await page.goto("/demos/tasks/task-01");
+    await openTask(page, "task-01");
     await page.getByRole("button", { name: "下载模型" }).click();
 
     await expect(page.getByText("下载失败，请稍后重试")).toBeVisible();
@@ -279,7 +292,7 @@ test.describe("评论", () => {
     await mockApi.setFaults([
       { method: "POST", path: "/demo/tasks/:id/comments", latency_ms: 1500 },
     ]);
-    await page.goto("/demos/tasks/task-01");
+    await openTask(page, "task-01");
     await page.getByLabel("写评论").fill("新评论");
     await page.getByRole("button", { name: "发表" }).click();
 
@@ -297,7 +310,7 @@ test.describe("评论", () => {
     await mockApi.setFaults([
       { method: "POST", path: "/demo/tasks/:id/comments", status: 500 },
     ]);
-    await page.goto("/demos/tasks/task-01");
+    await openTask(page, "task-01");
     await page.getByLabel("写评论").fill("发不出去的评论");
     await page.getByRole("button", { name: "发表" }).click();
 
@@ -307,7 +320,7 @@ test.describe("评论", () => {
   });
 
   test("删除评论立即消失，失败时恢复原位", async ({ page, mockApi }) => {
-    await page.goto("/demos/tasks/task-01");
+    await openTask(page, "task-01");
     await comments(page)
       .first()
       .getByRole("button", { name: "删除评论" })
@@ -330,7 +343,7 @@ test.describe("评论", () => {
   });
 
   test("空评论和超过 500 字的评论不能提交", async ({ page, mockApi }) => {
-    await page.goto("/demos/tasks/task-01");
+    await openTask(page, "task-01");
     await page.getByRole("button", { name: "发表" }).click();
     await expect(page.getByText("请输入评论")).toBeVisible();
 

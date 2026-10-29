@@ -10,7 +10,7 @@ export interface BadgeConfig {
 // 括号将结束标记保留在表达式内；展示页只替换标记之间的 JSON 初始值。
 // prettier-ignore
 export const initialConfig: BadgeConfig = (/* @example-config */ {
-  "variant": "default",
+  "variant": "primary",
   "label": "生成中"
 } /* @end-example-config */);
 

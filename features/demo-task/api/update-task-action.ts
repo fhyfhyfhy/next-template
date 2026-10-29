@@ -8,11 +8,11 @@ import { ApiError, fetchApi } from "@/lib/fetch";
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
 import type { ActionResult } from "../types/action-result";
-import { type Task, taskSchema } from "./get-task";
+import { type Task, taskNameSchema, taskSchema } from "./get-task";
 
 const inputSchema = z.object({
   taskId: z.string().min(1),
-  name: z.string().trim().min(1).max(40),
+  name: taskNameSchema,
 });
 
 /** 重命名任务。名称被占用是预期失败，返回 `ok: false`；其他错误照常抛出。 */

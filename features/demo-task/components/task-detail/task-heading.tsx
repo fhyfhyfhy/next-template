@@ -22,7 +22,7 @@ export function TaskHeading({ task, editable }: TaskHeadingProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <h1 className="text-4xl font-medium tracking-[-0.04em]">{task.name}</h1>
-      <TaskStatus taskId={task.id} />
+      <LiveTaskStatus taskId={task.id} />
       {editable && (
         <Button variant="ghost" size="sm" onClick={() => setRenaming(true)}>
           重命名
@@ -33,7 +33,7 @@ export function TaskHeading({ task, editable }: TaskHeadingProps) {
 }
 
 /** 用 `select` 只订阅 status：轮询带回的进度变化不会让它重新渲染。 */
-function TaskStatus({ taskId }: { taskId: string }) {
+function LiveTaskStatus({ taskId }: { taskId: string }) {
   const { data: status } = useQuery({
     ...getTaskQueryOptions(taskId),
     select: (task) => task.status,

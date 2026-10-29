@@ -38,11 +38,10 @@ export function notFound(message) {
   };
 }
 
-export function serverError(status, message) {
-  return {
-    status,
-    body: { code: ErrorCode.SERVER_ERROR, data: null, message },
-  };
+/** 任意 4xx、5xx 响应，故障注入用；5xx 的 code 统一为 SERVER_ERROR，4xx 为状态码乘 100。 */
+export function httpError(status, message) {
+  const code = status >= 500 ? ErrorCode.SERVER_ERROR : status * 100;
+  return { status, body: { code, data: null, message } };
 }
 
 /** 信封合法、`code` 是成功值，但 `data` 不符合任何接口的 schema，用来演示前后端契约不一致。 */

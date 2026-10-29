@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
 import { useMutation } from "@/lib/react-query";
 
-import { downloadTaskModel } from "../../api/download-task-model";
 import type { Task } from "../../api/get-task";
+import { downloadTaskModel } from "../../api/get-task-model";
 import { retryTaskMutationOptions } from "../../api/retry-task";
 import { TASK_NOT_RETRYABLE } from "../../constants/error-codes";
 import { isTaskActionError } from "../../utils/task-action-error";

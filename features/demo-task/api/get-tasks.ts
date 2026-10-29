@@ -54,6 +54,10 @@ export const getTasksQueryOptions = (filters: TaskFilters) =>
     queryFn: () => getTasks(filters),
   });
 
+/** “我的收藏”侧栏的列表；作品广场收藏时，乐观更新在这里加入或移除任务。 */
+export const favoriteTasksQueryOptions = () =>
+  getTasksQueryOptions({ favorite: true, pageSize: 50 });
+
 /**
  * header 徽标显示的进行中任务数。任务会自己推进，标签页重新获得焦点时要立即刷新，
  * 所以不沿用全局 60 秒的 staleTime。

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import {
   createTaskDefaultValues,
   type CreateTaskFormState,
+  type CreateTaskInput,
   createTaskInputSchema,
 } from "../api/create-task";
 import { createTaskAction } from "../api/create-task-action";
@@ -28,6 +29,15 @@ export function CreateTaskForm() {
     />
   );
 }
+
+const fields = [
+  { name: "name", label: "名称", placeholder: "比如：低多边形小鹿" },
+  { name: "prompt", label: "Prompt", placeholder: "描述要生成的模型" },
+] as const satisfies readonly {
+  name: keyof CreateTaskInput;
+  label: string;
+  placeholder: string;
+}[];
 
 interface CreateTaskFieldsProps {
   state: CreateTaskFormState;
@@ -60,7 +70,7 @@ function CreateTaskFields({
         void form.handleSubmit();
       }}
     >
-      {(["name", "prompt"] as const).map((name) => (
+      {fields.map(({ name, label, placeholder }) => (
         <form.Field key={name} name={name}>
           {(field) => {
             // 服务端的字段错误只对提交时的值有效，用户改了内容就不再显示。
@@ -79,15 +89,13 @@ function CreateTaskFields({
                   htmlFor={field.name}
                   className="text-xs font-medium text-muted-foreground"
                 >
-                  {name === "name" ? "名称" : "Prompt"}
+                  {label}
                 </label>
                 <Input
                   id={field.name}
                   name={field.name}
                   value={field.state.value}
-                  placeholder={
-                    name === "name" ? "比如：低多边形小鹿" : "描述要生成的模型"
-                  }
+                  placeholder={placeholder}
                   aria-invalid={error ? true : undefined}
                   aria-describedby={error ? errorId : undefined}
                   onBlur={field.handleBlur}

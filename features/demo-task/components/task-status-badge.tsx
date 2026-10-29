@@ -5,9 +5,9 @@ import type { TaskStatus } from "../types/task-filters";
 
 const variants: Record<TaskStatus, BadgeProps["variant"]> = {
   pending: "outline",
-  running: "default",
-  done: "secondary",
-  failed: "destructive",
+  running: "primary",
+  done: "muted",
+  failed: "danger",
 };
 
 export function TaskStatusBadge({ status }: { status: TaskStatus }) {

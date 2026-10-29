@@ -488,6 +488,15 @@ test("指定次数的 5xx 故障用完后接口恢复正常", async () => {
   assert.deepEqual((await control("GET", "/__mock/faults")).faults, []);
 });
 
+test("故障可以返回 4xx 状态码", async () => {
+  await control("PUT", "/__mock/faults", {
+    faults: [{ method: "GET", path: "/demo/tasks/:id", status: 409, times: 1 }],
+  });
+  const { status, body } = await request("GET", "/demo/tasks/task-01");
+  assert.equal(status, 409);
+  assert.notEqual(body.code, 0);
+});
+
 test("一直生效的故障可以返回失败的业务 code 或不符合 schema 的 data", async () => {
   await control("PUT", "/__mock/faults", {
     faults: [
@@ -528,7 +537,7 @@ test("重置会清除故障", async () => {
 
 test("不合法的故障配置返回 400，故障只能配置在业务接口上", async () => {
   for (const fault of [
-    { method: "GET", path: "/demo/tasks", status: 404 },
+    { method: "GET", path: "/demo/tasks", status: 302 },
     { method: "POST", path: "/__mock/reset", status: 500 },
     { method: "GET", path: "/demo/tasks", times: 0 },
   ]) {
@@ -537,6 +546,20 @@ test("不合法的故障配置返回 400，故障只能配置在业务接口上"
     });
     assert.equal(status, 400, JSON.stringify(fault));
   }
+});
+
+test("只给本机的 origin 返回跨域许可", async () => {
+  const allowed = await fetch(`${mockApi.url}/demo/tasks`, {
+    headers: { Origin: "http://127.0.0.1:3000" },
+  });
+  assert.equal(
+    allowed.headers.get("access-control-allow-origin"),
+    "http://127.0.0.1:3000",
+  );
+  const foreign = await fetch(`${mockApi.url}/demo/tasks`, {
+    headers: { Origin: "https://example.com" },
+  });
+  assert.equal(foreign.headers.get("access-control-allow-origin"), null);
 });
 
 test("跨域预检请求返回允许的方法和请求头", async () => {

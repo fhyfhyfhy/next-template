@@ -26,7 +26,7 @@ export function Demo({ source }: { source: string }) {
           <OptionControl
             label="variant"
             value={config.variant}
-            options={["default", "secondary", "outline", "destructive"]}
+            options={["primary", "muted", "outline", "danger"]}
             onChange={(variant) => setConfig({ ...config, variant })}
           />
           <TextControl

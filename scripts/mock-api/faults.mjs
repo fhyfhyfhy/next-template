@@ -1,8 +1,8 @@
 import {
   badRequest,
   businessError,
+  httpError,
   malformedSuccess,
-  serverError,
 } from "./envelope.mjs";
 import { DomainError } from "./store.mjs";
 
@@ -50,7 +50,7 @@ export function createFaults() {
 /** 故障对应的响应；只加延迟的故障返回 null，请求照常处理。 */
 export function faultResponse(fault) {
   if (fault.status !== null) {
-    return serverError(fault.status, `Mock API 注入的 ${fault.status} 错误`);
+    return httpError(fault.status, `Mock API 注入的 ${fault.status} 错误`);
   }
   if (fault.code !== null) {
     return businessError(fault.code, `Mock API 注入的业务错误 ${fault.code}`);
@@ -77,7 +77,7 @@ function parseFault(input) {
     fault.latencyMs <= MAX_LATENCY_MS &&
     (fault.status === null ||
       (Number.isInteger(fault.status) &&
-        fault.status >= 500 &&
+        fault.status >= 400 &&
         fault.status <= 599)) &&
     (fault.code === null ||
       (Number.isInteger(fault.code) && fault.code !== 0)) &&
@@ -86,7 +86,7 @@ function parseFault(input) {
   if (!valid) {
     throw new DomainError(
       badRequest(
-        "故障配置不合法：path 必须是 /demo/ 下的路由模式，status 为 5xx，code 非 0，times 为正整数",
+        "故障配置不合法：path 必须是 /demo/ 下的路由模式，status 为 4xx 或 5xx，code 非 0，times 为正整数",
       ),
     );
   }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { streamTaskLogs } from "../../api/stream-task-logs";
+import { streamTaskLogs } from "../../api/get-task-logs";
 
 type StreamState = "streaming" | "ended" | "failed";
 

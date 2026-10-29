@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "next/link";
-
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueries } from "@/lib/react-query";
 
 import { getTaskQueryOptions, isTaskNotFound } from "../api/get-task";
 import { useRecentTaskIds } from "../hooks/use-recent-task-ids";
-import { TaskStatusBadge } from "./task-status-badge";
+import { TaskLinkRow } from "./task-link-row";
 
 /**
  * 请求的输入来自 localStorage，只有浏览器能读：服务端和 hydration 首轮 `ids` 为 null，这时不发请求，
@@ -32,20 +30,9 @@ export function RecentTasks() {
       {ids.map((id, index) => {
         const { data, error } = tasks[index];
         return (
-          <li
-            key={id}
-            className="flex items-center justify-between gap-3 p-3 text-sm"
-          >
+          <li key={id} className="p-3 text-sm">
             {data ? (
-              <>
-                <Link
-                  href={`/demos/tasks/${id}`}
-                  className="min-w-0 truncate font-medium hover:text-primary"
-                >
-                  {data.name}
-                </Link>
-                <TaskStatusBadge status={data.status} />
-              </>
+              <TaskLinkRow taskId={id} name={data.name} status={data.status} />
             ) : isTaskNotFound(error) ? (
               <span className="text-muted-foreground">
                 任务已被删除（{id}）

@@ -2,14 +2,14 @@ import { z } from "zod";
 
 import { ApiError, resolveApiUrl } from "@/lib/fetch";
 
-import { taskStatusSchema } from "./get-task";
+import { taskStatusSchema } from "../types/task-filters";
 
 const logEventSchema = z.object({ line: z.string() });
 const endEventSchema = z.object({ status: taskStatusSchema });
 
 export type TaskLogEvent =
-  | { type: "log"; line: string }
-  | { type: "end"; status: z.infer<typeof taskStatusSchema> };
+  | ({ type: "log" } & z.infer<typeof logEventSchema>)
+  | ({ type: "end" } & z.infer<typeof endEventSchema>);
 
 /**
  * 订阅任务的生成日志。SSE 响应按传输例外用 raw `fetch` 读取：先收到已有日志，之后每条新日志一个事件，

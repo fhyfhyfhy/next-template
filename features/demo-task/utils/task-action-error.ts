@@ -20,6 +20,9 @@ export function unwrapActionResult<TData>(result: ActionResult<TData>): TData {
   return result.data;
 }
 
-export function isTaskActionError(error: unknown, code: number) {
+export function isTaskActionError(
+  error: unknown,
+  code: number,
+): error is TaskActionError {
   return error instanceof TaskActionError && error.code === code;
 }

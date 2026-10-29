@@ -11,9 +11,9 @@ export function Example() {
   return (
     <div className="flex flex-wrap gap-2">
       <Badge>生成中</Badge>
-      <Badge variant="secondary">已完成</Badge>
+      <Badge variant="muted">已完成</Badge>
       <Badge variant="outline">排队中</Badge>
-      <Badge variant="destructive">失败</Badge>
+      <Badge variant="danger">失败</Badge>
     </div>
   );
 }

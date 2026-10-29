@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
-
 import { useQuery } from "@/lib/react-query";
 
 import { getTaskQueryOptions } from "../api/get-task";
 import { getTasksQueryOptions } from "../api/get-tasks";
-import { TaskStatusBadge } from "./task-status-badge";
+import { TaskLinkRow } from "./task-link-row";
 
 /**
  * 依赖查询：先从详情 query 里取 prompt，再用它查其他任务；prompt 还没拿到时第二个请求不发。
@@ -30,17 +28,12 @@ export function RelatedTasks({ taskId }: { taskId: string }) {
         ) : (
           <ul aria-label="同 prompt 的其他任务" className="space-y-2">
             {related.data.items.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center justify-between gap-2 text-sm"
-              >
-                <Link
-                  href={`/demos/tasks/${item.id}`}
-                  className="truncate hover:text-primary"
-                >
-                  {item.name}
-                </Link>
-                <TaskStatusBadge status={item.status} />
+              <li key={item.id}>
+                <TaskLinkRow
+                  taskId={item.id}
+                  name={item.name}
+                  status={item.status}
+                />
               </li>
             ))}
           </ul>

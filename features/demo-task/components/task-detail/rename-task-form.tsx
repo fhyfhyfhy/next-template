@@ -1,22 +1,15 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
-import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMutation } from "@/lib/react-query";
 
-import type { Task } from "../../api/get-task";
+import { type Task, taskNameSchema } from "../../api/get-task";
 import { updateTaskMutationOptions } from "../../api/update-task";
 import { TASK_NAME_TAKEN } from "../../constants/error-codes";
 import { isTaskActionError } from "../../utils/task-action-error";
-
-const nameSchema = z
-  .string()
-  .trim()
-  .min(1, "请输入名称")
-  .max(40, "名称最多 40 个字");
 
 interface RenameTaskFormProps {
   task: Task;
@@ -34,7 +27,10 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
         { onSuccess: onDone },
       ),
   });
-  const nameTaken = isTaskActionError(rename.error, TASK_NAME_TAKEN);
+  // 撞名的提示文案来自 Server Action 返回的消息。
+  const nameTakenMessage = isTaskActionError(rename.error, TASK_NAME_TAKEN)
+    ? rename.error.message
+    : undefined;
   return (
     <form
       aria-label="重命名任务"
@@ -47,13 +43,11 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
     >
       <form.Field
         name="name"
-        validators={{ onChange: nameSchema }}
+        validators={{ onChange: taskNameSchema }}
         listeners={{ onChange: () => rename.reset() }}
       >
         {(field) => {
-          const error =
-            field.state.meta.errors[0]?.message ??
-            (nameTaken ? "名称已被其他任务占用" : undefined);
+          const error = field.state.meta.errors[0]?.message ?? nameTakenMessage;
           return (
             <div className="min-w-60 flex-1 space-y-1">
               <label htmlFor="rename-task" className="sr-only">
