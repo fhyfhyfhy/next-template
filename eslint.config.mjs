@@ -65,11 +65,12 @@ const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
 
 const eslintConfig = defineConfig([
+  // 使用 Next.js 的 React、Hooks、可访问性和性能规则，随框架版本维护默认检查。
   ...nextVitals.map((config) =>
     config.name === "next"
       ? {
           ...config,
-          // Keep Next's parser, plugins and resolvers active for every supported extension, including .cjs.
+          // 所有支持的扩展名（含 .cjs）都需要 Next 的 parser、插件和 resolver。
           files: [SOURCE_GLOB],
           settings: {
             ...config.settings,
@@ -89,20 +90,23 @@ const eslintConfig = defineConfig([
         }
       : config,
   ),
+  // 复用 TypeScript 推荐检查，包括禁止显式 any、要求用有说明的 @ts-expect-error 代替 @ts-ignore。
+  // enum 由 tsconfig 的 erasableSyntaxOnly 检查。
   ...nextTs,
-  // any 和 @ts-ignore 由 nextTs 里 typescript-eslint recommended 的 no-explicit-any、ban-ts-comment 检查；enum 由 tsconfig 的 erasableSyntaxOnly 检查。
   {
     files: [SOURCE_GLOB],
     plugins: { "@eslint-community/eslint-comments": eslintComments },
     rules: {
-      // 用 eslint-disable 关掉 no-explicit-any 等规则时，要在 -- 后写明原因，和 ban-ts-comment 对 @ts-expect-error 的要求一致。
+      // ESLint 指令注释须在 -- 后说明原因，方便审查禁用规则等局部配置的必要性。
       "@eslint-community/eslint-comments/require-description": "error",
+      // 对象字面量类型定义统一用 interface，避免同类契约在两种写法之间来回切换。
       "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
-      // 用 warn：优先用 type guard 或 optional chaining，DOM、第三方类型等确实需要断言的地方可以保留。
+      // 对类型断言发出 warn，优先用类型标注或类型收窄；允许 const 断言。
       "@typescript-eslint/consistent-type-assertions": [
         "warn",
         { assertionStyle: "never" },
       ],
+      // 用 warn 提醒处理 null/undefined，避免非空断言 ! 隐藏实际可能为空的值。
       "@typescript-eslint/no-non-null-assertion": "warn",
     },
   },
@@ -122,16 +126,28 @@ const eslintConfig = defineConfig([
       },
     },
     rules: {
+      // 按 importGroups 固定顺序并支持自动修复，减少增删依赖时无关的排序 diff。
       "simple-import-sort/imports": ["error", { groups: importGroups }],
+      // feature 内部用相对路径且不反向引用自身公共入口。
+      // 跨边界用 @/；访问其他 feature 时只走公共入口。
       "architecture/feature-imports": "error",
+      // 按 feature 聚合依赖（含类型引用），捕获文件图无环但 feature 之间互相依赖的情况。
       "architecture/no-feature-cycle": "error",
+      // 组件目录内用相对路径，对外只开放 index 入口，避免调用方依赖私有实现路径。
       "architecture/component-imports": "error",
+      // 每个组件目录只保留一个实现入口，避免多个 index 扩展名产生解析歧义；允许声明文件并存。
       "architecture/component-entry": "error",
+      // 约束条件导入的调用方、目标及顺序，防止未经支持的 # 路径绕过架构检查。
       "architecture/package-imports": "error",
+      // React Query 统一从项目封装引入，避免直接使用原包而绕过项目的 QueryClient 策略。
       "architecture/wrapper-imports": "error",
+      // 源码路径统一用 kebab-case，同时保留 Next.js 路由目录的特殊命名约定。
       "naming/kebab-case": "error",
+      // 保留 factory 负责的缓存更新；调用方的成功、失败及结束回调放在 mutate 的第二个参数。
       "data-fetching/mutation-callbacks": "error",
+      // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。
       "import/no-relative-packages": "error",
+      // 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query。
       "no-restricted-imports": [
         "error",
         {
@@ -144,7 +160,9 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
+      // 检查可解析的文件依赖环，忽略纯类型导入；跨 feature 的聚合循环由专用规则检查。
       "import/no-cycle": ["error", { commonjs: true }],
+      // 按层级表禁止下层引用上层，让依赖方向与项目架构保持一致。
       "import/no-restricted-paths": [
         "error",
         {
@@ -157,6 +175,7 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // 复用 TanStack 的严格推荐检查；queryPlugin 让这些规则识别项目封装的 import。
   ...pluginQuery.configs["flat/recommended-strict"].map((config) => ({
     ...config,
     files: [SOURCE_GLOB],
@@ -165,7 +184,10 @@ const eslintConfig = defineConfig([
   {
     // 只查应用代码目录：scripts/ 和根目录配置文件不经过 Next.js 打包，解析不了 @/。
     files: ROOT_LAYERS.flatMap((layer) => layer.files),
-    rules: { "architecture/root-imports": "error" },
+    rules: {
+      // 当前目录及子目录用相对路径，跨目录用 @/；feature 和组件内部交给各自的规则。
+      "architecture/root-imports": "error",
+    },
   },
   {
     files: [
@@ -173,7 +195,9 @@ const eslintConfig = defineConfig([
       `**/components/ui/*/index.${extensionGlob}`,
     ],
     rules: {
+      // 追踪导入的 namespace 及其 const 别名，避免入口间接暴露整个命名空间。
       "architecture/component-exports": "error",
+      // 禁止入口直接使用 export * 和 export * as，要求显式列出公开成员。
       "no-restricted-syntax": [
         "error",
         {
@@ -194,6 +218,7 @@ const eslintConfig = defineConfig([
       "**/{test,tests,__tests__,stories,generated,__generated__}/**",
     ],
     rules: {
+      // 函数过长时提醒检查职责，避免一个组件或 helper 承担过多逻辑。
       "max-lines-per-function": [
         "warn",
         {
@@ -202,6 +227,7 @@ const eslintConfig = defineConfig([
           skipComments: true,
         },
       ],
+      // 文件过长时提醒检查拆分；使用 warn，让职责单一的大组件仍可保留。
       "max-lines": [
         "warn",
         {
@@ -212,9 +238,9 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Override default ignores of eslint-config-next.
+  // 项目级忽略项在 Next 默认项上加入 worktree，避免重复检查其他 checkout。
   globalIgnores([
-    // Default ignores of eslint-config-next:
+    // 保留 Next 默认排除的构建产物与生成类型。
     ".next/**",
     "out/**",
     "build/**",
