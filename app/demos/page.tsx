@@ -13,6 +13,33 @@ const sections = [
     description:
       "设计系统组件的用法：可交互的 playground 和可以单独复制的 example。",
   },
+  {
+    href: "/demos/tasks",
+    title: "Data demo · 全部任务",
+    description:
+      "Server Component 负责的列表：URL 筛选分页、服务端缓存、Server Action 写入和 useOptimistic。",
+  },
+  {
+    href: "/demos/feed",
+    title: "Data demo · 作品广场",
+    description:
+      "React Query 负责的无限滚动：第一页进静态 shell，收藏时多处同时乐观更新。",
+  },
+  {
+    href: "/demos/search",
+    title: "Data demo · 搜索",
+    description: "边输入边搜索：debounce、shallow URL、中止过期请求。",
+  },
+  {
+    href: "/demos/recent",
+    title: "Data demo · 最近查看",
+    description: "依赖 localStorage 的请求，hydration 之后才发出。",
+  },
+  {
+    href: "/demos/lab",
+    title: "Data demo · 故障实验室",
+    description: "给接口注入延迟和失败，观察错误提示、重试和错误边界。",
+  },
 ] as const;
 
 export default function DemosPage() {

@@ -560,6 +560,25 @@ test("跨域预检请求返回允许的方法和请求头", async () => {
   );
 });
 
+test("重置时不传 paused 就保持当前的暂停状态", async () => {
+  const fastApi = await startMockApi({ port: 0, stepIntervalMs: 10 });
+  const post = (path, body) =>
+    fetch(`${fastApi.url}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  try {
+    await post("/__mock/clock", { paused: true });
+    await post("/__mock/reset", {});
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 60));
+    const response = await fetch(`${fastApi.url}/demo/tasks/task-11`);
+    assert.equal((await response.json()).data.status, "pending");
+  } finally {
+    await fastApi.close();
+  }
+});
+
 test("任务详情不存在时返回 404", async () => {
   const { status, body } = await request("GET", "/demo/tasks/task-404");
   assert.equal(status, 404);

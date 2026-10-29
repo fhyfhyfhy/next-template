@@ -143,10 +143,11 @@ function createRoutes(store, clock, faults, publicUrl) {
         ),
       ),
     ),
+    // 不传 paused 时保持当前的暂停状态：e2e 暂停后再从故障实验室重置，时钟仍然停着。
     route("POST", "/__mock/reset", ({ body }) => {
       store.reset();
       faults.clear();
-      clock.paused = body?.paused === true;
+      if (typeof body?.paused === "boolean") clock.paused = body.paused;
       return success(null);
     }),
     route("GET", "/__mock/faults", () => success({ faults: faults.list() })),
