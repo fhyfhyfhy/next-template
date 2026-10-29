@@ -57,7 +57,7 @@ features/{name}/
   components/   feature-specific UI
   hooks/        feature-specific hooks
   stores/       Zustand stores
-  api/          fetchApi + queryOptions + query/mutation hooks
+  api/          requests (fetchApi), Server Actions, query and mutation options factories
   utils/        feature-specific utilities
   constants/    feature-specific constants
   types/        feature business types

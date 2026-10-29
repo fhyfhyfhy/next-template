@@ -10,8 +10,13 @@ import {
   type QueryObserverOptions,
 } from "@tanstack/react-query";
 
-export type { InfiniteData, QueryKey } from "@tanstack/react-query";
+export type {
+  DehydratedState,
+  InfiniteData,
+  QueryKey,
+} from "@tanstack/react-query";
 export {
+  defaultShouldDehydrateQuery,
   dehydrate,
   environmentManager,
   HydrationBoundary,
@@ -25,6 +30,7 @@ export {
   skipToken,
   useInfiniteQuery,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
   useQueryErrorResetBoundary,
