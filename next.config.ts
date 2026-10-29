@@ -4,9 +4,9 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   outputFileTracingIncludes: {
-    "/showcase": [
-      "./features/component-showcase/components/*-examples/*.example.tsx",
-      "./features/component-showcase/components/*-examples/playground.tsx",
+    "/demos/ui": [
+      "./features/demo-ui/components/*-examples/*.example.tsx",
+      "./features/demo-ui/components/*-examples/playground.tsx",
     ],
   },
   experimental: {

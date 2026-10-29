@@ -35,22 +35,22 @@ Official Next.js skills record a versioned `ref` in `skills-lock.json`. When upg
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Showcase examples
+## UI demo examples
 
-Add demos under `features/component-showcase/components/<component-id>-examples/`.
-For a new component, adapt the [Button directory](features/component-showcase/components/button-examples),
+The UI demo at `/demos/ui` shows the design-system components. Add examples under `features/demo-ui/components/<component-id>-examples/`.
+For a new component, adapt the [Button directory](features/demo-ui/components/button-examples),
 including its `demo.tsx`, `playground.tsx`, and public `index.ts`.
 Add one `*.example.tsx` per usage scenario; use
-[basic.example.tsx](features/component-showcase/components/button-examples/basic.example.tsx)
+[basic.example.tsx](features/demo-ui/components/button-examples/basic.example.tsx)
 for minimal usage.
 
 Keep the component and its `metadata` export in the same TSX file; the
-[metadata types](features/component-showcase/types/examples.ts) define the fields.
+[metadata types](features/demo-ui/types/examples.ts) define the fields.
 Demo metadata uses literal values because generation reads it without executing TSX.
 `order` defaults to `0`, with component ID or example filename breaking ties.
 
 Keep playgrounds and usage examples independently copyable; displayed code comes
-from those runnable files. `Demo` owns the playground and controls; shared showcase
+from those runnable files. `Demo` owns the playground and controls; shared UI demo
 code renders usage examples.
 
 The dev/build scripts update generated indexes. Commit them with their sources;

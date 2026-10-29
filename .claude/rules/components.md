@@ -96,6 +96,6 @@ Apply the ownership and private-boundary rules when placing the result. Splittin
 
 ## Examples and verification
 
-Before adding a public component in `components/ui/` or root `components/`, changing its API, or editing showcase demos/examples, read [Showcase examples](../../README.md#showcase-examples). Include affected runnable examples in the same change.
+Before adding a public component in `components/ui/` or root `components/`, changing its API, or editing UI demo examples, read [UI demo examples](../../README.md#ui-demo-examples). Include affected runnable examples in the same change.
 
-Verify affected scenarios in a browser against their expected appearance, behavior, and accessibility requirements. Use `/showcase` for shared components and actual pages for feature-specific components and private subcomponents.
+Verify affected scenarios in a browser against their expected appearance, behavior, and accessibility requirements. Use `/demos/ui` for shared components and actual pages for feature-specific components and private subcomponents.
