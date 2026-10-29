@@ -1,6 +1,6 @@
 # Framework documentation differences
 
-These notes qualify specific claims in the bundled Next.js 16.4.0 documentation. Read the official guide first and use only the note relevant to the change. Recheck against the installed version on upgrades; remove a note when the official text accurately describes that version. New notes need a concrete conflicting claim and source or reproduction evidence.
+These notes qualify specific claims in the bundled Next.js 16.4.3 documentation. Read the official guide first and use only the note relevant to the change. Recheck against the installed version on upgrades; remove a note when the official text accurately describes that version. New notes need a concrete conflicting claim and source or reproduction evidence.
 
 Doc paths below are relative to `node_modules/next/dist/docs/01-app/`; implementation paths are relative to `node_modules/next/dist/`. These are version-specific observations, not additional framework guarantees.
 

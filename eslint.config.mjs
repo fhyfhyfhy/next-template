@@ -348,7 +348,7 @@ const mutationCallbacksRule = {
     schema: [],
     messages: {
       callback:
-        "Keep {{name}} out of useMutation: it replaces the mutationOptions factory's callback and the cache updates in it. Put cache updates in the factory, and this caller's reaction in mutate(variables, { {{name}} }).",
+        "Keep {{name}} out of useMutation: it replaces the mutationOptions factory's callback and the cache updates in it. Keep cache updates and onMutate in the factory; put this caller's onSuccess, onError, or onSettled reaction in mutate(variables, { ... }).",
     },
   },
   create(context) {
