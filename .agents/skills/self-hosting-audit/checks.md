@@ -143,7 +143,21 @@ Search the source and config for:
 
 - **Pass**: the CDN forwards the `rsc`, `next-router-prefetch`, `next-router-segment-prefetch`, `next-router-state-tree`, and `next-url` request headers; keeps the `_rsc` query parameter in its cache key and does not strip query strings; and follows the 307 that Next.js returns for a missing or wrong `_rsc`.
 - **Otherwise**: a cached HTML response answers a navigation request, or the reverse, and client-side navigation falls back to full page loads or breaks.
-- **Live**: through the CDN, `curl -sL -o /dev/null -w "%{content_type}\n" -H "rsc: 1" "https://<host>/<route>"` prints `text/x-component`, and the same request without the header prints `text/html`. Locally, the bare `rsc: 1` request is first redirected to add `_rsc` (measured). In a browser, clicking an internal link sends a `?_rsc=` request that returns `text/x-component`, and the page does not reload.
+- **Live**: through the CDN, the command below prints `text/x-component`; omit `-H "rsc: 1"` to check that the HTML request prints `text/html`.
+
+  Bash (macOS or Git Bash):
+
+  ```bash
+  curl -sL -o /dev/null -w "%{content_type}\n" -H "rsc: 1" "https://<host>/<route>"
+  ```
+
+  Windows PowerShell:
+
+  ```powershell
+  curl.exe -sL -o NUL -w "%{content_type}\n" -H "rsc: 1" "https://<host>/<route>"
+  ```
+
+  Locally, the bare `rsc: 1` request is first redirected to add `_rsc` (measured). In a browser, clicking an internal link sends a `?_rsc=` request that returns `text/x-component`, and the page does not reload.
 - **Source**: `02-guides/cdn-caching.md` (Where CDN Caching Is Challenging, Handling Headers at the CDN).
 
 ### CDN purge on revalidation

@@ -59,7 +59,13 @@ declare module "@tanstack/react-query" {
   }
 }
 
-export interface QueryClientOptions extends QueryClientConfig {
+/** cache 由封装创建以保证全局错误处理，调用方不能传入自定义 cache。 */
+export interface QueryClientOptions extends Omit<
+  QueryClientConfig,
+  "queryCache" | "mutationCache"
+> {
+  queryCache?: never;
+  mutationCache?: never;
   /**
    * query 或 mutation 最终失败时调用（query 在重试用完后）。
    * query 默认只在已有数据时提示（见 `suppressErrorToast`）；`meta` 的字段逐个覆盖默认值。
@@ -73,7 +79,17 @@ type AnyMutationOptions = NonNullable<
 >;
 
 export class QueryClient extends TanstackQueryClient {
-  constructor({ onRequestError, ...config }: QueryClientOptions = {}) {
+  constructor({
+    onRequestError,
+    queryCache,
+    mutationCache,
+    ...config
+  }: QueryClientOptions = {}) {
+    if (queryCache !== undefined || mutationCache !== undefined) {
+      throw new TypeError(
+        "QueryClient does not accept queryCache or mutationCache; use onRequestError for global error handling.",
+      );
+    }
     super({
       queryCache: new QueryCache({
         onError: (error, query) =>
