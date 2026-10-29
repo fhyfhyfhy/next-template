@@ -1096,11 +1096,9 @@ test("架构依赖和 feature、组件导入约定", async (t) => {
       join(project, "eslint.config.mjs"),
       join(fixture, "eslint.config.mjs"),
     );
-    cpSync(
-      join(project, "scripts/architecture"),
-      join(fixture, "scripts/architecture"),
-      { recursive: true },
-    );
+    cpSync(join(project, "scripts/eslint"), join(fixture, "scripts/eslint"), {
+      recursive: true,
+    });
     copyFileSync(
       join(project, "tsconfig.json"),
       join(fixture, "tsconfig.json"),

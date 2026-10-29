@@ -8,15 +8,15 @@ import nextTs from "eslint-config-next/typescript";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 
-import componentExportsRule from "./scripts/architecture/component-exports.mjs";
+import componentExportsRule from "./scripts/eslint/component-exports.mjs";
 import {
   createProjectResolver,
   featurePath,
   SOURCE_EXTENSIONS,
   SOURCE_GLOB,
-} from "./scripts/architecture/imports.mjs";
-import createFeatureCycleRule from "./scripts/architecture/no-feature-cycle.mjs";
-import withWrapperImports from "./scripts/architecture/query-plugin.mjs";
+} from "./scripts/eslint/imports.mjs";
+import createFeatureCycleRule from "./scripts/eslint/no-feature-cycle.mjs";
+import withWrapperImports from "./scripts/eslint/query-plugin.mjs";
 
 const PROJECT_ROOT = import.meta.dirname;
 const resolveProjectImport = createProjectResolver(PROJECT_ROOT);
