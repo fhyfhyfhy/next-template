@@ -21,7 +21,7 @@ Read what exists before asking:
 - `lib/fetch.ts`, `lib/credentials-server.ts`, `lib/credentials-browser.ts`, and `app/providers.tsx`. When the credentials files no longer carry the template's `TODO`, or `resolveApiUrl` and `fetchApi` differ from the template's, this is a re-run: ask only about what the user wants to change.
 - `package.json`: an auth library and its version, such as `@supabase/ssr`, `next-auth`, `@clerk/nextjs`, `@auth0/nextjs-auth0`, `better-auth`, `firebase`, or `iron-session`.
 - Env files (`.env*`): use a value such as the backend's base URL to probe it, but never print a value.
-- `next.config.ts` (`rewrites`), `app/api/` (Route Handlers), `proxy.ts`, and the callers of `fetchApi` and `resolveApiUrl`.
+- `next.config.ts` (`rewrites`), `app/api/` (Route Handlers), `proxy.ts`, and the callers of `fetchApi` and `resolveApiUrl`. The callers in `features/demo-task/` belong to the Data demo, and `scripts/mock-api/` is its stand-in backend, started at `127.0.0.1:4010` while `NEXT_PUBLIC_API_BASE_URL` is unset: neither describes the project's backend.
 - The backend, once its URL turns up: probe it with read-only requests, such as its OpenAPI or docs endpoint, the CORS headers it returns to a request carrying `Origin: http://localhost:3000` for section A, and a public endpoint's response body for section B. With a test account, also sign in once and read the cookies the response sets, for section C.
 
 Done when you can say, for each section below, what you found and where, and what only the user can answer.
@@ -76,10 +76,11 @@ Let them edit before writing.
 - Remove the `TODO` from both credentials files. A file left returning `{}` says why instead: the endpoints are all public, the browser sends the backend's cookie itself, or only the browser holds the credential.
 - Put each env var's local value in `.env.local`, which git ignores, creating the file when it is missing.
 - Update the "Backend API" section of `README.md`: each env var, an example local value, and whether the deployment needs it at build time as well as at runtime.
+- Keep the Data demo runnable when section B changed the response format or the error types: rewrite `scripts/mock-api/envelope.mjs` to produce the new format, and update the Data demo code that reads backend errors (`ApiError` checks in `features/demo-task/`, the codes in its `constants/error-codes.ts`) to match.
 
 ### 5. Verify
 
-Follow [wiring.md § Verify](wiring.md#verify). Done when each kind of caller was observed sending the credential the confirmed answers call for, the signed-out behavior was observed in the browser, the probe is deleted, and `pnpm lint`, `pnpm test`, and `pnpm build` then pass.
+Follow [wiring.md § Verify](wiring.md#verify). Done when each kind of caller was observed sending the credential the confirmed answers call for, the signed-out behavior was observed in the browser, the probe is deleted, and `pnpm lint`, `pnpm test`, `pnpm build`, and `pnpm test:e2e` (the Data demo against the Mock API) then pass.
 
 ### 6. Report
 

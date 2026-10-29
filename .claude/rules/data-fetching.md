@@ -12,7 +12,7 @@ paths:
 
 # Data fetching
 
-When choosing a data owner, integrating RSC with React Query, or changing URL/write refresh coordination, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md). Framework mechanisms come from the installed Next.js docs; shell and prefetch optimization use the official workflows linked there. Before adding or changing a backend request, query/mutation options factory, or feature public request entry, read [data-fetching-api.md](data-fetching-api.md) for request configuration, credential setup, and factory contracts. This applies wherever the request is implemented, including Route Handlers and Server Actions.
+When choosing a data owner, integrating RSC with React Query, or changing URL/write refresh coordination, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md). Framework mechanisms come from the installed Next.js docs; shell and prefetch optimization use the official workflows linked there. Before adding or changing a backend request, query/mutation options factory, or feature public request entry, read [data-fetching-api.md](data-fetching-api.md) for request configuration, credential setup, and factory contracts. This applies wherever the request is implemented, including Route Handlers and Server Actions. Each rule here has a runnable reference listed in the [Data demo](../../.agents/skills/next-data-flow/demos.md).
 
 ## Transport
 

@@ -28,6 +28,13 @@ For the combined path, adapt expected action failures as [React Query integratio
 
 When only the browser can perform the write, use a client mutation and coordinate the server-owned displays after success. `router.refresh()` requests the current route again but leaves server caches reusable; cached reads also need an authorized invalidation path. If that path is unavailable, revisit the affected view's owner or cache policy.
 
+Optimistic updates follow the owner of the displayed value:
+
+- **Server Component**: call the Server Action inside a transition and set the value with `useOptimistic`. The optimistic value lasts until the transition ends, so a failure falls back to the server's value without rollback code. Catch the action's rejection inside the transition and give feature feedback; an uncaught rejection reaches the nearest error boundary.
+- **React Query**: in the factory's `onMutate`, cancel the affected queries, snapshot them, and write the new value into every displayed copy; restore the snapshot in `onError` and invalidate in `onSettled`. Failure feedback stays with the global toast.
+
+When both owners display the value, combine the React Query path with a factory `mutationFn` that calls the Server Action.
+
 ## Server invalidation and refresh
 
 Read `node_modules/next/dist/docs/01-app/01-getting-started/09-revalidating.md` and the relevant `updateTag`, `revalidatePath`, `revalidateTag`, `refresh`, or `use-router` API page under `03-api-reference/04-functions/`. Choose according to the written data, cache tags/paths, and required freshness. Also read the [Server Action invalidation correction](framework-notes.md#server-action-invalidation) before relying on what an action response refreshes or which client prefetches it invalidates.

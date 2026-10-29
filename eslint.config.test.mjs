@@ -205,6 +205,23 @@ addCase("根目录反向依赖仍然禁止", {
   source: "@/lib/CASE",
   rule: "import/no-restricted-paths",
 });
+addCase("e2e 不能相对导入应用代码", {
+  from: "e2e/CASE.spec.ts",
+  to: "lib/CASE.ts",
+  source: "../lib/CASE",
+  rule: "import/no-restricted-paths",
+});
+addCase("e2e 不能通过别名导入 feature 入口", {
+  from: "e2e/CASE.spec.ts",
+  to: "features/CASE/index.ts",
+  source: "@/features/CASE",
+  rule: "import/no-restricted-paths",
+});
+addCase("e2e 内部可以相对导入辅助模块", {
+  from: "e2e/CASE.spec.ts",
+  to: "e2e/CASE-helper.ts",
+  source: "./CASE-helper",
+});
 addCase("feature 内部反向依赖仍然禁止", {
   from: "features/CASE/hooks/main.ts",
   to: "features/CASE/components/value.ts",

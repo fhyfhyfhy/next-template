@@ -31,6 +31,7 @@ Interactive Client Components can display server-owned props or promises. Server
 - Follow [data-fetching.md](../../../.claude/rules/data-fetching.md) for data consumption, error feedback, and session isolation; follow [data-fetching-api.md](../../../.claude/rules/data-fetching-api.md) for request configuration, credentials, options factories, and feature public entries. Adapt official examples to these contracts.
 - For browser credential readiness, server prefetch, hydration, or a Server Action called by a mutation, read [React Query integration](react-query-integration.md).
 - For URL changes, writes, or session changes, read [Refresh coordination](refresh.md).
+- Before implementing one of these patterns, read its runnable reference in the [Data demo](demos.md): code and e2e spec per scenario.
 
 ## Framework guidance
 

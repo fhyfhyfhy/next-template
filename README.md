@@ -9,13 +9,22 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the Demo index at `/demos`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Demo
+
+`/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it:
+
+- **UI demo** (`/demos/ui`): the design-system components; see [UI demo examples](#ui-demo-examples).
+- **Data demo** (the other `/demos` pages): a small task app that exercises the data-fetching rules against the Mock API. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.
+
+The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node process ([ADR 0001](docs/adr/0001-demos-use-standalone-mock-api.md)). `pnpm dev`, `pnpm build`, and `pnpm start` go through `scripts/run-next.mjs`, which starts it on `127.0.0.1:4010` and points `NEXT_PUBLIC_API_BASE_URL` at it whenever the project has no backend URL configured. Once a real backend is configured, the Mock API stays off and the Data demo pages show a notice instead of sending requests. `pnpm demos` runs the dev server against the Mock API regardless; during that run every page, including the project's own features, talks to the Mock API.
+
+`pnpm test:e2e` runs the Data demo's Playwright specs in `e2e/` against a production build with the Mock API. It reuses a server already listening on port 3000, so stop `pnpm demos` before the final run. Install the browser once with `pnpm exec playwright install chromium`.
 
 ## Backend API
 
-Set `NEXT_PUBLIC_API_BASE_URL` to the backend's base URL, for example in `.env.local`. Without it, `fetchApi` requests same-origin paths, which work only in the browser; prefetching in Server Components needs an absolute URL.
+Set `NEXT_PUBLIC_API_BASE_URL` to the backend's base URL, for example in `.env.local`. While it is unset, the run scripts point it at the Mock API (see [Demo](#demo)).
 
 Features call the backend only through `fetchApi`, so fitting the template to a backend touches these files alone:
 
@@ -23,7 +32,7 @@ Features call the backend only through `fetchApi`, so fitting the template to a 
 - `lib/credentials-server.ts` and `lib/credentials-browser.ts`: the signed-in user's credential for requests from the server and from the browser. Both send none as shipped. `package.json` resolves `#credentials` to the right one per environment.
 - `app/providers.tsx`: what a signed-out response does in the browser.
 
-The `setup-data-access` skill (`/setup-data-access` in Claude Code) asks about the backend, makes these changes, and verifies the result in a production build.
+The `setup-data-access` skill (`/setup-data-access` in Claude Code) asks about the backend, makes these changes, keeps the Mock API's response format in step, and verifies the result in a production build.
 
 ## Agent skills
 

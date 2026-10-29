@@ -170,6 +170,12 @@ const eslintConfig = defineConfig([
           zones: [
             ...layerZones(ROOT_LAYERS, "Layers"),
             ...layerZones(FEATURE_LAYERS, "Feature structure"),
+            {
+              target: ["e2e/**"],
+              from: ROOT_LAYERS.flatMap((layer) => layer.files),
+              message:
+                'e2e/ observes the app only through the browser and the Mock API control endpoints, so it imports no application code. See "Where files go" in .claude/rules/architecture.md.',
+            },
           ],
         },
       ],
