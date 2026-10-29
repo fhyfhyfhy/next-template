@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import {
   CreateTaskForm,
+  MOCK_API_RUNNING,
   PageIntro,
   parseTaskListParams,
   TaskList,
@@ -36,6 +37,7 @@ export default function TasksPage({ searchParams }: PageProps<"/demos/tasks">) {
       </Suspense>
       <Suspense fallback={<TaskListSkeleton />}>
         {searchParams.then((query) => {
+          if (!MOCK_API_RUNNING) return null;
           const params = parseTaskListParams(query);
           return (
             <TaskList

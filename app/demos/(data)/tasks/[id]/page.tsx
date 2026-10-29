@@ -6,6 +6,7 @@ import {
   getCommentsQueryOptions,
   getTaskQueryOptions,
   isTaskNotFound,
+  MOCK_API_RUNNING,
   TaskDetail,
   TaskDetailSkeleton,
 } from "@/features/demo-task";
@@ -21,6 +22,7 @@ import {
 export async function generateMetadata({
   params,
 }: PageProps<"/demos/tasks/[id]">): Promise<Metadata> {
+  if (!MOCK_API_RUNNING) return { title: "Data demo" };
   const { id } = await params;
   // 和页面里的 prefetch 是同一个 GET，一次渲染内只请求一次（fetchApi 不传 signal 时参与去重）。
   const task = await getTask(id).catch((error: unknown) => {
@@ -45,6 +47,7 @@ export default function TaskDetailPage({
 }
 
 async function TaskDetailHydration({ id }: { id: string }) {
+  if (!MOCK_API_RUNNING) return null;
   const queryClient = new QueryClient();
   try {
     await queryClient.query(getTaskQueryOptions(id));

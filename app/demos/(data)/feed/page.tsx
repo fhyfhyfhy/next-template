@@ -6,6 +6,7 @@ import {
   FeedGrid,
   FeedSkeleton,
   getFeedInfiniteQueryOptions,
+  MOCK_API_RUNNING,
   PageIntro,
 } from "@/features/demo-task";
 import {
@@ -45,6 +46,7 @@ export default function FeedPage() {
 }
 
 async function FeedHydration() {
+  if (!MOCK_API_RUNNING) return null;
   const { page, fetchedAt } = await getCachedFeedSnapshot();
   // dehydrate() 预渲染时会读当前时间；这里按缓存快照的时间戳手动构造 hydration state。
   const state = buildHydrationState(

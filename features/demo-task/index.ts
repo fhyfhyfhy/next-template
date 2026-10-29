@@ -1,3 +1,4 @@
+export { MOCK_API_RUNNING } from "./constants/mock-api";
 export { DataDemoHeader } from "./components/data-demo-header";
 export { MockApiNotice } from "./components/mock-api-notice";
 export { MockResetButton } from "./components/mock-reset-button";
