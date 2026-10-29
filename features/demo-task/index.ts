@@ -7,6 +7,7 @@ export { TaskList } from "./components/task-list";
 export { TaskListSkeleton } from "./components/task-list-skeleton";
 export { TaskListToolbar } from "./components/task-list-toolbar";
 export { TaskDetail } from "./components/task-detail";
+export { TaskDetailSkeleton } from "./components/task-detail-skeleton";
 export { TaskSearch } from "./components/task-search";
 export { RecentTasks } from "./components/recent-tasks";
 export { FaultPanel } from "./components/fault-panel";

@@ -9,12 +9,19 @@ const GLOBAL_ERROR_TOAST = "请求失败，请稍后重试";
 const comments = (page: Page) =>
   page.getByRole("list", { name: "评论" }).getByRole("listitem");
 
-test.describe("首屏和 404", () => {
-  test("不存在的任务返回 404 状态码和提示页", async ({ page }) => {
-    const response = await page.goto("/demos/tasks/task-404");
+async function expectTaskNotFound(page: Page) {
+  // 静态 shell 先以 200 发出，状态码改不了；notFound() 流式送达提示页，并加上 noindex 防止被索引。
+  await expect(page.getByRole("heading", { name: "任务不存在" })).toBeVisible();
+  await expect(
+    page.locator('meta[name="robots"][content*="noindex"]'),
+  ).not.toHaveCount(0);
+}
 
-    expect(response?.status()).toBe(404);
-    await expect(page.getByText("任务不存在")).toBeVisible();
+test.describe("首屏和 404", () => {
+  test("不存在的任务显示提示页，并标记 noindex", async ({ page }) => {
+    await page.goto("/demos/tasks/task-404");
+
+    await expectTaskNotFound(page);
   });
 
   test("标题进 metadata，服务端渲染时详情接口只请求一次", async ({
@@ -161,7 +168,7 @@ test.describe("写入", () => {
     await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(0);
   });
 
-  test("删除任务后回到列表，任务不再出现，详情返回 404", async ({ page }) => {
+  test("删除任务后回到列表，任务不再出现，详情显示不存在", async ({ page }) => {
     await page.goto("/demos/tasks/task-02");
     await page.getByRole("button", { name: "删除任务" }).click();
     await page
@@ -173,8 +180,8 @@ test.describe("写入", () => {
     await expect(page.getByRole("link", { name: "坐着的狐狸 v2" })).toHaveCount(
       0,
     );
-    const response = await page.goto("/demos/tasks/task-02");
-    expect(response?.status()).toBe(404);
+    await page.goto("/demos/tasks/task-02");
+    await expectTaskNotFound(page);
   });
 
   test("重命名表单从当前数据开始编辑，撞名时在字段上提示", async ({ page }) => {

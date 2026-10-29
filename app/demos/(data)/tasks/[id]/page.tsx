@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import {
   getCommentsQueryOptions,
   getTaskQueryOptions,
   isTaskNotFound,
   TaskDetail,
+  TaskDetailSkeleton,
 } from "@/features/demo-task";
 import { getTask, omitFunctionMeta } from "@/features/demo-task/server";
 import {
@@ -15,10 +17,6 @@ import {
   noop,
   QueryClient,
 } from "@/lib/react-query";
-
-// 不存在的任务要返回 404 状态码：notFound() 必须在响应开始流式输出之前调用。静态 shell 或 Suspense 的
-// fallback 一旦发出，状态码就固定成 200，所以这个页面不生成静态 shell，在顶层等到任务确认存在后才输出。
-export const instant = false;
 
 export async function generateMetadata({
   params,
@@ -32,10 +30,21 @@ export async function generateMetadata({
   return { title: `${task?.name ?? "任务不存在"} · Data demo` };
 }
 
-export default async function TaskDetailPage({
+// page 保持同步，只在 Suspense 里读 params：骨架屏进静态 shell，导航时立即显示。代价是不存在的任务
+// 拿不到 404 状态码：shell 先以 200 发出，notFound() 之后流式送达 not-found 页面并加上 noindex。
+export default function TaskDetailPage({
   params,
 }: PageProps<"/demos/tasks/[id]">) {
-  const { id } = await params;
+  return (
+    <Suspense fallback={<TaskDetailSkeleton />}>
+      {params.then(({ id }) => (
+        <TaskDetailHydration id={id} />
+      ))}
+    </Suspense>
+  );
+}
+
+async function TaskDetailHydration({ id }: { id: string }) {
   const queryClient = new QueryClient();
   try {
     await queryClient.query(getTaskQueryOptions(id));
