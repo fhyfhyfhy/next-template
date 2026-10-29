@@ -2,7 +2,7 @@
 
 // 源码内容变化也要更新此模块，让开发服务器重新读取展示和复制用的源码。
 export const exampleSourceRevision =
-  "b22d8b20ca4405e52566dcd9f6279d48ea27bf88275ec78b75e8dfc7e5846aba";
+  "20e481dc8fc32537f2b575f2fdbc250ad1347c149854b412a2b9adc32dd70c1f";
 
 export const exampleFiles = {
   button: [
