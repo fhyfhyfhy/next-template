@@ -1,4 +1,4 @@
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
 import pluginQuery from "@tanstack/eslint-plugin-query";
@@ -304,6 +304,49 @@ const rootImportsRule = {
   },
 };
 
+const packageImportsRule = {
+  meta: {
+    type: "problem",
+    schema: [],
+    messages: {
+      unsupported:
+        "Only #credentials is supported as a package import. Use @/ or relative paths for other project modules.",
+      owner:
+        "Only lib/fetch.ts may import #credentials. Backend consumers use fetchApi from @/lib/fetch.",
+      mapping:
+        'Keep package.json imports["#credentials"] as { "react-server": "./lib/credentials-server.ts", "default": "./lib/credentials-browser.ts" }, in that order. Other conditional targets are not covered by the architecture checks.',
+    },
+  },
+  create(context) {
+    return importVisitors((source) => {
+      const specifier = importSpecifier(source);
+      if (!specifier?.startsWith("#")) return;
+      if (specifier !== "#credentials") {
+        context.report({ node: source, messageId: "unsupported" });
+        return;
+      }
+      if (context.filename !== resolve(PROJECT_ROOT, "lib/fetch.ts")) {
+        context.report({ node: source, messageId: "owner" });
+        return;
+      }
+
+      const manifest = JSON.parse(
+        readFileSync(resolve(PROJECT_ROOT, "package.json"), "utf8"),
+      );
+      // 条件按键顺序匹配：default 放在前面会吞掉 react-server；额外分支也可能绕过架构检查。
+      if (
+        JSON.stringify(manifest.imports?.["#credentials"]) !==
+        JSON.stringify({
+          "react-server": "./lib/credentials-server.ts",
+          default: "./lib/credentials-browser.ts",
+        })
+      ) {
+        context.report({ node: source, messageId: "mapping" });
+      }
+    });
+  },
+};
+
 const reactQueryWrappers = new Set(
   SOURCE_EXTENSIONS.map((extension) =>
     resolve(PROJECT_ROOT, `lib/react-query.${extension}`),
@@ -475,6 +518,7 @@ const eslintConfig = defineConfig([
           "component-imports": componentImportsRule,
           "component-entry": componentEntryRule,
           "component-exports": componentExportsRule,
+          "package-imports": packageImportsRule,
           "wrapper-imports": wrapperImportsRule,
         },
       },
@@ -495,6 +539,7 @@ const eslintConfig = defineConfig([
       "architecture/no-feature-cycle": "error",
       "architecture/component-imports": "error",
       "architecture/component-entry": "error",
+      "architecture/package-imports": "error",
       "architecture/wrapper-imports": "error",
       "naming/kebab-case": "error",
       "data-fetching/mutation-callbacks": "error",

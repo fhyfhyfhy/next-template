@@ -95,6 +95,12 @@ When a module mixes general behavior with business rules, keep the business part
 
 Architecture checks are configured in [eslint.config.mjs](../../eslint.config.mjs). Feature cycles include type-only dependencies and may exist without file cycles. Run without ESLint's per-file `--cache`, since other files can change a feature's cycle status. Domain ownership and provider requirements are checked during review; directory placement alone does not prove that code is domain-neutral.
 
+### Conditional credential entry
+
+`lib/fetch.ts` uses `#credentials` as an environment boundary: `package.json` selects the server or browser credential adapter. A relative import cannot preserve that selection. The `architecture/package-imports` rule reserves this exception for that caller, verifies the two ordered targets, and rejects other `#` imports. Extend the architecture checks before introducing another conditional project entry.
+
+The project's boundary and feature-cycle resolver follows relative and `@/` imports; it does not build a graph for conditional package imports. The separate layer and file-cycle rules currently resolve `#credentials` through its default browser branch. They do not establish that the `react-server` branch is cycle-free. When changing either credential adapter or its dependencies, check both runtime dependency paths for cycles, including a path back to `lib/fetch.ts`.
+
 ### Component directories
 
 A simple component is a single file. A directory can contain a main component with private subcomponents, or a compound component with several public parts:

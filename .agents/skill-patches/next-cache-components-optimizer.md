@@ -33,18 +33,6 @@ Preserve this project's data ownership and transport constraints and use its bro
  `prefetch = 'partial'` matches, treat those destination segments as adopted
 ````
 
-## Correct the guide section link
-
-The bundled 16.4 guide includes the step number in this heading's anchor.
-
-````diff
-@@ ## D. FIX: apply the documented pattern @@
- URL-specific content in the instant
--UI](https://nextjs.org/docs/app/guides/optimizing-the-static-shell#include-url-specific-content-in-the-instant-ui)
-+UI](https://nextjs.org/docs/app/guides/optimizing-the-static-shell#step-5-include-url-specific-content-in-the-instant-ui)
- and hand off to `next-partial-prefetching-optimizer`.
-````
-
 File: rig-template.md
 
 ````diff
@@ -66,4 +54,18 @@ File: rig-template.md
 +pnpm playwright test tests/static-shell.spec.ts
  ```
  
+````
+
+## Correct the guide section link
+
+The bundled 16.4 guide includes the step number in this heading's anchor.
+
+File: SKILL.md
+
+````diff
+@@ ## D. FIX: apply the documented pattern @@
+ URL-specific content in the instant
+-UI](https://nextjs.org/docs/app/guides/optimizing-the-static-shell#include-url-specific-content-in-the-instant-ui)
++UI](https://nextjs.org/docs/app/guides/optimizing-the-static-shell#step-5-include-url-specific-content-in-the-instant-ui)
+ and hand off to `next-partial-prefetching-optimizer`.
 ````

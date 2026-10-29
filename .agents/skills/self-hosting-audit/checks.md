@@ -1,6 +1,6 @@
 # Checks
 
-Each check names when it applies, what passes, what happens otherwise, how to observe it live, and its source. Doc paths are under `node_modules/next/dist/docs/01-app/`. "Measured" marks a fact observed on 16.4.0 rather than read from the docs.
+Each check names when it applies, what passes, what happens otherwise, how to observe it live, and its source. Doc paths are under `node_modules/next/dist/docs/01-app/`; [SKILL.md](SKILL.md) records the documentation baseline. "Measured" marks a runtime observation from 16.4.0. Re-run the applicable live check on the deployed version before treating that observation as verified there.
 
 ## Inventory
 

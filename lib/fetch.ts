@@ -145,7 +145,6 @@ export async function fetchApi<TSchema extends z.ZodType>({
   if (body !== null && !envelope.success) {
     throw new SchemaValidationError(url, envelope.error);
   }
-  // 空响应体（如 204）和不带 `data` 的信封都按 `null` 校验。
   const result = schema.safeParse(envelope.data?.data ?? null);
   if (!result.success) throw new SchemaValidationError(url, result.error);
   return result.data;

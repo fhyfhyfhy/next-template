@@ -27,6 +27,8 @@ Render server data from its owner: props or a promise from a Server Component, o
 
 `app/providers.tsx` wires the global handler. A query failure shows a toast only when the query already has data: the component keeps showing that data, so the toast is the only sign that the refresh failed. A first load that fails has nothing to show, so the component renders the error instead. A mutation failure shows a generic toast, because the user acted and needs feedback.
 
+Concurrent failures share one generic toast. Keep its ID reserved for global request errors so feature-specific feedback remains separate.
+
 Render a query's states in this order, data first: a failed refresh keeps its data, and checking `error` first would replace data the user can still use.
 
 ```tsx

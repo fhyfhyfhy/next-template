@@ -4,6 +4,7 @@ import {
   cpSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -21,6 +22,7 @@ const componentEntryRule = "architecture/component-entry";
 const componentExportsRule = "architecture/component-exports";
 const wrapperRule = "architecture/wrapper-imports";
 const rootRule = "architecture/root-imports";
+const packageImportsRule = "architecture/package-imports";
 const namingRule = "naming/kebab-case";
 const cases = [];
 const statements = {
@@ -537,6 +539,20 @@ for (const syntax of [
   "require",
   "importEquals",
 ]) {
+  addCase(`${syntax} 不能在 fetchApi 之外使用条件凭证入口`, {
+    from: "lib/CASE.ts",
+    source: "#credentials",
+    syntax,
+    rule: packageImportsRule,
+    messageId: "owner",
+  });
+  addCase(`${syntax} 不能通过未支持的 package import 绕过架构检查`, {
+    from: "app/CASE.ts",
+    source: "#other",
+    syntax,
+    rule: packageImportsRule,
+    messageId: "unsupported",
+  });
   addCase(`${syntax} 禁止业务代码直接引用 React Query 原包`, {
     from: "app/CASE.ts",
     source: "@tanstack/react-query",
@@ -549,6 +565,23 @@ for (const syntax of [
     syntax,
   });
 }
+addCase("fetchApi 可以通过条件入口选择凭证实现", {
+  from: "lib/fetch.ts",
+  to: "lib/credentials-browser.ts",
+  source: "#credentials",
+});
+addCase("fetch 子目录中的同名文件不能使用条件凭证入口", {
+  from: "lib/CASE/fetch.ts",
+  source: "#credentials",
+  rule: packageImportsRule,
+  messageId: "owner",
+});
+addCase("fetch.tsx 不能使用条件凭证入口", {
+  from: "lib/fetch.tsx",
+  source: "#credentials",
+  rule: packageImportsRule,
+  messageId: "owner",
+});
 addCase("React Query 原包的子路径也只能由封装引用", {
   from: "app/CASE.ts",
   source: "@tanstack/react-query/build/modern/index.js",
@@ -1119,6 +1152,85 @@ test("架构依赖和 feature、组件导入约定", async (t) => {
         }
       });
     }
+
+    await t.test("条件凭证入口只接受受支持的映射", async (t) => {
+      const manifestPath = join(fixture, "package.json");
+      const originalManifest = readFileSync(manifestPath, "utf8");
+      const manifest = JSON.parse(originalManifest);
+      const credentialImports = manifest.imports["#credentials"];
+      const filePath = join(fixture, "lib/fetch.ts");
+      try {
+        for (const [name, mapping] of [
+          ["映射缺失", undefined],
+          ["直接映射丢失环境隔离", credentialImports.default],
+          [
+            "server 分支不能指向其他层",
+            {
+              ...credentialImports,
+              "react-server": "./features/account/api/credentials.ts",
+            },
+          ],
+          [
+            "default 分支不能换成其他 lib 文件",
+            { ...credentialImports, default: "./lib/fetch.ts" },
+          ],
+          [
+            "default 不能排在 server 分支之前",
+            {
+              default: credentialImports.default,
+              "react-server": credentialImports["react-server"],
+            },
+          ],
+          [
+            "额外 condition 不能绕过目标限制",
+            {
+              browser: "./features/account/api/credentials.ts",
+              ...credentialImports,
+            },
+          ],
+        ]) {
+          await t.test(name, async () => {
+            writeFileSync(
+              manifestPath,
+              JSON.stringify({
+                ...manifest,
+                imports: { ...manifest.imports, "#credentials": mapping },
+              }),
+              "utf8",
+            );
+            const [result] = await eslint.lintText(
+              statements.import("#credentials"),
+              { filePath },
+            );
+            assert.equal(result.fatalErrorCount, 0);
+            assert.deepEqual(
+              result.messages
+                .filter(({ ruleId }) => ruleId === packageImportsRule)
+                .map(({ messageId }) => messageId),
+              ["mapping"],
+              JSON.stringify(result.messages, null, 2),
+            );
+          });
+        }
+      } finally {
+        writeFileSync(manifestPath, originalManifest, "utf8");
+      }
+      const [restored] = await eslint.lintText(
+        statements.import("#credentials"),
+        { filePath },
+      );
+      assert.deepEqual(restored.messages, []);
+      const [unsupported] = await eslint.lintText(statements.import("#other"), {
+        filePath,
+      });
+      assert.deepEqual(
+        unsupported.messages.map(({ ruleId, messageId }) => ({
+          ruleId,
+          messageId,
+        })),
+        [{ ruleId: packageImportsRule, messageId: "unsupported" }],
+      );
+    });
   } finally {
     process.chdir(previousCwd);
     rmSync(fixture, { recursive: true, force: true });
@@ -1187,7 +1299,7 @@ export const values = [local, helper, join, upstream, useState, scoped, styles];
   }
 });
 
-test("TanStack Query 规则识别经 @/lib/react-query 引入的 API", async (t) => {
+test("数据访问规则覆盖 React Query 封装、mutation 回调和请求库", async (t) => {
   const project = dirname(fileURLToPath(import.meta.url));
   // import/no-cycle 遍历依赖图时要求被检查的文件真实存在，lintText 的虚拟文件会让它崩溃。
   const eslint = new ESLint({

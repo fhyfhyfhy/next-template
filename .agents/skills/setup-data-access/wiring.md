@@ -1,6 +1,6 @@
 # Wiring
 
-The code each choice in SKILL.md needs. Code comments follow the repo's language rule. The facts marked as measured were checked on `next` 16.4.0 with `cacheComponents` on; on another version, confirm them with the probe in [Verify](#verify) before relying on them, and correct this file where they differ.
+The code each choice in SKILL.md needs. Code comments follow the repo's language rule. Next.js guidance was checked against the installed 16.4.3 docs. Facts marked as measured remain runtime observations from 16.4.0 with `cacheComponents` on; confirm them on the project's version with the probe in [Verify](#verify) before relying on them, and correct this file where they differ.
 
 ## Backend
 
@@ -130,7 +130,7 @@ export async function credentialHeaders(): Promise<Record<string, string>> {
 
   Match the condition to how the backend signals it, such as `error.code === SIGNED_OUT_CODE` for a code on a 2xx.
 
-- **Server**: a check in the Data Access Layer, such as `requireUser()`, redirects with `redirect()` before the page requests user data. It reads the session, so under Cache Components it runs inside `<Suspense>` or `use cache: private` (`node_modules/next/dist/docs/01-app/02-guides/authentication-with-cache-components.md`).
+- **Server**: a check in the Data Access Layer, such as `requireUser()`, redirects with `redirect()` before the page requests user data. It reads the session, so under Cache Components its caller belongs beneath `<Suspense>`, including when the session helper uses `use cache: private` (`node_modules/next/dist/docs/01-app/02-guides/authentication-with-cache-components.md`).
 - **Refresh by this app**: keep one in-flight refresh promise that concurrent requests share, and retry a 401 once after it settles. Cover both in `lib/fetch.test.mjs`.
 
 ## Verify

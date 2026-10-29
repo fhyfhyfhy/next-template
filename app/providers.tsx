@@ -24,7 +24,9 @@ function handleRequestError(
     typeof suppressErrorToast === "function"
       ? suppressErrorToast(error)
       : suppressErrorToast;
-  if (!suppressed) toast.error("请求失败，请稍后重试");
+  if (!suppressed) {
+    toast.error("请求失败，请稍后重试", { id: "request-error" });
+  }
 }
 
 function makeQueryClient() {
@@ -32,7 +34,10 @@ function makeQueryClient() {
     onRequestError: handleRequestError,
     defaultOptions: {
       // 服务端预取的数据 hydrate 后在这段时间内不会被重新请求。
-      queries: { staleTime: 60 * 1000, retry: shouldRetryRequest },
+      queries: {
+        staleTime: 60 * 1000,
+        retry: environmentManager.isServer() ? false : shouldRetryRequest,
+      },
     },
   });
 }
