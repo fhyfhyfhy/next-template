@@ -10,7 +10,7 @@ import { favoriteTasksQueryOptions } from "../api/update-task-favorite";
 export function FavoritesPanel() {
   const favorites = useQuery(favoriteTasksQueryOptions());
   return (
-    <section className="rounded-panel border border-border bg-card p-4">
+    <section className="self-start rounded-panel border border-border bg-card p-4">
       <h2 className="mb-3 text-sm font-medium">我的收藏</h2>
       {favorites.data ? (
         favorites.data.items.length === 0 ? (
