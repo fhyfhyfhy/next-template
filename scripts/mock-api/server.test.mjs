@@ -579,6 +579,25 @@ test("重置时不传 paused 就保持当前的暂停状态", async () => {
   }
 });
 
+test("请求记录列出重置以来每次业务请求匹配的路由，不含控制接口", async () => {
+  await request("GET", "/demo/tasks/task-01");
+  await request("GET", "/demo/tasks/task-01/comments");
+  await request("GET", "/demo/tasks/task-02");
+
+  const { requests } = await control("GET", "/__mock/requests");
+
+  assert.deepEqual(
+    requests.map(({ method, path, url }) => [method, path, url]),
+    [
+      ["GET", "/demo/tasks/:id", "/demo/tasks/task-01"],
+      ["GET", "/demo/tasks/:id/comments", "/demo/tasks/task-01/comments"],
+      ["GET", "/demo/tasks/:id", "/demo/tasks/task-02"],
+    ],
+  );
+  await control("POST", "/__mock/reset", { paused: true });
+  assert.deepEqual((await control("GET", "/__mock/requests")).requests, []);
+});
+
 test("任务详情不存在时返回 404", async () => {
   const { status, body } = await request("GET", "/demo/tasks/task-404");
   assert.equal(status, 404);

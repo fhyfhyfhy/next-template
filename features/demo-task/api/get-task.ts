@@ -46,9 +46,12 @@ export const getTaskQueryOptions = (id: string) =>
   queryOptions({
     queryKey: ["demo-task", "task", "detail", id],
     queryFn: () => getTask(id),
-    // 任务在 pending、running 时会自己推进，用户停留在页面上也要看到进度；到终态后停止轮询。
+    // 任务在 pending、running 时会自己推进，用户停留在页面上也要看到进度；到终态或任务已被删除后停止轮询。
     refetchInterval: (query) =>
-      isTaskActive(query.state.data?.status) ? POLL_INTERVAL_MS : false,
+      isTaskActive(query.state.data?.status) &&
+      !isTaskNotFound(query.state.error)
+        ? POLL_INTERVAL_MS
+        : false,
     meta: {
       // 任务在别处被删除后 refetch 得到 404，详情页显示“已删除”，不再弹通用提示。
       suppressErrorToast: isTaskNotFound,

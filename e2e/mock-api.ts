@@ -42,6 +42,15 @@ export class MockApi {
     }
   }
 
+  /** 重置以来 Mock API 收到的业务请求，`path` 是匹配的路由模式，比如 `/demo/tasks/:id`。 */
+  async requests(path?: string): Promise<{ method: string; url: string }[]> {
+    const { requests } = await this.control("GET", "/__mock/requests");
+    return requests.filter(
+      (request: { path: string }) =>
+        path === undefined || request.path === path,
+    );
+  }
+
   /** 直接调用业务接口准备数据，绕过页面。 */
   async call(method: string, path: string, data?: unknown) {
     return this.control(method, path, data);

@@ -25,18 +25,17 @@ export async function startMockApi({
     if (!clock.paused) store.advanceAll();
   }, stepIntervalMs);
   timer.unref();
-  const faults = createFaults();
-  // 端口在 listen 之后才确定，路由要用它拼出封面图的绝对地址。
-  let routes = [];
+  // routes 在 listen 之后才创建：端口确定后才能拼出封面图的绝对地址。
+  const context = { routes: [], faults: createFaults(), requestLog: [] };
   const server = createServer((req, res) => {
-    void handle(routes, faults, req, res);
+    void handle(context, req, res);
   });
   await new Promise((resolveListen, reject) => {
     server.once("error", reject);
     server.listen(port, "127.0.0.1", resolveListen);
   });
   const url = `http://127.0.0.1:${server.address().port}`;
-  routes = createRoutes(store, clock, faults, url);
+  context.routes = createRoutes(store, clock, context, url);
   return {
     url,
     close: () =>
@@ -48,7 +47,7 @@ export async function startMockApi({
   };
 }
 
-function createRoutes(store, clock, faults, publicUrl) {
+function createRoutes(store, clock, { faults, requestLog }, publicUrl) {
   const wireTask = (task) => toWireTask(task, publicUrl);
   return [
     route("GET", "/demo/tasks", ({ query }) =>
@@ -147,9 +146,12 @@ function createRoutes(store, clock, faults, publicUrl) {
     route("POST", "/__mock/reset", ({ body }) => {
       store.reset();
       faults.clear();
+      requestLog.length = 0;
       if (typeof body?.paused === "boolean") clock.paused = body.paused;
       return success(null);
     }),
+    // e2e 用它确认请求次数，比如服务端渲染时同一个接口只请求一次、hydration 后浏览器没有重复请求。
+    route("GET", "/__mock/requests", () => success({ requests: requestLog })),
     route("GET", "/__mock/faults", () => success({ faults: faults.list() })),
     route("PUT", "/__mock/faults", ({ body }) => {
       faults.replace(body?.faults);
@@ -190,7 +192,7 @@ function route(method, pattern, handler) {
   };
 }
 
-async function handle(routes, faults, req, res) {
+async function handle({ routes, faults, requestLog }, req, res) {
   setCorsHeaders(req, res);
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
@@ -201,6 +203,14 @@ async function handle(routes, faults, req, res) {
   let response;
   try {
     const matched = findRoute(routes, req.method, url.pathname);
+    if (matched?.route.pattern.startsWith("/demo/")) {
+      requestLog.push({
+        method: req.method,
+        path: matched.route.pattern,
+        url: `${url.pathname}${url.search}`,
+        at: Date.now(),
+      });
+    }
     const fault = matched && faults.take(req.method, matched.route.pattern);
     if (fault?.latencyMs) {
       await new Promise((resolveDelay) =>
