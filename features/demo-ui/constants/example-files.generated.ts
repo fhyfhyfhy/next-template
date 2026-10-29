@@ -2,9 +2,13 @@
 
 // 源码内容变化也要更新此模块，让开发服务器重新读取展示和复制用的源码。
 export const exampleSourceRevision =
-  "20e481dc8fc32537f2b575f2fdbc250ad1347c149854b412a2b9adc32dd70c1f";
+  "0fffa93dd206499a763b821d03661606dbde59896536227e0097dd8bb76ba404";
 
 export const exampleFiles = {
+  badge: [
+    { id: "basic", filename: "basic.example.tsx" },
+    { id: "link", filename: "link.example.tsx" },
+  ],
   button: [
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
@@ -24,12 +28,17 @@ export const exampleFiles = {
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
   ],
+  progress: [
+    { id: "basic", filename: "basic.example.tsx" },
+    { id: "indeterminate", filename: "indeterminate.example.tsx" },
+  ],
   select: [
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
     { id: "long-labels", filename: "long-labels.example.tsx" },
     { id: "sizes", filename: "sizes.example.tsx" },
   ],
+  skeleton: [{ id: "basic", filename: "basic.example.tsx" }],
   switch: [
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },

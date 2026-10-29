@@ -2,6 +2,11 @@
 
 export const catalog = [
   {
+    id: "badge",
+    title: "Badge",
+    description: "A small label for a status or category.",
+  },
+  {
     id: "button",
     title: "Button",
     description:
@@ -23,10 +28,20 @@ export const catalog = [
     description: "A native input element that automatically works with Field.",
   },
   {
+    id: "progress",
+    title: "Progress",
+    description: "Displays the status of a task that takes a long time.",
+  },
+  {
     id: "select",
     title: "Select",
     description:
       "A common form component for choosing a predefined value in a dropdown menu.",
+  },
+  {
+    id: "skeleton",
+    title: "Skeleton",
+    description: "A placeholder shown while content is loading.",
   },
   {
     id: "switch",
