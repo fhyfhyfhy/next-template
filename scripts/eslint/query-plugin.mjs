@@ -39,3 +39,36 @@ function wrapListeners(listeners) {
     },
   };
 }
+
+const MUTATION_CALLBACKS = new Set([
+  "onMutate",
+  "onSuccess",
+  "onError",
+  "onSettled",
+]);
+
+/** 阻止 useMutation 的回调覆盖 mutationOptions 工厂里的回调，否则工厂负责的缓存更新会丢失。 */
+export const mutationCallbacksRule = {
+  meta: {
+    type: "problem",
+    schema: [],
+    messages: {
+      callback:
+        "Keep {{name}} out of useMutation: it replaces the mutationOptions factory's callback and the cache updates in it. Keep cache updates and onMutate in the factory; put this caller's onSuccess, onError, or onSettled reaction in mutate(variables, { ... }).",
+    },
+  },
+  create(context) {
+    return {
+      'CallExpression[callee.name="useMutation"] > ObjectExpression > Property'(
+        node,
+      ) {
+        const name = node.computed
+          ? undefined
+          : (node.key.name ?? node.key.value);
+        if (MUTATION_CALLBACKS.has(name)) {
+          context.report({ node, messageId: "callback", data: { name } });
+        }
+      },
+    };
+  },
+};
