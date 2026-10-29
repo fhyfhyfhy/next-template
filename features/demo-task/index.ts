@@ -8,6 +8,7 @@ export { TaskListSkeleton } from "./components/task-list-skeleton";
 export { TaskListToolbar } from "./components/task-list-toolbar";
 export { TaskDetail } from "./components/task-detail";
 export { TaskSearch } from "./components/task-search";
+export { RecentTasks } from "./components/recent-tasks";
 export { FavoritesPanel } from "./components/favorites-panel";
 export { FeedGrid } from "./components/feed-grid";
 export { FeedSkeleton } from "./components/feed-skeleton";
