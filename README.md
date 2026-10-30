@@ -30,7 +30,7 @@ The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node 
 
 ## Tests
 
-`pnpm test` runs the unit tests with Vitest: every `*.test.*` file, kept next to the code it tests. `vitest.config.ts` resolves `@/` like `tsconfig.json`.
+`pnpm test` runs the unit tests with Vitest: every `*.test.*` file, kept next to the code it tests. `vitest.config.mts` resolves `@/` like `tsconfig.json`.
 
 End-to-end specs run with Playwright in two sets, each against its own production build and port, so they can run side by side and alongside `pnpm dev`. Install the browser once with `pnpm exec playwright install chromium`.
 
