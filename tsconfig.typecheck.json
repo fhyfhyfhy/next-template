@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  // pnpm typecheck 只读 next typegen 刚生成的 .next/types。.next/dev 和 .next-demo 里的路由类型由
+  // next dev 和 demo:* 各自生成，删改路由后在它们重跑前一直过期，tsc 读到就报 validator.ts 找不到页面。
+  "exclude": ["node_modules", ".next/dev", ".next-demo"]
+}

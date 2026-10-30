@@ -26,7 +26,7 @@ The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node 
 
 `pnpm check` runs `format:check`, `lint`, `typecheck`, and `test` in that order and stops at the first failure. The e2e sets run on their own (see [Tests](#tests)).
 
-`pnpm typecheck` runs `next typegen` before `tsc --noEmit`, because helpers such as `PageProps<"/demos/tasks">` come from the route types Next generates. `tsc` also reads the route types that `next dev` and the `demo:` scripts generate in `.next/dev` and `.next-demo`, which `typecheck` leaves alone. After a route is removed or renamed, a "Cannot find module" error in one of their `validator.ts` files means that copy is stale: rerun the script that made it, or delete the directory.
+`pnpm typecheck` runs `next typegen` before `tsc --noEmit`, because helpers such as `PageProps<"/demos/tasks">` come from the route types Next generates. It checks with `tsconfig.typecheck.json`, which reads only the copy `next typegen` just wrote and leaves out the copies that `next dev` and the `demo:` scripts keep in `.next/dev` and `.next-demo`: after a route is removed or renamed, those stay stale until their script runs again.
 
 ## Tests
 
