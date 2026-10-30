@@ -22,6 +22,12 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `demo:` 
 
 The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node process ([ADR 0001](docs/adr/0001-demos-use-standalone-mock-api.md)). The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo:start`: they start the Mock API on `127.0.0.1:4010` and point `NEXT_PUBLIC_API_BASE_URL` at it, overriding the project's backend URL, so during those runs every page, including the project's own features, talks to the Mock API. Their build output goes to `.next-demo`, leaving the project's `.next` alone. `pnpm dev`, `pnpm build`, and `pnpm start` never start the Mock API; under them the Data demo pages show a notice instead of sending requests. The Data demo's e2e specs are described under [Tests](#tests).
 
+## Checks
+
+`pnpm check` runs `format:check`, `lint`, `typecheck`, and `test` in that order and stops at the first failure. The e2e sets run on their own (see [Tests](#tests)).
+
+`pnpm typecheck` runs `next typegen` before `tsc --noEmit`, because helpers such as `PageProps<"/demos/tasks">` come from the route types Next generates. `tsc` also reads the route types that `next dev` and the `demo:` scripts generate in `.next/dev` and `.next-demo`, which `typecheck` leaves alone. After a route is removed or renamed, a "Cannot find module" error in one of their `validator.ts` files means that copy is stale: rerun the script that made it, or delete the directory.
+
 ## Tests
 
 `pnpm test` runs the unit tests with Vitest: every `*.test.*` file, kept next to the code it tests. `vitest.config.ts` resolves `@/` like `tsconfig.json`.
