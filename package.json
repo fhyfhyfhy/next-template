@@ -20,6 +20,7 @@
     "lint": "eslint .",
     "test": "node --test",
     "test:e2e": "playwright test",
+    "demo:test:e2e": "playwright test --config playwright.demo.config.ts",
     "generate:examples": "node scripts/demo-ui/index-generator.mjs"
   },
   "dependencies": {

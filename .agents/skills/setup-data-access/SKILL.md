@@ -80,7 +80,7 @@ Let them edit before writing.
 
 ### 5. Verify
 
-Follow [wiring.md § Verify](wiring.md#verify). Done when each kind of caller was observed sending the credential the confirmed answers call for, the signed-out behavior was observed in the browser, the probe is deleted, and `pnpm lint`, `pnpm test`, `pnpm build`, and `pnpm test:e2e` (the Data demo against the Mock API) then pass.
+Follow [wiring.md § Verify](wiring.md#verify). Done when each kind of caller was observed sending the credential the confirmed answers call for, the signed-out behavior was observed in the browser, the probe is deleted, and `pnpm lint`, `pnpm test`, `pnpm build`, and `pnpm demo:test:e2e` (the Data demo against the Mock API) then pass.
 
 ### 6. Report
 
