@@ -1,3 +1,8 @@
+import {
+  formOptions,
+  type FormValidateAsyncFn,
+  type ServerFormState,
+} from "@tanstack/react-form-nextjs";
 import { z } from "zod";
 
 import { taskNameSchema } from "./get-task";
@@ -13,17 +18,18 @@ export const createTaskInputSchema = z.object({
 });
 export type CreateTaskInput = z.input<typeof createTaskInputSchema>;
 
-export const createTaskDefaultValues: CreateTaskInput = {
-  name: "",
-  prompt: "",
-};
+const defaultValues: CreateTaskInput = { name: "", prompt: "" };
+
+/** 浏览器里的 `useForm` 和服务端的 `createServerValidate` 共用的表单选项。 */
+export const createTaskFormOptions = formOptions({
+  defaultValues,
+  validators: { onChange: createTaskInputSchema },
+});
 
 /**
- * `createTaskAction` 交给 `useActionState` 的状态。失败时 `values` 是提交的值，`fieldErrors` 是服务端的字段错误；
- * 成功时只有 `createdTaskId`，它变化时调用方重置表单。
+ * `createTaskAction` 交给 `useActionState` 的状态。失败时是 TanStack Form 的服务端表单状态，表单用 `mergeForm`
+ * 把其中的字段错误合并进来；成功时只有 `createdTaskId`，它变化时调用方重新挂载表单来清空。
  */
-export interface CreateTaskFormState {
-  createdTaskId?: string;
-  values?: CreateTaskInput;
-  fieldErrors?: Partial<Record<keyof CreateTaskInput, string>>;
-}
+export type CreateTaskFormState =
+  | ServerFormState<CreateTaskInput, FormValidateAsyncFn<CreateTaskInput>>
+  | { createdTaskId: string };

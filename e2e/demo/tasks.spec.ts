@@ -96,6 +96,36 @@ test("创建任务后列表立即出现新任务，表单清空", async ({ page 
   await expect(page.getByLabel("名称")).toHaveValue("");
 });
 
+test("JS 还没接管时提交表单，任务照样创建", async ({
+  browser,
+  baseURL,
+  mockApi,
+}) => {
+  // 关掉 JS 模拟 hydration 之前：只有 <form action> 指向 Server Action 时，浏览器的原生提交才会创建任务。
+  const context = await browser.newContext({
+    baseURL,
+    javaScriptEnabled: false,
+  });
+  const page = await context.newPage();
+  const name = "无 JS 创建的任务";
+  await page.goto("/demos/tasks");
+  await page.getByLabel("名称").fill(name);
+  await page.getByLabel("Prompt").fill("一只狐狸");
+  await page.getByRole("button", { name: "创建任务" }).click();
+
+  // 没有 JS 时流式送达的列表替换不掉骨架屏，直接查后端。
+  await expect
+    .poll(async () => {
+      const { items } = await mockApi.call(
+        "GET",
+        `/demo/tasks/search?term=${encodeURIComponent(name)}`,
+      );
+      return items.map((task: { name: string }) => task.name);
+    })
+    .toContain(name);
+  await context.close();
+});
+
 test("创建时名称被占用，错误显示在名称字段下，不弹全局提示", async ({
   page,
 }) => {

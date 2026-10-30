@@ -1,13 +1,13 @@
 "use client";
 
-import { useForm } from "@tanstack/react-form";
-import { startTransition, useActionState } from "react";
+import { mergeForm, useForm, useTransform } from "@tanstack/react-form-nextjs";
+import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import {
-  createTaskDefaultValues,
+  createTaskFormOptions,
   type CreateTaskFormState,
   type CreateTaskInput,
   createTaskInputSchema,
@@ -15,14 +15,20 @@ import {
 import { createTaskAction } from "../api/create-task-action";
 
 /**
- * 创建任务：TanStack Form 在浏览器里校验，`useActionState` 提交给 Server Action。
- * 成功后 `createdTaskId` 变化，用 key 重新挂载表单来清空。
+ * 创建任务：`<form action>` 提交给 Server Action，JS 接管之前的原生提交也能创建；接管之后 TanStack Form
+ * 在浏览器里校验，并把服务端返回的字段错误合并进来。成功后 `createdTaskId` 变化，用 key 重新挂载表单来清空。
  */
 export function CreateTaskForm() {
-  const [state, formAction, isPending] = useActionState(createTaskAction, {});
+  // 初始状态不用包里的 initialFormState：它的 values 是 undefined，被 mergeForm 合并后会清空表单的值。
+  const [state, formAction, isPending] = useActionState(
+    createTaskAction,
+    undefined,
+  );
+  const createdTaskId =
+    state && "createdTaskId" in state ? state.createdTaskId : undefined;
   return (
     <CreateTaskFields
-      key={state.createdTaskId ?? "draft"}
+      key={createdTaskId ?? "draft"}
       state={state}
       formAction={formAction}
       isPending={isPending}
@@ -40,7 +46,7 @@ const fields = [
 }[];
 
 interface CreateTaskFieldsProps {
-  state: CreateTaskFormState;
+  state: CreateTaskFormState | undefined;
   formAction: (formData: FormData) => void;
   isPending: boolean;
 }
@@ -51,37 +57,34 @@ function CreateTaskFields({
   isPending,
 }: CreateTaskFieldsProps) {
   const form = useForm({
-    defaultValues: createTaskDefaultValues,
-    validators: { onChange: createTaskInputSchema },
-    onSubmit: ({ value }) => {
-      const formData = new FormData();
-      formData.set("name", value.name);
-      formData.set("prompt", value.prompt);
-      startTransition(() => formAction(formData));
-    },
+    ...createTaskFormOptions,
+    transform: useTransform(
+      (baseForm) =>
+        mergeForm(baseForm, state && "errorMap" in state ? state : {}),
+      [state],
+    ),
   });
   return (
     <form
+      action={formAction}
       aria-label="创建任务"
       noValidate
       className="mb-8 grid gap-3 rounded-panel border border-border bg-card p-4 sm:grid-cols-[1fr_2fr_auto] sm:items-start"
       onSubmit={(event) => {
-        event.preventDefault();
+        // 浏览器里校验不通过就拦下原生提交，不发请求；handleSubmit 负责把错误显示出来。
+        if (!createTaskInputSchema.safeParse(form.state.values).success) {
+          event.preventDefault();
+        }
         void form.handleSubmit();
       }}
     >
       {fields.map(({ name, label, placeholder }) => (
         <form.Field key={name} name={name}>
           {(field) => {
-            // 服务端的字段错误只对提交时的值有效，用户改了内容就不再显示。
-            const serverError =
-              field.state.value === state.values?.[name]
-                ? state.fieldErrors?.[name]
-                : undefined;
-            const clientError = field.state.meta.isTouched
+            // 浏览器校验的错误和服务端合并进来的字段错误都在 errors 里；服务端的在字段改动后清除。
+            const error = field.state.meta.isTouched
               ? field.state.meta.errors[0]?.message
               : undefined;
-            const error = clientError ?? serverError;
             const errorId = `${field.name}-error`;
             return (
               <div className="space-y-1">
