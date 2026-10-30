@@ -14,6 +14,7 @@ export { TaskSearch } from "./components/task-search";
 export { RecentTasks } from "./components/recent-tasks";
 export { FaultPanel } from "./components/fault-panel";
 export { LabConcurrentFailures } from "./components/lab-concurrent-failures";
+export { LabDraftMode } from "./components/lab-draft-mode";
 export { LabQueryStates } from "./components/lab-query-states";
 export { LabRetry } from "./components/lab-retry";
 export { LabSuspenseReset } from "./components/lab-suspense-reset";

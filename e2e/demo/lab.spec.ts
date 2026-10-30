@@ -126,6 +126,57 @@ test("几个请求同时失败只弹一个提示", async ({ page }) => {
   await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(1);
 });
 
+/** 打开故障实验室并等它接管：故障列表只在浏览器里请求，和 Draft Mode 开关在同一个 Suspense 边界里。 */
+async function openLab(page: Page) {
+  await page.goto("/demos/lab");
+  await expect(
+    section(page, "注入故障").getByText("当前没有故障"),
+  ).toBeVisible();
+}
+
+/** 点开关并等 Server Action 返回：开关先乐观显示新状态，cookie 随 action 的响应才写入。 */
+async function toggleDraftMode(page: Page, checked: boolean) {
+  const draft = section(page, "跳过服务端缓存").getByRole("switch", {
+    name: "Draft Mode",
+  });
+  const saved = page.waitForResponse(
+    (response) => response.request().headers()["next-action"] !== undefined,
+  );
+  await draft.click();
+  await saved;
+  await expect(draft).toBeChecked({ checked });
+}
+
+test("开启 Draft Mode 后跳过服务端缓存，关闭后恢复缓存", async ({
+  page,
+  mockApi,
+}) => {
+  const rows = page
+    .getByRole("list", { name: "任务列表" })
+    .getByRole("listitem");
+  await page.goto("/demos/tasks?status=failed");
+  await expect(rows).toHaveCount(3);
+
+  // 缓存里是改名前的快照；不开 Draft Mode 时重新加载仍显示它（tasks.spec.ts 的服务端缓存用例）。
+  await mockApi.call("PATCH", "/demo/tasks/task-05", { name: "开启后改名" });
+  await openLab(page);
+  await toggleDraftMode(page, true);
+  await page.goto("/demos/tasks?status=failed");
+  await expect(rows.filter({ hasText: "开启后改名" })).toHaveCount(1);
+
+  await openLab(page);
+  await expect(
+    section(page, "跳过服务端缓存").getByRole("switch", { name: "Draft Mode" }),
+  ).toBeChecked();
+  await toggleDraftMode(page, false);
+
+  // Draft Mode 下的读取不写缓存，关闭后读到的还是开启前缓存的快照，之后的改动也要等缓存刷新。
+  await mockApi.call("PATCH", "/demo/tasks/task-05", { name: "关闭后改名" });
+  await page.goto("/demos/tasks?status=failed");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.filter({ hasText: "关闭后改名" })).toHaveCount(0);
+});
+
 test("Suspense query 失败进入错误边界，重置后重试成功", async ({ page }) => {
   const demo = section(page, "错误边界和重置");
 
