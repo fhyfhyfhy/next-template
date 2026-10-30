@@ -1,5 +1,6 @@
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
@@ -394,6 +395,42 @@ const kebabCasePathRule = {
 const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
 
+// Tailwind 默认主题里带色阶的调色板名（red、zinc 等），从安装的 tailwindcss 读取，升级新增调色板时不用手动同步。
+// black、white 没有色阶，不在其中，允许直接用。
+const tailwindPalettes = [
+  ...new Set(
+    Array.from(
+      readFileSync(
+        fileURLToPath(import.meta.resolve("tailwindcss/theme.css")),
+        "utf8",
+      ).matchAll(/--color-([a-z]+)-\d+:/g),
+      ([, name]) => name,
+    ),
+  ),
+];
+
+const restrictedTailwindClasses = [
+  {
+    pattern: `^(?:.*:)?!?[a-z-]+-(?:${tailwindPalettes.join("|")})-\\d+(?:/.+)?!?$`,
+    message:
+      'Use a semantic color token from app/globals.css instead of the Tailwind palette color "$0".',
+  },
+  {
+    // 任意值里的十六进制色值和颜色函数；引用 CSS 变量的写法不受限制。
+    // 任意值用 _ 代替空格，_ 属于 \w，所以边界用显式字符集而不是 \b、\w。
+    pattern:
+      "^.*\\[[^\\]]*(?:#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z-])|(?<![a-zA-Z-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\().*$",
+    message:
+      'Define a color token in app/globals.css instead of the hard-coded color in "$0".',
+  },
+  {
+    // 只需拦任意值：不是任意值、又不在内置或 --radius-* 主题里的圆角 class 由 no-unknown-classes 报出。
+    pattern: "^(?:.*:)?!?rounded(?:-[a-z]{1,2})?-[[(].*$",
+    message:
+      'Use a built-in radius or a --radius-* token from app/globals.css instead of "$0".',
+  },
+];
+
 const eslintConfig = defineConfig([
   ...nextVitals.map((config) =>
     config.name === "next"
@@ -502,6 +539,10 @@ const eslintConfig = defineConfig([
       "better-tailwindcss/no-conflicting-classes": "error",
       "better-tailwindcss/no-deprecated-classes": "error",
       "better-tailwindcss/no-concatenated-classes": "error",
+      "better-tailwindcss/no-restricted-classes": [
+        "error",
+        { restrict: restrictedTailwindClasses },
+      ],
     },
   },
   {
