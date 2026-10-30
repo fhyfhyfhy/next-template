@@ -101,6 +101,7 @@ test("几个请求同时失败只弹一个提示", async ({ page }) => {
   await demo.getByRole("button", { name: "同时刷新（都会失败）" }).click();
 
   await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(1);
+  // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言一段时间内没有冒出第二个提示，等待是断言的一部分。
   await page.waitForTimeout(500);
   await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(1);
 });

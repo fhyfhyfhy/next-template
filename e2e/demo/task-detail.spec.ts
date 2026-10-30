@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 
+import { returnToTab } from "../browser";
 import { expect, resetThroughLab, test } from "./mock-api";
 
 // 任务详情：数据由 React Query 负责（任务会在用户停留时自己推进），首屏由服务端 prefetch。
@@ -61,6 +62,7 @@ test.describe("首屏和 404", () => {
     await mockApi.reset();
     await page.goto("/demos/tasks/task-01");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言 hydration 后一段时间内没有再请求详情，等待是断言的一部分。
     await page.waitForTimeout(1000);
     expect(await mockApi.requests("/demo/tasks/:id")).toHaveLength(1);
   });
@@ -113,10 +115,7 @@ test.describe("任务推进", () => {
     await expect(page.getByText("进行中 4")).toBeVisible();
 
     await mockApi.advance("task-03", 3);
-    // 浏览器切回标签页时在 document 上触发会冒泡的 visibilitychange，React Query 在 window 上监听。
-    await page.evaluate(() =>
-      document.dispatchEvent(new Event("visibilitychange", { bubbles: true })),
-    );
+    await returnToTab(page);
 
     await expect(page.getByText("进行中 3")).toBeVisible({ timeout: 3000 });
   });

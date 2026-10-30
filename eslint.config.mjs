@@ -4,6 +4,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
+import playwright from "eslint-plugin-playwright";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 
 import createArchitecturePlugin, {
@@ -241,6 +242,19 @@ const eslintConfig = defineConfig([
           skipBlankLines: true,
           skipComments: true,
         },
+      ],
+    },
+  },
+  // Playwright 推荐的 e2e 检查，比如不用固定时长的等待、expect.poll 必须 await。
+  {
+    ...playwright.configs["flat/recommended"],
+    files: ["e2e/**"],
+    rules: {
+      ...playwright.configs["flat/recommended"].rules,
+      // 断言写在 expectXxx helper 里的用例也算有断言。
+      "playwright/expect-expect": [
+        "warn",
+        { assertFunctionPatterns: ["^expect[A-Z]"] },
       ],
     },
   },

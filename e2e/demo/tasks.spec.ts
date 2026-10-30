@@ -1,3 +1,5 @@
+import { instant } from "@next/playwright";
+
 import { expect, resetThroughLab, test } from "./mock-api";
 
 // 全部任务页：数据由 Server Component 负责，筛选、排序、分页都在 URL 里。
@@ -52,14 +54,21 @@ test("排序和分页写进 URL，前进后退都显示对应的数据", async (
   await expect(page).toHaveURL("/demos/tasks?sort=name_asc&page=2");
 });
 
-test("列表接口慢时先显示骨架屏，数据流式出现", async ({ page, mockApi }) => {
-  await mockApi.setFaults([
-    { method: "GET", path: "/demo/tasks", latency_ms: 1500 },
-  ]);
-  // 不等 load：流式响应要等列表数据到了才结束，那时骨架屏已经被替换。
-  await page.goto("/demos/tasks?status=done", { waitUntil: "commit" });
+test("列表的骨架屏在静态 shell 里，数据随后流式送达", async ({
+  page,
+  baseURL,
+}) => {
+  // instant() 的作用域里，请求时才能渲染的内容都被扣住，页面停在静态 shell。
+  await instant(
+    page,
+    async () => {
+      await page.goto("/demos/tasks?status=done");
+      await expect(page.getByTestId("task-list-skeleton")).toBeVisible();
+      await expect(rows(page)).toHaveCount(0);
+    },
+    { baseURL },
+  );
 
-  await expect(page.getByTestId("task-list-skeleton")).toBeVisible();
   await expect(rows(page).first()).toBeVisible();
 });
 
@@ -122,11 +131,15 @@ test("收藏立即生效，请求完成前就显示已收藏", async ({ page, mo
   ]);
   await page.goto("/demos/tasks?status=failed");
   const star = rows(page).first().getByRole("button", { name: "收藏" });
+  // 收藏走 Server Action，它返回时后端已经写入。
+  const saved = page.waitForResponse(
+    (response) => response.request().headers()["next-action"] !== undefined,
+  );
 
   await star.click();
   await expect(star).toHaveAttribute("aria-pressed", "true");
 
-  await page.waitForTimeout(1800);
+  await saved;
   await page.reload();
   await expect(
     rows(page).first().getByRole("button", { name: "收藏" }),
@@ -148,14 +161,36 @@ test("收藏失败时星标恢复原状并提示", async ({ page, mockApi }) => 
 
 test("详情链接进入视口后就被预取", async ({ page }) => {
   // 生产构建里 Link 进入视口时预取目标路由；开发服务器不预取。
-  const prefetched = page.waitForRequest(
-    (request) =>
-      request.headers()["next-router-prefetch"] === "1" &&
-      new URL(request.url()).pathname.startsWith("/demos/tasks/task-"),
-  );
+  const prefetchedPaths: string[] = [];
+  page.on("request", (request) => {
+    if (request.headers()["next-router-prefetch"] === "1")
+      prefetchedPaths.push(new URL(request.url()).pathname);
+  });
   await page.goto("/demos/tasks");
 
-  await prefetched;
+  await expect
+    .poll(() =>
+      prefetchedPaths.some((path) => path.startsWith("/demos/tasks/task-")),
+    )
+    .toBe(true);
+});
+
+test("点进详情立即显示预取的骨架屏，详情随后送达", async ({ page }) => {
+  await page.goto("/demos/tasks");
+  const link = rows(page).first().getByRole("link");
+  const name = (await link.textContent()) ?? "";
+
+  // 作用域里只有预取到的部分能渲染：没预取到时导航提交不了，等 URL 会超时。
+  await instant(page, async () => {
+    await link.click();
+    await page.waitForURL(/\/demos\/tasks\/task-/);
+    await expect(page.getByTestId("task-detail-skeleton")).toBeVisible();
+    await expect(page.getByRole("heading", { name, exact: true })).toHaveCount(
+      0,
+    );
+  });
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
 });
 
 test("点进详情后 Back 回到原来的筛选和页码", async ({ page }) => {

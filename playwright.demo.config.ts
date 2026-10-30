@@ -24,6 +24,8 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     command: `pnpm demo:build && pnpm demo:start --port ${PORT}`,
+    // build 时打开 instant() 依赖的测试 API（next.config.ts）。
+    env: { EXPOSE_TESTING_API: "1" },
     url: `${BASE_URL}/demos`,
     reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",
     timeout: 300_000,

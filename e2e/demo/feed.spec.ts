@@ -32,6 +32,7 @@ test("第一页随页面一起送达，浏览器不再请求第一页", async ({
   const requests = feedRequests(page);
   await page.goto("/demos/feed");
   await expect(cards(page)).toHaveCount(6);
+  // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言一段时间内没有请求第一页，等待是断言的一部分。
   await page.waitForTimeout(500);
 
   expect(

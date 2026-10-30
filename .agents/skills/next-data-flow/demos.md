@@ -43,7 +43,7 @@ The Data demo under `/demos` is the runnable reference for this skill and its ru
 | 22 | Function `suppressErrorToast` omitted from dehydrated state | [Hydration](react-query-integration.md#hydration) | `utils/hydration-state.ts`, `api/get-task.ts`, `app/demos/(data)/tasks/[id]/page.tsx` | `e2e/demo/task-detail.spec.ts` |
 | 23 | SSE read with raw `fetch` and `resolveApiUrl` | [Transport](../../../.claude/rules/data-fetching.md#transport) | `api/get-task-logs.ts`, `components/task-logs/` | `e2e/demo/task-detail.spec.ts` |
 | 24 | Binary download with raw `fetch` | [Transport](../../../.claude/rules/data-fetching.md#transport) | `api/get-task-model.ts`, `components/task-detail/task-actions.tsx` | `e2e/demo/task-detail.spec.ts` |
-| 25 | `Link` navigation and Back/Forward restoring URL state | [URL changes](refresh.md#url-changes) | `components/task-list/index.tsx` | `e2e/demo/tasks.spec.ts` |
+| 25 | `Link` prefetch, instant navigation to the prefetched skeleton, and Back/Forward restoring URL state | [URL changes](refresh.md#url-changes) | `components/task-list/index.tsx`, `app/demos/(data)/tasks/[id]/page.tsx` | `e2e/demo/tasks.spec.ts` |
 | 26 | Prerenderable hydration state from a cached snapshot | [Hydration](react-query-integration.md#hydration) | `app/demos/(data)/feed/page.tsx`, `api/cached-reads.ts`, `utils/hydration-state.ts` | `e2e/demo/feed.spec.ts` |
 
 Not covered: session changes and credentialed reads. The Data demo sends `auth: false` only, so the template's credential files stay untouched.

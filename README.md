@@ -37,7 +37,9 @@ End-to-end specs run with Playwright in two sets, each against its own productio
 - `pnpm test:e2e` runs the project's own specs in `e2e/`, skipping `e2e/demo/`, against `pnpm build` and `pnpm start` on port 3998. `e2e/home.spec.ts` is the minimal example to start from.
 - `pnpm demo:test:e2e` runs the Data demo's specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999. When a `demo:` script is already running, later `demo:` scripts, these specs included, share its Mock API instead of starting another; it stops with the script that started it. The specs reset that Mock API before each test and restore it afterwards, so leave the `demo:dev` page alone while they run.
 
-While debugging, `E2E_REUSE_SERVER=1` makes either set reuse a server you started on its port, such as `pnpm demo:dev --port 3999`; specs that depend on production behavior, such as prefetching, fail against a dev server.
+Both sets build with the testing API that `instant()` from `@next/playwright` needs to hold back streamed content: their `webServer` sets `EXPOSE_TESTING_API=1`, which `next.config.ts` reads. Keep that variable out of deployment builds. ESLint applies `eslint-plugin-playwright`'s recommended rules to `e2e/`.
+
+While debugging, `E2E_REUSE_SERVER=1` makes either set reuse a server you started on its port, such as `pnpm demo:dev --port 3999`; specs that depend on production behavior, such as prefetching, fail against a dev server, and a production server needs a build made with `EXPOSE_TESTING_API=1`.
 
 ## Backend API
 
