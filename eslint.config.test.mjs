@@ -1444,6 +1444,76 @@ export function Example() {
       ).toStrictEqual(reported);
     });
   }
+  for (const {
+    name,
+    file,
+    imports = "infiniteQueryOptions, mutationOptions, queryOptions",
+    body,
+    reported,
+  } of [
+    {
+      name: "update- 文件里的 queryOptions 要放回 get- 文件",
+      file: "features/example/api/update-task-favorite.ts",
+      body: "export const favorites = queryOptions({ queryKey: ['a'], queryFn: () => 1 });",
+      reported: ["queryOptions"],
+    },
+    {
+      name: "create- 文件里的 infiniteQueryOptions 要放回 get- 文件",
+      file: "features/example/api/create-task.ts",
+      body: "export const feed = infiniteQueryOptions({ queryKey: ['a'], queryFn: () => 1, initialPageParam: 1, getNextPageParam: () => 2 });",
+      reported: ["infiniteQueryOptions"],
+    },
+    {
+      name: "delete- 文件里改名引入的 queryOptions 也要放回 get- 文件",
+      file: "features/example/api/delete-task.ts",
+      imports: "queryOptions as listOptions",
+      body: "export const list = listOptions({ queryKey: ['a'], queryFn: () => 1 });",
+      reported: ["queryOptions"],
+    },
+    {
+      name: "get- 文件里的 mutationOptions 要放进写入请求的文件",
+      file: "features/example/api/get-tasks.ts",
+      body: "export const save = mutationOptions({ mutationFn: () => Promise.resolve(1) });",
+      reported: ["mutationOptions"],
+    },
+    {
+      name: "get- 文件放 query 工厂不报错",
+      file: "features/example/api/get-tasks.ts",
+      body: "export const list = queryOptions({ queryKey: ['a'], queryFn: () => 1 });",
+      reported: [],
+    },
+    {
+      name: "update- 文件放 mutationOptions 不报错",
+      file: "features/example/api/update-task.ts",
+      body: "export const save = mutationOptions({ mutationFn: () => Promise.resolve(1) });",
+      reported: [],
+    },
+    {
+      name: "领域动词的文件不对应固定的 HTTP 方法，不检查",
+      file: "features/example/api/search-tasks.ts",
+      body: "export const search = queryOptions({ queryKey: ['a'], queryFn: () => 1 });",
+      reported: [],
+    },
+    {
+      name: "api/ 以外的文件不检查",
+      file: "features/example/utils/update-task.ts",
+      body: "export const list = queryOptions({ queryKey: ['a'], queryFn: () => 1 });",
+      reported: [],
+    },
+  ]) {
+    test(name, async () => {
+      const [result] = await eslint.lintText(
+        `import { ${imports} } from "@/lib/react-query";\n\n${body}\n`,
+        { filePath: join(project, file) },
+      );
+      expect(
+        result.messages
+          .filter(({ ruleId }) => ruleId === "data-fetching/api-file-factories")
+          .map(({ message }) => message.split(" ")[0]),
+        JSON.stringify(result.messages, null, 2),
+      ).toStrictEqual(reported);
+    });
+  }
   for (const source of ["axios", "swr", "swr/mutation"]) {
     test(`禁止引入 ${source}`, async () => {
       const [result] = await eslint.lintText(

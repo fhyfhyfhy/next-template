@@ -1,3 +1,5 @@
+import { basename } from "node:path";
+
 const WRAPPER_SOURCE = "@/lib/react-query";
 const PACKAGE_SOURCE = "@tanstack/react-query";
 
@@ -67,6 +69,57 @@ export const mutationCallbacksRule = {
           : (node.key.name ?? node.key.value);
         if (MUTATION_CALLBACKS.has(name)) {
           context.report({ node, messageId: "callback", data: { name } });
+        }
+      },
+    };
+  },
+};
+
+const QUERY_FACTORIES = new Set(["queryOptions", "infiniteQueryOptions"]);
+const WRITE_VERBS = new Set(["create", "update", "delete"]);
+
+/**
+ * api 文件按 HTTP 方法命名、一个文件一个接口（.claude/rules/data-fetching-api.md 的 Files），工厂跟着接口走：
+ * get- 文件不放 mutationOptions，create-、update-、delete- 文件不放 query 工厂。领域动词（retry-、search-）
+ * 不对应固定的方法，不检查。只认从 @/lib/react-query 引入的工厂，包括改名引入。
+ */
+export const apiFileFactoriesRule = {
+  meta: {
+    type: "problem",
+    schema: [],
+    messages: {
+      query:
+        "{{factory}} reads a GET endpoint, but {{file}} holds a write. Move it to the get- file of the endpoint it reads: one endpoint per file, named after its HTTP method (Files in .claude/rules/data-fetching-api.md).",
+      mutation:
+        "mutationOptions builds a write, but {{file}} holds a GET. Move it to the file named after the write's HTTP method, such as update- or create-: one endpoint per file (Files in .claude/rules/data-fetching-api.md).",
+    },
+  },
+  create(context) {
+    const file = basename(context.filename);
+    const verb = file.split("-")[0];
+    if (verb !== "get" && !WRITE_VERBS.has(verb)) return {};
+    // 本地名 → 引入名，覆盖 import { queryOptions as listOptions }。
+    const factories = new Map();
+    return {
+      ImportDeclaration(node) {
+        if (node.source.value !== WRAPPER_SOURCE) return;
+        for (const specifier of node.specifiers) {
+          if (specifier.type !== "ImportSpecifier") continue;
+          const imported = specifier.imported.name ?? specifier.imported.value;
+          factories.set(specifier.local.name, imported);
+        }
+      },
+      CallExpression(node) {
+        if (node.callee.type !== "Identifier") return;
+        const factory = factories.get(node.callee.name);
+        if (verb === "get" && factory === "mutationOptions") {
+          context.report({ node, messageId: "mutation", data: { file } });
+        } else if (verb !== "get" && QUERY_FACTORIES.has(factory)) {
+          context.report({
+            node,
+            messageId: "query",
+            data: { factory, file },
+          });
         }
       },
     };

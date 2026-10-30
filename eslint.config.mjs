@@ -13,6 +13,7 @@ import createArchitecturePlugin, {
 import { SOURCE_EXTENSIONS, SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
 import createNamingPlugin from "./scripts/eslint/naming-plugin.mjs";
 import withWrapperImports, {
+  apiFileFactoriesRule,
   mutationCallbacksRule,
 } from "./scripts/eslint/query-plugin.mjs";
 
@@ -123,6 +124,7 @@ const eslintConfig = defineConfig([
       "data-fetching": {
         rules: {
           "mutation-callbacks": mutationCallbacksRule,
+          "api-file-factories": apiFileFactoriesRule,
         },
       },
     },
@@ -243,6 +245,13 @@ const eslintConfig = defineConfig([
           skipComments: true,
         },
       ],
+    },
+  },
+  {
+    files: ["features/*/api/**"],
+    rules: {
+      // options 工厂跟着文件名里的 HTTP 方法走，读接口的工厂不会混进写接口的文件，反之亦然。
+      "data-fetching/api-file-factories": "error",
     },
   },
   // Playwright 推荐的 e2e 检查，比如不用固定时长的等待、expect.poll 必须 await。
