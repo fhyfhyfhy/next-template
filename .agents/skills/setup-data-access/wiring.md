@@ -36,7 +36,7 @@ export function resolveApiUrl(path: ApiPath): string {
 
 - `API_BASE_URL` takes no `NEXT_PUBLIC_` prefix, since the browser never reads it. Measured: `next start` keeps the destination the build wrote even when `API_BASE_URL` changes, so a deployment sets it at build time, not only at runtime.
 - The browser's request carries its whole `Cookie` header through the rewrite to the backend (measured), unlike the server path in [Credentials](#credentials), which forwards one cookie.
-- Replace `NEXT_PUBLIC_API_BASE_URL` in the project's code, tests, and README, including `resolveApiUrl`'s doc comment. `lib/fetch.test.mjs` runs with no `window`, so it takes the server branch and sets `API_BASE_URL`.
+- Replace `NEXT_PUBLIC_API_BASE_URL` in the project's code, tests, and README, including `resolveApiUrl`'s doc comment and `scripts/run-next.mjs`: the `demo:*` scripts set the base URL variable to the Mock API there, and a stale name leaves `fetchApi` and the rewrite on the real backend while the Data demo believes the Mock API is running. `lib/fetch.test.mjs` runs with no `window`, so it takes the server branch and sets `API_BASE_URL`.
 
 **This app itself**: leave `NEXT_PUBLIC_API_BASE_URL` unset and `lib/fetch.ts` unchanged. `resolveApiUrl` then returns same-origin paths, which reach the Route Handlers from the browser but cannot be fetched on the server, so server code calls the data functions the Route Handlers call instead of `fetchApi`. Those functions check the session through a Data Access Layer (`node_modules/next/dist/docs/01-app/02-guides/authentication.md`), so [Credentials](#credentials) below does not apply.
 
