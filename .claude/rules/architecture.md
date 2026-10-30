@@ -84,7 +84,7 @@ Root shared code provides domain-neutral behavior with stable, reusable interfac
 | --- | --- | --- |
 | `components/` | `DataTable` with caller-defined columns and cells | `TaskTable` with task actions and permissions |
 | `components/ui/` | `Button`, `Dialog` | `DeleteTaskDialog` |
-| `hooks/` | `useMediaQuery`, `useElementSize` | `useCurrentUser`, `useTaskPermissions` |
+| `hooks/` | Domain-neutral hooks that `@mantine/hooks` lacks ([libraries.md](libraries.md)) | `useCurrentUser`, `useTaskPermissions` |
 | `utils/` | `clamp`, `formatBytes` | `calculateOrderTotal`, `canDeleteTask` |
 | `constants/` | Keyboard keys, design tokens | Subscription tiers, task status values |
 | `types/` | Generic pagination contracts | `User`, `Task`, `Order` |

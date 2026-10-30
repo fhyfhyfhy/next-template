@@ -28,5 +28,6 @@ Used directly:
 - Charts: `@tanstack/react-charts`
 - Dates: native `Intl.DateTimeFormat` and `Date`; `dayjs` for what they can't handle
 - IDs: `nanoid`
+- Domain-neutral hooks (debounce, intersection, media queries, element size…): `@mantine/hooks`. Write one in `hooks/` only for behavior it lacks.
 
 For any other need, use the pick-ui-library skill before adding a dependency.

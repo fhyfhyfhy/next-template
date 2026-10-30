@@ -1,6 +1,8 @@
 "use client";
 
-import { useOnVisible } from "@/hooks/use-on-visible";
+import { useIntersection } from "@mantine/hooks";
+import { useEffect, useEffectEvent } from "react";
+
 import { useInfiniteQuery } from "@/lib/react-query";
 
 import { getFeedInfiniteQueryOptions } from "../../api/get-feed";
@@ -9,9 +11,15 @@ import { FeedCard } from "./feed-card";
 /** 作品广场由 React Query 负责：滚到底部时追加下一页。第一页来自服务端缓存的 hydration state。 */
 export function FeedGrid() {
   const feed = useInfiniteQuery(getFeedInfiniteQueryOptions());
-  const loadMoreRef = useOnVisible<HTMLDivElement>(() => {
+  const { ref: loadMoreRef, entry } = useIntersection<HTMLDivElement>();
+  const loadMore = useEffectEvent(() => {
     if (feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
   });
+  // 只随 entry 触发：哨兵进出视口或重新挂载时才加载。改成随 query 状态触发的话，
+  // 加载失败后哨兵还在视口里，就会不停重试。
+  useEffect(() => {
+    if (entry?.isIntersecting) loadMore();
+  }, [entry]);
 
   if (feed.data) {
     const tasks = feed.data.pages.flatMap((page) => page.items);

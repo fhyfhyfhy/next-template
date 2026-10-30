@@ -1,11 +1,11 @@
 "use client";
 
+import { useDebouncedValue } from "@mantine/hooks";
 import { IconSearch } from "@tabler/icons-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Input } from "@/components/ui/input";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { cn } from "@/lib/cn";
 import { keepPreviousData, useQuery } from "@/lib/react-query";
 
@@ -21,7 +21,7 @@ const DEBOUNCE_MS = 300;
 export function TaskSearch() {
   const committed = useSearchParams().get("q") ?? "";
   const [input, setInput] = useState(committed);
-  const debounced = useDebouncedValue(input.trim(), DEBOUNCE_MS);
+  const [debounced] = useDebouncedValue(input.trim(), DEBOUNCE_MS);
 
   useEffect(() => {
     if (debounced === committed) return;

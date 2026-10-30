@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
     // @next/playwright 的 instant() 要用；只由 e2e 的 build 打开（playwright*.config.ts 的 webServer.env），
     // 不要带进面向用户的部署。
     exposeTestingApiInProductionBuild: process.env.EXPOSE_TESTING_API === "1",
+    // @mantine/hooks 不在 Next 默认优化的包里；不加的话 dev 会加载它 barrel 里的全部模块。
+    optimizePackageImports: ["@mantine/hooks"],
   },
 };
 
