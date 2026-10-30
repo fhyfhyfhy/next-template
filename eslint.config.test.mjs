@@ -1218,3 +1218,26 @@ export const values = [local, helper, join, upstream, useState, scoped, styles];
     });
   }
 });
+
+test("Tailwind class 按项目主题和 16px 根字号改成规范写法", async () => {
+  const project = dirname(fileURLToPath(import.meta.url));
+  // h-control-sm 只在 app/globals.css 里定义，用来确认插件读到了项目主题。
+  const source = `export const panel = <div className="h-control-sm lg:max-h-[520px]" />;\n`;
+  const options = {
+    filePath: join(project, "components/tailwind-canonical.tsx"),
+  };
+  const [before] = await new ESLint({ cwd: project }).lintText(source, options);
+  assert.deepEqual(
+    before.messages.map(({ ruleId, severity }) => ({ ruleId, severity })),
+    [{ ruleId: "better-tailwindcss/enforce-canonical-classes", severity: 2 }],
+  );
+  const [after] = await new ESLint({ cwd: project, fix: true }).lintText(
+    source,
+    options,
+  );
+  assert.deepEqual(after.messages, []);
+  assert.equal(
+    after.output,
+    `export const panel = <div className="h-control-sm lg:max-h-130" />;\n`,
+  );
+});

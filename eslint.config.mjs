@@ -5,6 +5,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
+import betterTailwindcss from "eslint-plugin-better-tailwindcss";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 
 import componentExportsRule from "./scripts/architecture/component-exports.mjs";
@@ -479,6 +480,28 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
+    },
+  },
+  {
+    files: [SOURCE_GLOB],
+    // 测试里的 class 是 cn() 等函数的输入，不会渲染，会故意拼接或写成非规范形式。
+    ignores: [`**/*.{test,spec}.${extensionGlob}`],
+    // class 的排序、去重和空白由 prettier-plugin-tailwindcss 处理，这里只开它覆盖不到的规则。
+    plugins: { "better-tailwindcss": betterTailwindcss },
+    settings: {
+      "better-tailwindcss": {
+        entryPoint: "app/globals.css",
+        // 不设时插件不做 px 到 rem 的换算，lg:max-h-[520px] 这类可以写成 lg:max-h-130 的 class 就查不出来。
+        // globals.css 没有改根字号，按浏览器默认的 16px 算，和 Tailwind CSS IntelliSense 的默认值一致。
+        rootFontSize: 16,
+      },
+    },
+    rules: {
+      "better-tailwindcss/enforce-canonical-classes": "error",
+      "better-tailwindcss/no-unknown-classes": "error",
+      "better-tailwindcss/no-conflicting-classes": "error",
+      "better-tailwindcss/no-deprecated-classes": "error",
+      "better-tailwindcss/no-concatenated-classes": "error",
     },
   },
   {

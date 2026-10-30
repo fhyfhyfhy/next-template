@@ -44,7 +44,7 @@ export function SourceCode({
       <pre
         tabIndex={0}
         aria-label={`${filename} 源码`}
-        className="max-h-96 overflow-auto p-5 font-mono text-xs leading-6 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="max-h-96 overflow-auto p-5 font-mono text-xs/6 outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <code>{source}</code>
       </pre>

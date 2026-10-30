@@ -27,9 +27,7 @@ export function ExampleCard({
       <div className="flex items-start justify-between gap-4 px-6 pt-6">
         <div>
           <h3 className="text-base font-medium">{title}</h3>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            {description}
-          </p>
+          <p className="mt-1 text-sm/6 text-muted-foreground">{description}</p>
         </div>
         <Button
           variant="ghost"

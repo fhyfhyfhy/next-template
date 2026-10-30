@@ -6,7 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
 
 const dialogPopupVariants = cva(
-  "fixed top-1/2 left-1/2 z-50 max-h-[85dvh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-panel border border-border bg-popover p-6 text-popover-foreground shadow-popover outline-none sm:p-8",
+  "fixed top-1/2 left-1/2 z-50 max-h-[85dvh] w-[calc(100%-2rem)] -translate-1/2 overflow-y-auto rounded-panel border border-border bg-popover p-6 text-popover-foreground shadow-popover outline-none sm:p-8",
   {
     variants: { size: { sm: "max-w-sm", md: "max-w-md", lg: "max-w-xl" } },
     defaultVariants: { size: "md" },
