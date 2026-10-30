@@ -1,4 +1,5 @@
 import { instant } from "@next/playwright";
+import type { Page } from "@playwright/test";
 
 import { expect, resetThroughLab, test } from "./mock-api";
 
@@ -8,8 +9,28 @@ test.beforeEach(async ({ page }) => {
   await resetThroughLab(page);
 });
 
-const rows = (page: import("@playwright/test").Page) =>
+const rows = (page: Page) =>
   page.getByRole("list", { name: "任务列表" }).getByRole("listitem");
+
+/**
+ * 打开全部任务页并等表单接管。导航栏的进行中徽标只在浏览器里请求；它在 layout 的 Suspense 边界里，
+ * 这个边界在页面主体之后才 hydrate，所以徽标出现时表单已经接管。
+ */
+async function openTasksPage(page: Page) {
+  await page.goto("/demos/tasks");
+  await expect(page.getByLabel(/^进行中的任务 \d+ 个$/)).toBeVisible();
+}
+
+/** 去作品广场再按 Back 回来：离开时 Next 用 <Activity> 隐藏这一页，返回时保留状态、重新创建 effect。 */
+async function leaveAndReturn(page: Page) {
+  await page
+    .getByRole("navigation", { name: "Data demo 导航" })
+    .getByRole("link", { name: "作品广场" })
+    .click();
+  await expect(page).toHaveURL("/demos/feed");
+  await page.goBack();
+  await expect(page).toHaveURL("/demos/tasks");
+}
 
 test("从 Demo 首页进入全部任务，默认按创建时间倒序显示第一页", async ({
   page,
@@ -86,7 +107,7 @@ test("列表读服务端缓存：后端数据变了，缓存期内仍显示快�
 });
 
 test("创建任务后列表立即出现新任务，表单清空", async ({ page }) => {
-  await page.goto("/demos/tasks");
+  await openTasksPage(page);
   await page.getByLabel("名称").fill("新建的跑车");
   await page.getByLabel("Prompt").fill("一辆红色跑车");
   await page.getByRole("button", { name: "创建任务" }).click();
@@ -129,7 +150,7 @@ test("JS 还没接管时提交表单，任务照样创建", async ({
 test("创建时名称被占用，错误显示在名称字段下，不弹全局提示", async ({
   page,
 }) => {
-  await page.goto("/demos/tasks");
+  await openTasksPage(page);
   await page.getByLabel("名称").fill("低多边形狐狸");
   await page.getByLabel("Prompt").fill("一只狐狸");
   await page.getByRole("button", { name: "创建任务" }).click();
@@ -141,8 +162,36 @@ test("创建时名称被占用，错误显示在名称字段下，不弹全局�
   await expect(page.getByText("名称已被其他任务占用")).toHaveCount(0);
 });
 
+test("填到一半离开再返回，输入还在，照样能提交", async ({ page }) => {
+  await openTasksPage(page);
+  await page.getByLabel("名称").fill("离开再回来");
+
+  await leaveAndReturn(page);
+
+  await expect(page.getByLabel("名称")).toHaveValue("离开再回来");
+  await page.getByLabel("Prompt").fill("一只狐狸");
+  await page.getByRole("button", { name: "创建任务" }).click();
+  await expect(rows(page).first()).toContainText("离开再回来");
+});
+
+test("名称被占用后改了名字，离开再返回，改过的名字不会被改回去", async ({
+  page,
+}) => {
+  await openTasksPage(page);
+  await page.getByLabel("名称").fill("低多边形狐狸");
+  await page.getByLabel("Prompt").fill("一只狐狸");
+  await page.getByRole("button", { name: "创建任务" }).click();
+  await expect(page.getByText("名称已被其他任务占用")).toBeVisible();
+  await page.getByLabel("名称").fill("改过的名字");
+
+  await leaveAndReturn(page);
+
+  await expect(page.getByLabel("名称")).toHaveValue("改过的名字");
+  await expect(page.getByText("名称已被其他任务占用")).toHaveCount(0);
+});
+
 test("名称为空时在浏览器里就拦下，不发请求", async ({ page }) => {
-  await page.goto("/demos/tasks");
+  await openTasksPage(page);
   let created = false;
   page.on("request", (request) => {
     if (request.method() === "POST" && request.url().includes("/demos/tasks"))

@@ -24,7 +24,7 @@ UI libraries, used through their wrappers ([Wrap a UI library](components.md#wra
 Used directly:
 
 - Icons: `@tabler/icons-react`
-- Forms: `@tanstack/react-form`. A form submitted to a Server Action uses `@tanstack/react-form-nextjs` the way `features/demo-task/components/create-task-form.tsx` does, which departs from the package's example in two places: `useActionState` starts at `undefined`, and `onSubmit` blocks the native submit when browser validation fails.
+- Forms: `@tanstack/react-form`. A form submitted to a Server Action uses `@tanstack/react-form-nextjs` the way `features/demo-task/components/create-task-form.tsx` does. It departs from the package's example where the example loses input: `useActionState` starts at `undefined`, each server state is merged once (Next's `<Activity>` re-runs the merge when the user returns to the page), and `onSubmit` blocks the native submit when browser validation fails.
 - Charts: `@tanstack/react-charts`
 - Dates: native `Intl.DateTimeFormat` and `Date`; `dayjs` for what they can't handle
 - IDs: `nanoid`

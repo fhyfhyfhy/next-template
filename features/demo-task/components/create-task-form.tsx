@@ -1,7 +1,7 @@
 "use client";
 
 import { mergeForm, useForm, useTransform } from "@tanstack/react-form-nextjs";
-import { useActionState } from "react";
+import { useActionState, useLayoutEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import { createTaskAction } from "../api/create-task-action";
  * 在浏览器里校验，并把服务端返回的字段错误合并进来。成功后 `createdTaskId` 变化，用 key 重新挂载表单来清空。
  */
 export function CreateTaskForm() {
-  // 初始状态不用包里的 initialFormState：它的 values 是 undefined，被 mergeForm 合并后会清空表单的值。
+  // 初始状态不用包里的 initialFormState：它的 values 是 undefined，一旦被合并就会清空表单的值（TanStack/form#1923）。
   const [state, formAction, isPending] = useActionState(
     createTaskAction,
     undefined,
@@ -56,13 +56,23 @@ function CreateTaskFields({
   formAction,
   isPending,
 }: CreateTaskFieldsProps) {
+  // useForm 创建表单时合并一次 state，之后每次 effect 创建都再合并一次：不只是 state 变化时，还有 dev 的
+  // StrictMode，以及离开页面再返回时 Next 用 <Activity> 恢复这一页。同一个 state 再合并会把之后的修改改回
+  // 提交时的值，所以记下已经合并过的 state，只合并新的。
+  const mergedState = useRef<CreateTaskFormState | undefined>(undefined);
   const form = useForm({
     ...createTaskFormOptions,
     transform: useTransform(
       (baseForm) =>
-        mergeForm(baseForm, state && "errorMap" in state ? state : {}),
+        state && "errorMap" in state && state !== mergedState.current
+          ? mergeForm(baseForm, state)
+          : baseForm,
       [state],
     ),
+  });
+  // 放在 useForm 之后：同一组件的 layout effect 按声明顺序执行，useForm 先合并，这里再记下。
+  useLayoutEffect(() => {
+    mergedState.current = state;
   });
   return (
     <form
