@@ -9,7 +9,7 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the Demo index at `/demos`.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. To browse the [Demo](#demo) with its Mock API, run `pnpm demo:dev` instead and open `/demos`.
 
 ## Demo
 
@@ -18,13 +18,13 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - **UI demo** (`/demos/ui`): the design-system components; see [UI demo examples](#ui-demo-examples).
 - **Data demo** (the other `/demos` pages): a small task app that exercises the data-fetching rules against the Mock API. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.
 
-The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node process ([ADR 0001](docs/adr/0001-demos-use-standalone-mock-api.md)). `pnpm dev`, `pnpm build`, and `pnpm start` go through `scripts/run-next.mjs`, which starts it on `127.0.0.1:4010` and points `NEXT_PUBLIC_API_BASE_URL` at it whenever the project has no backend URL configured. Once a real backend is configured, the Mock API stays off and the Data demo pages show a notice instead of sending requests. `pnpm demos` runs the dev server against the Mock API regardless; during that run every page, including the project's own features, talks to the Mock API.
+The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node process ([ADR 0001](docs/adr/0001-demos-use-standalone-mock-api.md)). The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo:start`: they start the Mock API on `127.0.0.1:4010` and point `NEXT_PUBLIC_API_BASE_URL` at it, overriding the project's backend URL, so during those runs every page, including the project's own features, talks to the Mock API. Their build output goes to `.next-demo`, leaving the project's `.next` alone. `pnpm dev`, `pnpm build`, and `pnpm start` never start the Mock API; under them the Data demo pages show a notice instead of sending requests.
 
-`pnpm test:e2e` runs the Data demo's Playwright specs in `e2e/` against a production build with the Mock API, so ports 3000 and 4010 must be free. While debugging, `E2E_REUSE_SERVER=1 pnpm test:e2e` reuses a running `pnpm demos` instead; specs that depend on production behavior, such as prefetching, fail there. Install the browser once with `pnpm exec playwright install chromium`.
+`pnpm test:e2e` runs the Data demo's Playwright specs in `e2e/` against `pnpm demo:build` and `pnpm demo:start`, so ports 3000 and 4010 must be free. While debugging, `E2E_REUSE_SERVER=1 pnpm test:e2e` reuses a running `pnpm demo:dev` instead; specs that depend on production behavior, such as prefetching, fail there. Install the browser once with `pnpm exec playwright install chromium`.
 
 ## Backend API
 
-Set `NEXT_PUBLIC_API_BASE_URL` to the backend's base URL, for example in `.env.local`. While it is unset, the run scripts point it at the Mock API (see [Demo](#demo)).
+Set `NEXT_PUBLIC_API_BASE_URL` to the backend's base URL, for example in `.env.local`. The `demo:*` scripts override it with the Mock API (see [Demo](#demo)).
 
 Features call the backend only through `fetchApi`, so fitting the template to a backend touches these files alone:
 

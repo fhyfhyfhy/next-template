@@ -21,7 +21,7 @@ Read what exists before asking:
 - `lib/fetch.ts`, `lib/credentials-server.ts`, `lib/credentials-browser.ts`, and `app/providers.tsx`. When the credentials files no longer carry the template's `TODO`, or `resolveApiUrl` and `fetchApi` differ from the template's, this is a re-run: ask only about what the user wants to change.
 - `package.json`: an auth library and its version, such as `@supabase/ssr`, `next-auth`, `@clerk/nextjs`, `@auth0/nextjs-auth0`, `better-auth`, `firebase`, or `iron-session`.
 - Env files (`.env*`): use a value such as the backend's base URL to probe it, but never print a value.
-- `next.config.ts` (`rewrites`), `app/api/` (Route Handlers), `proxy.ts`, and the callers of `fetchApi` and `resolveApiUrl`. The callers in `features/demo-task/` belong to the Data demo, and `scripts/mock-api/` is its stand-in backend, started at `127.0.0.1:4010` while `NEXT_PUBLIC_API_BASE_URL` is unset: neither describes the project's backend.
+- `next.config.ts` (`rewrites`), `app/api/` (Route Handlers), `proxy.ts`, and the callers of `fetchApi` and `resolveApiUrl`. The callers in `features/demo-task/` belong to the Data demo, and `scripts/mock-api/` is its stand-in backend, started at `127.0.0.1:4010` only by the `demo:*` scripts: neither describes the project's backend.
 - The backend, once its URL turns up: probe it with read-only requests, such as its OpenAPI or docs endpoint, the CORS headers it returns to a request carrying `Origin: http://localhost:3000` for section A, and a public endpoint's response body for section B. With a test account, also sign in once and read the cookies the response sets, for section C.
 
 Done when you can say, for each section below, what you found and where, and what only the user can answer.

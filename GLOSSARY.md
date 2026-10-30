@@ -21,7 +21,7 @@ Demo 里请求 Mock API 来演示数据请求的 task 小应用，包括验证�
 _Avoid_: 数据示例、task demo
 
 **Mock API**:
-模板自带的假后端，代替项目的真实后端，只在项目还没配置真实后端时运行。Demo 的数据请求都发给它。
+模板自带的假后端，代替项目的真实后端，只在用 Demo 专用的命令运行时启动。Demo 的数据请求都发给它。
 _Avoid_: mock server、假后端、fake backend
 
 ## Demo 的虚构领域

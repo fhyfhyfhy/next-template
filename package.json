@@ -10,9 +10,11 @@
   },
   "scripts": {
     "dev": "node scripts/run-next.mjs dev",
-    "demos": "node scripts/run-next.mjs dev --demos",
     "build": "node scripts/run-next.mjs build",
     "start": "node scripts/run-next.mjs start",
+    "demo:dev": "node scripts/run-next.mjs dev --demo",
+    "demo:build": "node scripts/run-next.mjs build --demo",
+    "demo:start": "node scripts/run-next.mjs start --demo",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",

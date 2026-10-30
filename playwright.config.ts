@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // Data demo 的 e2e：对着带 Mock API 的生产构建运行，缓存新鲜度和 prefetch 只有在 next start 下才可信。
-// 默认总是自己 build 并启动；调试时设 E2E_REUSE_SERVER=1 复用 3000 端口上已有的服务（比如 pnpm demos），
+// 默认总是自己 build 并启动；调试时设 E2E_REUSE_SERVER=1 复用 3000 端口上已有的服务（比如 pnpm demo:dev），
 // 这时依赖生产行为的用例（如预取）会失败。
 export default defineConfig({
   testDir: "./e2e",
@@ -16,8 +16,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command:
-      "node scripts/run-next.mjs build --demos && node scripts/run-next.mjs start --demos",
+    command: "pnpm demo:build && pnpm demo:start",
     url: "http://localhost:3000/demos",
     reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",
     timeout: 300_000,

@@ -2,9 +2,9 @@
 
 The Data demo under `/demos` is the runnable reference for this skill and its rules: a small Demo task app whose every request goes through `fetchApi` to the Mock API, a separate Node process that stands in for the backend ([ADR 0001](../../../docs/adr/0001-demos-use-standalone-mock-api.md)). Before writing a pattern listed below, read its code and spec; adapt names and keys to the real feature, and keep its owner choice only if the same signal applies.
 
-- Run it with `pnpm demos`, or `pnpm dev` while `NEXT_PUBLIC_API_BASE_URL` is unset. Without the Mock API the Data demo pages render a notice and send no requests.
+- Run it with `pnpm demo:dev`, or `pnpm demo:build` then `pnpm demo:start` for production behavior. These scripts start the Mock API; under `pnpm dev`, `build`, and `start` it stays off, and the Data demo pages render a notice and send no requests.
 - Code lives in `app/demos/(data)/` (routes) and `features/demo-task/` (paths below are relative to it unless they start with `app/` or `e2e/`). The Mock API is `scripts/mock-api/`; its `/__mock/*` endpoints reset data, pause or step the clock, inject faults, and list received requests.
-- `pnpm test:e2e` runs the specs serially against a production build with the Mock API; each test resets the Mock API first.
+- `pnpm test:e2e` runs the specs serially against `pnpm demo:build` and `pnpm demo:start`; each test resets the Mock API first.
 
 | Page | Owner | Why |
 | --- | --- | --- |

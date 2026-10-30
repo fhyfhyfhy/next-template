@@ -244,7 +244,7 @@ function findRoute(routes, method, pathname) {
   return null;
 }
 
-// 只给本机页面跨域许可：开着 pnpm dev 时，浏览器里其他网站读不到响应，带 JSON 请求体的写入也过不了预检。
+// 只给本机页面跨域许可：开着 pnpm demo:dev 时，浏览器里其他网站读不到响应，带 JSON 请求体的写入也过不了预检。
 const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 function setCorsHeaders(req, res) {

@@ -246,8 +246,9 @@ const eslintConfig = defineConfig([
   },
   // 项目级忽略项在 Next 默认项上加入 worktree，避免重复检查其他 checkout。
   globalIgnores([
-    // 保留 Next 默认排除的构建产物与生成类型。
+    // 保留 Next 默认排除的构建产物与生成类型；.next-demo 是 demo:* 命令的产物目录（见 next.config.ts）。
     ".next/**",
+    ".next-demo/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
