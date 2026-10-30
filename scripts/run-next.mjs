@@ -7,11 +7,16 @@ import {
   generateExampleIndexes,
   watchExampleIndexes,
 } from "./demo-ui/index-generator.mjs";
-import { DEFAULT_MOCK_API_PORT, startMockApi } from "./mock-api/server.mjs";
+import {
+  DEFAULT_MOCK_API_PORT,
+  findRunningMockApi,
+  startMockApi,
+} from "./mock-api/server.mjs";
 
 // 用法：node scripts/run-next.mjs <dev|build|start> [--demo] [其余参数传给 next]
 // --demo（package.json 的 demo:* 命令）先启动 Mock API，并让 next 指向它，不管项目配置的后端地址是什么。
 // build 和 start 各自启动一次 Mock API，端口固定，所以 build 时内联进产物的地址在 start 时仍然可用。
+// 端口上已经有 Mock API（比如开着 demo:dev 时跑 e2e）就直接用它，退出时也不关它：它跟着启动它的命令退出。
 
 const COMMANDS = new Set(["dev", "build", "start"]);
 const DEFAULT_PORT = 3000;
@@ -33,11 +38,7 @@ if (command === "start" && !hasExplicitPort(nextArgs)) {
   nextArgs.push("--port", String(await findFreePort(DEFAULT_PORT)));
 }
 
-const mockApi = demo
-  ? await startMockApi({
-      port: Number(process.env.MOCK_API_PORT ?? DEFAULT_MOCK_API_PORT),
-    })
-  : null;
+const mockApi = demo ? await connectMockApi() : null;
 // 进程里已有的变量优先于 .env* 文件，所以项目在 .env.local 里配置的后端地址不会覆盖这里。
 // NEXT_PUBLIC_MOCK_API 同时让 next.config.ts 把产物放进 .next-demo。
 const childEnv = mockApi
@@ -47,7 +48,6 @@ const childEnv = mockApi
       NEXT_PUBLIC_MOCK_API: "1",
     }
   : process.env;
-if (mockApi) console.log(`Mock API listening on ${mockApi.url}`);
 
 const watcher =
   command === "dev" ? await watchExampleIndexes(projectRoot) : null;
@@ -74,6 +74,18 @@ try {
   await watcher?.close();
   await mockApi?.close();
   for (const [signal, handler] of signalHandlers) process.off(signal, handler);
+}
+
+async function connectMockApi() {
+  const port = Number(process.env.MOCK_API_PORT ?? DEFAULT_MOCK_API_PORT);
+  const runningUrl = await findRunningMockApi(port);
+  if (runningUrl) {
+    console.log(`Using the Mock API already running on ${runningUrl}`);
+    return { url: runningUrl, close: async () => {} };
+  }
+  const mockApi = await startMockApi({ port });
+  console.log(`Mock API listening on ${mockApi.url}`);
+  return mockApi;
 }
 
 /** 命令行参数或 PORT 已经指定了端口时，按指定的来，被占就让 next 报错。 */

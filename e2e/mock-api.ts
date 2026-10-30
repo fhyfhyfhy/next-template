@@ -7,7 +7,7 @@ import {
 
 // e2e 只通过浏览器和 Mock API 的控制接口观察、准备条件，不引用应用代码。
 // 端口和 scripts/mock-api/server.mjs 的 DEFAULT_MOCK_API_PORT 一致。
-const MOCK_API_URL = `http://127.0.0.1:${process.env.MOCK_API_PORT ?? 4010}`;
+export const MOCK_API_URL = `http://127.0.0.1:${process.env.MOCK_API_PORT ?? 4010}`;
 
 export interface MockFault {
   method: string;

@@ -47,6 +47,29 @@ export async function startMockApi({
   };
 }
 
+/**
+ * 找 `port` 上已经在运行的 Mock API，比如开着 demo:dev 时跑 e2e，两边就共用它。
+ * 端口上没有服务时返回 null；被别的程序占着时报错，免得把 Demo 的请求发给不认识的服务。
+ * @returns {Promise<string | null>}
+ */
+export async function findRunningMockApi(port) {
+  const url = `http://127.0.0.1:${port}`;
+  try {
+    const response = await fetch(`${url}/__mock/faults`, {
+      signal: AbortSignal.timeout(2000),
+    });
+    const body = await response.json();
+    if (response.ok && body?.code === 0 && Array.isArray(body.data?.faults)) {
+      return url;
+    }
+  } catch (error) {
+    if (error.cause?.code === "ECONNREFUSED") return null;
+  }
+  throw new Error(
+    `Port ${port} is in use by something other than the Mock API; stop it or set MOCK_API_PORT`,
+  );
+}
+
 function createRoutes(store, clock, { faults, requestLog }, publicUrl) {
   const wireTask = (task) => toWireTask(task, publicUrl);
   return [

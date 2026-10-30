@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import { createServer as createHttpServer } from "node:http";
 import { after, before, beforeEach, test } from "node:test";
 
-import { startMockApi } from "./server.mjs";
+import { findRunningMockApi, startMockApi } from "./server.mjs";
 
 let mockApi;
 
@@ -626,3 +627,37 @@ test("任务详情不存在时返回 404", async () => {
   assert.equal(status, 404);
   assert.notEqual(body.code, 0);
 });
+
+test("端口上已经有 Mock API 时返回它的地址", async () => {
+  const port = Number(new URL(mockApi.url).port);
+  assert.equal(await findRunningMockApi(port), mockApi.url);
+});
+
+test("端口上没有服务时返回 null", async () => {
+  const port = await unusedPort();
+  assert.equal(await findRunningMockApi(port), null);
+});
+
+test("端口被别的服务占用时报错，不把它当成 Mock API", async () => {
+  const other = createHttpServer((req, res) => {
+    res.statusCode = 404;
+    res.end("not here");
+  });
+  await new Promise((resolve) => other.listen(0, "127.0.0.1", resolve));
+  try {
+    await assert.rejects(
+      findRunningMockApi(other.address().port),
+      /in use by something other than the Mock API/,
+    );
+  } finally {
+    await new Promise((resolve) => other.close(resolve));
+  }
+});
+
+async function unusedPort() {
+  const probe = createHttpServer();
+  await new Promise((resolve) => probe.listen(0, "127.0.0.1", resolve));
+  const { port } = probe.address();
+  await new Promise((resolve) => probe.close(resolve));
+  return port;
+}

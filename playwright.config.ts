@@ -14,6 +14,7 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: true,
   reporter: "list",
+  globalTeardown: "./e2e/global-teardown.ts",
   use: {
     baseURL: BASE_URL,
     trace: "retain-on-failure",
