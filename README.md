@@ -11,6 +11,8 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. To browse the [Demo](#demo) with its Mock API, run `pnpm demo:dev` instead and open `/demos`.
 
+When port 3000 is taken, the `dev` and `start` scripts, including their `demo:` versions, move to the next free port and print the URL. Pass `--port` to pin one.
+
 ## Demo
 
 `/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it:

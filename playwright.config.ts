@@ -16,7 +16,8 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "pnpm demo:build && pnpm demo:start",
+    // 显式指定端口：demo:start 默认遇到 3000 被占会换端口，e2e 要和 baseURL 一致。
+    command: "pnpm demo:build && pnpm demo:start --port 3000",
     url: "http://localhost:3000/demos",
     reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",
     timeout: 300_000,

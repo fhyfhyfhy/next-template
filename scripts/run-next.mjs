@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
+import { createServer } from "node:net";
 import { resolve } from "node:path";
 
 import {
@@ -13,6 +14,9 @@ import { DEFAULT_MOCK_API_PORT, startMockApi } from "./mock-api/server.mjs";
 // build 和 start 各自启动一次 Mock API，端口固定，所以 build 时内联进产物的地址在 start 时仍然可用。
 
 const COMMANDS = new Set(["dev", "build", "start"]);
+const DEFAULT_PORT = 3000;
+// 和 next dev 的重试次数一致（next/dist/server/lib/start-server.js）。
+const PORT_RETRIES = 10;
 const projectRoot = resolve(import.meta.dirname, "..");
 const require = createRequire(import.meta.url);
 
@@ -24,6 +28,10 @@ if (!COMMANDS.has(command)) {
 }
 const demo = rest.includes("--demo");
 const nextArgs = rest.filter((arg) => arg !== "--demo");
+// next dev 在没指定端口时会自己往后找空闲端口，next start 端口被占直接退出，这里给 start 补上同样的行为。
+if (command === "start" && !hasExplicitPort(nextArgs)) {
+  nextArgs.push("--port", String(await findFreePort(DEFAULT_PORT)));
+}
 
 const mockApi = demo
   ? await startMockApi({
@@ -66,4 +74,44 @@ try {
   await watcher?.close();
   await mockApi?.close();
   for (const [signal, handler] of signalHandlers) process.off(signal, handler);
+}
+
+/** 命令行参数或 PORT 已经指定了端口时，按指定的来，被占就让 next 报错。 */
+function hasExplicitPort(args) {
+  return (
+    process.env.PORT !== undefined ||
+    args.some(
+      (arg) =>
+        arg === "-p" ||
+        arg === "--port" ||
+        arg.startsWith("--port=") ||
+        /^-p\d+$/.test(arg),
+    )
+  );
+}
+
+/** 从 `from` 开始找第一个能监听的端口；和 next 一样不指定 host，监听所有地址。 */
+async function findFreePort(from) {
+  for (let port = from; port <= from + PORT_RETRIES; port++) {
+    if (await canListen(port)) {
+      if (port !== from) {
+        console.log(`Port ${from} is in use, using available port ${port}.`);
+      }
+      return port;
+    }
+  }
+  throw new Error(
+    `Ports ${from}-${from + PORT_RETRIES} are all in use; pass --port to choose one.`,
+  );
+}
+
+function canListen(port) {
+  return new Promise((resolveFree, reject) => {
+    const server = createServer();
+    server.once("error", (error) => {
+      if (error.code === "EADDRINUSE") resolveFree(false);
+      else reject(error);
+    });
+    server.listen(port, () => server.close(() => resolveFree(true)));
+  });
 }
