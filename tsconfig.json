@@ -33,5 +33,8 @@
     ".next-demo/types/**/*.ts",
     ".next-demo/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  // 上面 .next/dev 和 .next-demo 的 include 是 Next 自动加的，删了下次运行还会加回来。这几份路由类型只在生成它的命令
+  // 运行时更新，删改路由后会过期，tsc 读到就在它的 validator.ts 里报找不到页面。所以只读 .next/types：
+  // typecheck 和 build 会刷新它，demo:build 也先刷新它（scripts/run-next.mjs）。
+  "exclude": ["node_modules", ".next/dev", ".next-demo"]
 }

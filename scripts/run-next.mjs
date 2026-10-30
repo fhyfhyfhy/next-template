@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { createServer } from "node:net";
 import { resolve } from "node:path";
@@ -24,6 +24,7 @@ const DEFAULT_PORT = 3000;
 const PORT_RETRIES = 10;
 const projectRoot = resolve(import.meta.dirname, "..");
 const require = createRequire(import.meta.url);
+const nextBin = require.resolve("next/dist/bin/next");
 
 const [command, ...rest] = process.argv.slice(2);
 if (!COMMANDS.has(command)) {
@@ -36,6 +37,14 @@ const nextArgs = rest.filter((arg) => arg !== "--demo");
 // next dev 在没指定端口时会自己往后找空闲端口，next start 端口被占直接退出，这里给 start 补上同样的行为。
 if (command === "start" && !hasExplicitPort(nextArgs)) {
   nextArgs.push("--port", String(await findFreePort(DEFAULT_PORT)));
+}
+// tsconfig.json 排除了 .next-demo，demo:build 的类型检查读的是 .next/types；这份只有 build 和 typegen 会写，先刷新它。
+if (command === "build" && demo) {
+  const typegen = spawnSync(process.execPath, [nextBin, "typegen"], {
+    cwd: projectRoot,
+    stdio: "inherit",
+  });
+  if (typegen.status !== 0) throw new Error("next typegen failed");
 }
 
 const mockApi = demo ? await connectMockApi() : null;
@@ -53,11 +62,11 @@ const watcher =
   command === "dev" ? await watchExampleIndexes(projectRoot) : null;
 if (command === "build") await generateExampleIndexes(projectRoot);
 
-const child = spawn(
-  process.execPath,
-  [require.resolve("next/dist/bin/next"), command, ...nextArgs],
-  { cwd: projectRoot, stdio: "inherit", env: childEnv },
-);
+const child = spawn(process.execPath, [nextBin, command, ...nextArgs], {
+  cwd: projectRoot,
+  stdio: "inherit",
+  env: childEnv,
+});
 const signalHandlers = new Map(
   ["SIGINT", "SIGTERM"].map((signal) => [signal, () => child.kill(signal)]),
 );
