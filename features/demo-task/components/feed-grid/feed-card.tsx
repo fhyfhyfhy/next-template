@@ -15,7 +15,7 @@ export function FeedCard({ task }: { task: Task }) {
   const favorite = useMutation(updateTaskFavoriteMutationOptions());
   return (
     <article className="overflow-hidden rounded-panel border border-border bg-card">
-      <TaskCover coverUrl={task.coverUrl} className="aspect-[4/3] w-full" />
+      <TaskCover coverUrl={task.coverUrl} className="aspect-4/3 w-full" />
       <div className="flex items-center gap-2 p-3">
         <Link
           href={taskDetailHref(task.id)}

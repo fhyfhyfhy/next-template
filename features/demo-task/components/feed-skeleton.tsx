@@ -10,7 +10,7 @@ export function FeedSkeleton() {
           key={index}
           className="overflow-hidden rounded-panel border border-border bg-card"
         >
-          <Skeleton className="aspect-[4/3] w-full rounded-none" />
+          <Skeleton className="aspect-4/3 w-full rounded-none" />
           <div className="p-3">
             <Skeleton className="h-4 w-32" />
           </div>

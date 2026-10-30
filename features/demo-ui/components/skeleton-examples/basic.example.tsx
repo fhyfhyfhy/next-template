@@ -10,7 +10,7 @@ export const metadata = {
 export function Example() {
   return (
     <div className="w-full max-w-sm overflow-hidden rounded-panel border border-border bg-card">
-      <Skeleton className="aspect-[4/3] w-full rounded-none" />
+      <Skeleton className="aspect-4/3 w-full rounded-none" />
       <div className="space-y-2 p-3">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-3 w-20" />

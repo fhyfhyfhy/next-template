@@ -13,7 +13,7 @@ export default function DataDemoLayout({ children }: { children: ReactNode }) {
     <>
       {/* 导航读当前路径、徽标创建 query 时读当前时间，放进 Suspense 才不影响静态 shell 的预渲染。 */}
       <Suspense
-        fallback={<div className="h-[65px] border-b border-border bg-card" />}
+        fallback={<div className="h-16.25 border-b border-border bg-card" />}
       >
         <DataDemoHeader />
       </Suspense>

@@ -51,7 +51,7 @@ export default function DemosPage() {
       <h1 className="mt-5 text-5xl font-medium tracking-[-0.055em] sm:text-6xl">
         Demo<span className="text-primary">.</span>
       </h1>
-      <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground">
+      <p className="mt-5 max-w-2xl text-base/7 text-muted-foreground">
         按这个模板的约定写成的可运行参考实现。写代码时可以照着看。
       </p>
       <ul className="mt-10 grid gap-4">

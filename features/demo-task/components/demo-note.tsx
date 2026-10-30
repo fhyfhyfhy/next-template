@@ -5,7 +5,7 @@ export function DemoNote({ children }: { children: ReactNode }) {
   return (
     <aside
       aria-label="这页演示什么"
-      className="mb-8 max-w-3xl space-y-2 rounded-panel border border-dashed border-border p-4 text-sm leading-6 text-muted-foreground"
+      className="mb-8 max-w-3xl space-y-2 rounded-panel border border-dashed border-border p-4 text-sm/6 text-muted-foreground"
     >
       {children}
     </aside>

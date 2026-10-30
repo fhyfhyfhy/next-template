@@ -75,7 +75,7 @@ export function Playground({
               重置
             </Button>
           </div>
-          <div className="grid gap-5 p-5 sm:grid-cols-2 lg:max-h-[520px] lg:grid-cols-1 lg:overflow-y-auto">
+          <div className="grid gap-5 p-5 sm:grid-cols-2 lg:max-h-130 lg:grid-cols-1 lg:overflow-y-auto">
             {controls}
           </div>
         </aside>

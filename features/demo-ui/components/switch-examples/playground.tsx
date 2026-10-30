@@ -48,10 +48,7 @@ export function SwitchPlayground({
         <label htmlFor={id} className="text-sm font-medium">
           {state.label}
         </label>
-        <p
-          id={`${id}-hint`}
-          className="mt-1 text-xs leading-5 text-muted-foreground"
-        >
+        <p id={`${id}-hint`} className="mt-1 text-xs/5 text-muted-foreground">
           {state.description}
         </p>
       </div>

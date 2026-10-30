@@ -14,7 +14,7 @@ export function PageIntro({ title, children }: PageIntroProps) {
         {title}
         <span className="text-primary">.</span>
       </h1>
-      <div className="mt-4 max-w-3xl space-y-2 text-sm leading-6 text-muted-foreground">
+      <div className="mt-4 max-w-3xl space-y-2 text-sm/6 text-muted-foreground">
         {children}
       </div>
     </div>

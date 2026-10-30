@@ -23,7 +23,7 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
       <TaskCover
         data-testid="task-cover"
         coverUrl={task.coverUrl}
-        className="aspect-[4/3] w-full rounded-panel"
+        className="aspect-4/3 w-full rounded-panel"
       />
       {editable && (
         <label

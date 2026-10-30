@@ -4,6 +4,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
+import betterTailwindcss from "eslint-plugin-better-tailwindcss";
 import playwright from "eslint-plugin-playwright";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 
@@ -16,6 +17,7 @@ import withWrapperImports, {
   apiFileFactoriesRule,
   mutationCallbacksRule,
 } from "./scripts/eslint/query-plugin.mjs";
+import { TAILWIND_PALETTES } from "./scripts/eslint/tailwind-palettes.mjs";
 
 const PROJECT_ROOT = import.meta.dirname;
 const extensionGlob = `{${SOURCE_EXTENSIONS.join(",")}}`;
@@ -65,6 +67,29 @@ const QUERY_LIBRARY_MESSAGE =
 
 const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
+
+// 颜色只用 app/globals.css 的语义 token 和 black、white，圆角只用内置或 --radius-* token。
+const RESTRICTED_TAILWIND_CLASSES = [
+  {
+    pattern: `^(?:.*:)?!?[a-z-]+-(?:${TAILWIND_PALETTES.join("|")})-\\d+(?:/.+)?!?$`,
+    message:
+      'Use a semantic color token from app/globals.css instead of the Tailwind palette color "$0".',
+  },
+  {
+    // 任意值里的十六进制色值和颜色函数；引用 CSS 变量的写法不受限制。
+    // 任意值用 _ 代替空格，_ 属于 \w，所以边界用显式字符集而不是 \b、\w。
+    pattern:
+      "^.*\\[[^\\]]*(?:#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z-])|(?<![a-zA-Z-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\().*$",
+    message:
+      'Define a color token in app/globals.css instead of the hard-coded color in "$0".',
+  },
+  {
+    // 只需拦任意值：不是任意值、又不在内置或 --radius-* 主题里的圆角 class 由 no-unknown-classes 报出。
+    pattern: "^(?:.*:)?!?rounded(?:-[a-z]{1,2})?-[[(].*$",
+    message:
+      'Use a built-in radius or a --radius-* token from app/globals.css instead of "$0".',
+  },
+];
 
 const eslintConfig = defineConfig([
   // 使用 Next.js 的 React、Hooks、可访问性和性能规则，随框架版本维护默认检查。
@@ -217,6 +242,38 @@ const eslintConfig = defineConfig([
           selector: "ExportNamespaceSpecifier",
           message: COMPONENT_INDEX_EXPORT_MESSAGE,
         },
+      ],
+    },
+  },
+  {
+    files: [SOURCE_GLOB],
+    // 测试里的 class 是 cn() 等函数的输入，不会渲染，会故意拼接或写成非规范形式。
+    ignores: [`**/*.{test,spec}.${extensionGlob}`],
+    plugins: { "better-tailwindcss": betterTailwindcss },
+    settings: {
+      "better-tailwindcss": {
+        entryPoint: "app/globals.css",
+        // 不设时插件不做 px 到 rem 的换算，lg:max-h-[520px] 这类可以写成 lg:max-h-130 的 class 就查不出来。
+        // globals.css 没有改根字号，按浏览器默认的 16px 算，和 Tailwind CSS IntelliSense 的默认值一致。
+        rootFontSize: 16,
+      },
+    },
+    // class 的排序、去重和空白由 prettier-plugin-tailwindcss 处理，这里只开它覆盖不到的规则。
+    rules: {
+      // 按 Tailwind 的 canonicalizeCandidates 改成规范写法，与编辑器里 IntelliSense 的提示一致。
+      "better-tailwindcss/enforce-canonical-classes": "error",
+      // 不在 Tailwind 和项目主题里的 class 不会生成样式，多半是拼写错误。
+      "better-tailwindcss/no-unknown-classes": "error",
+      // 同一字符串里设置相同 CSS 属性的 class 会互相覆盖，结果取决于生成顺序而不是书写顺序。
+      "better-tailwindcss/no-conflicting-classes": "error",
+      // 替换当前 Tailwind 版本已废弃的 class。
+      "better-tailwindcss/no-deprecated-classes": "error",
+      // Tailwind 按完整 class 名扫描源码，拼接出来的 class 不会生成样式。
+      "better-tailwindcss/no-concatenated-classes": "error",
+      // 颜色和圆角走主题 token，见 RESTRICTED_TAILWIND_CLASSES。
+      "better-tailwindcss/no-restricted-classes": [
+        "error",
+        { restrict: RESTRICTED_TAILWIND_CLASSES },
       ],
     },
   },

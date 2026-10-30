@@ -1526,3 +1526,62 @@ export function Example() {
     });
   }
 });
+
+describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", () => {
+  const eslint = new ESLint({ cwd: project });
+  const filePath = join(project, "components/tailwind-classes.tsx");
+
+  test("按项目主题和 16px 根字号改成规范写法", async () => {
+    // h-control-sm 只在 app/globals.css 里定义，用来确认插件读到了项目主题。
+    const source = `export const panel = <div className="h-control-sm lg:max-h-[520px]" />;\n`;
+    const [before] = await eslint.lintText(source, { filePath });
+    expect(
+      before.messages.map(({ ruleId, severity }) => ({ ruleId, severity })),
+      JSON.stringify(before.messages, null, 2),
+    ).toStrictEqual([
+      { ruleId: "better-tailwindcss/enforce-canonical-classes", severity: 2 },
+    ]);
+    const [after] = await new ESLint({ cwd: project, fix: true }).lintText(
+      source,
+      { filePath },
+    );
+    expect(after.messages).toStrictEqual([]);
+    expect(after.output).toBe(
+      `export const panel = <div className="h-control-sm lg:max-h-130" />;\n`,
+    );
+  });
+
+  test("颜色只能用语义 token 和黑白，圆角只能用内置或项目 token", async () => {
+    const restricted = [
+      "bg-red-500",
+      "hover:text-zinc-400/50",
+      // Tailwind 4.2 新增的调色板，确认调色板名是从 tailwindcss 读出来的。
+      "border-t-mauve-200",
+      "bg-[#c83d21]",
+      "shadow-[0_0_0_1px_#000_inset]",
+      "shadow-[0_2px_4px_rgb(0_0_0/0.2)]",
+      "rounded-[5px]",
+      "md:rounded-tl-(--my-radius)",
+    ];
+    const allowed = [
+      "bg-primary text-primary-foreground border-border",
+      "bg-white text-black/65",
+      "rounded rounded-sm rounded-2xl rounded-full",
+      "rounded-control rounded-t-panel",
+      "text-sm border-2 ring-2 bg-transparent fill-current",
+    ];
+    const classes = [...restricted, ...allowed];
+    const source = `export const panels = [\n${classes
+      .map((className) => `  <div className="${className}" />,`)
+      .join("\n")}\n];\n`;
+    const [result] = await eslint.lintText(source, { filePath });
+    expect(
+      result.messages
+        .filter(
+          ({ ruleId }) => ruleId === "better-tailwindcss/no-restricted-classes",
+        )
+        .map(({ line }) => classes[line - 2]),
+      JSON.stringify(result.messages, null, 2),
+    ).toStrictEqual(restricted);
+  });
+});

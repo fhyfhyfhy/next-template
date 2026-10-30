@@ -3,7 +3,7 @@ export function MockApiNotice() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
       <h1 className="text-3xl font-medium tracking-tight">Mock API 未运行</h1>
-      <div className="mt-5 space-y-3 text-sm leading-6 text-muted-foreground">
+      <div className="mt-5 space-y-3 text-sm/6 text-muted-foreground">
         <p>
           Data demo 只对着模板自带的 Mock API 运行，而 Mock API 只由 Demo
           专用的命令启动。用普通命令运行时，这些页面不发请求，免得 demo

@@ -36,7 +36,7 @@ export function TaskLogs({ taskId }: { taskId: string }) {
       <div
         role="log"
         aria-label="生成日志"
-        className="max-h-48 overflow-y-auto rounded-panel bg-secondary p-3 font-mono text-xs leading-5 text-secondary-foreground"
+        className="max-h-48 overflow-y-auto rounded-panel bg-secondary p-3 font-mono text-xs/5 text-secondary-foreground"
       >
         {lines.length === 0 && state === "streaming" && (
           <p className="opacity-60">等待日志…</p>

@@ -16,7 +16,7 @@ export function TaskDetailSkeleton() {
         <Skeleton className="h-9 w-48" />
         <Skeleton className="h-32 w-full" />
       </div>
-      <Skeleton className="aspect-[4/3] w-full rounded-panel" />
+      <Skeleton className="aspect-4/3 w-full rounded-panel" />
     </div>
   );
 }

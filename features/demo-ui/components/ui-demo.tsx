@@ -26,10 +26,7 @@ export function UiDemo({
       <UiDemoHeader />
       <div className="mx-auto grid max-w-[1600px] md:min-h-[calc(100dvh-5rem)] md:grid-cols-[208px_minmax(0,1fr)] lg:grid-cols-[248px_minmax(0,1fr)]">
         <ComponentNavigation selected={component} />
-        <main
-          id="main-content"
-          className="min-w-0 px-5 py-8 sm:px-8 lg:px-12 lg:py-12"
-        >
+        <main id="main-content" className="min-w-0 px-5 py-8 sm:px-8 lg:p-12">
           <div className="mb-9">
             <div className="flex items-center gap-3 font-mono text-[10px] tracking-[0.16em] text-muted-foreground">
               <span>COMPONENT LIBRARY</span>
@@ -40,7 +37,7 @@ export function UiDemo({
               {item.title}
               <span className="text-primary">.</span>
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground">
+            <p className="mt-5 max-w-2xl text-base/7 text-muted-foreground">
               {item.description}
             </p>
           </div>

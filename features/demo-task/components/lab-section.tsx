@@ -17,7 +17,7 @@ export function LabSection({ title, description, children }: LabSectionProps) {
       <h2 id={headingId} className="font-medium">
         {title}
       </h2>
-      <div className="mt-1 mb-4 text-sm leading-6 text-muted-foreground">
+      <div className="mt-1 mb-4 text-sm/6 text-muted-foreground">
         {description}
       </div>
       {children}

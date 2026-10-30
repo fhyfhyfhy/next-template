@@ -23,7 +23,9 @@ export function CommentList({ taskId }: { taskId: string }) {
           className="flex items-start gap-3 rounded-panel border border-border bg-card p-3 text-sm"
         >
           <div className="min-w-0 flex-1">
-            <p className="break-words whitespace-pre-wrap">{comment.content}</p>
+            <p className="wrap-break-word whitespace-pre-wrap">
+              {comment.content}
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {comment.sending ? "发送中…" : formatDateTime(comment.createdAt)}
             </p>
