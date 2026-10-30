@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
 import { fileURLToPath } from "node:url";
 import prettier from "prettier";
 import ts from "typescript";
+import { expect, test } from "vitest";
 
 import { exampleFiles } from "../constants/example-files.generated.ts";
 import { formatExampleSource } from "./example-source.ts";
@@ -22,10 +21,9 @@ test("参数中的引号、换行和代码字符只作为字符串保存", () =>
     values: ["a", "b"],
   };
   const result = formatExampleSource(prefix + " {} " + suffix, config);
-  assert.equal(result.slice(0, prefix.length), prefix);
-  assert.equal(result.slice(-suffix.length), suffix);
-  assert.deepEqual(
-    JSON.parse(result.slice(prefix.length, -suffix.length)),
+  expect(result.slice(0, prefix.length)).toBe(prefix);
+  expect(result.slice(-suffix.length)).toBe(suffix);
+  expect(JSON.parse(result.slice(prefix.length, -suffix.length))).toStrictEqual(
     config,
   );
 });
@@ -38,7 +36,7 @@ test("标记缺失、重复或倒置时拒绝生成误导代码", () => {
     start + start + end,
     start + end + end,
   ]) {
-    assert.throws(() => formatExampleSource(source, {}), /marker pair/);
+    expect(() => formatExampleSource(source, {})).toThrow(/marker pair/);
   }
 });
 
@@ -55,11 +53,10 @@ test("可调预览格式化后仍可替换参数，所有发现的示例都可�
       ...(await prettier.resolveConfig(filepath)),
       filepath,
     });
-    assert.deepEqual(
+    expect(
       JSON.parse(formatted.split(start)[1].split(end)[0]),
-      config,
       component,
-    );
+    ).toStrictEqual(config);
     const result = formatExampleSource(formatted, config);
     const output = ts.transpileModule(result, {
       compilerOptions: {
@@ -69,23 +66,24 @@ test("可调预览格式化后仍可替换参数，所有发现的示例都可�
       fileName: "example.tsx",
       reportDiagnostics: true,
     });
-    assert.deepEqual(output.diagnostics, [], component);
+    expect(output.diagnostics, component).toStrictEqual([]);
     for (const filename of [
       "playground.tsx",
       ...examples.map((example) => example.filename),
     ]) {
       const text = await readFile(new URL(filename, directory), "utf8");
-      assert.doesNotMatch(
+      expect(
         text,
-        /from ["']\./,
         `${component}/${filename} should copy independently`,
-      );
+      ).not.toMatch(/from ["']\./);
       const compiled = ts.transpileModule(text, {
         compilerOptions: { jsx: ts.JsxEmit.ReactJSX },
         fileName: filename,
         reportDiagnostics: true,
       });
-      assert.deepEqual(compiled.diagnostics, [], `${component}/${filename}`);
+      expect(compiled.diagnostics, `${component}/${filename}`).toStrictEqual(
+        [],
+      );
     }
   }
 });

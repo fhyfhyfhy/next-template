@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
   existsSync,
@@ -10,14 +9,14 @@ import {
 import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import test from "node:test";
 import { ESLint } from "eslint";
+import { expect, onTestFinished, test, vi } from "vitest";
 
 import createFeatureCycleRule from "./no-feature-cycle.mjs";
 
-function fixture(t, files) {
+function fixture(files) {
   const root = mkdtempSync(join(tmpdir(), "no-feature-cycle-"));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   for (const [file, source] of Object.entries({
     "tsconfig.json": JSON.stringify({
       compilerOptions: {
@@ -54,8 +53,8 @@ function eslintFor(root) {
   });
 }
 
-test("仅 lint 一个文件也报告其 feature 循环，并定位到完整引用字符串", async (t) => {
-  const root = fixture(t, {
+test("仅 lint 一个文件也报告其 feature 循环，并定位到完整引用字符串", async () => {
+  const root = fixture({
     "features/a/index.ts": "export const a = 1;",
     "features/a/consumer.ts": '\nexport * from "@/features/b";\n',
     "features/b/index.ts": "export const b = 1;",
@@ -63,25 +62,22 @@ test("仅 lint 一个文件也报告其 feature 循环，并定位到完整引�
   });
   const filename = join(root, "features/a/consumer.ts");
   const results = await eslintFor(root).lintFiles([filename]);
-  assert.equal(results.length, 1);
-  assert.equal(results[0].filePath, filename);
-  assert.equal(results[0].errorCount, 1);
+  expect(results.length).toBe(1);
+  expect(results[0].filePath).toBe(filename);
+  expect(results[0].errorCount).toBe(1);
   const [message] = results[0].messages;
-  assert.equal(message.ruleId, "architecture/no-feature-cycle");
-  assert.match(message.message, /a -> b -> a/);
-  assert.deepEqual(
-    {
-      line: message.line,
-      column: message.column,
-      endLine: message.endLine,
-      endColumn: message.endColumn,
-    },
-    { line: 2, column: 15, endLine: 2, endColumn: 29 },
-  );
+  expect(message.ruleId).toBe("architecture/no-feature-cycle");
+  expect(message.message).toMatch(/a -> b -> a/);
+  expect({
+    line: message.line,
+    column: message.column,
+    endLine: message.endLine,
+    endColumn: message.endColumn,
+  }).toStrictEqual({ line: 2, column: 15, endLine: 2, endColumn: 29 });
 });
 
-test("同一 ESLint 实例的 lintText 使用未保存文本并支持尚未落盘的文件", async (t) => {
-  const root = fixture(t, {
+test("同一 ESLint 实例的 lintText 使用未保存文本并支持尚未落盘的文件", async () => {
+  const root = fixture({
     "features/a/index.ts": "export const a = 1;",
     "features/b/index.ts": 'export * from "@/features/a";',
   });
@@ -90,43 +86,42 @@ test("同一 ESLint 实例的 lintText 使用未保存文本并支持尚未落�
   const [before] = await eslint.lintText("export const value = 1;", {
     filePath,
   });
-  assert.equal(before.errorCount, 0);
+  expect(before.errorCount).toBe(0);
 
   const [edited] = await eslint.lintText(
     '\nexport * from "@/features/b";\nexport * from "@/features/b";',
     { filePath },
   );
-  assert.equal(edited.errorCount, 2);
-  assert.deepEqual(
+  expect(edited.errorCount).toBe(2);
+  expect(
     edited.messages.map(({ ruleId, line }) => ({ ruleId, line })),
-    [
-      { ruleId: "architecture/no-feature-cycle", line: 2 },
-      { ruleId: "architecture/no-feature-cycle", line: 3 },
-    ],
-  );
+  ).toStrictEqual([
+    { ruleId: "architecture/no-feature-cycle", line: 2 },
+    { ruleId: "architecture/no-feature-cycle", line: 3 },
+  ]);
   const [after] = await eslint.lintText("export const value = 1;", {
     filePath,
   });
-  assert.equal(after.errorCount, 0);
-  assert.equal(existsSync(filePath), false);
+  expect(after.errorCount).toBe(0);
+  expect(existsSync(filePath)).toBe(false);
 });
 
-test("未保存文本删除跨 feature 引用后，不沿用磁盘中的循环", async (t) => {
-  const root = fixture(t, {
+test("未保存文本删除跨 feature 引用后，不沿用磁盘中的循环", async () => {
+  const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts": 'export * from "@/features/a";',
   });
   const eslint = eslintFor(root);
   const filePath = join(root, "features/a/index.ts");
   const [saved] = await eslint.lintFiles([filePath]);
-  assert.equal(saved.errorCount, 1);
+  expect(saved.errorCount).toBe(1);
   const [unsaved] = await eslint.lintText("export const value = 1;", {
     filePath,
   });
-  assert.equal(unsaved.errorCount, 0);
+  expect(unsaved.errorCount).toBe(0);
 });
 
-test("全项目 lint 在文件未变化时复用读取结果，不逐文件重读整个项目", async (t) => {
+test("全项目 lint 在文件未变化时复用读取结果，不逐文件重读整个项目", async () => {
   const files = {};
   for (let index = 0; index < 40; index++) {
     const feature = Math.floor(index / 4);
@@ -136,36 +131,44 @@ test("全项目 lint 在文件未变化时复用读取结果，不逐文件重�
         ? "export const value = 1;"
         : 'export { value } from "@/features/f9";';
   }
-  const root = fixture(t, files);
+  const root = fixture(files);
   const originalRead = fs.readFileSync;
   const originalReadDirectory = fs.readdirSync;
   let reads = 0;
   let directoryReads = 0;
-  const readMock = t.mock.method(fs, "readFileSync", (...args) => {
-    if (typeof args[0] === "string" && args[0].startsWith(root)) reads++;
-    return originalRead(...args);
-  });
-  const directoryMock = t.mock.method(fs, "readdirSync", (...args) => {
-    if (typeof args[0] === "string" && args[0].startsWith(root))
-      directoryReads++;
-    return originalReadDirectory(...args);
-  });
+  const readMock = vi
+    .spyOn(fs, "readFileSync")
+    .mockImplementation((...args) => {
+      if (typeof args[0] === "string" && args[0].startsWith(root)) reads++;
+      return originalRead(...args);
+    });
+  const directoryMock = vi
+    .spyOn(fs, "readdirSync")
+    .mockImplementation((...args) => {
+      if (typeof args[0] === "string" && args[0].startsWith(root))
+        directoryReads++;
+      return originalReadDirectory(...args);
+    });
   syncBuiltinESMExports();
-  t.after(() => {
-    readMock.mock.restore();
-    directoryMock.mock.restore();
+  onTestFinished(() => {
+    readMock.mockRestore();
+    directoryMock.mockRestore();
     syncBuiltinESMExports();
   });
 
   const results = await eslintFor(root).lintFiles(["features/**/*.ts"]);
-  assert.equal(results.length, Object.keys(files).length);
-  assert.ok(results.every((result) => result.errorCount === 0));
-  assert.ok(
-    reads <= Object.keys(files).length * 2,
-    `未变化的 ${Object.keys(files).length} 个文件不应触发 ${reads} 次同步读取`,
-  );
-  assert.ok(
-    directoryReads <= Object.keys(files).length * 2,
-    `目录未变化时不应触发 ${directoryReads} 次同步枚举`,
-  );
+  expect(results.length).toBe(Object.keys(files).length);
+  expect(
+    results
+      .filter((result) => result.errorCount > 0)
+      .map((result) => result.filePath),
+  ).toStrictEqual([]);
+  expect(
+    reads,
+    `未变化的 ${Object.keys(files).length} 个文件不应触发这么多次同步读取`,
+  ).toBeLessThanOrEqual(Object.keys(files).length * 2);
+  expect(
+    directoryReads,
+    "目录未变化时不应触发这么多次同步枚举",
+  ).toBeLessThanOrEqual(Object.keys(files).length * 2);
 });

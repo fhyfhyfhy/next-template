@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import {
   mkdirSync,
   mkdtempSync,
@@ -11,14 +10,14 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import test from "node:test";
+import { expect, onTestFinished, test } from "vitest";
 
 import { createFeatureCycleChecker } from "./feature-cycles.mjs";
 import { createProjectResolver, SOURCE_EXTENSIONS } from "./imports.mjs";
 
-function fixture(t, files = {}, config = {}) {
+function fixture(files = {}, config = {}) {
   const root = mkdtempSync(join(tmpdir(), "feature-cycles-"));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
   const tsconfig = {
     compilerOptions: {
       module: "esnext",
@@ -50,14 +49,14 @@ function check(root, filename, checker = createFeatureCycleChecker(root)) {
   return checker(path, readFileSync(path, "utf8"));
 }
 
-test("没有 features 目录或当前文件不属于 feature 时不报告", (t) => {
-  const root = fixture(t);
+test("没有 features 目录或当前文件不属于 feature 时不报告", () => {
+  const root = fixture();
   const checkFile = createFeatureCycleChecker(root);
-  assert.deepEqual(checkFile(join(root, "app/page.ts"), "export {};"), []);
+  expect(checkFile(join(root, "app/page.ts"), "export {};")).toStrictEqual([]);
 });
 
-test("同 feature 导入和单向跨 feature 依赖允许", (t) => {
-  const root = fixture(t, {
+test("同 feature 导入和单向跨 feature 依赖允许", () => {
+  const root = fixture({
     "features/a/index.ts": 'export { value } from "./hooks/value";',
     "features/a/hooks/value.ts":
       'import { value as other } from "@/features/b"; export const value = other;',
@@ -65,12 +64,12 @@ test("同 feature 导入和单向跨 feature 依赖允许", (t) => {
     "features/b/hooks/value.ts": "export const value = 1;",
   });
   const checkFile = createFeatureCycleChecker(root);
-  assert.deepEqual(check(root, "features/a/index.ts", checkFile), []);
-  assert.deepEqual(check(root, "features/a/hooks/value.ts", checkFile), []);
+  expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual([]);
+  expect(check(root, "features/a/hooks/value.ts", checkFile)).toStrictEqual([]);
 });
 
-test("文件图无环时仍能发现两个 feature 互相依赖", (t) => {
-  const root = fixture(t, {
+test("文件图无环时仍能发现两个 feature 互相依赖", () => {
+  const root = fixture({
     "features/a/index.ts": "export const a = 1;",
     "features/a/components/consumer.ts":
       '\nimport { b } from "@/features/b"; export const value = b;',
@@ -78,7 +77,7 @@ test("文件图无环时仍能发现两个 feature 互相依赖", (t) => {
     "features/b/components/consumer.ts":
       'import { a } from "@/features/a"; export const value = a;',
   });
-  assert.deepEqual(check(root, "features/a/components/consumer.ts"), [
+  expect(check(root, "features/a/components/consumer.ts")).toStrictEqual([
     {
       specifier: "@/features/b",
       line: 2,
@@ -90,8 +89,8 @@ test("文件图无环时仍能发现两个 feature 互相依赖", (t) => {
   ]);
 });
 
-test("发现三个 feature 的间接循环，只报告当前文件参与的循环", (t) => {
-  const root = fixture(t, {
+test("发现三个 feature 的间接循环，只报告当前文件参与的循环", () => {
+  const root = fixture({
     "features/c/index.ts": 'export * from "@/features/a";',
     "features/b/index.ts": 'export * from "@/features/c";',
     "features/a/index.ts": 'export * from "@/features/b";',
@@ -100,15 +99,13 @@ test("发现三个 feature 的间接循环，只报告当前文件参与的循�
   });
   const checkFile = createFeatureCycleChecker(root);
   const cycles = check(root, "features/a/index.ts", checkFile);
-  assert.deepEqual(
-    cycles.map(({ cycle }) => cycle),
-    [["a", "b", "c", "a"]],
-  );
-  assert.deepEqual(
+  expect(cycles.map(({ cycle }) => cycle)).toStrictEqual([
+    ["a", "b", "c", "a"],
+  ]);
+  expect(
     check(root, "features/y/index.ts", checkFile).map(({ cycle }) => cycle),
-    [["y", "z", "y"]],
-  );
-  assert.deepEqual(check(root, "features/a/index.ts", checkFile), cycles);
+  ).toStrictEqual([["y", "z", "y"]]);
+  expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual(cycles);
 });
 
 const references = {
@@ -126,82 +123,76 @@ const references = {
     'import peer = require("@/features/b"); export = peer;',
 };
 for (const [name, source] of Object.entries(references)) {
-  test(`${name} 纳入 feature 图`, (t) => {
-    const root = fixture(t, {
+  test(`${name} 纳入 feature 图`, () => {
+    const root = fixture({
       "features/a/index.ts": source,
       "features/b/index.ts":
         'export type Item = {}; export * from "@/features/a";',
     });
-    assert.deepEqual(
+    expect(
       check(root, "features/a/index.ts").map(({ cycle }) => cycle),
-      [["a", "b", "a"]],
-    );
+    ).toStrictEqual([["a", "b", "a"]]);
   });
 }
 
 for (const extension of SOURCE_EXTENSIONS) {
-  test(`扫描 .${extension} 文件`, (t) => {
-    const root = fixture(t, {
+  test(`扫描 .${extension} 文件`, () => {
+    const root = fixture({
       [`features/a/index.${extension}`]: `export * from "@/features/b/index.${extension}";`,
       [`features/b/index.${extension}`]: `export * from "@/features/a/index.${extension}";`,
     });
-    assert.deepEqual(
+    expect(
       check(root, `features/a/index.${extension}`).map(({ cycle }) => cycle),
-      [["a", "b", "a"]],
-    );
+    ).toStrictEqual([["a", "b", "a"]]);
   });
 }
 
-test("相对路径跨 feature 依赖仍纳入循环检查", (t) => {
-  const root = fixture(t, {
+test("相对路径跨 feature 依赖仍纳入循环检查", () => {
+  const root = fixture({
     "features/a/index.ts": 'export * from "../b";',
     "features/b/index.ts": 'export * from "../a";',
   });
-  assert.deepEqual(
+  expect(
     check(root, "features/a/index.ts").map(({ cycle }) => cycle),
-    [["a", "b", "a"]],
-  );
+  ).toStrictEqual([["a", "b", "a"]]);
 });
 
-test("声明文件的类型依赖纳入 feature 图", (t) => {
-  const root = fixture(t, {
+test("声明文件的类型依赖纳入 feature 图", () => {
+  const root = fixture({
     "features/a/index.d.ts": 'export type Item = import("@/features/b").Item;',
     "features/b/index.d.ts": 'export type Item = import("@/features/a").Item;',
   });
-  assert.deepEqual(
+  expect(
     check(root, "features/a/index.d.ts").map(({ cycle }) => cycle),
-    [["a", "b", "a"]],
-  );
+  ).toStrictEqual([["a", "b", "a"]]);
 });
 
-test("忽略生成目录、第三方模块和无法静态判断的动态导入", (t) => {
-  const root = fixture(t, {
+test("忽略生成目录、第三方模块和无法静态判断的动态导入", () => {
+  const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts":
       'import "react"; export const value = import(`@/features/${name}`);',
     "features/b/.next/generated.ts": 'export * from "@/features/a";',
     "features/b/node_modules/package/index.ts": 'export * from "@/features/a";',
   });
-  assert.deepEqual(check(root, "features/a/index.ts"), []);
+  expect(check(root, "features/a/index.ts")).toStrictEqual([]);
 });
 
-test("按 tsconfig 的实际别名解析依赖", (t) => {
+test("按 tsconfig 的实际别名解析依赖", () => {
   const root = fixture(
-    t,
     {
       "features/a/index.ts": 'export * from "@/public/b";',
       "features/b/index.ts": 'export * from "@/public/a";',
     },
     { paths: { "@/public/*": ["./features/*"] } },
   );
-  assert.deepEqual(
+  expect(
     check(root, "features/a/index.ts").map(({ cycle }) => cycle),
-    [["a", "b", "a"]],
-  );
+  ).toStrictEqual([["a", "b", "a"]]);
 });
 
-test("共享 resolver 读取 extends 和 moduleSuffixes", (t) => {
-  const root = fixture(t, {
+test("共享 resolver 读取 extends 和 moduleSuffixes", () => {
+  const root = fixture({
     "tsconfig.base.json": JSON.stringify({
       compilerOptions: {
         moduleResolution: "bundler",
@@ -218,27 +209,26 @@ test("共享 resolver 读取 extends 和 moduleSuffixes", (t) => {
     join(root, "app/page.ts"),
     "@/features/a",
   );
-  assert.equal(imported.target, join(root, "features/a/index.native.ts"));
-  assert.equal(imported.isAlias, true);
+  expect(imported.target).toBe(join(root, "features/a/index.native.ts"));
+  expect(imported.isAlias).toBe(true);
 });
 
-test("共享 resolver 对未解析路径规范化，第三方包不参与项目路径检查", (t) => {
-  const root = fixture(t);
+test("共享 resolver 对未解析路径规范化，第三方包不参与项目路径检查", () => {
+  const root = fixture();
   const resolveImport = createProjectResolver(root);
-  assert.deepEqual(
+  expect(
     resolveImport(join(root, "features/a/index.ts"), "../b/../c/missing"),
-    {
-      target: join(root, "features/c/missing"),
-      isRelative: true,
-      isAlias: false,
-    },
-  );
-  assert.equal(resolveImport(join(root, "app/page.ts"), "react"), null);
+  ).toStrictEqual({
+    target: join(root, "features/c/missing"),
+    isRelative: true,
+    isAlias: false,
+  });
+  expect(resolveImport(join(root, "app/page.ts"), "react")).toBe(null);
 });
 
-test("同一 checker 读取磁盘内容变化，不以时间戳或文件大小复用旧依赖", (t) => {
+test("同一 checker 读取磁盘内容变化，不以时间戳或文件大小复用旧依赖", () => {
   const source = 'export * from "@/features/b";';
-  const root = fixture(t, {
+  const root = fixture({
     "features/a/index.ts": source,
     "features/b/index.ts": 'export * from "@/features/c";',
     "features/c/index.ts": "export const value = 1;",
@@ -248,66 +238,65 @@ test("同一 checker 读取磁盘内容变化，不以时间戳或文件大小�
   const timestamp = new Date("2026-01-01T00:00:00.000Z");
   utimesSync(target, timestamp, timestamp);
   const before = statSync(target);
-  assert.deepEqual(check(root, "features/a/index.ts", checkFile), []);
+  expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual([]);
   write(root, "features/b/index.ts", 'export * from "@/features/a";');
   utimesSync(target, timestamp, timestamp);
   const after = statSync(target);
-  assert.equal(after.size, before.size);
-  assert.equal(after.mtimeMs, before.mtimeMs);
-  assert.deepEqual(
+  expect(after.size).toBe(before.size);
+  expect(after.mtimeMs).toBe(before.mtimeMs);
+  expect(
     checkFile(join(root, "features/a/index.ts"), source).map(
       ({ cycle }) => cycle,
     ),
-    [["a", "b", "a"]],
-  );
+  ).toStrictEqual([["a", "b", "a"]]);
   write(root, "features/b/index.ts", "export const value = 1;");
-  assert.deepEqual(check(root, "features/a/index.ts", checkFile), []);
+  expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual([]);
 });
 
-test("同一 checker 跟踪依赖文件新增、删除及跨目录重命名", (t) => {
-  const root = fixture(t, {
+test("同一 checker 跟踪依赖文件新增、删除及跨目录重命名", () => {
+  const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts": "export const value = 1;",
     "features/c/index.ts": "export const value = 1;",
   });
   const checkFile = createFeatureCycleChecker(root);
   const current = () => check(root, "features/a/index.ts", checkFile);
-  assert.deepEqual(current(), []);
+  expect(current()).toStrictEqual([]);
   write(root, "features/b/consumer.ts", 'export * from "@/features/a";');
-  assert.equal(current().length, 1);
+  expect(current().length).toBe(1);
   renameSync(
     join(root, "features/b/consumer.ts"),
     join(root, "features/c/consumer.ts"),
   );
-  assert.deepEqual(current(), []);
+  expect(current()).toStrictEqual([]);
   renameSync(
     join(root, "features/c/consumer.ts"),
     join(root, "features/b/renamed.ts"),
   );
-  assert.equal(current().length, 1);
+  expect(current().length).toBe(1);
   rmSync(join(root, "features/b/renamed.ts"));
-  assert.deepEqual(current(), []);
+  expect(current()).toStrictEqual([]);
 });
 
-test("同一 checker 跟踪整个 feature 目录新增、重命名和删除", (t) => {
-  const root = fixture(t, {
+test("同一 checker 跟踪整个 feature 目录新增、重命名和删除", () => {
+  const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
   });
   const checkFile = createFeatureCycleChecker(root);
   const current = () => check(root, "features/a/index.ts", checkFile);
-  assert.deepEqual(current(), []);
+  expect(current()).toStrictEqual([]);
   write(root, "features/b/index.ts", 'export * from "@/features/a";');
-  assert.equal(current().length, 1);
+  expect(current().length).toBe(1);
   renameSync(join(root, "features/b"), join(root, "features/c"));
-  assert.deepEqual(current(), []);
+  expect(current()).toStrictEqual([]);
   renameSync(join(root, "features/c"), join(root, "features/b"));
-  assert.equal(current().length, 1);
+  expect(current().length).toBe(1);
   rmSync(join(root, "features/b"), { recursive: true });
-  assert.deepEqual(current(), []);
+  expect(current()).toStrictEqual([]);
 });
 
-test("同一 checker 重新读取 tsconfig 及 extends 中的别名", (t) => {
-  const root = fixture(t, {
+test("同一 checker 重新读取 tsconfig 及 extends 中的别名", () => {
+  const root = fixture({
     "tsconfig.base.json": JSON.stringify({
       compilerOptions: {
         moduleResolution: "bundler",
@@ -321,7 +310,7 @@ test("同一 checker 重新读取 tsconfig 及 extends 中的别名", (t) => {
   });
   const checkFile = createFeatureCycleChecker(root);
   const current = () => check(root, "features/a/index.ts", checkFile);
-  assert.deepEqual(current(), []);
+  expect(current()).toStrictEqual([]);
   write(
     root,
     "tsconfig.base.json",
@@ -332,10 +321,7 @@ test("同一 checker 重新读取 tsconfig 及 extends 中的别名", (t) => {
       },
     }),
   );
-  assert.deepEqual(
-    current().map(({ cycle }) => cycle),
-    [["a", "b", "a"]],
-  );
+  expect(current().map(({ cycle }) => cycle)).toStrictEqual([["a", "b", "a"]]);
   write(
     root,
     "tsconfig.json",
@@ -344,12 +330,11 @@ test("同一 checker 重新读取 tsconfig 及 extends 中的别名", (t) => {
       compilerOptions: { paths: { "@/peer": ["./features/c"] } },
     }),
   );
-  assert.deepEqual(current(), []);
+  expect(current()).toStrictEqual([]);
 });
 
-test("配置变化让当前文件退出 feature 图后，其他文件也使用新的解析结果", (t) => {
+test("配置变化让当前文件退出 feature 图后，其他文件也使用新的解析结果", () => {
   const root = fixture(
-    t,
     {
       "features/a/index.ts": 'export * from "@/peer";',
       "features/b/index.ts": 'export * from "@/features/a";',
@@ -358,7 +343,7 @@ test("配置变化让当前文件退出 feature 图后，其他文件也使用�
     { paths: { "@/*": ["./*"], "@/peer": ["./features/b"] } },
   );
   const checkFile = createFeatureCycleChecker(root);
-  assert.equal(check(root, "features/a/index.ts", checkFile).length, 1);
+  expect(check(root, "features/a/index.ts", checkFile).length).toBe(1);
   write(
     root,
     "tsconfig.json",
@@ -369,12 +354,12 @@ test("配置变化让当前文件退出 feature 图后，其他文件也使用�
       },
     }),
   );
-  assert.deepEqual(check(root, "features/a/index.ts", checkFile), []);
-  assert.deepEqual(check(root, "features/b/index.ts", checkFile), []);
+  expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual([]);
+  expect(check(root, "features/b/index.ts", checkFile)).toStrictEqual([]);
 });
 
-test("原子替换文件后即使大小和 mtime 相同也更新依赖", (t) => {
-  const root = fixture(t, {
+test("原子替换文件后即使大小和 mtime 相同也更新依赖", () => {
+  const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts": 'export * from "@/features/c";',
     "features/c/index.ts": "export const value = 1;",
@@ -382,18 +367,17 @@ test("原子替换文件后即使大小和 mtime 相同也更新依赖", (t) => 
   const checkFile = createFeatureCycleChecker(root);
   const target = join(root, "features/b/index.ts");
   const before = statSync(target);
-  assert.deepEqual(check(root, "features/a/index.ts", checkFile), []);
+  expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual([]);
   const replacement = join(root, "replacement.ts");
   writeFileSync(replacement, 'export * from "@/features/a";', "utf8");
   utimesSync(replacement, before.atime, before.mtime);
   renameSync(replacement, target);
-  assert.equal(statSync(target).size, before.size);
-  assert.equal(check(root, "features/a/index.ts", checkFile).length, 1);
+  expect(statSync(target).size).toBe(before.size);
+  expect(check(root, "features/a/index.ts", checkFile).length).toBe(1);
 });
 
-test("新增或删除优先解析目标会使已有文件的依赖失效", (t) => {
+test("新增或删除优先解析目标会使已有文件的依赖失效", () => {
   const root = fixture(
-    t,
     {
       "features/a/index.ts": 'export * from "@/peer";',
       "features/b/index.ts": 'export * from "@/features/a";',
@@ -408,93 +392,85 @@ test("新增或删除优先解析目标会使已有文件的依赖失效", (t) =
   );
   const checkFile = createFeatureCycleChecker(root);
   const current = () => check(root, "features/a/index.ts", checkFile);
-  assert.deepEqual(current(), []);
+  expect(current()).toStrictEqual([]);
   write(root, "features/b/preferred.ts", "export const value = 1;");
-  assert.equal(current().length, 1);
+  expect(current().length).toBe(1);
   rmSync(join(root, "features/b/preferred.ts"));
-  assert.deepEqual(current(), []);
+  expect(current()).toStrictEqual([]);
 });
 
-test("无效配置不会回退到旧 resolver，修正后同一 checker 可以恢复", (t) => {
-  const root = fixture(t, {
+test("无效配置不会回退到旧 resolver，修正后同一 checker 可以恢复", () => {
+  const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts": 'export * from "@/features/a";',
   });
   const checkFile = createFeatureCycleChecker(root);
   const current = () => check(root, "features/a/index.ts", checkFile);
-  assert.equal(current().length, 1);
+  expect(current().length).toBe(1);
   const config = readFileSync(join(root, "tsconfig.json"), "utf8");
   write(root, "tsconfig.json", "{");
-  assert.throws(current);
-  assert.throws(current);
+  expect(current).toThrow();
+  expect(current).toThrow();
   write(root, "tsconfig.json", config);
-  assert.equal(current().length, 1);
+  expect(current().length).toBe(1);
 });
 
-test("未保存的当前文本覆盖磁盘版本，后续调用不会保留旧的覆盖内容", (t) => {
-  const root = fixture(t, {
+test("未保存的当前文本覆盖磁盘版本，后续调用不会保留旧的覆盖内容", () => {
+  const root = fixture({
     "features/a/index.ts": "export const value = 1;",
     "features/b/index.ts": 'export * from "@/features/a";',
   });
   const checkFile = createFeatureCycleChecker(root);
   const filename = join(root, "features/a/index.ts");
-  assert.deepEqual(check(root, "features/a/index.ts", checkFile), []);
-  assert.deepEqual(
+  expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual([]);
+  expect(
     checkFile(filename, 'export * from "@/features/b";').map(
       ({ cycle }) => cycle,
     ),
-    [["a", "b", "a"]],
-  );
-  assert.deepEqual(check(root, "features/b/index.ts", checkFile), []);
-  assert.deepEqual(check(root, "features/a/index.ts", checkFile), []);
+  ).toStrictEqual([["a", "b", "a"]]);
+  expect(check(root, "features/b/index.ts", checkFile)).toStrictEqual([]);
+  expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual([]);
   write(root, "features/a/index.ts", 'export * from "@/features/b";');
-  assert.deepEqual(checkFile(filename, "export const value = 1;"), []);
-  assert.equal(check(root, "features/a/index.ts", checkFile).length, 1);
+  expect(checkFile(filename, "export const value = 1;")).toStrictEqual([]);
+  expect(check(root, "features/a/index.ts", checkFile).length).toBe(1);
 });
 
-test("尚未落盘的新文件也按传入文本参与 feature 图", (t) => {
-  const root = fixture(t, {
+test("尚未落盘的新文件也按传入文本参与 feature 图", () => {
+  const root = fixture({
     "features/b/index.ts": 'export * from "@/features/a/new-file";',
   });
   const checkFile = createFeatureCycleChecker(root);
-  assert.deepEqual(
+  expect(
     checkFile(
       join(root, "features/a/new-file.ts"),
       'export * from "@/features/b";',
     ).map(({ cycle }) => cycle),
-    [["a", "b", "a"]],
-  );
+  ).toStrictEqual([["a", "b", "a"]]);
 });
 
-test("同一 feature 边的每个当前引用都报告，不局限于代表文件", (t) => {
-  const root = fixture(t, {
+test("同一 feature 边的每个当前引用都报告，不局限于代表文件", () => {
+  const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/a/consumer.ts":
       'export * from "@/features/b";\nexport type Item = import("@/features/b").Item;',
     "features/b/index.ts": 'export * from "@/features/a";',
   });
   const checkFile = createFeatureCycleChecker(root);
-  assert.equal(check(root, "features/a/index.ts", checkFile).length, 1);
+  expect(check(root, "features/a/index.ts", checkFile).length).toBe(1);
   const reports = check(root, "features/a/consumer.ts", checkFile);
-  assert.deepEqual(
-    reports.map(({ line }) => line),
-    [1, 2],
-  );
-  assert.deepEqual(
-    reports.map(({ cycle }) => cycle),
-    [
-      ["a", "b", "a"],
-      ["a", "b", "a"],
-    ],
-  );
+  expect(reports.map(({ line }) => line)).toStrictEqual([1, 2]);
+  expect(reports.map(({ cycle }) => cycle)).toStrictEqual([
+    ["a", "b", "a"],
+    ["a", "b", "a"],
+  ]);
 });
 
-test("其他 feature 的独立循环不会影响当前单向引用", (t) => {
-  const root = fixture(t, {
+test("其他 feature 的独立循环不会影响当前单向引用", () => {
+  const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts": "export const value = 1;",
     "features/c/index.ts": 'export * from "@/features/d";',
     "features/d/index.ts": 'export * from "@/features/c";',
   });
-  assert.deepEqual(check(root, "features/a/index.ts"), []);
+  expect(check(root, "features/a/index.ts")).toStrictEqual([]);
 });

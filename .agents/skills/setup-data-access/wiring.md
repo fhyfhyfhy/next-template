@@ -64,7 +64,7 @@ Measured resolution:
 | Server Components, Server Actions, Route Handlers | `credentials-server.ts` | From the request's cookies |
 | Client Components rendering on the server | `credentials-browser.ts`, with no `window` | None |
 | The browser | `credentials-browser.ts` | From the browser's session |
-| `node --test` and TypeScript | `credentials-browser.ts`, with no `window` | None, so existing `fetchApi` tests pass unchanged |
+| Unit tests (Vitest) and TypeScript | `credentials-browser.ts`, with no `window` | None, so existing `fetchApi` tests pass unchanged |
 
 Server-only imports (`next/headers`, `server-only`, the auth library's server helpers) go in `credentials-server.ts` only; its doc comment says why. When filling in either file, replace its `TODO` and the function body, and make the doc comment say what the file now sends and where it comes from.
 
@@ -108,7 +108,7 @@ export async function credentialHeaders(): Promise<Record<string, string>> {
 }
 ```
 
-- Import the auth code inside the `window` branch, as above. A static import also runs it during SSR, and `node --test` loads this file too but cannot resolve `@/` or extensionless paths. A package that touches no browser API when imported may be imported statically.
+- Import the auth code inside the `window` branch, as above. A static import also runs it during SSR and in unit tests, which load this file too. A package that touches no browser API when imported may be imported statically.
 - A cookie the backend reads itself needs nothing here: leave the file as shipped, and the browser sends the cookie. A backend on another origin also needs `credentials: "include"` on the request, set in `fetchApi` when `auth` is on, and a CORS policy that allows credentials from the app's origin.
 
 ## Signed out

@@ -15,7 +15,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "test": "node --test",
+    "test": "vitest run",
     "test:e2e": "playwright test",
     "demo:dev": "node scripts/run-next.mjs dev --demo",
     "demo:build": "node scripts/run-next.mjs build --demo",
@@ -55,7 +55,8 @@
     "prettier": "3.9.10",
     "prettier-plugin-tailwindcss": "0.8.1",
     "tailwindcss": "^4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
   },
   "engines": {
     "node": "24.x"

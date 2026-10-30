@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import {
   copyFileSync,
   cpSync,
@@ -12,9 +11,11 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
+
+const project = dirname(fileURLToPath(import.meta.url));
 
 const featureRule = "architecture/feature-imports";
 const componentRule = "architecture/component-imports";
@@ -1102,13 +1103,14 @@ for (const [name, from, directive, rules] of [
   });
 }
 
-test("架构依赖和 feature、组件导入约定", async (t) => {
-  const project = dirname(fileURLToPath(import.meta.url));
-  const previousCwd = process.cwd();
-  const fixture = realpathSync(
-    mkdtempSync(join(tmpdir(), "next-demo-eslint-")),
-  );
-  try {
+describe("架构依赖和 feature、组件导入约定", () => {
+  let previousCwd;
+  let fixture;
+  let eslint;
+
+  beforeAll(() => {
+    previousCwd = process.cwd();
+    fixture = realpathSync(mkdtempSync(join(tmpdir(), "next-demo-eslint-")));
     copyFileSync(
       join(project, "eslint.config.mjs"),
       join(fixture, "eslint.config.mjs"),
@@ -1140,7 +1142,7 @@ test("架构依赖和 feature、组件导入约定", async (t) => {
     process.chdir(fixture);
     // 架构用例只验证依赖边界；import 排序由下方独立用例验证。
     // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
-    const eslint = new ESLint({
+    eslint = new ESLint({
       cwd: fixture,
       overrideConfig: {
         rules: {
@@ -1151,109 +1153,120 @@ test("架构依赖和 feature、组件导入约定", async (t) => {
         },
       },
     });
-    for (const { name, from, rules, messageIds } of cases) {
-      await t.test(name, async () => {
-        const [result] = await eslint.lintFiles([join(fixture, from)]);
-        assert.deepEqual(
-          result.messages.map(({ ruleId }) => ruleId).sort(),
-          [...rules].sort(),
-          JSON.stringify(result.messages, null, 2),
+  });
+
+  afterAll(() => {
+    process.chdir(previousCwd);
+    rmSync(fixture, { recursive: true, force: true });
+  });
+
+  for (const { name, from, rules, messageIds } of cases) {
+    test(name, async () => {
+      const [result] = await eslint.lintFiles([join(fixture, from)]);
+      expect(
+        result.messages.map(({ ruleId }) => ruleId).sort(),
+        JSON.stringify(result.messages, null, 2),
+      ).toStrictEqual([...rules].sort());
+      if (messageIds) {
+        expect(
+          result.messages.map(({ messageId }) => messageId).sort(),
+        ).toStrictEqual([...messageIds].sort());
+      }
+    });
+  }
+
+  describe("条件凭证入口只接受受支持的映射", () => {
+    // fixture 里的 package.json 复制自项目，映射用例在收集阶段就要确定，所以直接读项目的。
+    const manifest = JSON.parse(
+      readFileSync(join(project, "package.json"), "utf8"),
+    );
+    const credentialImports = manifest.imports["#credentials"];
+    const manifestPath = () => join(fixture, "package.json");
+    const filePath = () => join(fixture, "lib/fetch.ts");
+    let originalManifest;
+    const restoreManifest = () =>
+      writeFileSync(manifestPath(), originalManifest, "utf8");
+
+    beforeAll(() => {
+      originalManifest = readFileSync(manifestPath(), "utf8");
+    });
+    afterAll(restoreManifest);
+
+    for (const [name, mapping] of [
+      ["映射缺失", undefined],
+      ["直接映射丢失环境隔离", credentialImports.default],
+      [
+        "server 分支不能指向其他层",
+        {
+          ...credentialImports,
+          "react-server": "./features/account/api/credentials.ts",
+        },
+      ],
+      [
+        "default 分支不能换成其他 lib 文件",
+        { ...credentialImports, default: "./lib/fetch.ts" },
+      ],
+      [
+        "default 不能排在 server 分支之前",
+        {
+          default: credentialImports.default,
+          "react-server": credentialImports["react-server"],
+        },
+      ],
+      [
+        "额外 condition 不能绕过目标限制",
+        {
+          browser: "./features/account/api/credentials.ts",
+          ...credentialImports,
+        },
+      ],
+    ]) {
+      test(name, async () => {
+        writeFileSync(
+          manifestPath(),
+          JSON.stringify({
+            ...manifest,
+            imports: { ...manifest.imports, "#credentials": mapping },
+          }),
+          "utf8",
         );
-        if (messageIds) {
-          assert.deepEqual(
-            result.messages.map(({ messageId }) => messageId).sort(),
-            [...messageIds].sort(),
-          );
-        }
+        const [result] = await eslint.lintText(
+          statements.import("#credentials"),
+          { filePath: filePath() },
+        );
+        expect(result.fatalErrorCount).toBe(0);
+        expect(
+          result.messages
+            .filter(({ ruleId }) => ruleId === packageImportsRule)
+            .map(({ messageId }) => messageId),
+          JSON.stringify(result.messages, null, 2),
+        ).toStrictEqual(["mapping"]);
       });
     }
 
-    await t.test("条件凭证入口只接受受支持的映射", async (t) => {
-      const manifestPath = join(fixture, "package.json");
-      const originalManifest = readFileSync(manifestPath, "utf8");
-      const manifest = JSON.parse(originalManifest);
-      const credentialImports = manifest.imports["#credentials"];
-      const filePath = join(fixture, "lib/fetch.ts");
-      try {
-        for (const [name, mapping] of [
-          ["映射缺失", undefined],
-          ["直接映射丢失环境隔离", credentialImports.default],
-          [
-            "server 分支不能指向其他层",
-            {
-              ...credentialImports,
-              "react-server": "./features/account/api/credentials.ts",
-            },
-          ],
-          [
-            "default 分支不能换成其他 lib 文件",
-            { ...credentialImports, default: "./lib/fetch.ts" },
-          ],
-          [
-            "default 不能排在 server 分支之前",
-            {
-              default: credentialImports.default,
-              "react-server": credentialImports["react-server"],
-            },
-          ],
-          [
-            "额外 condition 不能绕过目标限制",
-            {
-              browser: "./features/account/api/credentials.ts",
-              ...credentialImports,
-            },
-          ],
-        ]) {
-          await t.test(name, async () => {
-            writeFileSync(
-              manifestPath,
-              JSON.stringify({
-                ...manifest,
-                imports: { ...manifest.imports, "#credentials": mapping },
-              }),
-              "utf8",
-            );
-            const [result] = await eslint.lintText(
-              statements.import("#credentials"),
-              { filePath },
-            );
-            assert.equal(result.fatalErrorCount, 0);
-            assert.deepEqual(
-              result.messages
-                .filter(({ ruleId }) => ruleId === packageImportsRule)
-                .map(({ messageId }) => messageId),
-              ["mapping"],
-              JSON.stringify(result.messages, null, 2),
-            );
-          });
-        }
-      } finally {
-        writeFileSync(manifestPath, originalManifest, "utf8");
-      }
+    test("恢复受支持的映射后不再报错，其他 # 入口仍被拒绝", async () => {
+      restoreManifest();
       const [restored] = await eslint.lintText(
         statements.import("#credentials"),
-        { filePath },
+        { filePath: filePath() },
       );
-      assert.deepEqual(restored.messages, []);
+      expect(restored.messages).toStrictEqual([]);
       const [unsupported] = await eslint.lintText(statements.import("#other"), {
-        filePath,
+        filePath: filePath(),
       });
-      assert.deepEqual(
+      expect(
         unsupported.messages.map(({ ruleId, messageId }) => ({
           ruleId,
           messageId,
         })),
-        [{ ruleId: packageImportsRule, messageId: "unsupported" }],
-      );
+      ).toStrictEqual([
+        { ruleId: packageImportsRule, messageId: "unsupported" },
+      ]);
     });
-  } finally {
-    process.chdir(previousCwd);
-    rmSync(fixture, { recursive: true, force: true });
-  }
+  });
 });
 
-test("import 按四组自动修复，保留客户端指令和副作用导入的相对顺序", async (t) => {
-  const project = dirname(fileURLToPath(import.meta.url));
+describe("import 按四组自动修复，保留客户端指令和副作用导入的相对顺序", () => {
   const source = `"use client";
 
 import "./z-reset.css";
@@ -1294,28 +1307,26 @@ export const values = [local, helper, join, upstream, useState, scoped, styles];
   const eslint = new ESLint({ cwd: project });
   const fixer = new ESLint({ cwd: project, fix: true });
   for (const extension of ["js", "jsx", "mjs", "ts", "tsx", "mts", "cts"]) {
-    await t.test(`.${extension} 应用同一套分组并支持自动修复`, async () => {
+    test(`.${extension} 应用同一套分组并支持自动修复`, async () => {
       // 应用代码目录跨目录必须用 @/，../ 分组放在不受 root-imports 约束的 scripts/ 下演示。
       const options = {
         filePath: join(project, `scripts/import-groups.${extension}`),
       };
       const [before] = await eslint.lintText(source, options);
-      assert.deepEqual(
+      expect(
         before.messages.map(({ ruleId, severity }) => ({ ruleId, severity })),
-        [{ ruleId: "simple-import-sort/imports", severity: 2 }],
-      );
+      ).toStrictEqual([{ ruleId: "simple-import-sort/imports", severity: 2 }]);
       const [after] = await fixer.lintText(source, options);
-      assert.deepEqual(after.messages, []);
-      assert.equal(after.output, expected);
+      expect(after.messages).toStrictEqual([]);
+      expect(after.output).toBe(expected);
       const [stable] = await fixer.lintText(expected, options);
-      assert.equal(stable.output, undefined);
-      assert.deepEqual(stable.messages, []);
+      expect(stable.output).toBe(undefined);
+      expect(stable.messages).toStrictEqual([]);
     });
   }
 });
 
-test("数据访问规则覆盖 React Query 封装、mutation 回调和请求库", async (t) => {
-  const project = dirname(fileURLToPath(import.meta.url));
+describe("数据访问规则覆盖 React Query 封装、mutation 回调和请求库", () => {
   // import/no-cycle 遍历依赖图时要求被检查的文件真实存在，lintText 的虚拟文件会让它崩溃。
   const eslint = new ESLint({
     cwd: project,
@@ -1376,20 +1387,19 @@ const options = queryOptions({ queryKey: ["a"], queryFn: () => 1 });
     },
   ];
   for (const { name, body, rules } of examples) {
-    await t.test(name, async () => {
+    test(name, async () => {
       const [result] = await eslint.lintText(`${header}\n${body}\n`, {
         filePath,
       });
-      assert.equal(result.fatalErrorCount, 0);
+      expect(result.fatalErrorCount).toBe(0);
       // 各示例共用 header 的 import，未使用的 import 不在这组用例的检查范围内。
-      assert.deepEqual(
+      expect(
         result.messages
           .map(({ ruleId }) => ruleId)
           .filter((ruleId) => ruleId?.startsWith("@tanstack/query/"))
           .sort(),
-        rules,
         JSON.stringify(result.messages, null, 2),
-      );
+      ).toStrictEqual(rules);
     });
   }
   for (const { name, body, reported } of [
@@ -1421,30 +1431,28 @@ export function Example() {
       reported: [],
     },
   ]) {
-    await t.test(name, async () => {
+    test(name, async () => {
       const [result] = await eslint.lintText(
         `import { mutationOptions, useMutation } from "@/lib/react-query";\n\n${body}\n`,
         { filePath },
       );
-      assert.deepEqual(
+      expect(
         result.messages
           .filter(({ ruleId }) => ruleId === "data-fetching/mutation-callbacks")
           .map(({ message }) => message.match(/^Keep (\w+)/)?.[1]),
-        reported,
         JSON.stringify(result.messages, null, 2),
-      );
+      ).toStrictEqual(reported);
     });
   }
   for (const source of ["axios", "swr", "swr/mutation"]) {
-    await t.test(`禁止引入 ${source}`, async () => {
+    test(`禁止引入 ${source}`, async () => {
       const [result] = await eslint.lintText(
         `import value from "${source}";\n\nexport const result = value;\n`,
         { filePath },
       );
-      assert.deepEqual(
-        result.messages.map(({ ruleId }) => ruleId),
-        ["no-restricted-imports"],
-      );
+      expect(result.messages.map(({ ruleId }) => ruleId)).toStrictEqual([
+        "no-restricted-imports",
+      ]);
     });
   }
 });
