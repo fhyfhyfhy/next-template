@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   // 免得和项目自己的 build 互相覆盖，让 pnpm start 跑起一个指向 Mock API 的版本。
   distDir: process.env.NEXT_PUBLIC_MOCK_API === "1" ? ".next-demo" : ".next",
   cacheComponents: true,
+  // 内置的内存 handler 在生产环境过了 cacheLife 的 revalidate 就丢弃条目，请求只能同步等新数据；
+  // 这个 handler 保留到 expire，生产环境和 dev 一样先返回旧数据、后台刷新。
+  // 必须是绝对路径：Next 校验配置时按当前目录解析，运行时又按 distDir 解析相对路径。
+  cacheHandlers: { default: require.resolve("./lib/cache-handler.mts") },
   partialPrefetching: true,
   outputFileTracingIncludes: {
     "/demos/ui": [

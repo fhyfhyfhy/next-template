@@ -104,11 +104,12 @@ Search the source and config for:
 ### On-demand revalidation
 
 - **Applies**: `updateTag`, `revalidateTag`, or `revalidatePath` in the inventory.
-- **Pass**: either of these.
+- **Pass**: one of these.
   - Shared handlers coordinate tags across instances: `cacheHandlers.default` for `use cache` entries and `cacheHandler` for prerendered pages, both on shared storage. The `use cache` handler implements `updateTags`, `refreshTags`, and `getExpiration`, and `cacheMaxMemorySize` is `0` so the server cache reads go to the store.
-  - The user accepts that other instances serve the old result until its `cacheLife` revalidate time: list each tag with that time and where it is invalidated.
+  - The user accepts that other instances serve the old result for a window: list each tag with its window and where it is invalidated. With the built-in `use cache` handler, the window ends at the entry's `cacheLife` `revalidate` time. A handler that keeps entries until `expire`, such as `lib/cache-handler.mts`, also returns the old result on the first read past `revalidate`, so the window can last until `expire`.
+  - The load balancer pins each user to one instance (session affinity), and the user accepts the window above for everyone else. The writer keeps seeing their change until their instance goes away in a rolling deploy, scale-in, or crash.
 - **Otherwise**: the call invalidates only the instance that ran it. The writer sees their change in the action's response, then loses it on the next request that lands on another instance.
-- **Live**: with two instances reachable separately, write through one and read the affected page through the other.
+- **Live**: with two instances reachable separately, write through one and read the affected page through the other. With session affinity, also write through the load balancer and reload several times: every response shows the change.
 - **Source**: `02-guides/self-hosting.md` (Multi-Instance Cache Coordination), `03-api-reference/05-config/01-next-config-js/cacheHandlers.md` (Distributed Tag Coordination), `02-guides/how-revalidation-works.md`.
 
 ### Remote cache
@@ -121,7 +122,7 @@ Search the source and config for:
 ### Time-based caching
 
 - **Applies**: `use cache` without on-demand revalidation.
-- **Pass**: capacity and freshness expectations match the configured handler. With the default production memory handler, each instance computes its own entry on demand, and an entry past `revalidate` is a miss. Lifetimes do not schedule synchronized refreshes across instances. Mark it **risk** when repeated computation across instances matters.
+- **Pass**: capacity and freshness expectations match the configured handler. With the default production memory handler, each instance computes its own entry on demand, and an entry past `revalidate` is a miss. A handler that keeps entries until `expire`, such as `lib/cache-handler.mts`, serves an entry past `revalidate` and refreshes it in the background, so a read can return data up to `expire` old; `cacheMaxMemorySize` does not size it. Lifetimes do not schedule synchronized refreshes across instances. Mark it **risk** when repeated computation across instances matters.
 - **Source**: `03-api-reference/05-config/01-next-config-js/cacheHandlers.md` (`get()`); `03-api-reference/04-functions/cacheLife.md`.
 
 ## Behind a CDN
