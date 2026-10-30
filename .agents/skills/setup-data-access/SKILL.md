@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Set up data access
 
-The template's `fetchApi` (`lib/fetch.ts`) calls one backend at `NEXT_PUBLIC_API_BASE_URL`, unwraps a `{ code, data, message }` response envelope, and attaches the credential that `lib/credentials-server.ts` and `lib/credentials-browser.ts` return, which is none while they carry the template's `TODO`. This skill asks how the backend and sign-in work and changes the code to match.
+The template's `fetchApi` (`lib/fetch.ts`) calls one backend at `NEXT_PUBLIC_API_BASE_URL`, parses the response format in `docs/api-response-format.md`, and attaches the credential that `lib/credentials-server.ts` and `lib/credentials-browser.ts` return, which is none while they carry the template's `TODO`. This skill asks how the backend and sign-in work and changes the code to match.
 
 The code is the only record of the result. Other skills and rules read these files to learn, for example, whether the Next.js server can request data for the signed-in user, so each changed file's doc comments must describe what it does for this project.
 
@@ -38,10 +38,11 @@ Take the sections in order, one per message. Lead with the recommended answer, c
 
 Settle the env var holding each base URL, its local value, and where each deployed environment sets it.
 
-**B. Response format.**
+**B. Response format.** The template expects the wire format in `docs/api-response-format.md`: a success returns the resource itself, a list wraps its array in `items` with `total`, `hasMore`, `page`, and `pageSize` when paginated, and a failure has an `{ error: { code, message, param?, params? } }` body on a 4xx or 5xx status, or alone on a 2xx.
 
-- **An envelope**, as the template expects: `{ code, data, message }` with `code` 0 for success. Confirm the field names, the success value and its type, whether a failure can arrive with a 2xx status, and whether `message` is written for users.
-- **Plain JSON**: the schema validates the whole body, and failures are non-2xx statuses. Collect the error code a failure body carries, if any.
+- **The template's format**: nothing to change.
+- **An envelope**, such as `{ code, data, message }` with `code` 0 for success. Confirm the field names, the success value and its type, whether a failure can arrive with a 2xx status, and whether `message` is written for users.
+- **Plain JSON in other shapes**: collect the failure body's shape and the type of its error code, if it carries one, and the fields of a list and a paginated list.
 
 **C. Credentials.** How the backend recognizes the signed-in user, and where the session lives:
 
@@ -76,7 +77,7 @@ Let them edit before writing.
 - Remove the `TODO` from both credentials files. A file left returning `{}` says why instead: the endpoints are all public, the browser sends the backend's cookie itself, or only the browser holds the credential.
 - Put each env var's local value in `.env.local`, which git ignores, creating the file when it is missing.
 - Update the "Backend API" section of `README.md`: each env var, an example local value, and whether the deployment needs it at build time as well as at runtime.
-- Keep the Data demo runnable when section B changed the response format or the error types: rewrite `scripts/mock-api/envelope.mjs` to produce the new format, and update the Data demo code that reads backend errors (`ApiError` checks in `features/demo-task/`, the codes in its `constants/error-codes.ts`) to match.
+- Keep the Data demo runnable when section B changed the response format or the error types: rewrite `scripts/mock-api/responses.mjs` to produce the new format, and update the Data demo code that reads the backend's format to match: `ApiError` checks in `features/demo-task/`, the codes in its `constants/error-codes.ts`, and the schemas of its unpaginated lists, which read `items`.
 
 ### 5. Verify
 

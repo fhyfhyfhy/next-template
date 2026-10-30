@@ -1,12 +1,12 @@
 import {
   badRequest,
-  businessError,
+  errorOnSuccess,
   httpError,
   malformedSuccess,
-} from "./envelope.mjs";
+} from "./responses.mjs";
 import { DomainError } from "./store.mjs";
 
-const MAX_LATENCY_MS = 30_000;
+export const MAX_LATENCY_MS = 30_000;
 
 /**
  * 注入到业务接口的故障，由故障实验室面板和 e2e 通过 `/__mock/faults` 配置。
@@ -53,7 +53,7 @@ export function faultResponse(fault) {
     return httpError(fault.status, `Mock API 注入的 ${fault.status} 错误`);
   }
   if (fault.code !== null) {
-    return businessError(fault.code, `Mock API 注入的业务错误 ${fault.code}`);
+    return errorOnSuccess(fault.code, `Mock API 注入的业务错误 ${fault.code}`);
   }
   if (fault.malformed) return malformedSuccess();
   return null;
@@ -79,14 +79,13 @@ function parseFault(input) {
       (Number.isInteger(fault.status) &&
         fault.status >= 400 &&
         fault.status <= 599)) &&
-    (fault.code === null ||
-      (Number.isInteger(fault.code) && fault.code !== 0)) &&
+    (fault.code === null || Number.isInteger(fault.code)) &&
     (fault.times === null ||
       (Number.isInteger(fault.times) && fault.times > 0));
   if (!valid) {
     throw new DomainError(
       badRequest(
-        "故障配置不合法：path 必须是 /demo/ 下的路由模式，status 为 4xx 或 5xx，code 非 0，times 为正整数",
+        "故障配置不合法：path 必须是 /demo/ 下的路由模式，status 为 4xx 或 5xx，code 为整数，times 为正整数",
       ),
     );
   }

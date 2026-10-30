@@ -6,7 +6,7 @@ import { findRunningMockApi, startMockApi } from "./server.mjs";
 let mockApi;
 
 beforeAll(async () => {
-  mockApi = await startMockApi({ port: 0 });
+  mockApi = await startMockApi({ port: 0, latencyMs: 0 });
 });
 
 afterAll(() => mockApi.close());
@@ -24,24 +24,22 @@ async function request(method, path, body) {
 }
 
 async function control(method, path, body) {
-  const { status, body: envelope } = await request(method, path, body);
-  expect(status, JSON.stringify(envelope)).toBe(200);
-  expect(envelope.code, JSON.stringify(envelope)).toBe(0);
-  return envelope.data;
+  const { status, body: result } = await request(method, path, body);
+  expect(status, JSON.stringify(result)).toBeLessThan(300);
+  return result;
 }
 
 test("任务列表按创建时间倒序分页返回种子数据", async () => {
   const { status, body } = await request("GET", "/demo/tasks?page_size=5");
 
   expect(status).toBe(200);
-  expect(body.code).toBe(0);
-  expect(body.data.page).toBe(1);
-  expect(body.data.page_size).toBe(5);
-  expect(body.data.items.length).toBe(5);
-  expect(body.data.has_more).toBe(true);
-  const createdAt = body.data.items.map((task) => task.created_at);
+  expect(body.page).toBe(1);
+  expect(body.pageSize).toBe(5);
+  expect(body.items.length).toBe(5);
+  expect(body.hasMore).toBe(true);
+  const createdAt = body.items.map((task) => task.created_at);
   expect(createdAt).toStrictEqual([...createdAt].sort((a, b) => b - a));
-  expect(Object.keys(body.data.items[0]).sort()).toStrictEqual([
+  expect(Object.keys(body.items[0]).sort()).toStrictEqual([
     "cover_url",
     "created_at",
     "favorite",
@@ -103,18 +101,22 @@ test("创建的任务从 pending 开始，排在列表最前", async () => {
   expect(page.items[0].id).toBe(created.id);
 });
 
-test("名称已被占用时用业务 code 拒绝创建和重命名", async () => {
+test("名称已被占用时返回 409 和业务 code 拒绝创建和重命名，param 指向 name", async () => {
   const created = await request("POST", "/demo/tasks", {
     name: "低多边形狐狸",
     prompt: "一只狐狸",
   });
-  expect(created.status).toBe(200);
-  expect(created.body.code).toBe(40901);
+  expect(created.status).toBe(409);
+  expect(created.body.error).toStrictEqual({
+    code: 40901,
+    message: expect.any(String),
+    param: "name",
+  });
 
   const renamed = await request("PATCH", "/demo/tasks/task-02", {
     name: "低多边形狐狸",
   });
-  expect(renamed.body.code).toBe(40901);
+  expect([renamed.status, renamed.body.error.code]).toStrictEqual([409, 40901]);
 
   const kept = await control("PATCH", "/demo/tasks/task-01", {
     name: "低多边形狐狸",
@@ -122,12 +124,18 @@ test("名称已被占用时用业务 code 拒绝创建和重命名", async () =>
   expect(kept.name).toBe("低多边形狐狸");
 });
 
-test("名称或 prompt 为空时返回 400", async () => {
-  const { status } = await request("POST", "/demo/tasks", {
+test("名称或 prompt 为空时返回 400，param 和 params 说明出错的字段和长度上限", async () => {
+  const { status, body } = await request("POST", "/demo/tasks", {
     name: " ",
     prompt: "一只狐狸",
   });
   expect(status).toBe(400);
+  expect(body.error).toStrictEqual({
+    code: 40000,
+    message: expect.any(String),
+    param: "name",
+    params: { max: 40 },
+  });
 });
 
 async function advance(id, steps = 1) {
@@ -175,19 +183,23 @@ test("名字里带 fail 的任务最终失败", async () => {
 });
 
 test("没有暂停时任务按时间自动推进", async () => {
-  const fastApi = await startMockApi({ port: 0, stepIntervalMs: 10 });
+  const fastApi = await startMockApi({
+    port: 0,
+    stepIntervalMs: 10,
+    latencyMs: 0,
+  });
   try {
     const response = await fetch(`${fastApi.url}/demo/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: "自动推进", prompt: "一只狐狸" }),
     });
-    const { data: created } = await response.json();
+    const created = await response.json();
     let status = created.status;
     for (let attempt = 0; attempt < 50 && status !== "done"; attempt += 1) {
       await new Promise((resolveDelay) => setTimeout(resolveDelay, 20));
       const detail = await fetch(`${fastApi.url}/demo/tasks/${created.id}`);
-      status = (await detail.json()).data.status;
+      status = (await detail.json()).status;
     }
     expect(status).toBe("done");
   } finally {
@@ -196,7 +208,11 @@ test("没有暂停时任务按时间自动推进", async () => {
 });
 
 test("暂停时任务不会自动推进", async () => {
-  const fastApi = await startMockApi({ port: 0, stepIntervalMs: 10 });
+  const fastApi = await startMockApi({
+    port: 0,
+    stepIntervalMs: 10,
+    latencyMs: 0,
+  });
   try {
     await fetch(`${fastApi.url}/__mock/clock`, {
       method: "POST",
@@ -205,7 +221,7 @@ test("暂停时任务不会自动推进", async () => {
     });
     await new Promise((resolveDelay) => setTimeout(resolveDelay, 60));
     const response = await fetch(`${fastApi.url}/demo/tasks/task-11`);
-    expect((await response.json()).data.status).toBe("pending");
+    expect((await response.json()).status).toBe("pending");
   } finally {
     await fastApi.close();
   }
@@ -216,11 +232,10 @@ test("只有 failed 的任务能重试，重试后回到 pending 并清空进度
   expect([retried.status, retried.progress]).toStrictEqual(["pending", 0]);
 
   const again = await request("POST", "/demo/tasks/task-05/retry");
-  expect(again.status).toBe(200);
-  expect(again.body.code).toBe(40902);
+  expect([again.status, again.body.error.code]).toStrictEqual([409, 40902]);
 
   const done = await request("POST", "/demo/tasks/task-01/retry");
-  expect(done.body.code).toBe(40902);
+  expect(done.body.error.code).toBe(40902);
 });
 
 test("设置收藏", async () => {
@@ -268,8 +283,10 @@ test("评论按发表时间从早到晚排列，内容去掉首尾空白后为 1
     const rejected = await request("POST", "/demo/tasks/task-01/comments", {
       content,
     });
-    expect(rejected.status).toBe(200);
-    expect(rejected.body.code).toBe(40904);
+    expect([rejected.status, rejected.body.error.param]).toStrictEqual([
+      400,
+      "content",
+    ]);
   }
   const longest = await control("POST", "/demo/tasks/task-01/comments", {
     content: "长".repeat(500),
@@ -321,7 +338,7 @@ test("作品广场只包含 done 的任务，分页供无限滚动使用", async
   const items = [...first.items, ...second.items, ...last.items];
   expect(items.filter((task) => task.status !== "done")).toStrictEqual([]);
   expect(new Set(items.map((task) => task.id)).size).toBe(items.length);
-  expect([first.has_more, second.has_more, last.has_more]).toStrictEqual([
+  expect([first.hasMore, second.hasMore, last.hasMore]).toStrictEqual([
     true,
     true,
     false,
@@ -355,9 +372,9 @@ test("上传图片替换封面图，封面地址随之变化", async () => {
     method: "PUT",
     body: form,
   });
-  const { code, data: updated } = await response.json();
+  const updated = await response.json();
 
-  expect(code).toBe(0);
+  expect(response.status).toBe(200);
   expect(updated.cover_url).not.toBe(before.cover_url);
   const cover = await fetch(updated.cover_url);
   expect(cover.headers.get("content-type")).toBe("image/png");
@@ -398,10 +415,11 @@ test("done 的任务可以下载合法的 .glb 模型文件", async () => {
   expect(view.getUint32(20 + jsonLength + 4, true)).toBe(0x004e4942); // "BIN"
 });
 
-test("没有完成的任务下载模型时返回业务 code", async () => {
+test("没有完成的任务下载模型时返回 409 和业务 code", async () => {
   const response = await request("GET", "/demo/tasks/task-03/model");
-  expect(response.status).toBe(200);
-  expect(response.body.code).toBe(40903);
+  expect([response.status, response.body.error.code]).toStrictEqual([
+    409, 40903,
+  ]);
 });
 
 async function* readEvents(response) {
@@ -463,7 +481,72 @@ test("故障可以给接口加延迟", async () => {
   const startedAt = performance.now();
   const { body } = await request("GET", "/demo/tasks/task-01");
   expect(performance.now() - startedAt).toBeGreaterThanOrEqual(140);
-  expect(body.code).toBe(0);
+  expect(body.id).toBe("task-01");
+});
+
+test("业务接口有默认延迟，故障的延迟叠加在它之上，控制接口不加延迟", async () => {
+  const slowApi = await startMockApi({ port: 0, latencyMs: 100 });
+  const elapsed = async (path, init) => {
+    const startedAt = performance.now();
+    await fetch(`${slowApi.url}${path}`, init);
+    return performance.now() - startedAt;
+  };
+  try {
+    expect(await elapsed("/demo/tasks/task-01")).toBeGreaterThanOrEqual(95);
+    expect(await elapsed("/__mock/faults")).toBeLessThan(95);
+    await fetch(`${slowApi.url}/__mock/faults`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        faults: [{ method: "GET", path: "/demo/tasks/:id", latency_ms: 100 }],
+      }),
+    });
+    expect(await elapsed("/demo/tasks/task-01")).toBeGreaterThanOrEqual(195);
+  } finally {
+    await slowApi.close();
+  }
+});
+
+test("延迟期间客户端断开的请求不再处理", async () => {
+  const slowApi = await startMockApi({ port: 0, latencyMs: 100 });
+  try {
+    const controller = new AbortController();
+    const pending = fetch(`${slowApi.url}/demo/tasks/task-02/favorite`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ favorite: true }),
+      signal: controller.signal,
+    });
+    setTimeout(() => controller.abort(), 20);
+    await expect(pending).rejects.toThrow();
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 150));
+
+    const task = await fetch(`${slowApi.url}/demo/tasks/task-02`);
+    expect((await task.json()).favorite).toBe(false);
+  } finally {
+    await slowApi.close();
+  }
+});
+
+test("延迟期间赶上重置的写请求返回 503，不改动重置后的数据；读请求照常返回", async () => {
+  const slowApi = await startMockApi({ port: 0, latencyMs: 100 });
+  try {
+    const write = fetch(`${slowApi.url}/demo/tasks/task-02/favorite`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ favorite: true }),
+    });
+    const read = fetch(`${slowApi.url}/demo/tasks/task-02`);
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 20));
+    await fetch(`${slowApi.url}/__mock/reset`, { method: "POST" });
+
+    expect((await write).status).toBe(503);
+    expect((await read).status).toBe(200);
+    const task = await fetch(`${slowApi.url}/demo/tasks/task-02`);
+    expect((await task.json()).favorite).toBe(false);
+  } finally {
+    await slowApi.close();
+  }
 });
 
 test("指定次数的 5xx 故障用完后接口恢复正常", async () => {
@@ -483,14 +566,13 @@ test("故障可以返回 4xx 状态码", async () => {
     faults: [{ method: "GET", path: "/demo/tasks/:id", status: 409, times: 1 }],
   });
   const { status, body } = await request("GET", "/demo/tasks/task-01");
-  expect(status).toBe(409);
-  expect(body.code).not.toBe(0);
+  expect([status, body.error.code]).toStrictEqual([409, 40900]);
 });
 
-test("一直生效的故障可以返回失败的业务 code 或不符合 schema 的 data", async () => {
+test("一直生效的故障可以返回 2xx 的 error 对象或不符合 schema 的响应体", async () => {
   await control("PUT", "/__mock/faults", {
     faults: [
-      { method: "POST", path: "/demo/tasks/:id/comments", code: 40904 },
+      { method: "POST", path: "/demo/tasks/:id/comments", code: 50010 },
       { method: "GET", path: "/demo/tasks/:id", malformed: true },
     ],
   });
@@ -498,14 +580,16 @@ test("一直生效的故障可以返回失败的业务 code 或不符合 schema 
     const comment = await request("POST", "/demo/tasks/task-01/comments", {
       content: "正常的评论",
     });
-    expect([comment.status, comment.body.code]).toStrictEqual([200, 40904]);
+    expect([comment.status, comment.body]).toStrictEqual([
+      200,
+      { error: { code: 50010, message: expect.any(String) } },
+    ]);
   }
   const detail = await request("GET", "/demo/tasks/task-01");
-  expect(detail.body).toStrictEqual({
-    code: 0,
-    data: { unexpected: true },
-    message: "ok",
-  });
+  expect([detail.status, detail.body]).toStrictEqual([
+    200,
+    { unexpected: true },
+  ]);
 
   const { faults } = await control("GET", "/__mock/faults");
   expect(faults.map((fault) => [fault.path, fault.times])).toStrictEqual([
@@ -520,6 +604,25 @@ test("重置会清除故障", async () => {
   });
   await control("POST", "/__mock/reset", { paused: true });
   expect((await request("GET", "/demo/tasks")).status).toBe(200);
+});
+
+test("默认延迟可以修改，重置后恢复成启动时的值，不合法的值返回 400", async () => {
+  expect(await control("GET", "/__mock/latency")).toStrictEqual({
+    latency_ms: 0,
+  });
+  await control("PUT", "/__mock/latency", { latency_ms: 50 });
+  expect((await control("GET", "/__mock/latency")).latency_ms).toBe(50);
+  const startedAt = performance.now();
+  await request("GET", "/demo/tasks/task-01");
+  expect(performance.now() - startedAt).toBeGreaterThanOrEqual(45);
+
+  for (const latency_ms of [-1, 1.5, 30_001, "500"]) {
+    const { status } = await request("PUT", "/__mock/latency", { latency_ms });
+    expect(status, String(latency_ms)).toBe(400);
+  }
+
+  await control("POST", "/__mock/reset", { paused: true });
+  expect((await control("GET", "/__mock/latency")).latency_ms).toBe(0);
 });
 
 test("不合法的故障配置返回 400，故障只能配置在业务接口上", async () => {
@@ -568,7 +671,11 @@ test("跨域预检请求返回允许的方法和请求头", async () => {
 });
 
 test("重置时不传 paused 就保持当前的暂停状态", async () => {
-  const fastApi = await startMockApi({ port: 0, stepIntervalMs: 10 });
+  const fastApi = await startMockApi({
+    port: 0,
+    stepIntervalMs: 10,
+    latencyMs: 0,
+  });
   const post = (path, body) =>
     fetch(`${fastApi.url}${path}`, {
       method: "POST",
@@ -580,7 +687,7 @@ test("重置时不传 paused 就保持当前的暂停状态", async () => {
     await post("/__mock/reset", {});
     await new Promise((resolveDelay) => setTimeout(resolveDelay, 60));
     const response = await fetch(`${fastApi.url}/demo/tasks/task-11`);
-    expect((await response.json()).data.status).toBe("pending");
+    expect((await response.json()).status).toBe("pending");
   } finally {
     await fastApi.close();
   }
@@ -606,8 +713,7 @@ test("请求记录列出重置以来每次业务请求匹配的路由，不含�
 
 test("任务详情不存在时返回 404", async () => {
   const { status, body } = await request("GET", "/demo/tasks/task-404");
-  expect(status).toBe(404);
-  expect(body.code).not.toBe(0);
+  expect([status, body.error.code]).toStrictEqual([404, 40400]);
 });
 
 test("端口上已经有 Mock API 时返回它的地址", async () => {

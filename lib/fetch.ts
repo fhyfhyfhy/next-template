@@ -9,21 +9,23 @@ import { credentialHeaders } from "#credentials";
 /** 业务接口路径，由 `resolveApiUrl` 拼到 API base URL 之后。 */
 export type ApiPath = `/${string}`;
 
-// 后端把响应包在信封里：`code` 为 `SUCCESS_CODE` 时 `data` 是业务数据，其他值即使 HTTP 是 2xx 也是失败，
-// `message` 说明原因。字段名和成功值按项目后端调整（setup-data-access skill）。
-const SUCCESS_CODE = 0;
-const envelopeSchema = z.object({
+// 失败响应体里的错误对象（docs/api-response-format.md）。后端的错误格式不同时在这里映射（setup-data-access skill）。
+const errorSchema = z.object({
   code: z.number(),
-  data: z.unknown().optional(),
-  message: z.string().nullish(),
+  message: z.string(),
+  param: z.string().optional(),
+  params: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
 });
+const errorBodySchema = z.object({ error: errorSchema });
+// 2xx 只认只有 `error` 一个字段的响应体：资源自己也可能带 `error` 字段（比如失败任务记录的原因），那仍是成功响应。
+const errorOnlyBodySchema = z.strictObject({ error: errorSchema });
 
 export interface FetchApiConfig<TSchema extends z.ZodType> extends Omit<
   RequestInit,
   "body"
 > {
   url: ApiPath;
-  /** 信封里 `data` 必须通过的 schema；空响应体和不带 `data` 的信封按 `null` 校验。 */
+  /** 响应体必须通过的 schema；空响应体（如 204）按 `null` 校验。 */
   schema: TSchema;
   /** Query 参数，值为 `undefined` 的键不会出现在 URL 中。 */
   params?: StringifiableRecord;
@@ -46,29 +48,37 @@ interface ApiErrorInit {
 }
 
 /**
- * 接口失败：HTTP 非 2xx，或信封的 `code` 不是成功值（此时 `status` 是 2xx）。
- * `body` 是解析后的响应体，不是 JSON 时为原始文本；`code` 取自信封，响应体不是信封时（如网关的错误页）为 `undefined`。
+ * 接口失败：HTTP 非 2xx，或 2xx 但响应体只有 `error` 对象（此时 `status` 是 2xx）。
+ * `code`、`param`、`params` 取自响应体的 `error` 对象，响应体不是这个格式时
+ * （如网关的错误页）都是 `undefined`；`body` 是解析后的响应体，不是 JSON 时为原始文本。
+ * `message` 拼进了后端的 `error.message`，面向开发者；UI 按 `code` 和 `params` 生成文案。
  */
 export class ApiError extends Error {
   readonly url: ApiPath;
   readonly status: number;
+  /** 业务错误码。 */
   readonly code: number | undefined;
+  /** 错误关联的请求字段名。 */
+  readonly param: string | undefined;
+  /** 翻译文案需要的插值数据。 */
+  readonly params: Record<string, string | number> | undefined;
   readonly body: unknown;
 
   constructor({ url, status, body }: ApiErrorInit) {
-    const envelope = envelopeSchema.safeParse(body).data;
-    const code = envelope ? `, code ${envelope.code}` : "";
-    const reason = envelope?.message ? `: ${envelope.message}` : "";
-    super(`${url} responded with ${status}${code}${reason}`);
+    const error = errorBodySchema.safeParse(body).data?.error;
+    const detail = error ? `, code ${error.code}: ${error.message}` : "";
+    super(`${url} responded with ${status}${detail}`);
     this.name = "ApiError";
     this.url = url;
     this.status = status;
-    this.code = envelope?.code;
+    this.code = error?.code;
+    this.param = error?.param;
+    this.params = error?.params;
     this.body = body;
   }
 }
 
-/** 响应体不是信封，或信封的 `data` 不符合 schema，说明前后端契约已经不一致。 */
+/** 2xx 的响应体不符合 schema，说明前后端契约已经不一致。 */
 export class SchemaValidationError extends Error {
   readonly url: ApiPath;
   readonly issues: z.core.$ZodIssue[];
@@ -93,7 +103,7 @@ export function resolveApiUrl(path: ApiPath): string {
   return `${process.env.NEXT_PUBLIC_API_BASE_URL ?? ""}${path}`;
 }
 
-/** React Query 的 `retry`：4xx、2xx 上的失败 `code` 和 schema 不匹配重试也不会成功，其余失败最多重试 3 次。 */
+/** React Query 的 `retry`：4xx、2xx 上的 `error` 和 schema 不匹配重试也不会成功，其余失败最多重试 3 次。 */
 export function shouldRetryRequest(failureCount: number, error: unknown) {
   if (error instanceof SchemaValidationError) return false;
   if (error instanceof ApiError && error.status < 500) return false;
@@ -101,10 +111,10 @@ export function shouldRetryRequest(failureCount: number, error: unknown) {
 }
 
 /**
- * 请求业务接口，解开响应信封并按 `schema` 校验其中的 `data`，返回 schema 的输出。
+ * 请求业务接口，按 `schema` 校验响应体，返回 schema 的输出。响应格式见 docs/api-response-format.md。
  * 服务端经 Next 的 fetch 发出，一次 Server Component 渲染内相同的 GET 只发一次；传了 `signal` 的调用
  * 不参与（见 node_modules/next/dist/docs/01-app/03-api-reference/04-functions/fetch.md 的 Memoization）。
- * HTTP 非 2xx 或信封的 `code` 不是成功值时抛 `ApiError`，响应体不是信封或 `data` 校验失败抛 `SchemaValidationError`；
+ * HTTP 非 2xx 或 2xx 的响应体只有 `error` 对象时抛 `ApiError`，响应体校验失败抛 `SchemaValidationError`；
  * 网络错误和 `signal` 的中止原样抛出。
  */
 export async function fetchApi<TSchema extends z.ZodType>({
@@ -135,19 +145,23 @@ export async function fetchApi<TSchema extends z.ZodType>({
     },
   );
   const body = parseBody(await response.text());
-  const envelope = envelopeSchema.safeParse(body);
-  if (
-    !response.ok ||
-    (envelope.success && envelope.data.code !== SUCCESS_CODE)
-  ) {
+  if (!response.ok || errorOnlyBodySchema.safeParse(body).success) {
     throw new ApiError({ url, status: response.status, body });
   }
-  if (body !== null && !envelope.success) {
-    throw new SchemaValidationError(url, envelope.error);
-  }
-  const result = schema.safeParse(envelope.data?.data ?? null);
+  const result = schema.safeParse(body);
   if (!result.success) throw new SchemaValidationError(url, result.error);
   return result.data;
+}
+
+/** 页码分页的列表响应，用作 `fetchApi` 的 `schema`。后端的分页字段不同时在这里映射。 */
+export function pageSchema<TItem extends z.ZodType>(item: TItem) {
+  return z.object({
+    items: z.array(item),
+    total: z.number(),
+    hasMore: z.boolean(),
+    page: z.number(),
+    pageSize: z.number(),
+  });
 }
 
 function requestBody(data: unknown, headers: Headers) {

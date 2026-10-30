@@ -45,6 +45,24 @@ test("故障面板注入的故障对其他页面生效，服务端渲染失败�
   await expect(page.getByRole("list", { name: "任务列表" })).toBeVisible();
 });
 
+test("故障面板修改默认延迟，重置 Mock 数据后恢复", async ({
+  page,
+  mockApi,
+}) => {
+  const latency = section(page, "注入故障").getByRole("combobox", {
+    name: "默认延迟",
+  });
+  await expect(latency).toHaveText("500ms");
+
+  await choose(page, latency, "2000ms");
+  await expect.poll(() => mockApi.latency()).toBe(2000);
+  await expect(latency).toHaveText("2000ms");
+
+  await page.getByRole("button", { name: "重置 Mock 数据" }).click();
+  await expect(latency).toHaveText("500ms");
+  expect(await mockApi.latency()).toBe(500);
+});
+
 test("首次加载失败渲染错误；已有数据时刷新失败保留数据并弹提示", async ({
   page,
 }) => {
@@ -62,7 +80,9 @@ test("首次加载失败渲染错误；已有数据时刷新失败保留数据�
   await expect(demo.getByText("低多边形狐狸")).toBeVisible();
 });
 
-test("5xx 会重试，4xx、业务 code 和 schema 不匹配不重试", async ({ page }) => {
+test("5xx 会重试，4xx、2xx 上的 error 和 schema 不匹配不重试", async ({
+  page,
+}) => {
   const demo = section(page, "重试规则");
   const consoleErrors: string[] = [];
   page.on("console", (message) => {
@@ -84,8 +104,8 @@ test("5xx 会重试，4xx、业务 code 和 schema 不匹配不重试", async ({
   await demo.getByRole("button", { name: "4xx" }).click();
   await expect(demo.getByText("4xx：失败，没有重试")).toBeVisible();
 
-  await demo.getByRole("button", { name: "业务 code" }).click();
-  await expect(demo.getByText("业务 code：失败，没有重试")).toBeVisible();
+  await demo.getByRole("button", { name: "2xx 返回 error" }).click();
+  await expect(demo.getByText("2xx 返回 error：失败，没有重试")).toBeVisible();
 
   await demo.getByRole("button", { name: "schema 不匹配" }).click();
   await expect(demo.getByText("schema 不匹配：失败，没有重试")).toBeVisible();

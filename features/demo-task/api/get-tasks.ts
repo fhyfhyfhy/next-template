@@ -1,6 +1,6 @@
-import { z } from "zod";
+import type { z } from "zod";
 
-import { fetchApi } from "@/lib/fetch";
+import { fetchApi, pageSchema } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
 
 import type { TaskFilters } from "../types/task-filters";
@@ -9,19 +9,7 @@ import { taskSchema } from "./get-task";
 /** 所有任务列表形态的 query key 前缀，invalidate 它会刷新普通列表、作品广场和搜索结果。 */
 export const taskListKey = ["demo-task", "task", "list"] as const;
 
-export const taskPageSchema = z
-  .object({
-    items: z.array(taskSchema),
-    total: z.number(),
-    page: z.number(),
-    page_size: z.number(),
-    has_more: z.boolean(),
-  })
-  .transform(({ page_size, has_more, ...page }) => ({
-    ...page,
-    pageSize: page_size,
-    hasMore: has_more,
-  }));
+export const taskPageSchema = pageSchema(taskSchema);
 export type TaskPage = z.infer<typeof taskPageSchema>;
 
 export const getTasks = ({

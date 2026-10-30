@@ -9,16 +9,17 @@ import {
 } from "../../api/get-mock-faults";
 import { updateMockFaultsMutationOptions } from "../../api/update-mock-faults";
 import { LabSection } from "../lab-section";
+import { DefaultLatencySelect } from "./default-latency-select";
 import { FaultForm } from "./fault-form";
 
 function describeFault(fault: MockFault) {
   const effect = fault.status
     ? `返回 ${fault.status}`
     : fault.code
-      ? `业务 code ${fault.code}`
+      ? `2xx 但返回 error ${fault.code}`
       : fault.malformed
-        ? "data 不符合 schema"
-        : `延迟 ${fault.latencyMs}ms`;
+        ? "响应体不符合 schema"
+        : `再延迟 ${fault.latencyMs}ms`;
   const times = fault.times === null ? "一直生效" : `还剩 ${fault.times} 次`;
   return `${fault.method} ${fault.path}：${effect}，${times}`;
 }
@@ -34,8 +35,9 @@ export function FaultPanel() {
   return (
     <LabSection
       title="注入故障"
-      description="选一个接口和故障类型。“次数”用完后故障自动消失。注入后去其他页面操作，看页面怎么反应。"
+      description="“默认延迟”对所有业务接口生效，故障里的延迟叠加在它之上。选一个接口和故障类型，“次数”用完后故障自动消失。注入后去其他页面操作，看页面怎么反应。"
     >
+      <DefaultLatencySelect />
       <FaultForm />
       <div className="mt-4">
         {faults.data && faults.data.length > 0 ? (

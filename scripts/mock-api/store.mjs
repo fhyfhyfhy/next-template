@@ -1,5 +1,5 @@
 import { cubeGlb, generatedCoverSvg } from "./assets.mjs";
-import { badRequest, businessError, ErrorCode, notFound } from "./envelope.mjs";
+import { badRequest, conflict, ErrorCode, notFound } from "./responses.mjs";
 import { createSeed } from "./seed.mjs";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -14,7 +14,7 @@ const RUNNING_LOGS = ["解析 prompt", "生成网格", "生成贴图", "优化�
 /** 业务规则拒绝请求时抛出，由 server.mjs 转成对应的响应。 */
 export class DomainError extends Error {
   constructor(response) {
-    super(response.body.message);
+    super(response.body.error.message);
     this.response = response;
   }
 }
@@ -59,7 +59,9 @@ export function createStore() {
       state.tasks.some((task) => task.name === name && task.id !== exceptId)
     ) {
       throw new DomainError(
-        businessError(ErrorCode.TASK_NAME_TAKEN, `名称“${name}”已被占用`),
+        conflict(ErrorCode.TASK_NAME_TAKEN, `名称“${name}”已被占用`, {
+          param: "name",
+        }),
       );
     }
   }
@@ -165,7 +167,7 @@ export function createStore() {
       const task = getTask(id);
       if (task.status !== "failed") {
         throw new DomainError(
-          businessError(
+          conflict(
             ErrorCode.TASK_NOT_RETRYABLE,
             "只有失败的任务可以重试，任务状态可能已经变化",
           ),
@@ -209,7 +211,7 @@ export function createStore() {
       const task = getTask(id);
       if (task.status !== "done") {
         throw new DomainError(
-          businessError(ErrorCode.TASK_NOT_DONE, "任务完成后才能下载模型"),
+          conflict(ErrorCode.TASK_NOT_DONE, "任务完成后才能下载模型"),
         );
       }
       return { filename: `${task.name}.glb`, bytes: cubeGlb() };
@@ -232,15 +234,7 @@ export function createStore() {
 
     addComment(taskId, { content }) {
       getTask(taskId);
-      const text = typeof content === "string" ? content.trim() : "";
-      if (text.length === 0 || text.length > COMMENT_MAX_LENGTH) {
-        throw new DomainError(
-          businessError(
-            ErrorCode.COMMENT_CONTENT_INVALID,
-            `评论必须是 1 到 ${COMMENT_MAX_LENGTH} 个字`,
-          ),
-        );
-      }
+      const text = requireText(content, "content", COMMENT_MAX_LENGTH);
       const comment = {
         id: `comment-${String(state.nextCommentNumber++).padStart(2, "0")}`,
         taskId,
@@ -268,7 +262,12 @@ export function createStore() {
 function requireText(value, field, maxLength) {
   const text = typeof value === "string" ? value.trim() : "";
   if (text.length === 0 || text.length > maxLength) {
-    throw new DomainError(badRequest(`${field} 必须是 1 到 ${maxLength} 个字`));
+    throw new DomainError(
+      badRequest(`${field} 必须是 1 到 ${maxLength} 个字`, {
+        param: field,
+        params: { max: maxLength },
+      }),
+    );
   }
   return text;
 }

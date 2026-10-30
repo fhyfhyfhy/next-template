@@ -20,7 +20,7 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `demo:` 
 - **UI demo** (`/demos/ui`): the design-system components; see [UI demo examples](#ui-demo-examples).
 - **Data demo** (the other `/demos` pages): a small task app that exercises the data-fetching rules against the Mock API. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.
 
-The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node process ([ADR 0001](docs/adr/0001-demos-use-standalone-mock-api.md)). The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo:start`: they start the Mock API on `127.0.0.1:4010` and point `NEXT_PUBLIC_API_BASE_URL` at it, overriding the project's backend URL, so during those runs every page, including the project's own features, talks to the Mock API. Their build output goes to `.next-demo`, leaving the project's `.next` alone. `pnpm dev`, `pnpm build`, and `pnpm start` never start the Mock API; under them the Data demo pages show a notice instead of sending requests. The Data demo's e2e specs are described under [Tests](#tests).
+The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node process ([ADR 0001](docs/adr/0001-demos-use-standalone-mock-api.md)). The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo:start`: they start the Mock API on `127.0.0.1:4010` and point `NEXT_PUBLIC_API_BASE_URL` at it, overriding the project's backend URL, so during those runs every page, including the project's own features, talks to the Mock API. Their build output goes to `.next-demo`, leaving the project's `.next` alone. The Mock API answers its business endpoints (`/demo/*`) after 500 ms by default so loading states show; the fault lab's panel changes that delay until the next reset, and a fault's `latency_ms` adds to it. `pnpm dev`, `pnpm build`, and `pnpm start` never start the Mock API; under them the Data demo pages show a notice instead of sending requests. The Data demo's e2e specs are described under [Tests](#tests).
 
 ## Checks
 
@@ -47,7 +47,7 @@ Set `NEXT_PUBLIC_API_BASE_URL` to the backend's base URL, for example in `.env.l
 
 Features call the backend only through `fetchApi`, so fitting the template to a backend touches these files alone:
 
-- `lib/fetch.ts`: the base URL, the response format (as shipped, a `{ code, data, message }` envelope with `code` 0 for success), and the error types.
+- `lib/fetch.ts`: the base URL, the response format including paginated lists, and the error types. As shipped, a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or alone on a 2xx ([docs/api-response-format.md](docs/api-response-format.md)).
 - `lib/credentials-server.ts` and `lib/credentials-browser.ts`: the signed-in user's credential for requests from the server and from the browser. Both send none as shipped. `package.json` resolves `#credentials` to the right one per environment.
 - `app/providers.tsx`: what a signed-out response does in the browser.
 

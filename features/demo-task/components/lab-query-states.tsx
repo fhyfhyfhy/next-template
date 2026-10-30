@@ -4,19 +4,16 @@ import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@/lib/react-query";
 
 import { getTaskQueryOptions } from "../api/get-task";
-import {
-  INJECTED_FAILURE_CODE,
-  TASK_DETAIL_ROUTE,
-} from "../constants/mock-faults";
+import { TASK_DETAIL_ROUTE } from "../constants/mock-faults";
 import { useInjectMockFault } from "../hooks/use-inject-mock-fault";
 import { LabSection } from "./lab-section";
 
 const TASK_ID = "task-01";
-// 2xx 上的失败业务 code 不重试，演示时结果立即出现。
+// 4xx 不重试，演示时结果立即出现。
 const FAULT = {
   method: "GET",
   path: TASK_DETAIL_ROUTE,
-  code: INJECTED_FAILURE_CODE,
+  status: 409,
   times: 1,
 };
 

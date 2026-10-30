@@ -26,7 +26,7 @@ export class MockApi {
     this.request = request;
   }
 
-  /** 恢复种子数据、清除故障，并暂停自动推进：任务状态只在测试调用 `advance` 时变化。 */
+  /** 恢复种子数据和默认延迟、清除故障，并暂停自动推进：任务状态只在测试调用 `advance` 时变化。 */
   async reset() {
     await this.control("POST", "/__mock/reset", { paused: true });
   }
@@ -51,6 +51,11 @@ export class MockApi {
     );
   }
 
+  /** 业务接口当前的默认延迟（毫秒）。 */
+  async latency(): Promise<number> {
+    return (await this.control("GET", "/__mock/latency")).latency_ms;
+  }
+
   /** 直接调用业务接口准备数据，绕过页面。 */
   async call(method: string, path: string, data?: unknown) {
     return this.control(method, path, data);
@@ -62,9 +67,9 @@ export class MockApi {
       data,
     });
     expect(response.ok(), `${method} ${path}`).toBe(true);
-    const body = await response.json();
-    expect(body.code, `${method} ${path}`).toBe(0);
-    return body.data;
+    // 204 没有响应体。
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
   }
 }
 

@@ -42,14 +42,20 @@ export function resolveApiUrl(path: ApiPath): string {
 
 ## Response format
 
-The template unwraps a `{ code, data, message }` envelope, described by `envelopeSchema` and `SUCCESS_CODE` in `lib/fetch.ts`. `fetchApi` throws `ApiError` for a non-2xx status or a `code` other than `SUCCESS_CODE`, and `ApiError` reads `code` from any failure body that is an envelope.
+The template parses the wire format in `docs/api-response-format.md`. `fetchApi` validates the whole body against the caller's schema, `null` for an empty one. It throws `ApiError` for a non-2xx status, and for a 2xx whose body is exactly `{ error }`: a resource that carries its own `error` field alongside others stays a success. `ApiError` reads `code`, `param`, and `params` from the `{ error: { code, message, param?, params? } }` body, described by `errorSchema` in `lib/fetch.ts`. `pageSchema` in the same file validates a paginated list's `{ items, total, hasMore, page, pageSize }`.
 
-**Another envelope**: rename the fields in `envelopeSchema`, set `SUCCESS_CODE`, and change the type of `ApiError.code` when codes are strings. When `data` has another name, also rename it where `fetchApi` reads `envelope.data?.data`.
+Whatever the backend sends, callers keep receiving what the doc's frontend contract (前端契约) describes, so features need no change. Adapt in `lib/`:
 
-**Plain JSON**: remove `envelopeSchema` and `SUCCESS_CODE`. `fetchApi` throws `ApiError` for a non-2xx status only, and the schema validates the whole body, `null` for an empty one. When failure bodies carry an error code, such as `{ detail, code }`, `ApiError` reads `code` from that shape; otherwise remove `ApiError.code`.
+**An envelope**: add a schema for it in `lib/fetch.ts`. `fetchApi` validates the caller's schema against the envelope's data field, and throws `ApiError` when the envelope's code is not the success value, even on a 2xx. `ApiError` reads `code` and the message from the envelope in place of `errorSchema`.
 
-- Rewrite every comment in `lib/fetch.ts` that describes the envelope: the one above `envelopeSchema`, and those on `ApiError`, `SchemaValidationError`, `shouldRetryRequest`, `fetchApi`, and `FetchApiConfig.schema`.
-- Change the bodies `lib/fetch.test.mjs`'s test server returns to the new format, keeping a case for each failure: a non-2xx, a failure code on a 2xx when the envelope allows one, and a body in the wrong shape.
+**Another error body**: change `errorSchema` and the body schemas built on it to that shape, and map its fields onto `code`, `param`, and `params`, leaving those it lacks `undefined`.
+
+**Error codes are strings**: change the type of `ApiError.code`. Keep comparing against the backend's own codes; a table in `lib/` mapping them to numbers would put business knowledge in `lib/`.
+
+**Other list fields**: change `pageSchema` for paginated lists and each endpoint's schema for unpaginated ones; resource field names stay in each endpoint's own schema.
+
+- Rewrite every comment in `lib/fetch.ts` that describes the format: those above `errorSchema` and `errorOnlyBodySchema`, and those on `ApiError`, `SchemaValidationError`, `shouldRetryRequest`, `fetchApi`, `FetchApiConfig.schema`, and `pageSchema`.
+- Change the bodies `lib/fetch.test.mjs`'s test server returns to the new format, keeping a case for each failure: a non-2xx with and without an error body, a failure on a 2xx (an error body alone, or an envelope's failure code), and a body in the wrong shape. Keep the case where a 2xx resource carries its own `error` field and still succeeds.
 - `shouldRetryRequest` retries only statuses of 500 and above, so a failure code on a 2xx is never retried.
 - When `message` is written for users, `handleRequestError` in `app/providers.tsx` can toast it, read from `error.body`, in place of the generic text.
 

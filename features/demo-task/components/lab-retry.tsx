@@ -29,13 +29,13 @@ const scenarios: { label: string; fault: MockFaultInput }[] = [
   { label: "5xx 一直失败", fault: detailFault({ status: 503, times: 4 }) },
   { label: "4xx", fault: detailFault({ status: 409, times: 1 }) },
   {
-    label: "业务 code",
+    label: "2xx 返回 error",
     fault: detailFault({ code: INJECTED_FAILURE_CODE, times: 1 }),
   },
   { label: "schema 不匹配", fault: detailFault({ malformed: true, times: 1 }) },
 ];
 
-/** `shouldRetryRequest`：5xx 和网络错误最多重试 3 次；4xx、2xx 上的业务 code、schema 不匹配重试也不会成功，直接失败。 */
+/** `shouldRetryRequest`：5xx 和网络错误最多重试 3 次；4xx、2xx 上的 error、schema 不匹配重试也不会成功，直接失败。 */
 export function LabRetry() {
   const queryClient = useQueryClient();
   const injectFault = useInjectMockFault();

@@ -30,11 +30,11 @@ const ENDPOINTS = [
 type Endpoint = (typeof ENDPOINTS)[number];
 
 const KINDS = [
-  { value: "latency", label: "延迟 2 秒" },
+  { value: "latency", label: "再延迟 2 秒" },
   { value: "4xx", label: "返回 4xx" },
   { value: "5xx", label: "返回 5xx" },
-  { value: "code", label: "2xx 但业务 code 失败" },
-  { value: "malformed", label: "data 不符合 schema" },
+  { value: "code", label: "2xx 但返回 error" },
+  { value: "malformed", label: "响应体不符合 schema" },
 ] as const;
 type Kind = (typeof KINDS)[number]["value"];
 

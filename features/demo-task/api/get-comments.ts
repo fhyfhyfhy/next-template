@@ -22,7 +22,9 @@ export interface CommentListItem extends TaskComment {
   sending?: boolean;
 }
 
-const commentListSchema = z.object({ items: z.array(taskCommentSchema) });
+const commentListSchema = z
+  .object({ items: z.array(taskCommentSchema) })
+  .transform(({ items }) => items);
 
 const getComments = (taskId: string) =>
   fetchApi({
@@ -34,6 +36,5 @@ const getComments = (taskId: string) =>
 export const getCommentsQueryOptions = (taskId: string) =>
   queryOptions({
     queryKey: ["demo-task", "comment", "list", taskId],
-    queryFn: async (): Promise<CommentListItem[]> =>
-      (await getComments(taskId)).items,
+    queryFn: (): Promise<CommentListItem[]> => getComments(taskId),
   });

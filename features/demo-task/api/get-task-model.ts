@@ -1,8 +1,8 @@
 import { ApiError, resolveApiUrl } from "@/lib/fetch";
 
 /**
- * 下载 done 任务的 3D 模型文件。二进制响应不是信封，所以按传输例外用 raw `fetch`；
- * 失败时后端返回 JSON 信封（比如任务还没完成），这里转成和 `fetchApi` 一样的 `ApiError`。
+ * 下载 done 任务的 3D 模型文件。二进制响应按传输例外用 raw `fetch`；失败时（比如任务还没完成）
+ * 转成和 `fetchApi` 一样的 `ApiError`。成功的响应是二进制，所以 2xx 上的 JSON 只可能是 error 对象。
  */
 export async function downloadTaskModel(taskId: string, filename: string) {
   const url = `/demo/tasks/${taskId}/model` as const;

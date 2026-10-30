@@ -2,22 +2,36 @@ import { createServer } from "node:http";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { badRequest, notFound, success } from "./envelope.mjs";
-import { createFaults, faultResponse } from "./faults.mjs";
+import { createFaults, faultResponse, MAX_LATENCY_MS } from "./faults.mjs";
+import {
+  badRequest,
+  created,
+  httpError,
+  list,
+  noContent,
+  notFound,
+  paginated,
+  success,
+} from "./responses.mjs";
 import { createStore, DomainError } from "./store.mjs";
 
 /** 固定端口：build 时内联进产物的 `NEXT_PUBLIC_API_BASE_URL` 在 start 时必须仍然可用。 */
 export const DEFAULT_MOCK_API_PORT = 4010;
 // 一个任务从 pending 到终态要走 6 步，约 9 秒，停在详情页能看到进度推进。
 const DEFAULT_STEP_INTERVAL_MS = 1500;
+// 业务接口的响应延迟，模拟网络和后端耗时，让 Demo 里的加载态看得见。控制接口不加。
+const DEFAULT_LATENCY_MS = 500;
 
 /**
  * 启动 Mock API。`port: 0` 时由系统分配端口，测试用。
+ * `latencyMs` 是业务接口的默认延迟，故障实验室可以经 `/__mock/latency` 修改，重置时恢复成这个值；
+ * 故障的 `latency_ms` 在它之上叠加。
  * @returns {Promise<{ url: string, close: () => Promise<void> }>}
  */
 export async function startMockApi({
   port = DEFAULT_MOCK_API_PORT,
   stepIntervalMs = DEFAULT_STEP_INTERVAL_MS,
+  latencyMs = DEFAULT_LATENCY_MS,
 } = {}) {
   const store = createStore();
   const clock = { paused: false };
@@ -26,7 +40,15 @@ export async function startMockApi({
   }, stepIntervalMs);
   timer.unref();
   // routes 在 listen 之后才创建：端口确定后才能拼出封面图的绝对地址。
-  const context = { routes: [], faults: createFaults(), requestLog: [] };
+  const context = {
+    routes: [],
+    faults: createFaults(),
+    requestLog: [],
+    latencyMs,
+    initialLatencyMs: latencyMs,
+    // `/__mock/reset` 的次数，用来认出延迟期间赶上重置的请求。
+    resets: 0,
+  };
   const server = createServer((req, res) => {
     void handle(context, req, res);
   });
@@ -59,7 +81,7 @@ export async function findRunningMockApi(port) {
       signal: AbortSignal.timeout(2000),
     });
     const body = await response.json();
-    if (response.ok && body?.code === 0 && Array.isArray(body.data?.faults)) {
+    if (response.ok && Array.isArray(body?.faults)) {
       return url;
     }
   } catch (error) {
@@ -70,35 +92,32 @@ export async function findRunningMockApi(port) {
   );
 }
 
-function createRoutes(store, clock, { faults, requestLog }, publicUrl) {
+function createRoutes(store, clock, context, publicUrl) {
+  const { faults, requestLog } = context;
   const wireTask = (task) => toWireTask(task, publicUrl);
   return [
     route("GET", "/demo/tasks", ({ query }) =>
-      success(
-        toWirePage(
-          store.listTasks({
-            status: query.getAll("status"),
-            favorite: query.has("favorite")
-              ? query.get("favorite") === "true"
-              : undefined,
-            prompt: query.get("prompt") ?? undefined,
-            excludeId: query.get("exclude_id") ?? undefined,
-            sort: query.get("sort"),
-            page: integer(query.get("page"), 1),
-            pageSize: integer(query.get("page_size"), 10),
-          }),
-          wireTask,
-        ),
+      paginated(
+        store.listTasks({
+          status: query.getAll("status"),
+          favorite: query.has("favorite")
+            ? query.get("favorite") === "true"
+            : undefined,
+          prompt: query.get("prompt") ?? undefined,
+          excludeId: query.get("exclude_id") ?? undefined,
+          sort: query.get("sort"),
+          page: integer(query.get("page"), 1),
+          pageSize: integer(query.get("page_size"), 10),
+        }),
+        wireTask,
       ),
     ),
     route("POST", "/demo/tasks", ({ body }) =>
-      success(wireTask(store.createTask(body ?? {}))),
+      created(wireTask(store.createTask(body ?? {}))),
     ),
     // 放在 /demo/tasks/:id 之前，否则 search 会被当成任务 id。
     route("GET", "/demo/tasks/search", ({ query }) =>
-      success({
-        items: store.searchTasks(query.get("term") ?? "").map(wireTask),
-      }),
+      list(store.searchTasks(query.get("term") ?? "").map(wireTask)),
     ),
     route("GET", "/demo/tasks/:id", ({ params }) =>
       success(wireTask(store.getTask(params.id))),
@@ -108,7 +127,7 @@ function createRoutes(store, clock, { faults, requestLog }, publicUrl) {
     ),
     route("DELETE", "/demo/tasks/:id", ({ params }) => {
       store.deleteTask(params.id);
-      return success(null);
+      return noContent();
     }),
     route("PUT", "/demo/tasks/:id/favorite", ({ params, body }) =>
       success(wireTask(store.setFavorite(params.id, body ?? {}))),
@@ -145,24 +164,22 @@ function createRoutes(store, clock, { faults, requestLog }, publicUrl) {
       streamLogs(store, store.getTask(params.id), req, res);
     }),
     route("GET", "/demo/tasks/:id/comments", ({ params }) =>
-      success({ items: store.listComments(params.id).map(toWireComment) }),
+      list(store.listComments(params.id).map(toWireComment)),
     ),
     route("POST", "/demo/tasks/:id/comments", ({ params, body }) =>
-      success(toWireComment(store.addComment(params.id, body ?? {}))),
+      created(toWireComment(store.addComment(params.id, body ?? {}))),
     ),
     route("DELETE", "/demo/tasks/:id/comments/:commentId", ({ params }) => {
       store.deleteComment(params.id, params.commentId);
-      return success(null);
+      return noContent();
     }),
     route("GET", "/demo/feed", ({ query }) =>
-      success(
-        toWirePage(
-          store.listFeed({
-            page: integer(query.get("page"), 1),
-            pageSize: integer(query.get("page_size"), 10),
-          }),
-          wireTask,
-        ),
+      paginated(
+        store.listFeed({
+          page: integer(query.get("page"), 1),
+          pageSize: integer(query.get("page_size"), 10),
+        }),
+        wireTask,
       ),
     ),
     // 不传 paused 时保持当前的暂停状态：e2e 暂停后再从故障实验室重置，时钟仍然停着。
@@ -170,8 +187,10 @@ function createRoutes(store, clock, { faults, requestLog }, publicUrl) {
       store.reset();
       faults.clear();
       requestLog.length = 0;
+      context.latencyMs = context.initialLatencyMs;
+      context.resets += 1;
       if (typeof body?.paused === "boolean") clock.paused = body.paused;
-      return success(null);
+      return noContent();
     }),
     // e2e 用它确认请求次数，比如服务端渲染时同一个接口只请求一次、hydration 后浏览器没有重复请求。
     route("GET", "/__mock/requests", () => success({ requests: requestLog })),
@@ -179,6 +198,25 @@ function createRoutes(store, clock, { faults, requestLog }, publicUrl) {
     route("PUT", "/__mock/faults", ({ body }) => {
       faults.replace(body?.faults);
       return success({ faults: faults.list() });
+    }),
+    route("GET", "/__mock/latency", () =>
+      success({ latency_ms: context.latencyMs }),
+    ),
+    route("PUT", "/__mock/latency", ({ body }) => {
+      const latencyMs = body?.latency_ms;
+      if (
+        !Number.isInteger(latencyMs) ||
+        latencyMs < 0 ||
+        latencyMs > MAX_LATENCY_MS
+      ) {
+        throw new DomainError(
+          badRequest(`latency_ms 必须是 0 到 ${MAX_LATENCY_MS} 的整数`, {
+            param: "latency_ms",
+          }),
+        );
+      }
+      context.latencyMs = latencyMs;
+      return success({ latency_ms: latencyMs });
     }),
     route("POST", "/__mock/clock", ({ body }) => {
       clock.paused = body?.paused === true;
@@ -215,7 +253,8 @@ function route(method, pattern, handler) {
   };
 }
 
-async function handle({ routes, faults, requestLog }, req, res) {
+async function handle(context, req, res) {
+  const { routes, faults, requestLog, latencyMs } = context;
   setCorsHeaders(req, res);
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
@@ -226,7 +265,8 @@ async function handle({ routes, faults, requestLog }, req, res) {
   let response;
   try {
     const matched = findRoute(routes, req.method, url.pathname);
-    if (matched?.route.pattern.startsWith("/demo/")) {
+    const business = matched?.route.pattern.startsWith("/demo/") ?? false;
+    if (business) {
       requestLog.push({
         method: req.method,
         path: matched.route.pattern,
@@ -235,27 +275,33 @@ async function handle({ routes, faults, requestLog }, req, res) {
       });
     }
     const fault = matched && faults.take(req.method, matched.route.pattern);
-    if (fault?.latencyMs) {
-      await new Promise((resolveDelay) =>
-        setTimeout(resolveDelay, fault.latencyMs),
-      );
+    const delay = (business ? latencyMs : 0) + (fault?.latencyMs ?? 0);
+    const resets = context.resets;
+    if (delay > 0) {
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, delay));
+      // 延迟期间请求还算在路上。客户端已经断开（中止请求、关闭页面）就不再处理：这时读请求体会抛错，
+      // 让进程退出。延迟期间 Mock API 被重置过的写请求要拒绝：上一个 e2e 用例没完成的写入（比如经
+      // Server Action 发出、不随页面关闭而中止的请求）不能改动下一个用例重置后的数据。读请求照常处理。
+      if (req.socket.destroyed) return;
     }
     response = !matched
       ? notFound(`No route for ${req.method} ${url.pathname}`)
-      : ((fault && faultResponse(fault)) ??
-        (await matched.route.handler({
-          params: matched.params,
-          query: url.searchParams,
-          body: await readJson(req),
-          req,
-          res,
-        })));
+      : context.resets !== resets && req.method !== "GET"
+        ? httpError(503, "Mock API 在处理这个写请求前被重置了")
+        : ((fault && faultResponse(fault)) ??
+          (await matched.route.handler({
+            params: matched.params,
+            query: url.searchParams,
+            body: await readJson(req),
+            req,
+            res,
+          })));
   } catch (error) {
     if (!(error instanceof DomainError)) throw error;
     response = error.response;
   }
   // 返回 undefined 的 handler 自己写完了响应，比如二进制下载和 SSE。
-  if (response) sendJson(res, response);
+  if (response) sendResponse(res, response);
 }
 
 function findRoute(routes, method, pathname) {
@@ -341,8 +387,12 @@ function streamLogs(store, task, req, res) {
   req.on("close", unsubscribe);
 }
 
-function sendJson(res, { status, body }) {
+function sendResponse(res, { status, body }) {
   res.statusCode = status;
+  if (body === undefined) {
+    res.end();
+    return;
+  }
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.end(JSON.stringify(body));
 }
@@ -350,16 +400,6 @@ function sendJson(res, { status, body }) {
 function integer(value, fallback) {
   const parsed = Number.parseInt(value ?? "", 10);
   return Number.isNaN(parsed) ? fallback : parsed;
-}
-
-function toWirePage({ items, total, page, pageSize, hasMore }, toWire) {
-  return {
-    items: items.map(toWire),
-    total,
-    page,
-    page_size: pageSize,
-    has_more: hasMore,
-  };
 }
 
 function toWireTask(task, publicUrl) {
