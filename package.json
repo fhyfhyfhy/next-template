@@ -12,16 +12,16 @@
     "dev": "node scripts/run-next.mjs dev",
     "build": "node scripts/run-next.mjs build",
     "start": "node scripts/run-next.mjs start",
-    "demo:dev": "node scripts/run-next.mjs dev --demo",
-    "demo:build": "node scripts/run-next.mjs build --demo",
-    "demo:start": "node scripts/run-next.mjs start --demo",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "test": "node --test",
     "test:e2e": "playwright test",
+    "demo:dev": "node scripts/run-next.mjs dev --demo",
+    "demo:build": "node scripts/run-next.mjs build --demo",
+    "demo:start": "node scripts/run-next.mjs start --demo",
     "demo:test:e2e": "playwright test --config playwright.demo.config.ts",
-    "generate:examples": "node scripts/demo-ui/index-generator.mjs"
+    "demo:generate:examples": "node scripts/demo-ui/index-generator.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

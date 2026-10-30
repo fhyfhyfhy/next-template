@@ -70,7 +70,7 @@ from those runnable files. `Demo` owns the playground and controls; shared UI de
 code renders usage examples.
 
 The dev/build scripts update generated indexes. Commit them with their sources;
-run `pnpm generate:examples` when working without the dev server.
+run `pnpm demo:generate:examples` when working without the dev server.
 
 ## Learn More
 
