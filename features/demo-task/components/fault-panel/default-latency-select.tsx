@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useMutation, useQuery } from "@/lib/react-query";
 
 import { getMockLatencyQueryOptions } from "../../api/get-mock-latency";
@@ -10,6 +12,7 @@ const PRESETS_MS = [0, 200, 500, 1000, 2000, 3000];
 
 /** 业务接口的默认延迟，选中后立即生效。 */
 export function DefaultLatencySelect() {
+  const t = useTranslations("demo-task.defaultLatency");
   const latency = useQuery(getMockLatencyQueryOptions());
   const update = useMutation(updateMockLatencyMutationOptions());
 
@@ -21,7 +24,7 @@ export function DefaultLatencySelect() {
     return (
       <div className="mb-4 max-w-40">
         <OptionSelect
-          label="默认延迟"
+          label={t("label")}
           value={String(latency.data)}
           options={values.map((value) => ({
             value: String(value),
@@ -34,7 +37,7 @@ export function DefaultLatencySelect() {
   }
   return (
     <p className="mb-4 text-sm text-muted-foreground">
-      {latency.error ? "读取默认延迟失败" : "读取默认延迟…"}
+      {latency.error ? t("readFailed") : t("reading")}
     </p>
   );
 }

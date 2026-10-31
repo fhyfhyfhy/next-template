@@ -1,23 +1,25 @@
 "use client";
 
 import { IconStack2 } from "@tabler/icons-react";
+import { useTranslations } from "next-intl";
 
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { cn } from "@/lib/cn";
-import { Link } from "@/lib/i18n-navigation";
-import { usePathname } from "@/lib/i18n-navigation";
+import { Link, usePathname } from "@/lib/i18n-navigation";
 
 import { RunningTasksBadge } from "./running-tasks-badge";
 
 const links = [
-  { href: "/demos/tasks", label: "全部任务" },
-  { href: "/demos/feed", label: "作品广场" },
-  { href: "/demos/search", label: "搜索" },
-  { href: "/demos/recent", label: "最近查看" },
-  { href: "/demos/lab", label: "故障实验室" },
+  { href: "/demos/tasks", key: "tasks" },
+  { href: "/demos/feed", key: "feed" },
+  { href: "/demos/search", key: "search" },
+  { href: "/demos/recent", key: "recent" },
+  { href: "/demos/lab", key: "lab" },
 ] as const;
 
 /** Data demo 各页面共用的导航，右侧是轮询中的进行中任务数。 */
 export function DataDemoHeader() {
+  const t = useTranslations("demo-task.nav");
   const pathname = usePathname();
   return (
     <header className="border-b border-border bg-card text-card-foreground">
@@ -29,12 +31,9 @@ export function DataDemoHeader() {
           <span className="flex size-8 items-center justify-center rounded-control bg-primary text-primary-foreground">
             <IconStack2 className="size-5" aria-hidden />
           </span>
-          Data demo
+          {t("home")}
         </Link>
-        <nav
-          aria-label="Data demo 导航"
-          className="flex flex-1 flex-wrap gap-1"
-        >
+        <nav aria-label={t("label")} className="flex flex-1 flex-wrap gap-1">
           {links.map((link) => {
             const current = pathname.startsWith(link.href);
             return (
@@ -49,12 +48,13 @@ export function DataDemoHeader() {
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                 )}
               >
-                {link.label}
+                {t(link.key)}
               </Link>
             );
           })}
         </nav>
         <RunningTasksBadge />
+        <LocaleSwitcher />
       </div>
     </header>
   );

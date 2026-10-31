@@ -1,6 +1,7 @@
 "use client";
 
 import { IconTrash } from "@tabler/icons-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,23 +25,24 @@ interface DeleteTaskDialogProps {
 }
 
 export function DeleteTaskDialog({ taskId, taskName }: DeleteTaskDialogProps) {
+  const t = useTranslations("demo-task.deleteTask");
   const router = useRouter();
   const deleteTask = useMutation(deleteTaskMutationOptions());
   return (
     <DialogRoot>
       <DialogTrigger render={<Button variant="ghost" />}>
         <IconTrash aria-hidden />
-        删除任务
+        {t("trigger")}
       </DialogTrigger>
       <DialogPortal>
         <DialogBackdrop />
         <DialogPopup>
-          <DialogTitle>删除“{taskName}”？</DialogTitle>
-          <DialogDescription>
-            任务和它的评论都会被删除，不能恢复。
-          </DialogDescription>
+          <DialogTitle>{t("title", { name: taskName })}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
           <div className="mt-6 flex justify-end gap-2">
-            <DialogClose render={<Button variant="ghost" />}>取消</DialogClose>
+            <DialogClose render={<Button variant="ghost" />}>
+              {t("cancel")}
+            </DialogClose>
             <Button
               variant="danger"
               disabled={deleteTask.isPending}
@@ -52,7 +54,7 @@ export function DeleteTaskDialog({ taskId, taskName }: DeleteTaskDialogProps) {
                 )
               }
             >
-              删除
+              {t("confirm")}
             </Button>
           </div>
         </DialogPopup>

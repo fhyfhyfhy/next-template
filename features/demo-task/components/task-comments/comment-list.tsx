@@ -1,22 +1,25 @@
 "use client";
 
 import { IconX } from "@tabler/icons-react";
+import { useFormatter, useTranslations } from "next-intl";
 
 import { useMutation, useSuspenseQuery } from "@/lib/react-query";
 
 import { deleteCommentMutationOptions } from "../../api/delete-comment";
 import { getCommentsQueryOptions } from "../../api/get-comments";
-import { formatDateTime } from "../../utils/format-date-time";
+import { DATE_TIME_FORMAT } from "../../constants/date-time";
 
 export function CommentList({ taskId }: { taskId: string }) {
+  const t = useTranslations("demo-task.comments");
+  const format = useFormatter();
   // 服务端 dehydrate 的是 pending 的 query，这里接住它的 promise，未完成时由外层 Suspense 显示占位。
   const { data: comments } = useSuspenseQuery(getCommentsQueryOptions(taskId));
   const deleteComment = useMutation(deleteCommentMutationOptions(taskId));
   if (comments.length === 0) {
-    return <p className="text-sm text-muted-foreground">还没有评论</p>;
+    return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
   }
   return (
-    <ul aria-label="评论" className="space-y-2">
+    <ul aria-label={t("listLabel")} className="space-y-2">
       {comments.map((comment) => (
         <li
           key={comment.id}
@@ -27,13 +30,15 @@ export function CommentList({ taskId }: { taskId: string }) {
               {comment.content}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {comment.sending ? "发送中…" : formatDateTime(comment.createdAt)}
+              {comment.sending
+                ? t("sending")
+                : format.dateTime(comment.createdAt, DATE_TIME_FORMAT)}
             </p>
           </div>
           {!comment.sending && (
             <button
               type="button"
-              aria-label="删除评论"
+              aria-label={t("delete")}
               className="rounded-control p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
               onClick={() => deleteComment.mutate({ commentId: comment.id })}
             >

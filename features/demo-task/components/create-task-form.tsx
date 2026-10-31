@@ -1,6 +1,8 @@
 "use client";
 
 import { revalidateLogic, useForm } from "@tanstack/react-form";
+import { useLocale, useTranslations } from "next-intl";
+import { useMemo } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
@@ -18,9 +20,10 @@ import { isTaskActionError } from "../utils/task-action-error";
 
 const defaultValues: CreateTaskInput = { name: "", prompt: "" };
 
+// label、placeholder 是 `demo-task` 文案 `createTask` 下的 key。
 const fields = [
-  { name: "name", label: "名称", placeholder: "比如：低多边形小鹿" },
-  { name: "prompt", label: "Prompt", placeholder: "描述要生成的模型" },
+  { name: "name", label: "nameLabel", placeholder: "namePlaceholder" },
+  { name: "prompt", label: "promptLabel", placeholder: "promptPlaceholder" },
 ] as const satisfies readonly {
   name: keyof CreateTaskInput;
   label: string;
@@ -34,11 +37,14 @@ const fields = [
 export function CreateTaskForm() {
   // 表单没有原生提交的目标：hydration 之前提交会退化成 GET 整页刷新，输入的文字也会在 hydration 后被清空，所以先不可用。
   const hydrated = useHydrated();
-  const createTask = useMutation(createTaskMutationOptions());
+  const t = useTranslations("demo-task");
+  const locale = useLocale();
+  const schema = useMemo(() => createTaskInputSchema(t), [t]);
+  const createTask = useMutation(createTaskMutationOptions(locale));
   const form = useForm({
     defaultValues,
     validationLogic: revalidateLogic(),
-    validators: { onDynamic: createTaskInputSchema },
+    validators: { onDynamic: schema },
     onSubmit: async ({ value, formApi }) => {
       try {
         await createTask.mutateAsync(value);
@@ -48,7 +54,7 @@ export function CreateTaskForm() {
           // 记在 onSubmit 下：改动后重新校验通过时，TanStack Form 会清掉它。
           formApi.setErrorMap({
             onSubmit: {
-              fields: { name: [{ message: "名称已被其他任务占用" }] },
+              fields: { name: [{ message: t("validation.nameTaken") }] },
             },
           });
         }
@@ -57,7 +63,7 @@ export function CreateTaskForm() {
   });
   return (
     <form
-      aria-label="创建任务"
+      aria-label={t("createTask.formLabel")}
       noValidate
       className="mb-8 grid gap-3 rounded-panel border border-border bg-card p-4 sm:grid-cols-[1fr_2fr_auto] sm:items-start"
       onSubmit={(event) => {
@@ -75,10 +81,10 @@ export function CreateTaskForm() {
               dirty={field.state.meta.isDirty}
               touched={field.state.meta.isTouched}
             >
-              <FieldLabel>{label}</FieldLabel>
+              <FieldLabel>{t(`createTask.${label}`)}</FieldLabel>
               <Input
                 value={field.state.value}
-                placeholder={placeholder}
+                placeholder={t(`createTask.${placeholder}`)}
                 onValueChange={(value) => field.handleChange(value)}
                 onBlur={field.handleBlur}
               />
@@ -96,7 +102,7 @@ export function CreateTaskForm() {
             disabled={!hydrated || isSubmitting}
             className="sm:mt-5"
           >
-            {isSubmitting ? "创建中…" : "创建任务"}
+            {isSubmitting ? t("createTask.submitting") : t("createTask.submit")}
           </Button>
         )}
       </form.Subscribe>

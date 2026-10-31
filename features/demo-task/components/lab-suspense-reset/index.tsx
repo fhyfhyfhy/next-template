@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Suspense, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,13 +17,14 @@ const TASK_ID = "task-04";
 
 /** 没有缓存数据的 `useSuspenseQuery` 失败时进入最近的错误边界；重试前要先重置 React Query 的错误边界状态。 */
 export function LabSuspenseReset() {
+  const t = useTranslations("demo-task");
   const queryClient = useQueryClient();
   const injectFault = useInjectMockFault();
   const [mounted, setMounted] = useState(false);
   return (
     <LabSection
-      title="错误边界和重置"
-      description="按钮先清掉这个任务的缓存并注入一次失败，再挂载用 useSuspenseQuery 读取它的组件。"
+      title={t("labSuspenseReset.title")}
+      description={t("labSuspenseReset.description")}
     >
       <Button
         variant="outline"
@@ -42,12 +44,16 @@ export function LabSuspenseReset() {
           setMounted(true);
         }}
       >
-        加载（第一次会失败）
+        {t("labSuspenseReset.load")}
       </Button>
       {mounted && (
-        <QueryErrorBoundary title="任务">
+        <QueryErrorBoundary message={t("labSuspenseReset.loadFailed")}>
           <Suspense
-            fallback={<p className="text-sm text-muted-foreground">加载中…</p>}
+            fallback={
+              <p className="text-sm text-muted-foreground">
+                {t("queryState.loading")}
+              </p>
+            }
           >
             <SuspenseTask taskId={TASK_ID} />
           </Suspense>

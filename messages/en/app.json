@@ -3,7 +3,7 @@
     "title": "Next Demo",
     "description": "An interactive, customizable, and reusable Next.js template."
   },
-  "requestError": "Request failed. Please retry later.",
+  "requestError": "Request failed. Please try again later.",
   "globalNotFound": {
     "title": "Page not found",
     "description": "The link may be wrong, or the page has moved.",
@@ -37,12 +37,12 @@
       },
       "lab": {
         "title": "Data demo · Fault lab",
-        "description": "Inject latency and failures into the API, then watch error messages, retry behavior, and error boundaries."
+        "description": "Inject latency and failures into the API, then watch error messages, retries, and error boundaries."
       }
     },
     "dataError": {
       "title": "Couldn't load the page",
-      "description": "A request failed while rendering this page. You can retry later, or clear the injected faults in the fault lab.",
+      "description": "A request failed while rendering this page. You can try again later, or clear the injected faults in the fault lab.",
       "retry": "Retry"
     },
     "tasks": {

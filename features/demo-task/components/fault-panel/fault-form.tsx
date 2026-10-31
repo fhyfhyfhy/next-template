@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -26,14 +27,11 @@ const ENDPOINTS = [
 ] as const;
 type Endpoint = (typeof ENDPOINTS)[number];
 
-const TIMES = [
-  { value: "1", label: "下 1 次" },
-  { value: "3", label: "下 3 次" },
-  { value: "always", label: "一直生效" },
-] as const;
-type Times = (typeof TIMES)[number]["value"];
+const TIMES = ["1", "3", "always"] as const;
+type Times = (typeof TIMES)[number];
 
 export function FaultForm() {
+  const t = useTranslations("demo-task.faultForm");
   const injectFault = useInjectMockFault();
   const [endpoint, setEndpoint] = useState<Endpoint>("GET /demo/tasks/:id");
   const [kind, setKind] = useState<FaultKind>("latency");
@@ -42,21 +40,30 @@ export function FaultForm() {
   return (
     <div className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr_auto] sm:items-end">
       <OptionSelect
-        label="接口"
+        label={t("endpoint")}
         value={endpoint}
         options={ENDPOINTS.map((value) => ({ value, label: value }))}
         onChange={setEndpoint}
       />
       <OptionSelect
-        label="故障"
+        label={t("kind")}
         value={kind}
-        options={FAULT_KINDS}
+        options={FAULT_KINDS.map(({ value, labelKey }) => ({
+          value,
+          label: t(`kinds.${labelKey}`),
+        }))}
         onChange={setKind}
       />
       <OptionSelect
-        label="次数"
+        label={t("times")}
         value={times}
-        options={TIMES}
+        options={TIMES.map((value) => ({
+          value,
+          label:
+            value === "always"
+              ? t("always")
+              : t("nextTimes", { count: Number(value) }),
+        }))}
         onChange={setTimes}
       />
       <Button
@@ -77,7 +84,7 @@ export function FaultForm() {
           }
         }}
       >
-        添加故障
+        {t("submit")}
       </Button>
     </div>
   );

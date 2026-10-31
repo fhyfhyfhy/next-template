@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import {
   ProgressIndicator,
   ProgressLabel,
@@ -10,9 +12,12 @@ import {
 
 /** `progress` 为 null 表示还在排队、进度未知。 */
 export function TaskProgress({ progress }: { progress: number | null }) {
+  const t = useTranslations("demo-task.taskProgress");
   return (
     <ProgressRoot value={progress}>
-      <ProgressLabel>{progress === null ? "排队中" : "生成进度"}</ProgressLabel>
+      <ProgressLabel>
+        {progress === null ? t("queued") : t("label")}
+      </ProgressLabel>
       <ProgressValue />
       <ProgressTrack>
         <ProgressIndicator />

@@ -1,25 +1,28 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import { useQueryErrorResetBoundary } from "@/lib/react-query";
 
 export interface QueryErrorBoundaryProps {
-  /** 出错区域的名称，比如“评论”。 */
-  title: string;
+  /** 出错时显示的提示，比如“评论加载失败”。 */
+  message: string;
 }
 
 interface ErrorMessageProps extends QueryErrorBoundaryProps {
   retry: () => void;
 }
 
-export function ErrorMessage({ title, retry }: ErrorMessageProps) {
+export function ErrorMessage({ message, retry }: ErrorMessageProps) {
+  const t = useTranslations("demo-task.queryErrorBoundary");
   const { reset } = useQueryErrorResetBoundary();
   return (
     <div
       role="alert"
       className="rounded-panel border border-destructive/40 p-4 text-sm"
     >
-      <p>{title}加载失败</p>
+      <p>{message}</p>
       <Button
         variant="outline"
         size="sm"
@@ -30,7 +33,7 @@ export function ErrorMessage({ title, retry }: ErrorMessageProps) {
           retry();
         }}
       >
-        重试
+        {t("retry")}
       </Button>
     </div>
   );

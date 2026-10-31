@@ -1,6 +1,7 @@
 "use client";
 
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
+import { useTranslations } from "next-intl";
 import { startTransition, useOptimistic } from "react";
 
 import { useMutation } from "@/lib/react-query";
@@ -15,6 +16,7 @@ import { updateTaskFavoriteMutationOptions } from "../../api/update-task-favorit
  * 由工厂同步浏览器里缓存的那些副本。
  */
 export function FavoriteToggle({ task }: { task: Task }) {
+  const t = useTranslations("demo-task.taskList");
   const [optimisticFavorite, setOptimisticFavorite] = useOptimistic(
     task.favorite,
   );
@@ -22,7 +24,7 @@ export function FavoriteToggle({ task }: { task: Task }) {
   return (
     <button
       type="button"
-      aria-label="收藏"
+      aria-label={t("favorite")}
       aria-pressed={optimisticFavorite}
       className="rounded-control p-1.5 text-muted-foreground outline-none hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring aria-pressed:text-primary"
       onClick={() => {

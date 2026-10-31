@@ -1,3 +1,4 @@
+import type { Locale } from "@/lib/i18n-routing";
 import { mutationOptions } from "@/lib/react-query";
 
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
@@ -9,11 +10,14 @@ import { createTaskAction } from "./create-task-action";
 import type { CreateTaskInput } from "./create-task-request";
 import { taskListKey } from "./get-tasks";
 
-/** 创建同时影响两种负责方：action 让列表页的服务端缓存失效，这里刷新浏览器里的列表 query。 */
-export const createTaskMutationOptions = () =>
+/**
+ * 创建同时影响两种负责方：action 让列表页的服务端缓存失效，这里刷新浏览器里的列表 query。
+ * `locale` 来自调用方的 `useLocale()`，action 用它生成校验文案。
+ */
+export const createTaskMutationOptions = (locale: Locale) =>
   mutationOptions({
     mutationFn: async (input: CreateTaskInput) =>
-      unwrapActionResult(await createTaskAction(input)),
+      unwrapActionResult(await createTaskAction(locale, input)),
     onSuccess: (_task, _input, _onMutateResult, { client }) => {
       void client.invalidateQueries({ queryKey: taskListKey });
     },

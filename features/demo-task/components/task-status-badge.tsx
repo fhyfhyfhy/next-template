@@ -1,6 +1,7 @@
+import { useTranslations } from "next-intl";
+
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 
-import { TASK_STATUS_LABELS } from "../constants/task-list";
 import type { TaskStatus } from "../types/task-filters";
 
 const variants: Record<TaskStatus, BadgeProps["variant"]> = {
@@ -11,5 +12,6 @@ const variants: Record<TaskStatus, BadgeProps["variant"]> = {
 };
 
 export function TaskStatusBadge({ status }: { status: TaskStatus }) {
-  return <Badge variant={variants[status]}>{TASK_STATUS_LABELS[status]}</Badge>;
+  const t = useTranslations("demo-task.taskStatus");
+  return <Badge variant={variants[status]}>{t(status)}</Badge>;
 }

@@ -17,13 +17,26 @@
     "example"
   ],
   "translations": {
-    "任务": { "en": "task" },
-    "收藏": { "en": "favorite" },
-    "评论": { "en": "comment" },
-    "封面": { "en": "cover" },
-    "重试": { "en": "retry" },
-    "作品广场": { "en": "gallery" },
-    "最近查看": { "en": "recently viewed" },
-    "故障实验室": { "en": "fault lab" }
+    "任务": {
+      "en": "task"
+    },
+    "收藏": {
+      "en": "favorite"
+    },
+    "评论": {
+      "en": "comment"
+    },
+    "封面": {
+      "en": "cover"
+    },
+    "作品广场": {
+      "en": "gallery"
+    },
+    "最近查看": {
+      "en": "recently viewed"
+    },
+    "故障实验室": {
+      "en": "fault lab"
+    }
   }
 }

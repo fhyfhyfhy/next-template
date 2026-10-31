@@ -1,11 +1,14 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import { useMutation } from "@/lib/react-query";
 
 import { resetMockMutationOptions } from "../api/reset-mock";
 
 export function MockResetButton() {
+  const t = useTranslations("demo-task.mockReset");
   const reset = useMutation(resetMockMutationOptions());
   return (
     <div className="flex items-center gap-3">
@@ -14,11 +17,11 @@ export function MockResetButton() {
         disabled={reset.isPending}
         onClick={() => reset.mutate()}
       >
-        重置 Mock 数据
+        {t("button")}
       </Button>
       {reset.isSuccess && (
         <span role="status" className="text-sm text-muted-foreground">
-          已重置
+          {t("done")}
         </span>
       )}
     </div>

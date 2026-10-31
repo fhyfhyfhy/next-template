@@ -1,12 +1,13 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
 import { use } from "react";
 
 import { Link } from "@/lib/i18n-navigation";
 
 import type { TaskPage } from "../../api/get-tasks";
+import { DATE_TIME_FORMAT } from "../../constants/date-time";
 import { useRefreshTaskListWhenActiveChanges } from "../../hooks/use-refresh-task-list-when-active-changes";
-import { formatDateTime } from "../../utils/format-date-time";
 import {
   taskDetailHref,
   taskListHref,
@@ -24,6 +25,8 @@ interface TaskListProps {
 }
 
 export function TaskList({ tasksPromise, params }: TaskListProps) {
+  const t = useTranslations("demo-task.taskList");
+  const format = useFormatter();
   const { items, total, hasMore } = use(tasksPromise);
   const { pending, navigate } = useTaskListNavigation(params);
   useRefreshTaskListWhenActiveChanges(items);
@@ -37,11 +40,11 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
     >
       {items.length === 0 ? (
         <p className="rounded-panel border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-          没有符合条件的任务
+          {t("empty")}
         </p>
       ) : (
         <ul
-          aria-label="任务列表"
+          aria-label={t("label")}
           className="divide-y divide-border rounded-panel border border-border bg-card"
         >
           {items.map((task) => (
@@ -58,7 +61,7 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
                   {task.name}
                 </Link>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {formatDateTime(task.createdAt)}
+                  {format.dateTime(task.createdAt, DATE_TIME_FORMAT)}
                 </p>
               </div>
               <TaskStatusBadge status={task.status} />
@@ -68,10 +71,10 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
         </ul>
       )}
       <nav
-        aria-label="分页"
+        aria-label={t("pagination")}
         className="mt-4 flex items-center justify-between text-sm"
       >
-        <span className="text-muted-foreground">共 {total} 个任务</span>
+        <span className="text-muted-foreground">{t("total", { total })}</span>
         <div className="flex gap-2">
           {params.page > 1 && (
             <Link
@@ -82,7 +85,7 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
               }}
               className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
             >
-              上一页
+              {t("previousPage")}
             </Link>
           )}
           {hasMore && (
@@ -94,7 +97,7 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
               }}
               className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
             >
-              下一页
+              {t("nextPage")}
             </Link>
           )}
         </div>
