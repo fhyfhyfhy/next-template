@@ -23,7 +23,7 @@ const sections = [
     href: "/demos/feed",
     title: "Data demo · 作品广场",
     description:
-      "React Query 负责的无限滚动：第一页进静态 shell，收藏时多处同时乐观更新。",
+      "React Query 负责的无限滚动：第一页在服务端渲染、随 HTML 送达，收藏时多处同时乐观更新。",
   },
   {
     href: "/demos/search",

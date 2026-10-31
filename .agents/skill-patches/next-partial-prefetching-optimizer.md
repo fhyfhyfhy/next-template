@@ -44,3 +44,27 @@ File: rig-template.md
  ```
  
 ````
+
+## Start the testing build in this project
+
+This project's `next.config.ts` sends a build made with `EXPOSE_TESTING_API=1` to `.next-e2e`, so a server started without the variable serves `.next`, which lacks the testing API.
+
+File: rig-template.md
+
+````diff
+@@ ### Test command and base URL @@
+ ```
+ 
+-If the rig does not use `webServer`, start `pnpm start --port 3000` in a
+-separate terminal after the build, keep it running during the test command,
+-and stop it afterward. Use only one server lifecycle for the measured app.
++If the rig does not use `webServer`, start the server with the same variable
++after the build, `EXPOSE_TESTING_API=1 pnpm start --port 3000` (PowerShell:
++`$env:EXPOSE_TESTING_API = '1'; pnpm start --port 3000`), in a separate
++terminal, keep it running during the test command, and stop it afterward.
++This project's `next.config.ts` puts a build made with the variable in
++`.next-e2e`, and `start` serves that directory only while the variable is set.
++Use only one server lifecycle for the measured app.
+ 
+ Adapt the script names and port to the project. Follow the public
+````

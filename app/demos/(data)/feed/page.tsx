@@ -24,7 +24,8 @@ export default function FeedPage() {
       <PageIntro title="作品广场">
         <p>
           已完成的任务按创建时间排列，滚到底部自动加载下一页，数据由 React Query
-          负责。第一页来自服务端缓存的快照，随页面一起送达，浏览器不用再请求第一页。
+          负责。第一页来自服务端缓存的快照，在服务端渲染好、随 HTML
+          送达，浏览器不用再请求第一页。
         </p>
         <p>
           收藏走 React Query
@@ -33,13 +34,11 @@ export default function FeedPage() {
         </p>
       </PageIntro>
       <div className="grid gap-8 lg:grid-cols-[1fr_240px]">
-        {/* React Query 在客户端组件里创建 query 状态时会读当前时间，放进 Suspense 才不会打断预渲染。 */}
+        {/* FeedHydration 要等缓存的快照：HTML 里先是骨架屏，第一页作为片段写在同一份 HTML 后面，由内联脚本换上，不用等应用的 JS。 */}
         <Suspense fallback={<FeedSkeleton />}>
           <FeedHydration />
         </Suspense>
-        <Suspense fallback={null}>
-          <FavoritesPanel />
-        </Suspense>
+        <FavoritesPanel />
       </div>
     </>
   );

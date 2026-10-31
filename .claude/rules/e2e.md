@@ -16,6 +16,7 @@ When the assertion observes another Suspense boundary, that boundary must be hyd
 | To assert | Use |
 | --- | --- |
 | The static shell after `page.goto`, or the prefetched UI after a `<Link>` click | `instant()` from `@next/playwright`, as in `e2e/demo/tasks.spec.ts` |
+| UI rendered into the server's HTML rather than by the browser | Abort the app's script requests and assert the UI, as in `e2e/demo/feed.spec.ts`. `instant()` lets browser rendering through, and disabling JavaScript also stops the inline scripts that place a Suspense boundary's content when it resolves after the shell |
 | One streamed section arriving before another | A Mock API `latency_ms` fault on the later one, and `page.goto(url, { waitUntil: "commit" })`: `load` fires only after the stream ends |
 | A browser-side query's loading state | A `latency_ms` fault on its request; `instant()` holds back only server-rendered content |
 

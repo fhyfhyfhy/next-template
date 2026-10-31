@@ -93,9 +93,13 @@ $env:BASE_URL = 'http://localhost:3000'
 pnpm playwright test tests/prefetch-optimization.spec.ts
 ```
 
-If the rig does not use `webServer`, start `pnpm start --port 3000` in a
-separate terminal after the build, keep it running during the test command,
-and stop it afterward. Use only one server lifecycle for the measured app.
+If the rig does not use `webServer`, start the server with the same variable
+after the build, `EXPOSE_TESTING_API=1 pnpm start --port 3000` (PowerShell:
+`$env:EXPOSE_TESTING_API = '1'; pnpm start --port 3000`), in a separate
+terminal, keep it running during the test command, and stop it afterward.
+This project's `next.config.ts` puts a build made with the variable in
+`.next-e2e`, and `start` serves that directory only while the variable is set.
+Use only one server lifecycle for the measured app.
 
 Adapt the script names and port to the project. Follow the public
 [client-navigation test](https://nextjs.org/docs/app/guides/instant-navigation#prevent-regressions-with-e2e-tests): load the source route, confirm the real

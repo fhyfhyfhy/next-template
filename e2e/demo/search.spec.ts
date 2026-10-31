@@ -66,3 +66,14 @@ test("新结果返回前继续显示上一次的结果", async ({ page, mockApi 
   await expect(results(page).first()).toContainText("狐狸");
   await expect(results(page).first()).toContainText("跑车");
 });
+
+test("清空关键词后不再显示结果和状态", async ({ page }) => {
+  await page.goto(`/demos/search?q=${encodeURIComponent("狐狸")}`);
+  await expect(results(page)).toHaveCount(3);
+
+  await page.getByLabel("搜索任务").fill("");
+
+  await expect(page).toHaveURL("/demos/search");
+  await expect(results(page)).toHaveCount(0);
+  await expect(page.getByText(/更新中|找到 \d+ 个任务|搜索中/)).toHaveCount(0);
+});

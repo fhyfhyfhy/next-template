@@ -3,14 +3,19 @@
 import { useIntersection } from "@mantine/hooks";
 import { useEffect, useEffectEvent } from "react";
 
-import { useInfiniteQuery } from "@/lib/react-query";
+import { environmentManager, useInfiniteQuery } from "@/lib/react-query";
 
 import { getFeedInfiniteQueryOptions } from "../../api/get-feed";
 import { FeedCard } from "./feed-card";
 
 /** 作品广场由 React Query 负责：滚到底部时追加下一页。第一页来自服务端缓存的 hydration state。 */
 export function FeedGrid() {
-  const feed = useInfiniteQuery(getFeedInfiniteQueryOptions());
+  const feed = useInfiniteQuery({
+    ...getFeedInfiniteQueryOptions(),
+    // 预渲染时读当前时间会让 Next 把这块推迟到浏览器渲染。hydrate 进来的数据判断过期时会读时间，
+    // "static" 跳过这一步，第一页因此在服务端渲染、随 HTML 送达；浏览器里照常用默认的 staleTime。
+    ...(environmentManager.isServer() && { staleTime: "static" as const }),
+  });
   const { ref: loadMoreRef, entry } = useIntersection<HTMLDivElement>();
   const loadMore = useEffectEvent(() => {
     if (feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();

@@ -33,9 +33,11 @@ export function TaskSearch() {
     );
   }, [debounced, committed]);
 
+  // 关键词为空时 query 关着，keepPreviousData 却仍把上一次的结果当占位数据，所以状态和结果都按它判断。
+  const searching = committed !== "";
   const search = useQuery({
     ...searchTasksQueryOptions(committed),
-    enabled: committed !== "",
+    enabled: searching,
     placeholderData: keepPreviousData,
   });
 
@@ -62,16 +64,20 @@ export function TaskSearch() {
         className="mt-4 min-h-6 text-sm text-muted-foreground"
         aria-live="polite"
       >
-        {search.isPlaceholderData && "更新中…"}
-        {!search.isPlaceholderData &&
-          search.data &&
-          `找到 ${search.data.length} 个任务`}
-        {!search.data && search.error && (
-          <span className="text-destructive">搜索失败</span>
+        {searching && (
+          <>
+            {search.isPlaceholderData && "更新中…"}
+            {!search.isPlaceholderData &&
+              search.data &&
+              `找到 ${search.data.length} 个任务`}
+            {!search.data && search.error && (
+              <span className="text-destructive">搜索失败</span>
+            )}
+            {!search.data && search.isFetching && "搜索中…"}
+          </>
         )}
-        {!search.data && search.isFetching && "搜索中…"}
       </div>
-      {search.data && search.data.length > 0 && committed !== "" && (
+      {searching && search.data && search.data.length > 0 && (
         <ul
           aria-label="搜索结果"
           className={cn(

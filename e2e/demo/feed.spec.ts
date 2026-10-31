@@ -18,6 +18,16 @@ const cards = (page: Page) =>
 const favorites = (page: Page) =>
   page.getByRole("list", { name: "我的收藏" }).getByRole("listitem");
 
+/**
+ * 经导航栏进入作品广场，等第一页出现。第一页的卡片在静态 shell 里，整页打开后立即点收藏可能早于 hydration；
+ * 客户端导航（`navigateThroughHeader`）在浏览器里渲染整页，到达后就能操作。
+ */
+async function openFeed(page: Page) {
+  await page.goto("/demos/search");
+  await navigateThroughHeader(page, "作品广场", "/demos/feed");
+  await expect(cards(page)).toHaveCount(6);
+}
+
 function feedRequests(page: Page) {
   const requests: Request[] = [];
   page.on("request", (request) => {
@@ -27,12 +37,20 @@ function feedRequests(page: Page) {
   return requests;
 }
 
-test("第一页随页面一起送达，浏览器不再请求第一页", async ({
+test("第一页的卡片在服务端返回的 HTML 里，浏览器不再请求第一页", async ({
   page,
-  request,
 }) => {
-  const html = await (await request.get("/demos/feed")).text();
-  expect(html).toContain("多肉高模");
+  // 拦住应用的 JS 包，React 不会运行：卡片要是等浏览器渲染，这里只有骨架屏。
+  const htmlPage = await page.context().newPage();
+  await htmlPage.route("**/_next/static/**", (route) =>
+    route.request().resourceType() === "script"
+      ? route.abort()
+      : route.continue(),
+  );
+  await htmlPage.goto("/demos/feed");
+  await expect(cards(htmlPage)).toHaveCount(6);
+  await expect(cards(htmlPage).first()).toContainText("多肉高模");
+  await htmlPage.close();
 
   const requests = feedRequests(page);
   await page.goto("/demos/feed");
@@ -46,8 +64,7 @@ test("第一页随页面一起送达，浏览器不再请求第一页", async ({
 });
 
 test("滚动到底部时加载下一页，直到没有更多", async ({ page }) => {
-  await page.goto("/demos/feed");
-  await expect(cards(page)).toHaveCount(6);
+  await openFeed(page);
 
   await page.getByTestId("feed-end").scrollIntoViewIfNeeded();
   await expect(cards(page)).toHaveCount(12);
@@ -60,7 +77,7 @@ test("收藏时卡片和“我的收藏”同时立即更新", async ({ page, mo
   await mockApi.setFaults([
     { method: "PUT", path: "/demo/tasks/:id/favorite", latency_ms: 1500 },
   ]);
-  await page.goto("/demos/feed");
+  await openFeed(page);
   await expect(favorites(page)).toHaveCount(4);
   const card = cards(page).filter({ hasText: "多肉高模" });
 
@@ -81,7 +98,7 @@ test("收藏失败时卡片和“我的收藏”一起回滚，只弹一个全�
   await mockApi.setFaults([
     { method: "PUT", path: "/demo/tasks/:id/favorite", status: 500 },
   ]);
-  await page.goto("/demos/feed");
+  await openFeed(page);
   await expect(favorites(page)).toHaveCount(4);
   // 第一页里已收藏的作品：取消收藏失败后应当仍是已收藏。
   const card = cards(page).filter({ hasText: "薄荷绿跑车" });
@@ -97,7 +114,7 @@ test("收藏失败时卡片和“我的收藏”一起回滚，只弹一个全�
 });
 
 test("在作品广场收藏后，列表页立即显示已收藏", async ({ page }) => {
-  await page.goto("/demos/feed");
+  await openFeed(page);
   const card = cards(page).filter({ hasText: "多肉高模" });
   await card.getByRole("button", { name: "收藏" }).click();
   await expect(favorites(page)).toHaveCount(5);
