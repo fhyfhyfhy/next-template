@@ -1,9 +1,6 @@
-import {
-  type APIRequestContext,
-  expect,
-  type Page,
-  test as base,
-} from "@playwright/test";
+import type { APIRequestContext, Page } from "@playwright/test";
+
+import { expect, test as base } from "../test";
 
 // e2e 只通过浏览器和 Mock API 的控制接口观察、准备条件，不引用应用代码。
 // 端口由 playwright.demo.config.ts 设置。没有它就报错，不回落到 demo:* 命令默认的端口：那是开着的 demo:dev 在用的 Mock API。
