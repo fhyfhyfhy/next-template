@@ -1590,3 +1590,52 @@ describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", (
     ).toStrictEqual(restricted);
   });
 });
+
+describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => {
+  const eslint = new ESLint({ cwd: project });
+  const filePath = join(project, "e2e/act-after-ready.spec.ts");
+  const lint = async (body) => {
+    const source = `import { expect, type Page, test } from "@playwright/test";\n\ndeclare function openTask(page: Page): Promise<void>;\n\ntest("case", async ({ page }) => {\n${body}\n});\n`;
+    const [result] = await eslint.lintText(source, { filePath });
+    return (
+      result.messages
+        .filter(({ ruleId }) => ruleId === "e2e/act-after-ready")
+        // 正文从源码第 6 行开始，换算成正文里的行号。
+        .map(({ line }) => line - 5)
+    );
+  };
+
+  test("goto 或 reload 之后直接操作被拒绝", async () => {
+    expect(
+      await lint(
+        `  await page.goto("/a");\n  const button = page.getByRole("button");\n  await button.click();`,
+      ),
+    ).toStrictEqual([3]);
+    expect(
+      await lint(
+        `  await page.reload();\n  await page.getByLabel("名称").fill("x");`,
+      ),
+    ).toStrictEqual([2]);
+  });
+
+  test("先用 expect 或 helper 确认之后可以操作", async () => {
+    expect(
+      await lint(
+        `  await page.goto("/a");\n  await expect(page.getByText("已加载")).toBeVisible();\n  await page.getByRole("button").click();`,
+      ),
+    ).toStrictEqual([]);
+    expect(
+      await lint(
+        `  await openTask(page);\n  await page.getByRole("button").click();`,
+      ),
+    ).toStrictEqual([]);
+  });
+
+  test("回调里的操作不算在 goto 之后立即执行", async () => {
+    expect(
+      await lint(
+        `  await page.goto("/a");\n  page.on("load", () => void page.getByRole("button").click());\n  await expect(page.getByText("已加载")).toBeVisible();`,
+      ),
+    ).toStrictEqual([]);
+  });
+});

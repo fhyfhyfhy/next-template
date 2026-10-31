@@ -12,6 +12,7 @@ import { BUILD_DIRS } from "./scripts/build-dirs.mjs";
 import createArchitecturePlugin, {
   layerZones,
 } from "./scripts/eslint/architecture-plugin.mjs";
+import e2ePlugin from "./scripts/eslint/e2e-plugin.mjs";
 import { SOURCE_EXTENSIONS, SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
 import createNamingPlugin from "./scripts/eslint/naming-plugin.mjs";
 import withWrapperImports, {
@@ -316,6 +317,10 @@ const eslintConfig = defineConfig([
   {
     ...playwright.configs["flat/recommended"],
     files: ["e2e/**"],
+    plugins: {
+      ...playwright.configs["flat/recommended"].plugins,
+      e2e: e2ePlugin,
+    },
     rules: {
       ...playwright.configs["flat/recommended"].rules,
       // 断言写在 expectXxx helper 里的用例也算有断言。
@@ -323,6 +328,8 @@ const eslintConfig = defineConfig([
         "warn",
         { assertFunctionPatterns: ["^expect[A-Z]"] },
       ],
+      // 整页加载后先等页面 hydrate 再操作，否则点击可能落在 React 接管之前（.claude/rules/e2e.md）。
+      "e2e/act-after-ready": "error",
     },
   },
   // 项目级忽略项在 Next 默认项上加入 worktree，避免重复检查其他 checkout。

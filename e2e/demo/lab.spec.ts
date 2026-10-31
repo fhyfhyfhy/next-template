@@ -38,6 +38,7 @@ test("故障面板注入的故障对其他页面生效，服务端渲染失败�
   ).toBeVisible();
 
   await page.goto("/demos/lab");
+  // eslint-disable-next-line e2e/act-after-ready -- “清除全部”只在浏览器读到故障配置后才渲染，找得到它时页面已经 hydrate。
   await section(page, "注入故障")
     .getByRole("button", { name: "清除全部" })
     .click();

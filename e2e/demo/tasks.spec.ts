@@ -53,7 +53,7 @@ test("从 Demo 首页进入全部任务，默认按创建时间倒序显示第�
   page,
 }) => {
   await page.goto("/demos");
-  // 首页没有只在浏览器里渲染的内容可等；hydration 之前点击链接会整页导航，下面的断言照样成立。
+  // eslint-disable-next-line e2e/act-after-ready -- 首页没有只在浏览器里渲染的内容可等；hydration 之前点击链接会整页导航，下面的断言照样成立。
   await page.getByRole("link", { name: /全部任务/ }).click();
 
   await expect(page).toHaveURL("/demos/tasks");

@@ -14,6 +14,7 @@ test("输入停顿后把关键词写进 URL 并显示结果，不新增历史记
   await page.goto("/demos/search");
   const historyLength = await page.evaluate(() => history.length);
 
+  // eslint-disable-next-line e2e/act-after-ready -- 搜索框读 useSearchParams，只在浏览器里渲染，找得到它时页面已经 hydrate。
   await page.getByLabel("搜索任务").pressSequentially("狐狸", { delay: 50 });
 
   await expect(page).toHaveURL(`/demos/search?q=${encodeURIComponent("狐狸")}`);
@@ -45,6 +46,7 @@ test("换关键词时中止还没返回的旧请求", async ({ page, mockApi }) 
   await page.goto("/demos/search");
   const input = page.getByLabel("搜索任务");
 
+  // eslint-disable-next-line e2e/act-after-ready -- 搜索框读 useSearchParams，只在浏览器里渲染，找得到它时页面已经 hydrate。
   await input.fill("狐");
   await expect(page).toHaveURL(`/demos/search?q=${encodeURIComponent("狐")}`);
   await input.fill("狐狸");
