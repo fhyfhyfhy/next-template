@@ -29,3 +29,7 @@ Playwright pages stay in the foreground, so a return to the tab is simulated: us
 - Task state changes only through `mockApi.advance()`: the `mockApi` fixture pauses the Mock API clock.
 - End each wait on the event that completes it, such as `page.waitForResponse` for a Server Action. A fixed wait fits only a negative assertion, "nothing else happens within N ms", and its `eslint-disable` comment gives that reason.
 - `mockApi.requests()` reads once. Poll it with `expect.poll` when the browser sends the request; read it directly for requests made while the server renders, which finish before the HTML arrives.
+
+## Regression specs
+
+A spec added for a bug goes red on the commit before the fix. Run it there with `pnpm e2e:at <commit> [playwright test args]`, which tests that commit's app code with this checkout's `e2e/` and Playwright configs, and keep the spec once it fails there and passes on the fix.
