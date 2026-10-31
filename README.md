@@ -34,8 +34,8 @@ The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node 
 
 End-to-end specs run with Playwright in two sets, each against its own production build and port, so they can run side by side and alongside `pnpm dev`. Install the browser once with `pnpm exec playwright install chromium`.
 
-- `pnpm test:e2e` runs the project's own specs in `e2e/`, skipping `e2e/demo/`, against `pnpm build` and `pnpm start` on port 3998. `e2e/home.spec.ts` is the minimal example to start from.
-- `pnpm demo:test:e2e` runs the Data demo's specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999, with their own Mock API on port 4999. The specs reset it before each test, pause its clock, and inject faults; a running `demo:dev` keeps its own Mock API on 4010 and its data. Other `demo:` scripts share a Mock API already running on their port instead of starting another; it stops with the script that started it.
+- `pnpm test:e2e` runs the project's own specs in `e2e/`, skipping `e2e/demo/`, against `pnpm build` and `pnpm start` on port 3998 (`E2E_PORT`). `e2e/home.spec.ts` is the minimal example to start from.
+- `pnpm demo:test:e2e` runs the Data demo's specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999, with their own Mock API on port 4999 (`DEMO_E2E_PORT`, `DEMO_E2E_MOCK_API_PORT`; set them when another checkout on the machine runs the same specs). The specs reset it before each test, pause its clock, and inject faults; a running `demo:dev` keeps its own Mock API on 4010 and its data. Other `demo:` scripts share a Mock API already running on their port instead of starting another; it stops with the script that started it.
 
 Both sets build with the testing API that `instant()` from `@next/playwright` needs to hold back streamed content: their `webServer` sets `EXPOSE_TESTING_API=1`, which `next.config.ts` reads. Keep that variable out of deployment builds. Those builds go to `.next-e2e` and `.next-demo-e2e`, so a running `pnpm start` or `pnpm demo:start` keeps its own output. ESLint applies `eslint-plugin-playwright`'s recommended rules to `e2e/`.
 

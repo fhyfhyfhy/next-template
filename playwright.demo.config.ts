@@ -1,11 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// 固定用不常用的端口：避开 3000 起 dev/start 自动顺延的那几个端口，也和项目 e2e 的 3998（playwright.config.ts）错开。
-const PORT = 3999;
+// 默认用不常用的端口：避开 3000 起 dev/start 自动顺延的那几个端口，也和项目 e2e 的 3998（playwright.config.ts）错开。
+// 同一台机器上另一份 checkout 也在跑 Data demo e2e 时，用 DEMO_E2E_PORT 和 DEMO_E2E_MOCK_API_PORT 换端口。
+const PORT = Number(process.env.DEMO_E2E_PORT ?? 3999);
 const BASE_URL = `http://localhost:${PORT}`;
 // e2e 自己的 Mock API，和 demo:* 命令默认的 4010 分开：测试会重置数据、暂停时钟、注入故障，不能动到开着的 demo:dev。
 // 写进 process.env：webServer 的 build 和 start 继承它，测试进程里的 e2e/demo/mock-api.ts 也读它。
-const MOCK_API_PORT = "4999";
+const MOCK_API_PORT = process.env.DEMO_E2E_MOCK_API_PORT ?? "4999";
 process.env.MOCK_API_PORT = MOCK_API_PORT;
 
 // Data demo 的 e2e（pnpm demo:test:e2e）：对着带 Mock API 的生产构建运行，缓存新鲜度和 prefetch 只有在 next start 下才可信。

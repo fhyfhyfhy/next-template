@@ -4,7 +4,7 @@ The Data demo under `/demos` is the runnable reference for this skill and its ru
 
 - Run it with `pnpm demo:dev`, or `pnpm demo:build` then `pnpm demo:start` for production behavior. These scripts start the Mock API; under `pnpm dev`, `build`, and `start` it stays off, and the Data demo pages render a notice and send no requests.
 - Code lives in `app/demos/(data)/` (routes) and `features/demo-task/` (paths below are relative to it unless they start with `app/` or `e2e/`). The Mock API is `scripts/mock-api/`; its `/__mock/*` endpoints reset data, pause or step the clock, inject faults, and list received requests.
-- `pnpm demo:test:e2e` runs the specs in `e2e/demo/` serially against its own production build in `.next-demo-e2e` on port 3999, with its own Mock API on 4999, so a running `demo:dev` or `demo:start` is left alone; each test resets that Mock API first. `pnpm test:e2e` is for the project's own specs and skips them.
+- `pnpm demo:test:e2e` runs the specs in `e2e/demo/` serially against its own production build in `.next-demo-e2e` on port 3999, with its own Mock API on 4999 (`DEMO_E2E_PORT`, `DEMO_E2E_MOCK_API_PORT`), so a running `demo:dev` or `demo:start` is left alone; each test resets that Mock API first. `pnpm test:e2e` is for the project's own specs and skips them.
 
 | Page | Owner | Why |
 | --- | --- | --- |

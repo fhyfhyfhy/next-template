@@ -2,7 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 // 项目自己的 e2e（pnpm test:e2e），不含 e2e/demo/ 下 Data demo 的 e2e（playwright.demo.config.ts）。
 // 端口避开 3000 起 dev/start 自动顺延的那几个端口，也和 Data demo e2e 的 3999 错开，两套可以同时跑。
-const PORT = 3998;
+// 同一台机器上另一份 checkout 也在跑 e2e 时，用 E2E_PORT 换一个端口。
+const PORT = Number(process.env.E2E_PORT ?? 3998);
 const BASE_URL = `http://localhost:${PORT}`;
 
 // 对着生产构建运行；调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务（比如 pnpm dev --port 3998）。
