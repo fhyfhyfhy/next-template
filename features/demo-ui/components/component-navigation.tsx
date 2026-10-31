@@ -1,4 +1,5 @@
 import { IconArrowRight } from "@tabler/icons-react";
+import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/cn";
 import { Link } from "@/lib/i18n-navigation";
@@ -8,14 +9,15 @@ import { iconsByComponent } from "./component-registry.generated";
 
 /** 当前组件写入 URL，支持分享、刷新与浏览器历史。 */
 export function ComponentNavigation({ selected }: { selected: ComponentId }) {
+  const t = useTranslations("demo-ui.navigation");
   return (
     <aside className="min-w-0 border-b border-border md:border-r md:border-b-0">
       <div className="p-5 md:sticky md:top-0 md:px-6 md:py-10 lg:px-8">
         <p className="mb-5 hidden font-mono text-[10px] tracking-[0.18em] text-muted-foreground md:block">
-          COMPONENTS
+          {t("eyebrow")}
         </p>
         <nav
-          aria-label="组件导航"
+          aria-label={t("label")}
           className="flex gap-1 overflow-x-auto pb-1 md:flex-col md:overflow-visible"
         >
           {catalog.map((item) => {

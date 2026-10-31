@@ -1,9 +1,16 @@
 "use client";
 
 import { IconCheck, IconCopy } from "@tabler/icons-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+
+const copyLabels = {
+  idle: "copy",
+  copied: "copied",
+  failed: "copyFailed",
+} as const;
 
 /** 展示与复制同一份源码；复制失败时保留可手动选择的代码。 */
 export function SourceCode({
@@ -13,18 +20,19 @@ export function SourceCode({
   source: string;
   filename: string;
 }) {
-  const [status, setStatus] = useState("复制代码");
+  const t = useTranslations("demo-ui.sourceCode");
+  const [status, setStatus] = useState<keyof typeof copyLabels>("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
   async function copy() {
     clearTimeout(timer.current);
     try {
       await navigator.clipboard.writeText(source);
-      setStatus("已复制");
+      setStatus("copied");
     } catch {
-      setStatus("复制失败，请手动选择");
+      setStatus("failed");
     }
-    timer.current = setTimeout(() => setStatus("复制代码"), 2500);
+    timer.current = setTimeout(() => setStatus("idle"), 2500);
   }
   return (
     <div className="min-w-0 border-t border-border bg-background">
@@ -33,17 +41,17 @@ export function SourceCode({
           {filename}
         </span>
         <Button variant="ghost" size="sm" onClick={copy}>
-          {status === "已复制" ? (
+          {status === "copied" ? (
             <IconCheck aria-hidden />
           ) : (
             <IconCopy aria-hidden />
           )}
-          <span aria-live="polite">{status}</span>
+          <span aria-live="polite">{t(copyLabels[status])}</span>
         </Button>
       </div>
       <pre
         tabIndex={0}
-        aria-label={`${filename} 源码`}
+        aria-label={t("label", { filename })}
         className="max-h-96 overflow-auto p-5 font-mono text-xs/6 outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <code>{source}</code>

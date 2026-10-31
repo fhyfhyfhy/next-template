@@ -1,6 +1,7 @@
 "use client";
 
 import { IconCode, IconEye } from "@tabler/icons-react";
+import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export function ExampleCard({
   filename: string;
   children: ReactNode;
 }) {
+  const t = useTranslations("demo-ui.examples");
   const [showCode, setShowCode] = useState(false);
   return (
     <section className="min-w-0 overflow-hidden rounded-panel border border-border bg-card text-card-foreground">
@@ -32,7 +34,7 @@ export function ExampleCard({
         <Button
           variant="ghost"
           size="sm"
-          aria-label={`${title}：${showCode ? "收起" : "查看"}代码`}
+          aria-label={t(showCode ? "hideCode" : "showCode", { title })}
           aria-expanded={showCode}
           onClick={() => setShowCode(!showCode)}
         >
