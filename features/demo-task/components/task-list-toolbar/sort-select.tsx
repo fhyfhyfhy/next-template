@@ -1,7 +1,6 @@
 "use client";
 
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { useRouter } from "next/navigation";
 
 import {
   SelectIcon,
@@ -17,23 +16,27 @@ import {
 } from "@/components/ui/select";
 
 import { TASK_SORT_LABELS, TASK_SORTS } from "../../constants/task-list";
-import { taskListHref, type TaskListParams } from "../../utils/task-urls";
+import type { TaskListParams } from "../../utils/task-urls";
 
 const items = TASK_SORTS.map((value) => ({
   value,
   label: TASK_SORT_LABELS[value],
 }));
 
-/** 换排序时回到第一页；用 push，Back 可以撤销这次选择。 */
-export function SortSelect({ params }: { params: TaskListParams }) {
-  const router = useRouter();
+interface SortSelectProps {
+  selected: TaskListParams;
+  onNavigate: (params: TaskListParams) => void;
+}
+
+/** 换排序时回到第一页。 */
+export function SortSelect({ selected, onNavigate }: SortSelectProps) {
   return (
     <SelectRoot
       size="sm"
       items={items}
-      value={params.sort}
+      value={selected.sort}
       onValueChange={(sort) => {
-        if (sort) router.push(taskListHref({ ...params, sort, page: 1 }));
+        if (sort) onNavigate({ ...selected, sort, page: 1 });
       }}
     >
       <SelectTrigger aria-label="排序" className="w-32">

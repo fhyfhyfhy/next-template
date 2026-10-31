@@ -11,6 +11,7 @@ import {
   type TaskListParams,
 } from "../../utils/task-urls";
 import { TaskCover } from "../task-cover";
+import { useTaskListNavigation } from "../task-list-navigation";
 import { TaskStatusBadge } from "../task-status-badge";
 import { FavoriteToggle } from "./favorite-toggle";
 
@@ -22,8 +23,15 @@ interface TaskListProps {
 
 export function TaskList({ tasksPromise, params }: TaskListProps) {
   const { items, total, hasMore } = use(tasksPromise);
+  const { pending, navigate } = useTaskListNavigation(params);
+  const previousPage = { ...params, page: params.page - 1 };
+  const nextPage = { ...params, page: params.page + 1 };
   return (
-    <div>
+    // 导航期间显示的还是旧列表，标记为更新中并调淡。
+    <div
+      aria-busy={pending}
+      className="transition-opacity aria-busy:opacity-60"
+    >
       {items.length === 0 ? (
         <p className="rounded-panel border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
           没有符合条件的任务
@@ -64,7 +72,11 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
         <div className="flex gap-2">
           {params.page > 1 && (
             <Link
-              href={taskListHref({ ...params, page: params.page - 1 })}
+              href={taskListHref(previousPage)}
+              onNavigate={(event) => {
+                event.preventDefault();
+                navigate(previousPage);
+              }}
               className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
             >
               上一页
@@ -72,7 +84,11 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
           )}
           {hasMore && (
             <Link
-              href={taskListHref({ ...params, page: params.page + 1 })}
+              href={taskListHref(nextPage)}
+              onNavigate={(event) => {
+                event.preventDefault();
+                navigate(nextPage);
+              }}
               className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
             >
               下一页

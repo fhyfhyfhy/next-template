@@ -7,6 +7,7 @@ import {
   PageIntro,
   parseTaskListParams,
   TaskList,
+  TaskListNavigation,
   TaskListSkeleton,
   TaskListToolbar,
   toTaskFilters,
@@ -30,23 +31,25 @@ export default function TasksPage({ searchParams }: PageProps<"/demos/tasks">) {
       </PageIntro>
       <CreateTaskForm />
       {/* page 保持同步，只在 Suspense 里等 searchParams：工具栏和列表以外的部分都能进静态 shell。 */}
-      <Suspense fallback={<div className="mb-4 h-8" />}>
-        {searchParams.then((query) => (
-          <TaskListToolbar params={parseTaskListParams(query)} />
-        ))}
-      </Suspense>
-      <Suspense fallback={<TaskListSkeleton />}>
-        {searchParams.then((query) => {
-          if (!MOCK_API_RUNNING) return null;
-          const params = parseTaskListParams(query);
-          return (
-            <TaskList
-              params={params}
-              tasksPromise={getCachedTaskPage(toTaskFilters(params))}
-            />
-          );
-        })}
-      </Suspense>
+      <TaskListNavigation>
+        <Suspense fallback={<div className="mb-4 h-8" />}>
+          {searchParams.then((query) => (
+            <TaskListToolbar params={parseTaskListParams(query)} />
+          ))}
+        </Suspense>
+        <Suspense fallback={<TaskListSkeleton />}>
+          {searchParams.then((query) => {
+            if (!MOCK_API_RUNNING) return null;
+            const params = parseTaskListParams(query);
+            return (
+              <TaskList
+                params={params}
+                tasksPromise={getCachedTaskPage(toTaskFilters(params))}
+              />
+            );
+          })}
+        </Suspense>
+      </TaskListNavigation>
     </>
   );
 }

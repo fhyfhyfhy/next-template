@@ -58,6 +58,33 @@ test("按状态筛选写进 URL，Back 回到上一个筛选", async ({ page }) 
   await expect(rows(page)).toHaveCount(8);
 });
 
+test("换筛选后立即显示新的选择，新列表到达前旧列表标记为更新中", async ({
+  page,
+  mockApi,
+}) => {
+  await openTasksPage(page);
+  // 列表在服务端读 Mock API，拖慢它才看得到新列表到达之前的样子。
+  await mockApi.setFaults([
+    { method: "GET", path: "/demo/tasks", latency_ms: 2000 },
+  ]);
+  const failedTab = page
+    .getByRole("navigation", { name: "按状态筛选" })
+    .getByRole("link", { name: "失败" });
+  const busyList = page
+    .locator('[aria-busy="true"]')
+    .getByRole("list", { name: "任务列表" });
+
+  await failedTab.click();
+
+  await expect(failedTab).toHaveAttribute("aria-current", "page");
+  await expect(busyList).toBeVisible();
+  await expect(page).toHaveURL("/demos/tasks");
+
+  await expect(page).toHaveURL("/demos/tasks?status=failed");
+  await expect(rows(page)).toHaveCount(3);
+  await expect(busyList).toHaveCount(0);
+});
+
 test("排序和分页写进 URL，前进后退都显示对应的数据", async ({ page }) => {
   await page.goto("/demos/tasks");
   await page.getByRole("combobox", { name: "排序" }).click();

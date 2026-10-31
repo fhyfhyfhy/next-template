@@ -12,6 +12,8 @@ Map each changed input or written record to its displayed consumers and [owners]
 
 Use the same committed URL input for both owners. Debounce typed filters before committing them to the URL and query key; use `replace` for intermediate states and `push` for choices the user expects Back to undo.
 
+A Server Component navigation that misses the server cache waits for the server. Until it commits, the URL and server-rendered props keep their previous values, and React keeps the content already on screen instead of showing its Suspense fallback, so a control derived from those props does not react to the click. To show the choice at once, call `router.push` inside `startTransition` and set the chosen value there with `useOptimistic`: it lasts until the navigation commits. Mark the previous content `aria-busy` meanwhile. For a `Link`, take over in `onNavigate` with `preventDefault()`, not `onClick`, so modifier clicks still open a new tab.
+
 For History API integration, read `node_modules/next/dist/docs/01-app/02-guides/single-page-applications.md`, **Shallow routing**. For parameter access and Suspense requirements, read the installed `03-api-reference/04-functions/use-search-params.md`. Navigation can reuse existing output; verify the displayed values and Back/Forward behavior rather than assuming every URL change sends a request.
 
 ## After a write

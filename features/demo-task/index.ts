@@ -6,6 +6,7 @@ export { DemoNote } from "./components/demo-note";
 export { PageIntro } from "./components/page-intro";
 export { CreateTaskForm } from "./components/create-task-form";
 export { TaskList } from "./components/task-list";
+export { TaskListNavigation } from "./components/task-list-navigation";
 export { TaskListSkeleton } from "./components/task-list-skeleton";
 export { TaskListToolbar } from "./components/task-list-toolbar";
 export { TaskDetail } from "./components/task-detail";

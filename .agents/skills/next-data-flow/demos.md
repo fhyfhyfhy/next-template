@@ -19,7 +19,7 @@ The Data demo under `/demos` is the runnable reference for this skill and its ru
 
 | # | Scenario | Rules | Code | Spec |
 | --- | --- | --- | --- | --- |
-| 1 | URL filters, sort, and pagination with a streamed skeleton | [Ownership](SKILL.md#ownership), [URL changes](refresh.md#url-changes) | `app/demos/(data)/tasks/page.tsx`, `utils/task-urls.ts`, `components/task-list-toolbar/` | `e2e/demo/tasks.spec.ts` |
+| 1 | URL filters, sort, and pagination with a streamed skeleton; the choice shows at once and the previous list is marked busy until the server responds | [Ownership](SKILL.md#ownership), [URL changes](refresh.md#url-changes) | `app/demos/(data)/tasks/page.tsx`, `utils/task-urls.ts`, `components/task-list-navigation.tsx`, `components/task-list-toolbar/` | `e2e/demo/tasks.spec.ts` |
 | 2 | Public read in `use cache` with a tag, expired by `updateTag` after writes | [Server invalidation](refresh.md#server-invalidation-and-refresh), [Files](../../../.claude/rules/data-fetching-api.md#files), [Requests](../../../.claude/rules/data-fetching-api.md#requests) | `api/get-cached-task-page.ts`, `constants/cache-tags.ts`, `api/*-action.ts` | `e2e/demo/tasks.spec.ts` |
 | 3 | Unawaited promise passed to a Client Component and read with `use()` | Installed `02-guides/streaming.md` | `app/demos/(data)/tasks/page.tsx`, `components/task-list/index.tsx` | `e2e/demo/tasks.spec.ts` |
 | 4 | Not-found, metadata sharing the page's GET, segment `error.tsx` | [Response status](framework-notes.md#response-status) | `app/demos/(data)/tasks/[id]/page.tsx`, `app/demos/(data)/tasks/[id]/not-found.tsx`, `app/demos/(data)/error.tsx` | `e2e/demo/task-detail.spec.ts`, `e2e/demo/lab.spec.ts` |
