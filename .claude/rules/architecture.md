@@ -57,7 +57,7 @@ features/{name}/
   components/   feature-specific UI
   hooks/        feature-specific hooks
   stores/       Zustand stores
-  api/          fetchApi + queryOptions + query/mutation hooks
+  api/          requests (fetchApi), Server Actions, query and mutation options factories
   utils/        feature-specific utilities
   constants/    feature-specific constants
   types/        feature business types
@@ -68,6 +68,7 @@ Same ordering rule: each layer may import from the same layer and any layer belo
 ### Where files go
 
 - Use only the directories in the two tables above. To add a new kind of directory, update this document first.
+- Browser end-to-end specs live in top-level `e2e/`, outside the layers. They observe the app through the browser and import no application code; ESLint enforces this. The Data demo's specs live in `e2e/demo/` and also drive the Mock API control endpoints; `pnpm demo:test:e2e` runs them, and `pnpm test:e2e` runs the rest.
 - Layer directories (`hooks/`, `utils/`, `features/{name}/api/`, etc.) contain only files. The one exception is component directories: any `components/` may contain one level of component directories (see "Component directories"), and so may the reserved `components/ui/`.
 - Independent hooks go in `hooks/` and utility functions in `utils/`. Component-specific private contexts, hooks, helpers, and types may stay in the component directory (see "Component directories").
 - Keep types with the module or schema that owns them. Extract a shared contract into that owner's `types/` when needed to preserve dependency direction or give the contract an independent role.
@@ -83,7 +84,7 @@ Root shared code provides domain-neutral behavior with stable, reusable interfac
 | --- | --- | --- |
 | `components/` | `DataTable` with caller-defined columns and cells | `TaskTable` with task actions and permissions |
 | `components/ui/` | `Button`, `Dialog` | `DeleteTaskDialog` |
-| `hooks/` | `useMediaQuery`, `useElementSize` | `useCurrentUser`, `useTaskPermissions` |
+| `hooks/` | Domain-neutral hooks that `@mantine/hooks` lacks ([libraries.md](libraries.md)) | `useCurrentUser`, `useTaskPermissions` |
 | `utils/` | `clamp`, `formatBytes` | `calculateOrderTotal`, `canDeleteTask` |
 | `constants/` | Keyboard keys, design tokens | Subscription tiers, task status values |
 | `types/` | Generic pagination contracts | `User`, `Task`, `Order` |
@@ -94,6 +95,12 @@ Root shared code provides domain-neutral behavior with stable, reusable interfac
 When a module mixes general behavior with business rules, keep the business part in its feature and extract only the stable general part. If multiple features need composition, their caller can assemble them without moving their business implementations into root directories.
 
 Architecture checks are configured in [eslint.config.mjs](../../eslint.config.mjs). Feature cycles include type-only dependencies and may exist without file cycles. Run without ESLint's per-file `--cache`, since other files can change a feature's cycle status. Domain ownership and provider requirements are checked during review; directory placement alone does not prove that code is domain-neutral.
+
+### Conditional credential entry
+
+`lib/fetch.ts` uses `#credentials` as an environment boundary: `package.json` selects the server or browser credential adapter. A relative import cannot preserve that selection. The `architecture/package-imports` rule reserves this exception for that caller, verifies the two ordered targets, and rejects other `#` imports. Extend the architecture checks before introducing another conditional project entry.
+
+The project's boundary and feature-cycle resolver follows relative and `@/` imports; it does not build a graph for conditional package imports. The separate layer and file-cycle rules currently resolve `#credentials` through its default browser branch. They do not establish that the `react-server` branch is cycle-free. When changing either credential adapter or its dependencies, check both runtime dependency paths for cycles, including a path back to `lib/fetch.ts`.
 
 ### Component directories
 

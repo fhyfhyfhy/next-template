@@ -11,6 +11,11 @@ Every `.md` file in `.claude/rules/` (including subdirectories) is a rule. Befor
 
 Knowledge about this repo that later sessions need goes into the repo, placed per the `skills-and-rules` skill.
 
+## Test and lint tooling
+
+- When adding tests, reuse the existing test entry and select scope through runner arguments. Add a separate entry only when execution setup differs, such as browser tests requiring a server.
+- When adding source checks, extend the existing linter through configuration, plugins, or local rules. Use a standalone checker only when the linter cannot support the required inputs or execution, and document that limitation.
+
 ## Agent skills
 
 ### Issue tracker

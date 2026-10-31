@@ -12,7 +12,7 @@ export function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("mt-2 text-sm leading-6 text-muted-foreground", className)}
+      className={cn("mt-2 text-sm/6 text-muted-foreground", className)}
       {...props}
     />
   );
