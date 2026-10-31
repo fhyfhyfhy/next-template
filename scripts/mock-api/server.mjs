@@ -70,7 +70,7 @@ export async function startMockApi({
 }
 
 /**
- * 找 `port` 上已经在运行的 Mock API，比如开着 demo:dev 时跑 e2e，两边就共用它。
+ * 找 `port` 上已经在运行的 Mock API，比如开着 demo:dev 时再运行 demo:build，两边就共用它。
  * 端口上没有服务时返回 null；被别的程序占着时报错，免得把 Demo 的请求发给不认识的服务。
  * @returns {Promise<string | null>}
  */

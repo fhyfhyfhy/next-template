@@ -1,9 +1,19 @@
 import type { NextConfig } from "next";
 
+// 每种产物各放一个目录，免得互相覆盖：demo:* 命令（scripts/run-next.mjs --demo）把 Mock API 的地址内联进产物，
+// 和项目自己的 build 混用会让 pnpm start 跑起一个指向 Mock API 的版本；e2e 的 build 打开了测试 API，
+// 不能被当成正常产物 start，也不能覆盖正在运行的 start。.next 以外的目录要同步加进 tsconfig.json、
+// .gitignore 和 eslint.config.mjs 的排除项，scripts/run-next.mjs 也要在 build 前刷新 .next/types。
+const distDir = [
+  ".next",
+  process.env.NEXT_PUBLIC_MOCK_API === "1" && "demo",
+  process.env.EXPOSE_TESTING_API === "1" && "e2e",
+]
+  .filter(Boolean)
+  .join("-");
+
 const nextConfig: NextConfig = {
-  // demo:* 命令（scripts/run-next.mjs --demo）把 Mock API 的地址内联进产物，单独放一个目录，
-  // 免得和项目自己的 build 互相覆盖，让 pnpm start 跑起一个指向 Mock API 的版本。
-  distDir: process.env.NEXT_PUBLIC_MOCK_API === "1" ? ".next-demo" : ".next",
+  distDir,
   cacheComponents: true,
   // 内置的内存 handler 在生产环境过了 cacheLife 的 revalidate 就丢弃条目，请求只能同步等新数据；
   // 这个 handler 保留到 expire，生产环境和 dev 一样先返回旧数据、后台刷新。

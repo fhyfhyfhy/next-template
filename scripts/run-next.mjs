@@ -16,7 +16,8 @@ import {
 // 用法：node scripts/run-next.mjs <dev|build|start> [--demo] [其余参数传给 next]
 // --demo（package.json 的 demo:* 命令）先启动 Mock API，并让 next 指向它，不管项目配置的后端地址是什么。
 // build 和 start 各自启动一次 Mock API，端口固定，所以 build 时内联进产物的地址在 start 时仍然可用。
-// 端口上已经有 Mock API（比如开着 demo:dev 时跑 e2e）就直接用它，退出时也不关它：它跟着启动它的命令退出。
+// 端口上已经有 Mock API（比如开着 demo:dev 时再运行 demo:build）就直接用它，退出时也不关它：它跟着启动它的命令退出。
+// 端口由 MOCK_API_PORT 指定；Data demo 的 e2e 用自己的端口（playwright.demo.config.ts），不和 demo:dev 共用。
 
 const COMMANDS = new Set(["dev", "build", "start"]);
 const DEFAULT_PORT = 3000;
@@ -38,8 +39,9 @@ const nextArgs = rest.filter((arg) => arg !== "--demo");
 if (command === "start" && !hasExplicitPort(nextArgs)) {
   nextArgs.push("--port", String(await findFreePort(DEFAULT_PORT)));
 }
-// tsconfig.json 排除了 .next-demo，demo:build 的类型检查读的是 .next/types；这份只有 build 和 typegen 会写，先刷新它。
-if (command === "build" && demo) {
+// demo 和 e2e 的 build 不写 .next（distDir 见 next.config.ts），tsconfig.json 又排除了它们自己的目录，
+// 类型检查读的是 .next/types；这份只有 .next 的 build 和 typegen 会写，先刷新它。
+if (command === "build" && (demo || process.env.EXPOSE_TESTING_API === "1")) {
   const typegen = spawnSync(process.execPath, [nextBin, "typegen"], {
     cwd: projectRoot,
     stdio: "inherit",
@@ -49,7 +51,7 @@ if (command === "build" && demo) {
 
 const mockApi = demo ? await connectMockApi() : null;
 // 进程里已有的变量优先于 .env* 文件，所以项目在 .env.local 里配置的后端地址不会覆盖这里。
-// NEXT_PUBLIC_MOCK_API 同时让 next.config.ts 把产物放进 .next-demo。
+// NEXT_PUBLIC_MOCK_API 同时让 next.config.ts 把产物放进 demo 的目录。
 const childEnv = mockApi
   ? {
       ...process.env,

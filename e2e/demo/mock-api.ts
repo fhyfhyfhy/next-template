@@ -6,8 +6,14 @@ import {
 } from "@playwright/test";
 
 // e2e 只通过浏览器和 Mock API 的控制接口观察、准备条件，不引用应用代码。
-// 端口和 scripts/mock-api/server.mjs 的 DEFAULT_MOCK_API_PORT 一致。
-export const MOCK_API_URL = `http://127.0.0.1:${process.env.MOCK_API_PORT ?? 4010}`;
+// 端口由 playwright.demo.config.ts 设置。没有它就报错，不回落到 demo:* 命令默认的端口：那是开着的 demo:dev 在用的 Mock API。
+const mockApiPort = process.env.MOCK_API_PORT;
+if (!mockApiPort) {
+  throw new Error(
+    "MOCK_API_PORT is not set; run these specs with playwright.demo.config.ts",
+  );
+}
+export const MOCK_API_URL = `http://127.0.0.1:${mockApiPort}`;
 
 export interface MockFault {
   method: string;

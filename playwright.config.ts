@@ -19,8 +19,9 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `pnpm build && pnpm start --port ${PORT}`,
-    // build 时打开 instant() 依赖的测试 API（next.config.ts）。
+    // 即 pnpm build 和 start。直接用 node 调用：只装了 corepack 的环境里 PATH 上没有 pnpm。
+    command: `node scripts/run-next.mjs build && node scripts/run-next.mjs start --port ${PORT}`,
+    // 打开 instant() 依赖的测试 API，产物也因此放进单独的目录，不覆盖正在运行的 start（next.config.ts）。
     env: { EXPOSE_TESTING_API: "1" },
     url: BASE_URL,
     reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",

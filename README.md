@@ -26,7 +26,7 @@ The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node 
 
 `pnpm check` runs `format:check`, `lint`, `typecheck`, and `test` in that order and stops at the first failure. The e2e sets run on their own (see [Tests](#tests)).
 
-`pnpm typecheck` runs `next typegen` before `tsc --noEmit`, because helpers such as `PageProps<"/demos/tasks">` come from the route types Next generates in `.next/types`. `tsconfig.json` excludes the copies that `next dev` and the `demo:` scripts keep in `.next/dev` and `.next-demo`: after a route is removed or renamed, they stay stale until their script runs again.
+`pnpm typecheck` runs `next typegen` before `tsc --noEmit`, because helpers such as `PageProps<"/demos/tasks">` come from the route types Next generates in `.next/types`. `tsconfig.json` excludes the copies that `next dev`, the `demo:` scripts, and the e2e builds keep in `.next/dev` and the other `.next-*` directories: after a route is removed or renamed, they stay stale until their script runs again.
 
 ## Tests
 
@@ -35,9 +35,9 @@ The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node 
 End-to-end specs run with Playwright in two sets, each against its own production build and port, so they can run side by side and alongside `pnpm dev`. Install the browser once with `pnpm exec playwright install chromium`.
 
 - `pnpm test:e2e` runs the project's own specs in `e2e/`, skipping `e2e/demo/`, against `pnpm build` and `pnpm start` on port 3998. `e2e/home.spec.ts` is the minimal example to start from.
-- `pnpm demo:test:e2e` runs the Data demo's specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999. When a `demo:` script is already running, later `demo:` scripts, these specs included, share its Mock API instead of starting another; it stops with the script that started it. The specs reset that Mock API before each test and restore it afterwards, so leave the `demo:dev` page alone while they run.
+- `pnpm demo:test:e2e` runs the Data demo's specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999, with their own Mock API on port 4999. The specs reset it before each test, pause its clock, and inject faults; a running `demo:dev` keeps its own Mock API on 4010 and its data. Other `demo:` scripts share a Mock API already running on their port instead of starting another; it stops with the script that started it.
 
-Both sets build with the testing API that `instant()` from `@next/playwright` needs to hold back streamed content: their `webServer` sets `EXPOSE_TESTING_API=1`, which `next.config.ts` reads. Keep that variable out of deployment builds. ESLint applies `eslint-plugin-playwright`'s recommended rules to `e2e/`.
+Both sets build with the testing API that `instant()` from `@next/playwright` needs to hold back streamed content: their `webServer` sets `EXPOSE_TESTING_API=1`, which `next.config.ts` reads. Keep that variable out of deployment builds. Those builds go to `.next-e2e` and `.next-demo-e2e`, so a running `pnpm start` or `pnpm demo:start` keeps its own output. ESLint applies `eslint-plugin-playwright`'s recommended rules to `e2e/`.
 
 While debugging, `E2E_REUSE_SERVER=1` makes either set reuse a server you started on its port, such as `pnpm demo:dev --port 3999`; specs that depend on production behavior, such as prefetching, fail against a dev server, and a production server needs a build made with `EXPOSE_TESTING_API=1`.
 
