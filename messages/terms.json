@@ -1,0 +1,6 @@
+{
+  "keep": ["Next Demo", "Next.js", "Demo", "Mock API", "prompt", "GLB"],
+  "translations": {
+    "任务": { "en": "task" }
+  }
+}

@@ -164,6 +164,9 @@ importers:
       '@eslint-community/eslint-plugin-eslint-comments':
         specifier: ^4.8.1
         version: 4.8.1(eslint@9.39.5(jiti@2.7.0)(supports-color@7.2.0))
+      '@formatjs/icu-messageformat-parser':
+        specifier: ^3.5.22
+        version: 3.5.22
       '@next/playwright':
         specifier: 16.4.3
         version: 16.4.3(@playwright/test@1.64.1)

@@ -47,6 +47,7 @@
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1",
+    "@formatjs/icu-messageformat-parser": "^3.5.22",
     "@next/playwright": "16.4.3",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
