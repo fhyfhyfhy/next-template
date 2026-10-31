@@ -1,17 +1,17 @@
 ---
 name: next-data-flow
-description: Choose RSC or React Query ownership and coordinate server data in this repo. Use when choosing or changing a data owner, integrating server-prefetched queries or Server Actions with React Query, or diagnosing stale views after URL, write, or session changes. Framework-only questions and shell or prefetch optimization use the installed Next.js docs and official skills.
+description: Choose RSC or React Query ownership and coordinate server data in this repo. Use when choosing or changing a data owner, integrating server-prefetched queries or Server Actions with React Query, or diagnosing stale views after URL changes, writes, changes made elsewhere, or session changes. Framework-only questions and shell or prefetch optimization use the installed Next.js docs and official skills.
 ---
 
 # Project data flow
 
-Each piece of displayed server data has one **owner** responsible for refreshing it: the Server Component render or the browser's React Query cache. This is the repo's design convention. Ownership is separate from where the first fetch runs, whether data is cached, and which component code reaches the browser.
+Each **read** (one request's result and everything derived from it: its fields, filtering, sorting, counts, and pagination) has one **owner** responsible for refreshing it: the Server Component render or the browser's React Query cache. This is the repo's design convention. Ownership is separate from where the first fetch runs, whether data is cached, and which component code reaches the browser.
 
-For a new flow, identify its consumers, inputs, available credentials, update triggers, freshness tolerance, and initial-display requirements. For an existing flow, trace the affected read through its consumers and refresh triggers; retain its owner unless the requirement calls for a change. Diagnose stale views by identifying the owner and cache that supplied the value.
+For a new flow, identify its consumers, inputs, available credentials, update triggers, freshness tolerance, and initial-display requirements. For an existing flow, trace the affected read through its consumers and refresh triggers; retain its owner unless the requirement calls for a change. A read's **consumers** are every display of its data and every value computed from it, on the server or in other components. The design is complete when every consumer has a refresh path for every [update trigger](refresh.md), and consumers shown together refresh from the same trigger. Diagnose a stale view by reproducing the reported steps and observing each consumer, then identifying the owner and cache that supplied the value.
 
 ## Ownership
 
-The Server Component render owns the data unless a React Query signal applies:
+The Server Component render owns a read unless a React Query signal applies:
 
 | Signal | Owner |
 | --- | --- |
@@ -24,13 +24,15 @@ The Server Component render owns the data unless a React Query signal applies:
 | Should refresh when the tab regains focus | React Query |
 | Needs browser-only inputs, such as geolocation or `localStorage` | Client fetch, usually React Query |
 
-Interactive Client Components can display server-owned props or promises. Server prefetch can seed query-owned data; its subscribed Client Component then renders that data. A separate server-rendered snapshot of the same query-owned item can diverge when the query refetches. One page may contain both owners, with each affected display refreshed through its owner.
+Interactive Client Components can display server-owned props or promises. Server prefetch can seed query-owned data; its subscribed Client Component then renders that data. A separate server-rendered snapshot of the same query-owned item can diverge when the query refetches.
+
+A read can carry signals for both owners, such as URL filters and changes while the user stays. Give the whole read one owner: React Query when most of it changes continuously, such as progress, and the Server Component when changes are occasional beside navigation. The other signal becomes that owner's refresh trigger: a server-owned read refreshes on a change signal ([Changes made elsewhere](refresh.md#changes-made-elsewhere)), and a query-owned read with URL inputs derives its key from the URL ([URL changes](refresh.md#url-changes)). Different reads on one page may have different owners.
 
 ## Project integration
 
 - Follow [data-fetching.md](../../../.claude/rules/data-fetching.md) for data consumption, error feedback, and session isolation; follow [data-fetching-api.md](../../../.claude/rules/data-fetching-api.md) for request configuration, credentials, options factories, and feature public entries. Adapt official examples to these contracts.
 - For browser credential readiness, server prefetch, hydration, or a Server Action called by a mutation, read [React Query integration](react-query-integration.md).
-- For URL changes, writes, or session changes, read [Refresh coordination](refresh.md).
+- For URL changes, writes, changes made elsewhere, or session changes, read [Refresh coordination](refresh.md).
 - Before implementing one of these patterns, read its runnable reference in the [Data demo](demos.md): code and e2e spec per scenario.
 
 ## Framework guidance
@@ -61,7 +63,7 @@ For an explicit Cache Components or Partial Prefetching migration, use the match
 
 ## Verification
 
-Verify the changed flow and dependent consumers: initial data, relevant URL changes and Back/Forward, successful and failed writes, and automatic refresh triggers. Check both owners when both are affected. For session changes, follow the [session checks](refresh.md#session-changes).
+Verify the changed flow and dependent consumers: initial data, relevant URL changes and Back/Forward, successful and failed writes, automatic refresh triggers, and changes made elsewhere while the view stays open, observed in every consumer. Check both owners when both are affected. For session changes, follow the [session checks](refresh.md#session-changes).
 
 Use the repo's production build when server reads or rendering boundaries change, and verify cache freshness and prefetch behavior against `next start` or a production preview. A successful build or development check does not establish those behaviors. For streaming, status, or crawler requirements, check the relevant URL and `User-Agent` for status, visible HTML, metadata, and chunk delivery. Deployment-only failures use [self-hosting-audit](../self-hosting-audit/SKILL.md).
 

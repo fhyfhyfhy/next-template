@@ -1,6 +1,6 @@
 # Refresh coordination
 
-Map each changed input or written record to its displayed consumers and [owners](SKILL.md#ownership). Next.js server caches, router output, and React Query have separate refresh paths; updating one does not establish freshness in the others.
+Update triggers are URL changes, this user's writes, changes made elsewhere, and session changes; each has a section below. Map each changed input or record to its [consumers](SKILL.md) and [owners](SKILL.md#ownership). Next.js server caches, router output, and React Query have separate refresh paths; updating one does not establish freshness in the others.
 
 ## URL changes
 
@@ -36,6 +36,19 @@ Optimistic updates follow the owner of the displayed value:
 - **React Query**: in the factory's `onMutate`, cancel the affected queries, snapshot them, and write the new value into every displayed copy; restore the snapshot in `onError` and invalidate in `onSettled`. Failure feedback stays with the global toast.
 
 When both owners display the value, combine the React Query path with a factory `mutationFn` that calls the Server Action.
+
+## Changes made elsewhere
+
+Data can change without this user acting: other users' edits, background jobs, or processing that advances on its own.
+
+| Affected data owner | Coordinate the update |
+| --- | --- |
+| React Query | Poll while the data can change (`refetchInterval`), refetch on focus, or invalidate on a pushed event |
+| Server Component | Invalidate the cached reads from the backend's change event, such as `revalidateTag` in a Route Handler; refresh open views from a change signal |
+
+A **change signal** is a cheap query or pushed event that reveals a change to the view: a version, a count, or the IDs and states the view depends on. Compare successive results and refresh only when they differ. When the backend has invalidated the cached reads, `router.refresh()` updates an open view. When only the browser can detect the change, call a Server Action that invalidates them; its response carries the refreshed page. Every open page then sends that action, so prefer the backend event when the backend can emit one. Choose the invalidation's freshness as [Server invalidation and refresh](#server-invalidation-and-refresh) describes.
+
+A stale-while-revalidate read can reach the page older than the signal's first result. Check the view against that first result once and refresh if they disagree.
 
 ## Server invalidation and refresh
 

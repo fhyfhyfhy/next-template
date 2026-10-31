@@ -21,7 +21,7 @@ When choosing a data owner, integrating RSC with React Query, or changing URL/wr
 
 ## Copies
 
-Render server data from its owner: props or a promise from a Server Component, or `useQuery` with `select`. Keep no copy in React state, context, or a store; the copy stops following refreshes. A draft with its own editing lifecycle, such as a form being edited, may start from the data and is saved with a write.
+Render server data from its owner: props or a promise from a Server Component, or `useQuery` with `select`. Keep no copy in React state, context, or a store; the copy stops following refreshes. Refetching part of one read through a second owner, such as a query for one field of each listed item, is a copy too: it refreshes on its own schedule while everything else derived from that read, such as its filtering and counts, keeps the old state. A draft with its own editing lifecycle, such as a form being edited, may start from the data and is saved with a write.
 
 ## Errors in React Query–owned data
 
