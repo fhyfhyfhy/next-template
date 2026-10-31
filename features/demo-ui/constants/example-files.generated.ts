@@ -2,7 +2,7 @@
 
 // 源码内容变化也要更新此模块，让开发服务器重新读取展示和复制用的源码。
 export const exampleSourceRevision =
-  "d3a7e4450ace02c74719e138b57d438a61c42673943f00d96211bb6ed4957793";
+  "4d9bdc9db84675f8ed7880fb91cd719c5c24660100438d6badf429c97b9c8500";
 
 export const exampleFiles = {
   badge: [
@@ -23,6 +23,10 @@ export const exampleFiles = {
   dialog: [
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
+  ],
+  field: [
+    { id: "server-errors", filename: "server-errors.example.tsx" },
+    { id: "tanstack-form", filename: "tanstack-form.example.tsx" },
   ],
   input: [
     { id: "basic", filename: "basic.example.tsx" },

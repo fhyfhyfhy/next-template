@@ -1,9 +1,16 @@
 "use client";
 
-import { useForm } from "@tanstack/react-form";
+import { useMounted } from "@mantine/hooks";
+import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import {
+  FieldControl,
+  FieldError,
+  FieldLabel,
+  FieldRoot,
+} from "@/components/ui/field";
 import { useMutation } from "@/lib/react-query";
 
 import {
@@ -11,17 +18,23 @@ import {
   createCommentMutationOptions,
 } from "../../api/create-comment";
 
-const contentSchema = z
-  .string()
-  .trim()
-  .min(1, "请输入评论")
-  .max(COMMENT_MAX_LENGTH, `评论最多 ${COMMENT_MAX_LENGTH} 个字`);
+const commentSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "请输入评论")
+    .max(COMMENT_MAX_LENGTH, `评论最多 ${COMMENT_MAX_LENGTH} 个字`),
+});
 
 /** 提交时立即清空输入框（工厂已经乐观插入了评论），失败时把内容放回去，不丢用户写的字。 */
 export function CommentForm({ taskId }: { taskId: string }) {
+  // JS 接管之前不可用，原因同 `CreateTaskForm`。
+  const mounted = useMounted();
   const createComment = useMutation(createCommentMutationOptions(taskId));
   const form = useForm({
     defaultValues: { content: "" },
+    validationLogic: revalidateLogic(),
+    validators: { onDynamic: commentSchema },
     onSubmit: ({ value, formApi }) => {
       formApi.reset();
       createComment.mutate(
@@ -40,37 +53,34 @@ export function CommentForm({ taskId }: { taskId: string }) {
         void form.handleSubmit();
       }}
     >
-      <form.Field name="content" validators={{ onSubmit: contentSchema }}>
-        {(field) => {
-          const error = field.state.meta.errors[0]?.message;
-          return (
-            <div className="flex-1 space-y-1">
-              <label htmlFor="comment-content" className="sr-only">
-                写评论
-              </label>
-              <textarea
-                id="comment-content"
-                rows={2}
-                value={field.state.value}
-                placeholder="写下你的评论"
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? "comment-content-error" : undefined}
-                className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/15 aria-invalid:border-destructive"
-                onChange={(event) => field.handleChange(event.target.value)}
-              />
-              {error && (
-                <p
-                  id="comment-content-error"
-                  className="text-xs text-destructive"
-                >
-                  {error}
-                </p>
-              )}
-            </div>
-          );
-        }}
+      <form.Field name="content">
+        {(field) => (
+          <FieldRoot
+            name={field.name}
+            disabled={!mounted}
+            invalid={!field.state.meta.isValid}
+            dirty={field.state.meta.isDirty}
+            touched={field.state.meta.isTouched}
+            className="flex-1"
+          >
+            <FieldLabel className="sr-only">写评论</FieldLabel>
+            <FieldControl
+              render={<textarea rows={2} />}
+              value={field.state.value}
+              onValueChange={(value) => field.handleChange(value)}
+              onBlur={field.handleBlur}
+              placeholder="写下你的评论"
+              className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 aria-invalid:border-destructive"
+            />
+            <FieldError match={!field.state.meta.isValid}>
+              {field.state.meta.errors[0]?.message}
+            </FieldError>
+          </FieldRoot>
+        )}
       </form.Field>
-      <Button type="submit">发表</Button>
+      <Button type="submit" disabled={!mounted}>
+        发表
+      </Button>
     </form>
   );
 }

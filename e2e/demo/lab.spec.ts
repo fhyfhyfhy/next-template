@@ -41,6 +41,10 @@ test("故障面板注入的故障对其他页面生效，服务端渲染失败�
   await section(page, "注入故障")
     .getByRole("button", { name: "清除全部" })
     .click();
+  // 等清除生效再离开：离开页面会取消还在路上的请求，故障留着，列表页仍然失败。
+  await expect(
+    section(page, "注入故障").getByText("当前没有故障"),
+  ).toBeVisible();
   await page.goto("/demos/tasks");
   await expect(page.getByRole("list", { name: "任务列表" })).toBeVisible();
 });

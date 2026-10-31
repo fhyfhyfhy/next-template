@@ -351,4 +351,15 @@ test.describe("评论", () => {
     await expect(page.getByText("评论最多 500 个字")).toBeVisible();
     expect(await mockApi.requests("/demo/tasks/:id/comments")).toHaveLength(1);
   });
+
+  test("JS 接管之前评论表单不可用", async ({ page }) => {
+    // 拦掉 JS bundle，页面停在 hydration 之前。
+    await page.route(/\/_next\/static\/chunks\/.+\.js/, (route) =>
+      route.abort(),
+    );
+    await page.goto("/demos/tasks/task-01");
+
+    await expect(page.getByLabel("写评论")).toBeDisabled();
+    await expect(page.getByRole("button", { name: "发表" })).toBeDisabled();
+  });
 });

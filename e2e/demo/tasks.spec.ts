@@ -117,34 +117,14 @@ test("创建任务后列表立即出现新任务，表单清空", async ({ page 
   await expect(page.getByLabel("名称")).toHaveValue("");
 });
 
-test("JS 还没接管时提交表单，任务照样创建", async ({
-  browser,
-  baseURL,
-  mockApi,
-}) => {
-  // 关掉 JS 模拟 hydration 之前：只有 <form action> 指向 Server Action 时，浏览器的原生提交才会创建任务。
-  const context = await browser.newContext({
-    baseURL,
-    javaScriptEnabled: false,
-  });
-  const page = await context.newPage();
-  const name = "无 JS 创建的任务";
+test("JS 接管之前创建表单不可用", async ({ page }) => {
+  // 拦掉 JS bundle，页面停在 hydration 之前。
+  await page.route(/\/_next\/static\/chunks\/.+\.js/, (route) => route.abort());
   await page.goto("/demos/tasks");
-  await page.getByLabel("名称").fill(name);
-  await page.getByLabel("Prompt").fill("一只狐狸");
-  await page.getByRole("button", { name: "创建任务" }).click();
 
-  // 没有 JS 时流式送达的列表替换不掉骨架屏，直接查后端。
-  await expect
-    .poll(async () => {
-      const { items } = await mockApi.call(
-        "GET",
-        `/demo/tasks/search?term=${encodeURIComponent(name)}`,
-      );
-      return items.map((task: { name: string }) => task.name);
-    })
-    .toContain(name);
-  await context.close();
+  await expect(page.getByLabel("名称")).toBeDisabled();
+  await expect(page.getByLabel("Prompt")).toBeDisabled();
+  await expect(page.getByRole("button", { name: "创建任务" })).toBeDisabled();
 });
 
 test("创建时名称被占用，错误显示在名称字段下，不弹全局提示", async ({
@@ -160,6 +140,23 @@ test("创建时名称被占用，错误显示在名称字段下，不弹全局�
 
   await page.getByLabel("名称").fill("低多边形狐狸 2");
   await expect(page.getByText("名称已被其他任务占用")).toHaveCount(0);
+});
+
+test("创建成功后再提交被占用的名称，错误照样显示在名称字段下", async ({
+  page,
+}) => {
+  await openTasksPage(page);
+  await page.getByLabel("名称").fill("新建的跑车");
+  await page.getByLabel("Prompt").fill("一辆红色跑车");
+  await page.getByRole("button", { name: "创建任务" }).click();
+  await expect(rows(page).first()).toContainText("新建的跑车");
+  await expect(page.getByLabel("名称")).toHaveValue("");
+
+  await page.getByLabel("名称").fill("新建的跑车");
+  await page.getByLabel("Prompt").fill("另一辆红色跑车");
+  await page.getByRole("button", { name: "创建任务" }).click();
+
+  await expect(page.getByText("名称已被其他任务占用")).toBeVisible();
 });
 
 test("填到一半离开再返回，输入还在，照样能提交", async ({ page }) => {
@@ -202,6 +199,27 @@ test("名称为空时在浏览器里就拦下，不发请求", async ({ page }) 
 
   await expect(page.getByText("请输入名称")).toBeVisible();
   expect(created).toBe(false);
+});
+
+test("创建出错时弹全局提示，填的内容还在，重试能成功", async ({
+  page,
+  mockApi,
+}) => {
+  await mockApi.setFaults([
+    { method: "POST", path: "/demo/tasks", status: 500 },
+  ]);
+  await openTasksPage(page);
+  await page.getByLabel("名称").fill("出错的任务");
+  await page.getByLabel("Prompt").fill("一只狐狸");
+  await page.getByRole("button", { name: "创建任务" }).click();
+
+  await expect(page.getByText("请求失败，请稍后重试")).toHaveCount(1);
+  await expect(page.getByLabel("名称")).toHaveValue("出错的任务");
+  await expect(page.getByLabel("Prompt")).toHaveValue("一只狐狸");
+
+  await mockApi.setFaults([]);
+  await page.getByRole("button", { name: "创建任务" }).click();
+  await expect(rows(page).first()).toContainText("出错的任务");
 });
 
 test("收藏立即生效，请求完成前就显示已收藏", async ({ page, mockApi }) => {

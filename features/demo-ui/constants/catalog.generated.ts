@@ -23,6 +23,12 @@ export const catalog = [
     description: "A popup that opens on top of the entire page.",
   },
   {
+    id: "field",
+    title: "Field",
+    description:
+      "Groups a label, control, and error message; TanStack Form supplies the state.",
+  },
+  {
     id: "input",
     title: "Input",
     description: "A native input element that automatically works with Field.",
