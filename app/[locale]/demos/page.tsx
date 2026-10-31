@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { Link } from "@/lib/i18n-navigation";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -23,9 +24,12 @@ export default function DemosPage() {
   const t = useTranslations("app.demos");
   return (
     <main className="mx-auto max-w-5xl px-5 py-12 sm:px-8 lg:py-20">
-      <p className="font-mono text-[10px] tracking-[0.16em] text-muted-foreground">
-        {t("eyebrow")}
-      </p>
+      <div className="flex items-center justify-between gap-4">
+        <p className="font-mono text-[10px] tracking-[0.16em] text-muted-foreground">
+          {t("eyebrow")}
+        </p>
+        <LocaleSwitcher />
+      </div>
       <h1 className="mt-5 text-5xl font-medium tracking-[-0.055em] sm:text-6xl">
         {t("title")}
         <span className="text-primary">.</span>

@@ -12,6 +12,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import {
   SelectIcon,
   SelectItem,
@@ -59,6 +60,7 @@ export function UiDemoHeader() {
             {t("tagline")}
           </span>
           <span className="hidden h-5 w-px bg-border sm:block" />
+          <LocaleSwitcher />
           <SelectRoot
             size="sm"
             items={themes.map(({ value }) => ({
