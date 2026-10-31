@@ -154,3 +154,30 @@ test("在全部任务页收藏后回到作品广场，卡片和“我的收藏�
   await expect(favorites(page)).toHaveCount(5);
   await expect(favorites(page).first()).toContainText("多肉高模");
 });
+
+test("加载到第二页后收藏第一页的作品，已加载的页不会被换掉", async ({
+  page,
+}) => {
+  await openFeed(page);
+  await page.getByTestId("feed-end").scrollIntoViewIfNeeded();
+  await expect(cards(page)).toHaveCount(12);
+  const saved = page.waitForResponse(
+    (response) => response.request().headers()["next-action"] !== undefined,
+  );
+
+  await cards(page)
+    .filter({ hasText: "多肉高模" })
+    .getByRole("button", { name: "收藏" })
+    .click();
+  await saved;
+
+  // 已加载的页被换回第一页之后，第二页很快又会加载回来，只看最后的卡片数看不出来：
+  // Server Action 带回页面之后的 2 秒里一直读卡片数，记下最小值。
+  let fewest = await cards(page).count();
+  const until = Date.now() + 2000;
+  while (Date.now() < until) {
+    fewest = Math.min(fewest, await cards(page).count());
+  }
+  // eslint-disable-next-line playwright/prefer-to-have-count -- fewest 是一段时间里的最小值，toHaveCount 只能断言当前的数量。
+  expect(fewest).toBe(12);
+});

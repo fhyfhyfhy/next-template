@@ -8,13 +8,13 @@ import {
   getFeedInfiniteQueryOptions,
   MOCK_API_RUNNING,
   PageIntro,
+  SeedHydrationBoundary,
 } from "@/features/demo-task";
 import {
   buildHydrationState,
   firstPageData,
   getCachedFeedSnapshot,
 } from "@/features/demo-task/server";
-import { HydrationBoundary } from "@/lib/react-query";
 
 export const metadata: Metadata = { title: "作品广场 · Data demo" };
 
@@ -58,8 +58,8 @@ async function FeedHydration() {
     fetchedAt,
   );
   return (
-    <HydrationBoundary state={state}>
+    <SeedHydrationBoundary state={state}>
       <FeedGrid />
-    </HydrationBoundary>
+    </SeedHydrationBoundary>
   );
 }

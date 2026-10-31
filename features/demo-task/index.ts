@@ -22,6 +22,7 @@ export { LabSuspenseReset } from "./components/lab-suspense-reset";
 export { FavoritesPanel } from "./components/favorites-panel";
 export { FeedGrid } from "./components/feed-grid";
 export { FeedSkeleton } from "./components/feed-skeleton";
+export { SeedHydrationBoundary } from "./components/seed-hydration-boundary";
 export { getFeedInfiniteQueryOptions } from "./api/get-feed";
 export { getCommentsQueryOptions } from "./api/get-comments";
 export { getTaskQueryOptions, isTaskNotFound } from "./api/get-task";
