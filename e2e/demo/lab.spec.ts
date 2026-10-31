@@ -130,7 +130,7 @@ test("几个请求同时失败只弹一个提示", async ({ page }) => {
   await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(1);
 });
 
-/** 打开故障实验室并等它接管：故障列表只在浏览器里请求，和 Draft Mode 开关在同一个 Suspense 边界里。 */
+/** 打开故障实验室并等它 hydrate：故障列表只在浏览器里请求，和 Draft Mode 开关在同一个 Suspense 边界里。 */
 async function openLab(page: Page) {
   await page.goto("/demos/lab");
   await expect(

@@ -11,7 +11,7 @@ const comments = (page: Page) =>
   page.getByRole("list", { name: "评论" }).getByRole("listitem");
 
 /**
- * 打开详情并等客户端接管：首屏 HTML 先到，hydration 之前的点击和文件选择没有事件处理。
+ * 打开详情并等 hydration 完成：首屏 HTML 先到，hydration 之前的点击和文件选择没有事件处理。
  * “同 prompt 的其他任务”只在浏览器里请求，它出现说明页面已经 hydrate。
  */
 async function openTask(page: Page, taskId: string) {
@@ -352,7 +352,7 @@ test.describe("评论", () => {
     expect(await mockApi.requests("/demo/tasks/:id/comments")).toHaveLength(1);
   });
 
-  test("JS 接管之前评论表单不可用", async ({ page }) => {
+  test("hydration 之前评论表单不可用", async ({ page }) => {
     // 拦掉 JS bundle，页面停在 hydration 之前。
     await page.route(/\/_next\/static\/chunks\/.+\.js/, (route) =>
       route.abort(),

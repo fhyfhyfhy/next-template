@@ -1,6 +1,5 @@
 "use client";
 
-import { useMounted } from "@mantine/hooks";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { z } from "zod";
 
@@ -11,6 +10,7 @@ import {
   FieldLabel,
   FieldRoot,
 } from "@/components/ui/field";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { useMutation } from "@/lib/react-query";
 
 import {
@@ -28,8 +28,8 @@ const commentSchema = z.object({
 
 /** 提交时立即清空输入框（工厂已经乐观插入了评论），失败时把内容放回去，不丢用户写的字。 */
 export function CommentForm({ taskId }: { taskId: string }) {
-  // JS 接管之前不可用，原因同 `CreateTaskForm`。
-  const mounted = useMounted();
+  // hydration 之前不可用，原因同 `CreateTaskForm`。
+  const hydrated = useHydrated();
   const createComment = useMutation(createCommentMutationOptions(taskId));
   const form = useForm({
     defaultValues: { content: "" },
@@ -57,7 +57,7 @@ export function CommentForm({ taskId }: { taskId: string }) {
         {(field) => (
           <FieldRoot
             name={field.name}
-            disabled={!mounted}
+            disabled={!hydrated}
             invalid={!field.state.meta.isValid}
             dirty={field.state.meta.isDirty}
             touched={field.state.meta.isTouched}
@@ -78,7 +78,7 @@ export function CommentForm({ taskId }: { taskId: string }) {
           </FieldRoot>
         )}
       </form.Field>
-      <Button type="submit" disabled={!mounted}>
+      <Button type="submit" disabled={!hydrated}>
         发表
       </Button>
     </form>

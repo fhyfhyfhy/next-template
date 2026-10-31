@@ -1,11 +1,11 @@
 "use client";
 
-import { useMounted } from "@mantine/hooks";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 
 import { Button } from "@/components/ui/button";
 import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { useMutation } from "@/lib/react-query";
 
 import { createTaskMutationOptions } from "../api/create-task";
@@ -32,8 +32,8 @@ const fields = [
  * 名称被占用显示在名称字段下，其他失败由全局错误处理提示。
  */
 export function CreateTaskForm() {
-  // 表单没有原生提交的目标：JS 接管之前提交会退化成 GET 整页刷新，输入的文字也会在 hydration 后被清空，所以先不可用。
-  const mounted = useMounted();
+  // 表单没有原生提交的目标：hydration 之前提交会退化成 GET 整页刷新，输入的文字也会在 hydration 后被清空，所以先不可用。
+  const hydrated = useHydrated();
   const createTask = useMutation(createTaskMutationOptions());
   const form = useForm({
     defaultValues,
@@ -68,7 +68,7 @@ export function CreateTaskForm() {
           {(field) => (
             <FieldRoot
               name={field.name}
-              disabled={!mounted}
+              disabled={!hydrated}
               invalid={!field.state.meta.isValid}
               dirty={field.state.meta.isDirty}
               touched={field.state.meta.isTouched}
@@ -91,7 +91,7 @@ export function CreateTaskForm() {
         {(isSubmitting) => (
           <Button
             type="submit"
-            disabled={!mounted || isSubmitting}
+            disabled={!hydrated || isSubmitting}
             className="sm:mt-5"
           >
             {isSubmitting ? "创建中…" : "创建任务"}

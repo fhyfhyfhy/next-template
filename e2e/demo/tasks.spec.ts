@@ -16,7 +16,7 @@ const rows = (page: Page) =>
  * 从别的 Data demo 页面经导航栏进入全部任务页，等列表出现。整页加载时列表在自己的 Suspense 边界里，
  * 可能比页面其他部分晚 hydrate，那之前换筛选，React 会丢掉服务端渲染的列表、直接显示骨架屏；
  * 客户端导航在浏览器里渲染整页，没有要等 hydrate 的部分。起点页导航栏的进行中徽标只在浏览器里请求，
- * 它和导航链接在同一个 Suspense 边界里，徽标出现说明链接已经接管，点击是客户端导航。
+ * 它和导航链接在同一个 Suspense 边界里，徽标出现说明链接已经 hydrate，点击是客户端导航。
  */
 async function openTasksPage(page: Page) {
   await page.goto("/demos/search");
@@ -210,7 +210,7 @@ test("停在「已完成」筛选上，别处的任务结束后出现在列表�
   );
 });
 
-test("JS 接管之前创建表单不可用", async ({ page }) => {
+test("hydration 之前创建表单不可用", async ({ page }) => {
   // 拦掉 JS bundle，页面停在 hydration 之前。
   await page.route(/\/_next\/static\/chunks\/.+\.js/, (route) => route.abort());
   await page.goto("/demos/tasks");

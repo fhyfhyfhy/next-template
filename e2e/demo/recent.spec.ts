@@ -4,7 +4,7 @@ import { expect, test } from "./mock-api";
 
 // 最近查看：任务 id 存在 localStorage 里，只有浏览器能读，请求要等 hydration 之后才发。
 
-/** 打开详情并等到浏览记录写入：写入在 hydration 后的 effect 里，日志流结束说明客户端已经接管。 */
+/** 打开详情并等到浏览记录写入：写入在 hydration 后的 effect 里，日志流结束说明页面已经 hydrate。 */
 async function visitTask(page: Page, taskId: string) {
   await page.goto(`/demos/tasks/${taskId}`);
   await expect(page.getByText("日志已结束")).toBeVisible();
