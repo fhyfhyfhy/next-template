@@ -1,8 +1,8 @@
 "use client";
 
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
-import Link from "next/link";
 
+import { Link } from "@/lib/i18n-navigation";
 import { useMutation } from "@/lib/react-query";
 
 import type { Task } from "../../api/get-task";

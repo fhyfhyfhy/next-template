@@ -1,7 +1,7 @@
 import { IconArrowRight } from "@tabler/icons-react";
-import Link from "next/link";
 
 import { cn } from "@/lib/cn";
+import { Link } from "@/lib/i18n-navigation";
 
 import { catalog, type ComponentId } from "../constants/catalog";
 import { iconsByComponent } from "./component-registry.generated";

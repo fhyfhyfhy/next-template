@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { toast, Toaster } from "@/components/ui/toaster";
@@ -25,8 +26,14 @@ function handleRequestError(
       ? suppressErrorToast(error)
       : suppressErrorToast;
   if (!suppressed) {
-    toast.error("请求失败，请稍后重试", { id: "request-error" });
+    toast.error(<RequestErrorMessage />, { id: "request-error" });
   }
+}
+
+// 这个 handler 在 React 之外调用，取不到翻译；toast 的内容在 <Toaster /> 里渲染，那里能用 hook。
+function RequestErrorMessage() {
+  const t = useTranslations("app");
+  return t("requestError");
 }
 
 function makeQueryClient() {

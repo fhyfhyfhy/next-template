@@ -1,7 +1,7 @@
 import { IconArrowUpRight } from "@tabler/icons-react";
-import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { Link } from "@/lib/i18n-navigation";
 
 export const metadata = {
   title: "渲染为链接",

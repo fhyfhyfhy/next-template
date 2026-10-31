@@ -9,7 +9,6 @@ import {
   IconStack2,
   IconSun,
 } from "@tabler/icons-react";
-import Link from "next/link";
 import { useTheme } from "next-themes";
 
 import {
@@ -25,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useHydrated } from "@/hooks/use-hydrated";
+import { Link } from "@/lib/i18n-navigation";
 
 const themes = [
   { value: "system", label: "跟随系统", icon: IconDeviceDesktop },

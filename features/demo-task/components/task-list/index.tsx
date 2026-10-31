@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { use } from "react";
+
+import { Link } from "@/lib/i18n-navigation";
 
 import type { TaskPage } from "../../api/get-tasks";
 import { useRefreshTaskListWhenActiveChanges } from "../../hooks/use-refresh-task-list-when-active-changes";

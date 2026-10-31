@@ -1,10 +1,10 @@
 "use client";
 
 import { IconStack2 } from "@tabler/icons-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/cn";
+import { Link } from "@/lib/i18n-navigation";
+import { usePathname } from "@/lib/i18n-navigation";
 
 import { RunningTasksBadge } from "./running-tasks-badge";
 

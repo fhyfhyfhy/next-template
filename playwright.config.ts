@@ -18,7 +18,13 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // 设备预设的 locale 是 en-US，proxy 会按 Accept-Language 把不带前缀的 URL 跳到 /en；用例默认看默认 locale 的页面。
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"], locale: "zh-CN" },
+    },
+  ],
   webServer: {
     // 即 pnpm build 和 start。直接用 node 调用：只装了 corepack 的环境里 PATH 上没有 pnpm。
     command: `node scripts/run-next.mjs build && node scripts/run-next.mjs start --port ${PORT}`,

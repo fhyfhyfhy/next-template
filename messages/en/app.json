@@ -1,0 +1,12 @@
+{
+  "metadata": {
+    "title": "Next Demo",
+    "description": "An interactive, customizable, and reusable Next.js template."
+  },
+  "requestError": "Request failed. Please try again later.",
+  "globalNotFound": {
+    "title": "Page not found",
+    "description": "The link may be wrong, or the page has moved.",
+    "home": "Back to home"
+  }
+}

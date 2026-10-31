@@ -16,7 +16,9 @@ import { getCachedTaskPage } from "@/features/demo-task/server";
 
 export const metadata: Metadata = { title: "全部任务 · Data demo" };
 
-export default function TasksPage({ searchParams }: PageProps<"/demos/tasks">) {
+export default function TasksPage({
+  searchParams,
+}: PageProps<"/[locale]/demos/tasks">) {
   return (
     <>
       <PageIntro title="全部任务">

@@ -24,6 +24,12 @@ _Avoid_: 数据示例、task demo
 模板自带的假后端，代替项目的真实后端，只在用 Demo 专用的命令运行时启动。Demo 的数据请求都发给它。
 _Avoid_: mock server、假后端、fake backend
 
+## 多语言
+
+**Source locale**:
+写新文案时使用的语言，其他 locale 的文案都由它翻译而来。它的文案一旦修改，其他 locale 都要重新翻译。
+_Avoid_: 基准语言、主语言；也不要叫默认语言，默认 locale 是用户偏好未知时显示的语言，是另一个概念
+
 ## Demo 的虚构领域
 
 **Demo task**:

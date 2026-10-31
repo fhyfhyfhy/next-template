@@ -1,6 +1,7 @@
 import { IconArrowRight } from "@tabler/icons-react";
 import type { Metadata } from "next";
-import Link from "next/link";
+
+import { Link } from "@/lib/i18n-navigation";
 
 export const metadata: Metadata = {
   title: "Demo · Next Demo",

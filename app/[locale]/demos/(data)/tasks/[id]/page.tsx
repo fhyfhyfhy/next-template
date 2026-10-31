@@ -22,7 +22,7 @@ import {
 
 export async function generateMetadata({
   params,
-}: PageProps<"/demos/tasks/[id]">): Promise<Metadata> {
+}: PageProps<"/[locale]/demos/tasks/[id]">): Promise<Metadata> {
   if (!MOCK_API_RUNNING) return { title: "Data demo" };
   const { id } = await params;
   // 和页面里的 prefetch 是同一个 GET，一次渲染内只请求一次（fetchApi 不传 signal 时参与去重）。
@@ -37,7 +37,7 @@ export async function generateMetadata({
 // 拿不到 404 状态码：shell 先以 200 发出，notFound() 之后流式送达 not-found 页面并加上 noindex。
 export default function TaskDetailPage({
   params,
-}: PageProps<"/demos/tasks/[id]">) {
+}: PageProps<"/[locale]/demos/tasks/[id]">) {
   return (
     <>
       <DemoNote>

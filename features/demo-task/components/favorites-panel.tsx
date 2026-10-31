@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-
+import { Link } from "@/lib/i18n-navigation";
 import { useQuery } from "@/lib/react-query";
 
 import { favoriteTasksQueryOptions } from "../api/get-tasks";

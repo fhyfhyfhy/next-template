@@ -67,6 +67,9 @@ const queryPlugin = withWrapperImports(pluginQuery);
 const QUERY_LIBRARY_MESSAGE =
   "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-fetching.md.";
 
+const LOCALE_NAVIGATION_MESSAGE =
+  "Import Link, redirect, useRouter, and usePathname from @/lib/i18n-navigation: the next/* versions drop the locale prefix of non-default locales. See .claude/rules/i18n.md.";
+
 const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
 
@@ -177,14 +180,28 @@ const eslintConfig = defineConfig([
       "data-fetching/mutation-callbacks": "error",
       // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。
       "import/no-relative-packages": "error",
-      // 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query。
+      // 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query；
+      // 站内导航走 next-intl 生成的 API，非默认 locale 的 URL 前缀才不会丢。
       "no-restricted-imports": [
         "error",
         {
-          paths: ["axios", "swr"].map((name) => ({
-            name,
-            message: QUERY_LIBRARY_MESSAGE,
-          })),
+          paths: [
+            ...["axios", "swr"].map((name) => ({
+              name,
+              message: QUERY_LIBRARY_MESSAGE,
+            })),
+            { name: "next/link", message: LOCALE_NAVIGATION_MESSAGE },
+            {
+              name: "next/navigation",
+              importNames: [
+                "redirect",
+                "permanentRedirect",
+                "useRouter",
+                "usePathname",
+              ],
+              message: LOCALE_NAVIGATION_MESSAGE,
+            },
+          ],
           patterns: [
             { group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE },
           ],
