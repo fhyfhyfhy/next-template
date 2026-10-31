@@ -9,9 +9,10 @@ import {
   IconStack2,
   IconSun,
 } from "@tabler/icons-react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import {
   SelectIcon,
   SelectItem,
@@ -25,15 +26,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useHydrated } from "@/hooks/use-hydrated";
+import { Link } from "@/lib/i18n-navigation";
 
 const themes = [
-  { value: "system", label: "跟随系统", icon: IconDeviceDesktop },
-  { value: "light", label: "浅色", icon: IconSun },
-  { value: "dark", label: "深色", icon: IconMoon },
-];
+  { value: "system", icon: IconDeviceDesktop },
+  { value: "light", icon: IconSun },
+  { value: "dark", icon: IconMoon },
+] as const;
 
 /** 品牌导航和系统、浅色、深色主题选择。 */
 export function UiDemoHeader() {
+  const t = useTranslations("demo-ui.header");
   const { theme, setTheme } = useTheme();
   // 服务端无法读取 localStorage；hydration 完成前不显示已选主题。
   const hydrated = useHydrated();
@@ -48,25 +51,30 @@ export function UiDemoHeader() {
             <IconStack2 className="size-6" aria-hidden />
           </span>
           <span className="text-xl font-semibold tracking-tight">
-            Next Demo<span className="ml-1 text-primary">.</span>
+            {t("brand")}
+            <span className="ml-1 text-primary">.</span>
           </span>
         </Link>
         <div className="flex items-center gap-3 sm:gap-6">
           <span className="hidden font-mono text-[11px] tracking-widest text-muted-foreground sm:block">
-            DESIGN SYSTEM
+            {t("tagline")}
           </span>
           <span className="hidden h-5 w-px bg-border sm:block" />
+          <LocaleSwitcher />
           <SelectRoot
             size="sm"
-            items={themes}
+            items={themes.map(({ value }) => ({
+              value,
+              label: t(`theme.${value}`),
+            }))}
             value={hydrated ? (theme ?? null) : null}
             disabled={!hydrated}
             onValueChange={(value) => {
               if (value) setTheme(value);
             }}
           >
-            <SelectTrigger aria-label="主题" className="w-30">
-              <SelectValue placeholder="主题" />
+            <SelectTrigger aria-label={t("theme.label")} className="w-30">
+              <SelectValue placeholder={t("theme.label")} />
               <SelectIcon>
                 <IconChevronDown className="size-4" aria-hidden />
               </SelectIcon>
@@ -74,11 +82,11 @@ export function UiDemoHeader() {
             <SelectPortal>
               <SelectPositioner sideOffset={6} alignItemWithTrigger={false}>
                 <SelectPopup>
-                  {themes.map(({ value, label, icon: Icon }) => (
+                  {themes.map(({ value, icon: Icon }) => (
                     <SelectItem key={value} value={value}>
                       <Icon className="size-4" aria-hidden />
                       <SelectItemText className="flex-1">
-                        {label}
+                        {t(`theme.${value}`)}
                       </SelectItemText>
                       <SelectItemIndicator>
                         <IconCheck className="size-4" aria-hidden />
@@ -95,7 +103,7 @@ export function UiDemoHeader() {
             rel="noreferrer"
             className="hidden items-center gap-1 text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring sm:flex"
           >
-            Base UI 文档
+            {t("baseUiDocs")}
             <IconArrowUpRight className="size-3.5" aria-hidden />
           </a>
         </div>

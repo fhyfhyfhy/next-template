@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQueries } from "@/lib/react-query";
 
@@ -12,19 +14,20 @@ import { TaskLinkRow } from "./task-link-row";
  * 读到 id 之后每个任务一个 query，复用详情页的工厂和缓存。
  */
 export function RecentTasks() {
+  const t = useTranslations("demo-task.recentTasks");
   const { ids } = useRecentTaskIds();
   const tasks = useQueries({
     queries: (ids ?? []).map((id) => getTaskQueryOptions(id)),
   });
   if (ids === null) {
-    return <p className="text-sm text-muted-foreground">读取浏览记录…</p>;
+    return <p className="text-sm text-muted-foreground">{t("reading")}</p>;
   }
   if (ids.length === 0) {
-    return <p className="text-sm text-muted-foreground">还没有查看过任务</p>;
+    return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
   }
   return (
     <ul
-      aria-label="最近查看"
+      aria-label={t("label")}
       className="max-w-2xl divide-y divide-border rounded-panel border border-border bg-card"
     >
       {ids.map((id, index) => {
@@ -35,10 +38,12 @@ export function RecentTasks() {
               <TaskLinkRow task={data} />
             ) : isTaskNotFound(error) ? (
               <span className="text-muted-foreground">
-                任务已被删除（{id}）
+                {t("deleted", { id })}
               </span>
             ) : error ? (
-              <span className="text-destructive">加载失败（{id}）</span>
+              <span className="text-destructive">
+                {t("loadFailed", { id })}
+              </span>
             ) : (
               <Skeleton className="h-4 w-40" />
             )}

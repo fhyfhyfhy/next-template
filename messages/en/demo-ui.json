@@ -1,0 +1,44 @@
+{
+  "skipToContent": "Skip to component content",
+  "header": {
+    "brand": "Next Demo",
+    "tagline": "DESIGN SYSTEM",
+    "theme": {
+      "label": "Theme",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "baseUiDocs": "Base UI docs"
+  },
+  "navigation": {
+    "eyebrow": "COMPONENTS",
+    "label": "Component navigation"
+  },
+  "page": {
+    "eyebrow": "COMPONENT LIBRARY",
+    "footer": "BUILT WITH BASE UI · TAILWIND CSS"
+  },
+  "playground": {
+    "label": "Interactive lab",
+    "preview": "Live preview",
+    "showCode": "Show code",
+    "hideCode": "Hide code",
+    "canvas": "INTERACTIVE CANVAS",
+    "hint": "Adjust the props to explore different states",
+    "panelLabel": "Props panel",
+    "panelTitle": "Props",
+    "reset": "Reset"
+  },
+  "examples": {
+    "title": "Usage examples",
+    "showCode": "{title}: show code",
+    "hideCode": "{title}: hide code"
+  },
+  "sourceCode": {
+    "label": "{filename} source",
+    "copy": "Copy code",
+    "copied": "Copied",
+    "copyFailed": "Copy failed. Select the code manually."
+  }
+}

@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 import { buildDir } from "./scripts/build-dirs.mjs";
+
+const withNextIntl = createNextIntlPlugin("./lib/i18n-request.ts");
 
 // 每种产物各放一个目录，规则和要同步排除它们的文件见 scripts/build-dirs.mjs。
 const distDir = buildDir(process.env);
@@ -14,7 +17,7 @@ const nextConfig: NextConfig = {
   cacheHandlers: { default: require.resolve("./lib/cache-handler.mts") },
   partialPrefetching: true,
   outputFileTracingIncludes: {
-    "/demos/ui": [
+    "/[locale]/demos/ui": [
       "./features/demo-ui/components/*-examples/*.example.tsx",
       "./features/demo-ui/components/*-examples/playground.tsx",
     ],
@@ -26,7 +29,9 @@ const nextConfig: NextConfig = {
     exposeTestingApiInProductionBuild: process.env.EXPOSE_TESTING_API === "1",
     // @mantine/hooks 不在 Next 默认优化的包里；不加的话 dev 会加载它 barrel 里的全部模块。
     optimizePackageImports: ["@mantine/hooks"],
+    // 根 layout 在 [locale] 下，没有匹配任何路由的请求由 app/global-not-found.tsx 渲染。
+    globalNotFound: true,
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

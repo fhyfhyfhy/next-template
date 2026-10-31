@@ -9,8 +9,8 @@ import { ErrorMessage, type QueryErrorBoundaryProps } from "./error-message";
  * 已经有数据的 query 后台刷新失败不会到这里，按全局 toast 的规则提示。
  */
 export const QueryErrorBoundary = catchError(function QueryErrorFallback(
-  { title }: QueryErrorBoundaryProps,
+  { message }: QueryErrorBoundaryProps,
   { retry }: ErrorInfo,
 ) {
-  return <ErrorMessage title={title} retry={retry} />;
+  return <ErrorMessage message={message} retry={retry} />;
 });

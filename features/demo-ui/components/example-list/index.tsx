@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import type { ComponentId } from "../../constants/catalog";
 import type { ExampleDefinition, ExampleSources } from "../../types/examples";
 import { ExampleCard } from "../example-card";
@@ -13,6 +15,7 @@ export function ExampleList({
   component: ComponentId;
   sources: ExampleSources["examples"];
 }) {
+  const t = useTranslations("demo-ui.examples");
   const examples: readonly ExampleDefinition[] = examplesByComponent[component];
   if (examples.length === 0) return null;
 
@@ -23,7 +26,7 @@ export function ExampleList({
   );
   return (
     <div className="space-y-5">
-      <h2 className="text-lg font-medium">使用示例</h2>
+      <h2 className="text-lg font-medium">{t("title")}</h2>
       <div className="grid items-start gap-5 xl:grid-cols-2">
         {ordered.map((example) => {
           const Preview = example.component;

@@ -4,13 +4,23 @@ import { ApiError, fetchApi } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
 
 import { type TaskStatus, taskStatusSchema } from "../types/task-filters";
+import type { DemoTaskTranslator } from "../types/translator";
 
-/** 任务名称的规则：去掉首尾空白后 1 到 40 个字，和 Mock API 的校验一致。创建、重命名的表单和 action 共用。 */
-export const taskNameSchema = z
-  .string()
-  .trim()
-  .min(1, "请输入名称")
-  .max(40, "名称最多 40 个字");
+const TASK_NAME_MAX_LENGTH = 40;
+
+/**
+ * 任务名称的规则：去掉首尾空白后 1 到 40 个字，和 Mock API 的校验一致。创建、重命名的表单和 action 共用，
+ * 校验文案由调用方传入的 `t` 按当前 locale 生成。
+ */
+export const createTaskNameSchema = (t: DemoTaskTranslator) =>
+  z
+    .string()
+    .trim()
+    .min(1, t("validation.nameRequired"))
+    .max(
+      TASK_NAME_MAX_LENGTH,
+      t("validation.nameTooLong", { max: TASK_NAME_MAX_LENGTH }),
+    );
 
 export const taskSchema = z
   .object({

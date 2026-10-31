@@ -2,25 +2,34 @@ import { z } from "zod";
 
 import { fetchApi } from "@/lib/fetch";
 
-import { taskNameSchema, taskSchema } from "./get-task";
+import type { DemoTaskTranslator } from "../types/translator";
+import { createTaskNameSchema, taskSchema } from "./get-task";
 
-/** 创建任务的输入校验，浏览器里的表单和服务端的 `createTaskAction` 共用。 */
-export const createTaskInputSchema = z.object({
-  name: taskNameSchema,
-  prompt: z
-    .string()
-    .trim()
-    .min(1, "请输入 prompt")
-    .max(500, "prompt 最多 500 个字"),
-});
-export type CreateTaskInput = z.input<typeof createTaskInputSchema>;
+const PROMPT_MAX_LENGTH = 500;
 
-export const createTask = (input: CreateTaskInput) =>
+/** 创建任务的输入校验，浏览器里的表单和服务端的 `createTaskAction` 共用；校验文案由传入的 `t` 生成。 */
+export const createTaskInputSchema = (t: DemoTaskTranslator) =>
+  z.object({
+    name: createTaskNameSchema(t),
+    prompt: z
+      .string()
+      .trim()
+      .min(1, t("validation.promptRequired"))
+      .max(
+        PROMPT_MAX_LENGTH,
+        t("validation.promptTooLong", { max: PROMPT_MAX_LENGTH }),
+      ),
+  });
+export type CreateTaskInput = z.input<ReturnType<typeof createTaskInputSchema>>;
+/** 校验通过的输入：首尾空白已经去掉。 */
+type CreateTaskData = z.output<ReturnType<typeof createTaskInputSchema>>;
+
+/** `data` 是 `createTaskInputSchema` 解析后的值；类型和未校验的输入相同，校验由调用方（`createTaskAction`）负责。 */
+export const createTask = (data: CreateTaskData) =>
   fetchApi({
     url: "/demo/tasks",
     method: "POST",
-    // parse 后的值去掉了首尾空白；无效输入在发请求前就抛错。
-    data: createTaskInputSchema.parse(input),
+    data,
     schema: taskSchema,
     auth: false,
   });

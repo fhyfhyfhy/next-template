@@ -3,6 +3,7 @@
 import { useDebouncedValue } from "@mantine/hooks";
 import { IconSearch } from "@tabler/icons-react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ const DEBOUNCE_MS = 300;
  * query key 只来自 URL 里已提交的关键词。换关键词时旧请求被中止，新结果到达前继续显示旧结果。
  */
 export function TaskSearch() {
+  const t = useTranslations("demo-task.taskSearch");
   const committed = useSearchParams().get("q") ?? "";
   const [input, setInput] = useState(committed);
   const [debounced] = useDebouncedValue(input.trim(), DEBOUNCE_MS);
@@ -49,13 +51,13 @@ export function TaskSearch() {
           aria-hidden
         />
         <label htmlFor="task-search" className="sr-only">
-          搜索任务
+          {t("label")}
         </label>
         <Input
           id="task-search"
           type="search"
           value={input}
-          placeholder="按名称或 prompt 搜索"
+          placeholder={t("placeholder")}
           className="pl-9"
           onChange={(event) => setInput(event.target.value)}
         />
@@ -66,20 +68,20 @@ export function TaskSearch() {
       >
         {searching && (
           <>
-            {search.isPlaceholderData && "更新中…"}
+            {search.isPlaceholderData && t("updating")}
             {!search.isPlaceholderData &&
               search.data &&
-              `找到 ${search.data.length} 个任务`}
+              t("found", { count: search.data.length })}
             {!search.data && search.error && (
-              <span className="text-destructive">搜索失败</span>
+              <span className="text-destructive">{t("failed")}</span>
             )}
-            {!search.data && search.isFetching && "搜索中…"}
+            {!search.data && search.isFetching && t("searching")}
           </>
         )}
       </div>
       {searching && search.data && search.data.length > 0 && (
         <ul
-          aria-label="搜索结果"
+          aria-label={t("results")}
           className={cn(
             "mt-2 divide-y divide-border rounded-panel border border-border bg-card transition-opacity",
             search.isPlaceholderData && "opacity-50",

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useQuery } from "@/lib/react-query";
 
 import { getTaskQueryOptions } from "../api/get-task";
@@ -11,6 +13,7 @@ import { TaskLinkRow } from "./task-link-row";
  * 只在浏览器里请求，不在服务端预取。
  */
 export function RelatedTasks({ taskId }: { taskId: string }) {
+  const t = useTranslations("demo-task");
   const { data: prompt } = useQuery({
     ...getTaskQueryOptions(taskId),
     select: (task) => task.prompt,
@@ -21,12 +24,14 @@ export function RelatedTasks({ taskId }: { taskId: string }) {
   });
   return (
     <section>
-      <h2 className="mb-2 text-sm font-medium">同 prompt 的其他任务</h2>
+      <h2 className="mb-2 text-sm font-medium">{t("relatedTasks.title")}</h2>
       {related.data ? (
         related.data.items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">没有其他任务</p>
+          <p className="text-sm text-muted-foreground">
+            {t("relatedTasks.empty")}
+          </p>
         ) : (
-          <ul aria-label="同 prompt 的其他任务" className="space-y-2">
+          <ul aria-label={t("relatedTasks.title")} className="space-y-2">
             {related.data.items.map((item) => (
               <li key={item.id}>
                 <TaskLinkRow task={item} />
@@ -35,9 +40,11 @@ export function RelatedTasks({ taskId }: { taskId: string }) {
           </ul>
         )
       ) : related.error ? (
-        <p className="text-sm text-destructive">加载失败</p>
+        <p className="text-sm text-destructive">{t("queryState.loadFailed")}</p>
       ) : (
-        <p className="text-sm text-muted-foreground">加载中…</p>
+        <p className="text-sm text-muted-foreground">
+          {t("queryState.loading")}
+        </p>
       )}
     </section>
   );

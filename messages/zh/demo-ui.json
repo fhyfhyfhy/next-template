@@ -1,0 +1,44 @@
+{
+  "skipToContent": "跳至组件内容",
+  "header": {
+    "brand": "Next Demo",
+    "tagline": "DESIGN SYSTEM",
+    "theme": {
+      "label": "主题",
+      "system": "跟随系统",
+      "light": "浅色",
+      "dark": "深色"
+    },
+    "baseUiDocs": "Base UI 文档"
+  },
+  "navigation": {
+    "eyebrow": "COMPONENTS",
+    "label": "组件导航"
+  },
+  "page": {
+    "eyebrow": "COMPONENT LIBRARY",
+    "footer": "BUILT WITH BASE UI · TAILWIND CSS"
+  },
+  "playground": {
+    "label": "交互实验室",
+    "preview": "实时预览",
+    "showCode": "查看代码",
+    "hideCode": "收起代码",
+    "canvas": "INTERACTIVE CANVAS",
+    "hint": "调整参数，探索不同状态",
+    "panelLabel": "参数面板",
+    "panelTitle": "参数",
+    "reset": "重置"
+  },
+  "examples": {
+    "title": "使用示例",
+    "showCode": "{title}：查看代码",
+    "hideCode": "{title}：收起代码"
+  },
+  "sourceCode": {
+    "label": "{filename} 源码",
+    "copy": "复制代码",
+    "copied": "已复制",
+    "copyFailed": "复制失败，请手动选择"
+  }
+}

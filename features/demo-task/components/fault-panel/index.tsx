@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery } from "@/lib/react-query";
 
@@ -12,6 +14,7 @@ import { describeFault } from "./fault-kinds";
 
 /** Mock API 当前的故障配置。故障对所有 Data demo 页面的请求生效，包括服务端渲染时的请求。 */
 export function FaultPanel() {
+  const t = useTranslations("demo-task");
   // 有故障时定期刷新：其他页面的请求会消耗故障次数，这里要跟着显示剩余次数。
   const faults = useQuery({
     ...getMockFaultsQueryOptions(),
@@ -20,8 +23,8 @@ export function FaultPanel() {
   const update = useMutation(updateMockFaultsMutationOptions());
   return (
     <LabSection
-      title="注入故障"
-      description="“默认延迟”对所有业务接口生效，故障里的延迟叠加在它之上。选一个接口和故障类型，“次数”用完后故障自动消失。注入后去其他页面操作，看页面怎么反应。"
+      title={t("faultPanel.title")}
+      description={t("faultPanel.description")}
     >
       <DefaultLatencySelect />
       <FaultForm />
@@ -35,7 +38,7 @@ export function FaultPanel() {
                   className="flex items-center justify-between gap-3"
                 >
                   <span className="font-mono text-xs">
-                    {describeFault(fault)}
+                    {describeFault(fault, t)}
                   </span>
                   <Button
                     variant="ghost"
@@ -46,7 +49,7 @@ export function FaultPanel() {
                       )
                     }
                   >
-                    移除
+                    {t("faultPanel.remove")}
                   </Button>
                 </li>
               ))}
@@ -57,12 +60,12 @@ export function FaultPanel() {
               className="mt-3"
               onClick={() => update.mutate([])}
             >
-              清除全部
+              {t("faultPanel.clearAll")}
             </Button>
           </>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {faults.data ? "当前没有故障" : "读取故障配置…"}
+            {faults.data ? t("faultPanel.empty") : t("faultPanel.reading")}
           </p>
         )}
       </div>

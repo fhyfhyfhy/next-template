@@ -1,0 +1,242 @@
+{
+  "taskStatus": {
+    "pending": "Queued",
+    "running": "Generating",
+    "done": "Done",
+    "failed": "Failed"
+  },
+  "taskSort": {
+    "createdDesc": "Newest",
+    "createdAsc": "Oldest",
+    "nameAsc": "Name"
+  },
+  "queryState": {
+    "loading": "Loading…",
+    "loadFailed": "Couldn't load"
+  },
+  "validation": {
+    "nameRequired": "Enter a name",
+    "nameTooLong": "Names can be at most {max} characters",
+    "nameTaken": "Another task already uses this name",
+    "promptRequired": "Enter a prompt",
+    "promptTooLong": "Prompts can be at most {max} characters",
+    "commentRequired": "Enter a comment",
+    "commentTooLong": "Comments can be at most {max} characters"
+  },
+  "nav": {
+    "label": "Data demo navigation",
+    "home": "Data demo",
+    "tasks": "All tasks",
+    "feed": "Gallery",
+    "search": "Search",
+    "recent": "Recently viewed",
+    "lab": "Fault lab"
+  },
+  "runningTasksBadge": {
+    "label": "{total, plural, one {# task} other {# tasks}} in progress",
+    "text": "In progress {total}"
+  },
+  "mockApiNotice": {
+    "title": "Mock API isn't running",
+    "why": "The Data demo runs only against the template's own Mock API, and only the Demo-specific commands start the Mock API. When you run the app with the regular commands, these pages send no requests, so demo writes never reach a real backend.",
+    "howToRun": "To see the Data demo, run <code>pnpm demo:dev</code>: it starts the Mock API and points the whole app at it, so during that run requests from the real product pages go to the Mock API too."
+  },
+  "mockReset": {
+    "button": "Reset mock data",
+    "done": "Reset"
+  },
+  "demoNote": {
+    "label": "What this page demonstrates"
+  },
+  "createTask": {
+    "formLabel": "Create task",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Low-poly fawn",
+    "promptLabel": "Prompt",
+    "promptPlaceholder": "Describe the model to generate",
+    "submit": "Create task",
+    "submitting": "Creating…"
+  },
+  "taskList": {
+    "label": "Task list",
+    "empty": "No tasks match the filters",
+    "pagination": "Pagination",
+    "total": "{total, plural, one {# task} other {# tasks}} in total",
+    "previousPage": "Previous",
+    "nextPage": "Next",
+    "favorite": "Favorite"
+  },
+  "taskListToolbar": {
+    "statusFilter": "Filter by status",
+    "allStatuses": "All",
+    "sort": "Sort"
+  },
+  "taskSearch": {
+    "label": "Search tasks",
+    "placeholder": "Search by name or prompt",
+    "updating": "Updating…",
+    "found": "Found {count, plural, one {# task} other {# tasks}}",
+    "failed": "Search failed",
+    "searching": "Searching…",
+    "results": "Search results"
+  },
+  "recentTasks": {
+    "reading": "Reading your history…",
+    "empty": "You haven't viewed any tasks yet",
+    "label": "Recently viewed",
+    "deleted": "Task deleted ({id})",
+    "loadFailed": "Couldn't load ({id})"
+  },
+  "favoritesPanel": {
+    "title": "My favorites",
+    "empty": "No favorites yet"
+  },
+  "relatedTasks": {
+    "title": "Other tasks with the same prompt",
+    "empty": "No other tasks"
+  },
+  "feed": {
+    "label": "Works",
+    "noMore": "No more works",
+    "loadMoreFailed": "Couldn't load. Scroll here to retry.",
+    "favorite": "Favorite"
+  },
+  "taskDetail": {
+    "deletedNotice": "This task has been deleted. Below is the last data it had.",
+    "prompt": "Prompt",
+    "createdAt": "Created"
+  },
+  "taskProgress": {
+    "queued": "Queued",
+    "label": "Generation progress"
+  },
+  "taskHeading": {
+    "rename": "Rename"
+  },
+  "renameTask": {
+    "formLabel": "Rename task",
+    "nameLabel": "New name",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "taskActions": {
+    "retry": "Retry",
+    "download": "Download model",
+    "downloadFailed": "Download failed. Please try again later.",
+    "notRetryable": "The task's status changed, so it has been refreshed."
+  },
+  "taskCover": {
+    "uploading": "Uploading…",
+    "change": "Change cover image"
+  },
+  "deleteTask": {
+    "trigger": "Delete task",
+    "title": "Delete “{name}”?",
+    "description": "The task and its comments will be deleted. This can't be undone.",
+    "cancel": "Cancel",
+    "confirm": "Delete"
+  },
+  "taskLogs": {
+    "title": "Generation log",
+    "waiting": "Waiting for logs…",
+    "streaming": "Streaming logs",
+    "ended": "Log ended",
+    "failed": "Log connection lost"
+  },
+  "comments": {
+    "title": "Comments",
+    "loading": "Loading comments…",
+    "loadFailed": "Couldn't load comments",
+    "empty": "No comments yet",
+    "listLabel": "Comments",
+    "sending": "Sending…",
+    "delete": "Delete comment",
+    "formLabel": "Post a comment",
+    "inputLabel": "Write a comment",
+    "placeholder": "Write your comment",
+    "submit": "Post"
+  },
+  "queryErrorBoundary": {
+    "retry": "Retry"
+  },
+  "labRetry": {
+    "title": "Retry rules",
+    "description": "Each button injects a fault into the detail endpoint, then requests it again. A schema mismatch means the frontend and backend contracts have drifted apart, so the global handler logs a SchemaValidationError to the console.",
+    "scenarios": {
+      "serverErrorRecovers": "5xx, recovers after two",
+      "serverErrorPersists": "5xx, keeps failing",
+      "clientError": "4xx",
+      "errorBody": "2xx with error",
+      "malformed": "Schema mismatch"
+    },
+    "scenarioResult": "{scenario}: {result}",
+    "retrying": "Failure {count}, retrying…",
+    "succeededAfterRetry": "Succeeded on retry after {count, plural, one {# failure} other {# failures}}",
+    "succeeded": "Succeeded",
+    "failedAfterRetry": "Failed after {count, plural, one {# retry} other {# retries}}",
+    "failedWithoutRetry": "Failed without retrying",
+    "requesting": "Requesting…"
+  },
+  "labConcurrentFailures": {
+    "title": "Simultaneous failures",
+    "description": "The button injects 3 failures into the detail endpoint, then refreshes the 3 tasks below at once.",
+    "refreshFailed": "(refresh failed)",
+    "refreshAll": "Refresh all at once (all fail)"
+  },
+  "labDraftMode": {
+    "title": "Bypass the server cache",
+    "description": "With Draft Mode on, every request from this browser runs use cache functions again, so even a production build shows the backend's latest data right away. Results aren't written to the cache: once you turn it off, you read the data cached before you turned it on. It affects only this browser and resets when the browser closes.",
+    "switchLabel": "Draft Mode",
+    "switchFailed": "Couldn't switch. Please try again later."
+  },
+  "labQueryStates": {
+    "title": "First load and refresh failures",
+    "description": "Render data first, then error, then loading: when a refresh fails, error and the old data exist together, and checking error first would replace data that is still usable.",
+    "firstLoadFails": "First load (fails)",
+    "firstLoadSucceeds": "First load (succeeds)",
+    "refreshFails": "Refresh (fails)",
+    "refreshFailed": "(refresh failed, still showing old data)"
+  },
+  "labSuspenseReset": {
+    "title": "Error boundary and reset",
+    "description": "The button clears this task's cache and injects one failure, then mounts a component that reads it with useSuspenseQuery.",
+    "load": "Load (first attempt fails)",
+    "loadFailed": "Couldn't load the task"
+  },
+  "faultPanel": {
+    "title": "Inject faults",
+    "description": "“Default latency” applies to every business endpoint, and a fault's latency adds to it. Pick an endpoint and a fault type; the fault disappears once its “times” run out. After injecting one, use other pages and watch how they react.",
+    "remove": "Remove",
+    "clearAll": "Clear all",
+    "empty": "No faults right now",
+    "reading": "Reading the fault config…",
+    "faultRow": "{method} {path}: {effect}, {times}",
+    "effects": {
+      "status": "return {status}",
+      "errorBody": "2xx with error {code}",
+      "malformed": "body doesn't match the schema",
+      "latency": "add {latencyMs}ms latency"
+    },
+    "timesLeft": "{count} left"
+  },
+  "faultForm": {
+    "endpoint": "Endpoint",
+    "kind": "Fault",
+    "times": "Times",
+    "submit": "Add fault",
+    "kinds": {
+      "latency": "Add 2 s latency",
+      "clientError": "Return 4xx",
+      "serverError": "Return 5xx",
+      "errorBody": "2xx with error",
+      "malformed": "Body doesn't match the schema"
+    },
+    "nextTimes": "{count, plural, one {Next time} other {Next # times}}",
+    "always": "Always"
+  },
+  "defaultLatency": {
+    "label": "Default latency",
+    "readFailed": "Couldn't read the default latency",
+    "reading": "Reading the default latency…"
+  }
+}

@@ -1,6 +1,8 @@
 "use client";
 
 import { revalidateLogic, useForm } from "@tanstack/react-form";
+import { useLocale, useTranslations } from "next-intl";
+import { useMemo } from "react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -8,12 +10,10 @@ import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useMutation } from "@/lib/react-query";
 
-import { type Task, taskNameSchema } from "../../api/get-task";
+import { createTaskNameSchema, type Task } from "../../api/get-task";
 import { updateTaskMutationOptions } from "../../api/update-task";
 import { TASK_NAME_TAKEN } from "../../constants/error-codes";
 import { isTaskActionError } from "../../utils/task-action-error";
-
-const renameSchema = z.object({ name: taskNameSchema });
 
 interface RenameTaskFormProps {
   task: Task;
@@ -22,7 +22,13 @@ interface RenameTaskFormProps {
 
 /** 编辑中的名称是一份草稿：从当前数据开始，保存时走写入，取消就丢弃。 */
 export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
-  const rename = useMutation(updateTaskMutationOptions());
+  const t = useTranslations("demo-task");
+  const locale = useLocale();
+  const renameSchema = useMemo(
+    () => z.object({ name: createTaskNameSchema(t) }),
+    [t],
+  );
+  const rename = useMutation(updateTaskMutationOptions(locale));
   const form = useForm({
     defaultValues: { name: task.name },
     validationLogic: revalidateLogic(),
@@ -39,7 +45,7 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
         if (isTaskActionError(error, TASK_NAME_TAKEN)) {
           formApi.setErrorMap({
             onSubmit: {
-              fields: { name: [{ message: "名称已被其他任务占用" }] },
+              fields: { name: [{ message: t("validation.nameTaken") }] },
             },
           });
         }
@@ -48,7 +54,7 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
   });
   return (
     <form
-      aria-label="重命名任务"
+      aria-label={t("renameTask.formLabel")}
       noValidate
       className="flex flex-wrap items-start gap-2"
       onSubmit={(event) => {
@@ -65,7 +71,9 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
             touched={field.state.meta.isTouched}
             className="min-w-60 flex-1"
           >
-            <FieldLabel className="sr-only">新名称</FieldLabel>
+            <FieldLabel className="sr-only">
+              {t("renameTask.nameLabel")}
+            </FieldLabel>
             <Input
               autoFocus
               value={field.state.value}
@@ -79,10 +87,10 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
         )}
       </form.Field>
       <Button type="submit" disabled={rename.isPending}>
-        保存
+        {t("renameTask.save")}
       </Button>
       <Button type="button" variant="ghost" onClick={onDone}>
-        取消
+        {t("renameTask.cancel")}
       </Button>
     </form>
   );

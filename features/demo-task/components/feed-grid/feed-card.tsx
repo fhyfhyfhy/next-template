@@ -1,8 +1,9 @@
 "use client";
 
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
 
+import { Link } from "@/lib/i18n-navigation";
 import { useMutation } from "@/lib/react-query";
 
 import type { Task } from "../../api/get-task";
@@ -12,6 +13,7 @@ import { TaskCover } from "../task-cover";
 
 /** 收藏走 React Query 的乐观更新：卡片的星标和“我的收藏”在工厂的 onMutate 里一起改，失败一起回滚。 */
 export function FeedCard({ task }: { task: Task }) {
+  const t = useTranslations("demo-task.feed");
   const favorite = useMutation(updateTaskFavoriteMutationOptions());
   return (
     <article className="overflow-hidden rounded-panel border border-border bg-card">
@@ -25,7 +27,7 @@ export function FeedCard({ task }: { task: Task }) {
         </Link>
         <button
           type="button"
-          aria-label="收藏"
+          aria-label={t("favorite")}
           aria-pressed={task.favorite}
           className="rounded-control p-1.5 text-muted-foreground hover:bg-accent hover:text-primary aria-pressed:text-primary"
           onClick={() => favorite.mutate({ task, favorite: !task.favorite })}

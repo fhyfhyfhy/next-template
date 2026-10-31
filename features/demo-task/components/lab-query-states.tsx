@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@/lib/react-query";
 
@@ -19,6 +21,7 @@ const FAULT = {
 
 /** 首次加载失败时没有数据可显示，组件渲染错误；已有数据时刷新失败，组件继续显示数据，靠全局提示告知。 */
 export function LabQueryStates() {
+  const t = useTranslations("demo-task");
   const queryClient = useQueryClient();
   const injectFault = useInjectMockFault();
   const options = getTaskQueryOptions(TASK_ID);
@@ -32,15 +35,15 @@ export function LabQueryStates() {
 
   return (
     <LabSection
-      title="首次加载和刷新失败"
-      description="渲染顺序是先看 data，再看 error，最后才是 loading：刷新失败时 error 和旧数据同时存在，先看 error 会把还能用的数据换掉。"
+      title={t("labQueryStates.title")}
+      description={t("labQueryStates.description")}
     >
       <div className="mb-4 flex flex-wrap gap-2">
         <Button variant="outline" size="sm" onClick={() => firstLoad(true)}>
-          首次加载（会失败）
+          {t("labQueryStates.firstLoadFails")}
         </Button>
         <Button variant="outline" size="sm" onClick={() => firstLoad(false)}>
-          首次加载（会成功）
+          {t("labQueryStates.firstLoadSucceeds")}
         </Button>
         <Button
           variant="outline"
@@ -51,7 +54,7 @@ export function LabQueryStates() {
             await task.refetch();
           }}
         >
-          刷新（会失败）
+          {t("labQueryStates.refreshFails")}
         </Button>
       </div>
       <div className="rounded-control bg-muted p-3 text-sm">
@@ -60,14 +63,14 @@ export function LabQueryStates() {
             {task.data.name}
             {task.error && (
               <span className="ml-2 text-muted-foreground">
-                （刷新失败，仍显示旧数据）
+                {t("labQueryStates.refreshFailed")}
               </span>
             )}
           </p>
         ) : task.error ? (
-          <p className="text-destructive">加载失败</p>
+          <p className="text-destructive">{t("queryState.loadFailed")}</p>
         ) : (
-          <p className="text-muted-foreground">加载中…</p>
+          <p className="text-muted-foreground">{t("queryState.loading")}</p>
         )}
       </div>
     </LabSection>

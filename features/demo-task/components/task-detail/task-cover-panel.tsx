@@ -1,6 +1,7 @@
 "use client";
 
 import { IconPhotoUp } from "@tabler/icons-react";
+import { useTranslations } from "next-intl";
 
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -17,6 +18,7 @@ interface TaskCoverPanelProps {
 
 /** 封面图由浏览器直接上传给后端；上传成功后工厂刷新详情、列表 query，并让列表页的服务端缓存失效。 */
 export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
+  const t = useTranslations("demo-task.taskCover");
   const upload = useMutation(updateTaskCoverMutationOptions());
   return (
     <div className="space-y-3">
@@ -34,7 +36,7 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
           )}
         >
           <IconPhotoUp aria-hidden />
-          {upload.isPending ? "上传中…" : "更换封面图"}
+          {upload.isPending ? t("uploading") : t("change")}
           <input
             type="file"
             accept="image/*"

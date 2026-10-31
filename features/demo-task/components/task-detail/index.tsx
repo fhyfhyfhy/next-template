@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
 import { useEffect } from "react";
 
 import { useQuery } from "@/lib/react-query";
@@ -9,9 +10,9 @@ import {
   isTaskActive,
   isTaskNotFound,
 } from "../../api/get-task";
+import { DATE_TIME_FORMAT } from "../../constants/date-time";
 import { useRecentTaskIds } from "../../hooks/use-recent-task-ids";
 import { useRefreshListsWhenSettled } from "../../hooks/use-refresh-lists-when-settled";
-import { formatDateTime } from "../../utils/format-date-time";
 import { RelatedTasks } from "../related-tasks";
 import { TaskComments } from "../task-comments";
 import { TaskLogs } from "../task-logs";
@@ -22,6 +23,8 @@ import { TaskProgress } from "./task-progress";
 
 /** 任务详情由 React Query 负责：任务会在用户停留时自己推进，pending、running 时轮询。首屏数据来自服务端 prefetch。 */
 export function TaskDetail({ taskId }: { taskId: string }) {
+  const t = useTranslations("demo-task");
+  const format = useFormatter();
   const task = useQuery(getTaskQueryOptions(taskId));
   const { record } = useRecentTaskIds();
   useRefreshListsWhenSettled(task.data?.status);
@@ -39,7 +42,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
               role="alert"
               className="rounded-panel border border-destructive/40 bg-destructive/10 p-4 text-sm"
             >
-              任务已被删除，下面是删除前的最后一份数据。
+              {t("taskDetail.deletedNotice")}
             </p>
           )}
           <TaskHeading task={data} editable={!deleted} />
@@ -49,10 +52,12 @@ export function TaskDetail({ taskId }: { taskId: string }) {
             />
           )}
           <dl className="grid gap-3 text-sm sm:grid-cols-[96px_1fr]">
-            <dt className="text-muted-foreground">Prompt</dt>
+            <dt className="text-muted-foreground">{t("taskDetail.prompt")}</dt>
             <dd>{data.prompt}</dd>
-            <dt className="text-muted-foreground">创建时间</dt>
-            <dd>{formatDateTime(data.createdAt)}</dd>
+            <dt className="text-muted-foreground">
+              {t("taskDetail.createdAt")}
+            </dt>
+            <dd>{format.dateTime(data.createdAt, DATE_TIME_FORMAT)}</dd>
           </dl>
           {!deleted && <TaskActions task={data} />}
           <TaskLogs
@@ -69,7 +74,11 @@ export function TaskDetail({ taskId }: { taskId: string }) {
     );
   }
   if (task.error) {
-    return <p className="text-sm text-destructive">加载失败</p>;
+    return (
+      <p className="text-sm text-destructive">{t("queryState.loadFailed")}</p>
+    );
   }
-  return <p className="text-sm text-muted-foreground">加载中…</p>;
+  return (
+    <p className="text-sm text-muted-foreground">{t("queryState.loading")}</p>
+  );
 }

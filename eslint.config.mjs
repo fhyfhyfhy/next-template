@@ -5,6 +5,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
 import betterTailwindcss from "eslint-plugin-better-tailwindcss";
+import i18next from "eslint-plugin-i18next";
 import playwright from "eslint-plugin-playwright";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 
@@ -66,6 +67,32 @@ const FEATURE_LAYERS = [
 const queryPlugin = withWrapperImports(pluginQuery);
 const QUERY_LIBRARY_MESSAGE =
   "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-fetching.md.";
+
+const LOCALE_NAVIGATION_MESSAGE =
+  "Import Link, redirect, useRouter, and usePathname from @/lib/i18n-navigation: the next/* versions drop the locale prefix of non-default locales. See .claude/rules/i18n.md.";
+
+// 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query；
+// 站内导航走 next-intl 生成的 API，非默认 locale 的 URL 前缀才不会丢。
+const RESTRICTED_IMPORTS = {
+  paths: [
+    ...["axios", "swr"].map((name) => ({
+      name,
+      message: QUERY_LIBRARY_MESSAGE,
+    })),
+    { name: "next/link", message: LOCALE_NAVIGATION_MESSAGE },
+    {
+      name: "next/navigation",
+      importNames: [
+        "redirect",
+        "permanentRedirect",
+        "useRouter",
+        "usePathname",
+      ],
+      message: LOCALE_NAVIGATION_MESSAGE,
+    },
+  ],
+  patterns: [{ group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE }],
+};
 
 const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
@@ -177,19 +204,7 @@ const eslintConfig = defineConfig([
       "data-fetching/mutation-callbacks": "error",
       // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。
       "import/no-relative-packages": "error",
-      // 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query。
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: ["axios", "swr"].map((name) => ({
-            name,
-            message: QUERY_LIBRARY_MESSAGE,
-          })),
-          patterns: [
-            { group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE },
-          ],
-        },
-      ],
+      "no-restricted-imports": ["error", RESTRICTED_IMPORTS],
       // 检查可解析的文件依赖环，忽略纯类型导入；跨 feature 的聚合循环由专用规则检查。
       "import/no-cycle": ["error", { commonjs: true }],
       // 按层级表禁止下层引用上层，让依赖方向与项目架构保持一致。
@@ -307,6 +322,58 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // 用户看得到的文案都放进 messages/，用 t() 渲染（.claude/rules/i18n.md）。只查 JSX 里的文本和下面这些属性；
+    // JSX 之外的文案（toast、metadata、常量里的标签）由 rule 约束。各组件的 *-examples/ 目录保留字面量：example 和
+    // playground 要能单独复制，控件标签是 prop 名，组件 metadata 由生成脚本直接读取字面值。
+    files: ["{app,features,components}/**/*.{jsx,tsx}"],
+    ignores: [
+      "features/demo-ui/components/*-examples/**",
+      "**/*.{test,spec}.{jsx,tsx}",
+    ],
+    plugins: { i18next },
+    rules: {
+      "i18next/no-literal-string": [
+        "error",
+        {
+          mode: "jsx-only",
+          "jsx-attributes": {
+            include: [
+              "aria-label",
+              "aria-description",
+              "aria-valuetext",
+              "title",
+              "placeholder",
+              "alt",
+              "label",
+              "description",
+            ],
+          },
+          // 设置后会替换插件的默认列表：前一项是默认值，最后一项放行 next-intl 的 t.rich 这类调用里的 key。
+          callees: {
+            exclude: [
+              "i18n(ext)?",
+              "t",
+              "require",
+              "addEventListener",
+              "removeEventListener",
+              "postMessage",
+              "getElementById",
+              "dispatch",
+              "commit",
+              "includes",
+              "indexOf",
+              "endsWith",
+              "startsWith",
+              "t\\.(rich|markup|raw|has)",
+            ],
+          },
+          message:
+            "Move user-visible text into messages/ and render it with t() (.claude/rules/i18n.md)",
+        },
+      ],
+    },
+  },
+  {
     files: ["features/*/api/**"],
     rules: {
       // options 工厂跟着文件名里的 HTTP 方法走，读接口的工厂不会混进写接口的文件，反之亦然。
@@ -330,6 +397,29 @@ const eslintConfig = defineConfig([
       ],
       // 整页加载后先等页面 hydrate 再操作，否则点击可能落在 React 接管之前（.claude/rules/e2e.md）。
       "e2e/act-after-ready": "error",
+    },
+  },
+  {
+    files: ["e2e/**"],
+    ignores: ["e2e/test.ts"],
+    rules: {
+      // e2e/test.ts 的 test 带着全局 fixture（比如页面缺少文案时失败），直接用 Playwright 的 test 会绕过它们。
+      // 同一条规则在后面的配置里会整个替换前面的选项，所以带上全局的限制再追加。
+      "no-restricted-imports": [
+        "error",
+        {
+          ...RESTRICTED_IMPORTS,
+          paths: [
+            ...RESTRICTED_IMPORTS.paths,
+            {
+              name: "@playwright/test",
+              importNames: ["test", "expect"],
+              message:
+                "Import test and expect from e2e/test.ts, which adds the fixtures every spec runs with.",
+            },
+          ],
+        },
+      ],
     },
   },
   // 项目级忽略项在 Next 默认项上加入 worktree，避免重复检查其他 checkout。

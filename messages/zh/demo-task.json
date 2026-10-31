@@ -1,0 +1,242 @@
+{
+  "taskStatus": {
+    "pending": "排队中",
+    "running": "生成中",
+    "done": "已完成",
+    "failed": "失败"
+  },
+  "taskSort": {
+    "createdDesc": "最新创建",
+    "createdAsc": "最早创建",
+    "nameAsc": "名称"
+  },
+  "queryState": {
+    "loading": "加载中…",
+    "loadFailed": "加载失败"
+  },
+  "validation": {
+    "nameRequired": "请输入名称",
+    "nameTooLong": "名称最多 {max} 个字",
+    "nameTaken": "名称已被其他任务占用",
+    "promptRequired": "请输入 prompt",
+    "promptTooLong": "prompt 最多 {max} 个字",
+    "commentRequired": "请输入评论",
+    "commentTooLong": "评论最多 {max} 个字"
+  },
+  "nav": {
+    "label": "Data demo 导航",
+    "home": "Data demo",
+    "tasks": "全部任务",
+    "feed": "作品广场",
+    "search": "搜索",
+    "recent": "最近查看",
+    "lab": "故障实验室"
+  },
+  "runningTasksBadge": {
+    "label": "进行中的任务 {total} 个",
+    "text": "进行中 {total}"
+  },
+  "mockApiNotice": {
+    "title": "Mock API 未运行",
+    "why": "Data demo 只对着模板自带的 Mock API 运行，而 Mock API 只由 Demo 专用的命令启动。用普通命令运行时，这些页面不发请求，免得 demo 的写入落到真实后端上。",
+    "howToRun": "要查看 Data demo，运行 <code>pnpm demo:dev</code>：它会启动 Mock API 并让整个应用指向它，这次运行期间真实业务页面的请求也会发给 Mock API。"
+  },
+  "mockReset": {
+    "button": "重置 Mock 数据",
+    "done": "已重置"
+  },
+  "demoNote": {
+    "label": "这页演示什么"
+  },
+  "createTask": {
+    "formLabel": "创建任务",
+    "nameLabel": "名称",
+    "namePlaceholder": "比如：低多边形小鹿",
+    "promptLabel": "Prompt",
+    "promptPlaceholder": "描述要生成的模型",
+    "submit": "创建任务",
+    "submitting": "创建中…"
+  },
+  "taskList": {
+    "label": "任务列表",
+    "empty": "没有符合条件的任务",
+    "pagination": "分页",
+    "total": "共 {total} 个任务",
+    "previousPage": "上一页",
+    "nextPage": "下一页",
+    "favorite": "收藏"
+  },
+  "taskListToolbar": {
+    "statusFilter": "按状态筛选",
+    "allStatuses": "全部",
+    "sort": "排序"
+  },
+  "taskSearch": {
+    "label": "搜索任务",
+    "placeholder": "按名称或 prompt 搜索",
+    "updating": "更新中…",
+    "found": "找到 {count} 个任务",
+    "failed": "搜索失败",
+    "searching": "搜索中…",
+    "results": "搜索结果"
+  },
+  "recentTasks": {
+    "reading": "读取浏览记录…",
+    "empty": "还没有查看过任务",
+    "label": "最近查看",
+    "deleted": "任务已被删除（{id}）",
+    "loadFailed": "加载失败（{id}）"
+  },
+  "favoritesPanel": {
+    "title": "我的收藏",
+    "empty": "还没有收藏"
+  },
+  "relatedTasks": {
+    "title": "同 prompt 的其他任务",
+    "empty": "没有其他任务"
+  },
+  "feed": {
+    "label": "作品",
+    "noMore": "没有更多作品了",
+    "loadMoreFailed": "加载失败，滚动到这里会重试",
+    "favorite": "收藏"
+  },
+  "taskDetail": {
+    "deletedNotice": "任务已被删除，下面是删除前的最后一份数据。",
+    "prompt": "Prompt",
+    "createdAt": "创建时间"
+  },
+  "taskProgress": {
+    "queued": "排队中",
+    "label": "生成进度"
+  },
+  "taskHeading": {
+    "rename": "重命名"
+  },
+  "renameTask": {
+    "formLabel": "重命名任务",
+    "nameLabel": "新名称",
+    "save": "保存",
+    "cancel": "取消"
+  },
+  "taskActions": {
+    "retry": "重试",
+    "download": "下载模型",
+    "downloadFailed": "下载失败，请稍后重试",
+    "notRetryable": "任务状态已变化，已刷新为最新状态。"
+  },
+  "taskCover": {
+    "uploading": "上传中…",
+    "change": "更换封面图"
+  },
+  "deleteTask": {
+    "trigger": "删除任务",
+    "title": "删除“{name}”？",
+    "description": "任务和它的评论都会被删除，不能恢复。",
+    "cancel": "取消",
+    "confirm": "删除"
+  },
+  "taskLogs": {
+    "title": "生成日志",
+    "waiting": "等待日志…",
+    "streaming": "日志推送中",
+    "ended": "日志已结束",
+    "failed": "日志连接中断"
+  },
+  "comments": {
+    "title": "评论",
+    "loading": "评论加载中…",
+    "loadFailed": "评论加载失败",
+    "empty": "还没有评论",
+    "listLabel": "评论",
+    "sending": "发送中…",
+    "delete": "删除评论",
+    "formLabel": "发表评论",
+    "inputLabel": "写评论",
+    "placeholder": "写下你的评论",
+    "submit": "发表"
+  },
+  "queryErrorBoundary": {
+    "retry": "重试"
+  },
+  "labRetry": {
+    "title": "重试规则",
+    "description": "每个按钮先给详情接口注入故障，再重新请求。schema 不匹配说明前后端契约已经不一致，全局处理会在控制台留下 SchemaValidationError。",
+    "scenarios": {
+      "serverErrorRecovers": "5xx 两次后恢复",
+      "serverErrorPersists": "5xx 一直失败",
+      "clientError": "4xx",
+      "errorBody": "2xx 返回 error",
+      "malformed": "schema 不匹配"
+    },
+    "scenarioResult": "{scenario}：{result}",
+    "retrying": "第 {count} 次失败，正在重试…",
+    "succeededAfterRetry": "成功，失败 {count} 次后重试成功",
+    "succeeded": "成功",
+    "failedAfterRetry": "失败，重试了 {count} 次",
+    "failedWithoutRetry": "失败，没有重试",
+    "requesting": "请求中…"
+  },
+  "labConcurrentFailures": {
+    "title": "同时失败",
+    "description": "按钮给详情接口注入 3 次失败，然后同时刷新下面 3 个任务。",
+    "refreshFailed": "（刷新失败）",
+    "refreshAll": "同时刷新（都会失败）"
+  },
+  "labDraftMode": {
+    "title": "跳过服务端缓存",
+    "description": "开启 Draft Mode 后，这个浏览器的每次请求都重新执行 use cache 函数，生产构建里也能立即看到后端的最新数据。结果不写入缓存，关掉后读到的仍是开启前缓存的数据。只影响当前浏览器，关闭浏览器后也会恢复。",
+    "switchLabel": "Draft Mode",
+    "switchFailed": "切换失败，请稍后重试"
+  },
+  "labQueryStates": {
+    "title": "首次加载和刷新失败",
+    "description": "渲染顺序是先看 data，再看 error，最后才是 loading：刷新失败时 error 和旧数据同时存在，先看 error 会把还能用的数据换掉。",
+    "firstLoadFails": "首次加载（会失败）",
+    "firstLoadSucceeds": "首次加载（会成功）",
+    "refreshFails": "刷新（会失败）",
+    "refreshFailed": "（刷新失败，仍显示旧数据）"
+  },
+  "labSuspenseReset": {
+    "title": "错误边界和重置",
+    "description": "按钮先清掉这个任务的缓存并注入一次失败，再挂载用 useSuspenseQuery 读取它的组件。",
+    "load": "加载（第一次会失败）",
+    "loadFailed": "任务加载失败"
+  },
+  "faultPanel": {
+    "title": "注入故障",
+    "description": "“默认延迟”对所有业务接口生效，故障里的延迟叠加在它之上。选一个接口和故障类型，“次数”用完后故障自动消失。注入后去其他页面操作，看页面怎么反应。",
+    "remove": "移除",
+    "clearAll": "清除全部",
+    "empty": "当前没有故障",
+    "reading": "读取故障配置…",
+    "faultRow": "{method} {path}：{effect}，{times}",
+    "effects": {
+      "status": "返回 {status}",
+      "errorBody": "2xx 但返回 error {code}",
+      "malformed": "响应体不符合 schema",
+      "latency": "再延迟 {latencyMs}ms"
+    },
+    "timesLeft": "还剩 {count} 次"
+  },
+  "faultForm": {
+    "endpoint": "接口",
+    "kind": "故障",
+    "times": "次数",
+    "submit": "添加故障",
+    "kinds": {
+      "latency": "再延迟 2 秒",
+      "clientError": "返回 4xx",
+      "serverError": "返回 5xx",
+      "errorBody": "2xx 但返回 error",
+      "malformed": "响应体不符合 schema"
+    },
+    "nextTimes": "下 {count} 次",
+    "always": "一直生效"
+  },
+  "defaultLatency": {
+    "label": "默认延迟",
+    "readFailed": "读取默认延迟失败",
+    "reading": "读取默认延迟…"
+  }
+}

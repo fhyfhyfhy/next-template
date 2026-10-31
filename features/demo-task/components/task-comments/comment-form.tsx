@@ -1,6 +1,8 @@
 "use client";
 
 import { revalidateLogic, useForm } from "@tanstack/react-form";
+import { useTranslations } from "next-intl";
+import { useMemo } from "react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -17,19 +19,26 @@ import {
   COMMENT_MAX_LENGTH,
   createCommentMutationOptions,
 } from "../../api/create-comment";
+import type { DemoTaskTranslator } from "../../types/translator";
 
-const commentSchema = z.object({
-  content: z
-    .string()
-    .trim()
-    .min(1, "请输入评论")
-    .max(COMMENT_MAX_LENGTH, `评论最多 ${COMMENT_MAX_LENGTH} 个字`),
-});
+const createCommentSchema = (t: DemoTaskTranslator) =>
+  z.object({
+    content: z
+      .string()
+      .trim()
+      .min(1, t("validation.commentRequired"))
+      .max(
+        COMMENT_MAX_LENGTH,
+        t("validation.commentTooLong", { max: COMMENT_MAX_LENGTH }),
+      ),
+  });
 
 /** 提交时立即清空输入框（工厂已经乐观插入了评论），失败时把内容放回去，不丢用户写的字。 */
 export function CommentForm({ taskId }: { taskId: string }) {
   // hydration 之前不可用，原因同 `CreateTaskForm`。
   const hydrated = useHydrated();
+  const t = useTranslations("demo-task");
+  const commentSchema = useMemo(() => createCommentSchema(t), [t]);
   const createComment = useMutation(createCommentMutationOptions(taskId));
   const form = useForm({
     defaultValues: { content: "" },
@@ -45,7 +54,7 @@ export function CommentForm({ taskId }: { taskId: string }) {
   });
   return (
     <form
-      aria-label="发表评论"
+      aria-label={t("comments.formLabel")}
       noValidate
       className="mt-3 flex items-start gap-2"
       onSubmit={(event) => {
@@ -63,13 +72,15 @@ export function CommentForm({ taskId }: { taskId: string }) {
             touched={field.state.meta.isTouched}
             className="flex-1"
           >
-            <FieldLabel className="sr-only">写评论</FieldLabel>
+            <FieldLabel className="sr-only">
+              {t("comments.inputLabel")}
+            </FieldLabel>
             <FieldControl
               render={<textarea rows={2} />}
               value={field.state.value}
               onValueChange={(value) => field.handleChange(value)}
               onBlur={field.handleBlur}
-              placeholder="写下你的评论"
+              placeholder={t("comments.placeholder")}
               className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 aria-invalid:border-destructive"
             />
             <FieldError match={!field.state.meta.isValid}>
@@ -79,7 +90,7 @@ export function CommentForm({ taskId }: { taskId: string }) {
         )}
       </form.Field>
       <Button type="submit" disabled={!hydrated}>
-        发表
+        {t("comments.submit")}
       </Button>
     </form>
   );
