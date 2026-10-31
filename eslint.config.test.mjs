@@ -1118,6 +1118,11 @@ describe("架构依赖和 feature、组件导入约定", () => {
     cpSync(join(project, "scripts/eslint"), join(fixture, "scripts/eslint"), {
       recursive: true,
     });
+    // eslint.config.mjs 从这里取 build 目录的忽略项。
+    copyFileSync(
+      join(project, "scripts/build-dirs.mjs"),
+      join(fixture, "scripts/build-dirs.mjs"),
+    );
     copyFileSync(
       join(project, "tsconfig.json"),
       join(fixture, "tsconfig.json"),

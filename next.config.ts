@@ -1,16 +1,9 @@
 import type { NextConfig } from "next";
 
-// 每种产物各放一个目录，免得互相覆盖：demo:* 命令（scripts/run-next.mjs --demo）把 Mock API 的地址内联进产物，
-// 和项目自己的 build 混用会让 pnpm start 跑起一个指向 Mock API 的版本；e2e 的 build 打开了测试 API，
-// 不能被当成正常产物 start，也不能覆盖正在运行的 start。.next 以外的目录要同步加进 tsconfig.json、
-// .gitignore、.prettierignore 和 eslint.config.mjs 的排除项，scripts/run-next.mjs 也要在 build 前刷新 .next/types。
-const distDir = [
-  ".next",
-  process.env.NEXT_PUBLIC_MOCK_API === "1" && "demo",
-  process.env.EXPOSE_TESTING_API === "1" && "e2e",
-]
-  .filter(Boolean)
-  .join("-");
+import { buildDir } from "./scripts/build-dirs.mjs";
+
+// 每种产物各放一个目录，规则和要同步排除它们的文件见 scripts/build-dirs.mjs。
+const distDir = buildDir(process.env);
 
 const nextConfig: NextConfig = {
   distDir,

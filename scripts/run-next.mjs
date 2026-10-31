@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { createServer } from "node:net";
 import { resolve } from "node:path";
 
+import { withoutBuildDirVars } from "./build-dirs.mjs";
 import {
   generateExampleIndexes,
   watchExampleIndexes,
@@ -42,15 +43,11 @@ if (command === "start" && !hasExplicitPort(nextArgs)) {
 // demo 和 e2e 的 build 不写 .next（distDir 见 next.config.ts），tsconfig.json 又排除了它们自己的目录，
 // 类型检查读的是 .next/types；这份只有 .next 的 build 和 typegen 会写，先刷新它。
 if (command === "build" && (demo || process.env.EXPOSE_TESTING_API === "1")) {
-  // typegen 写进 next.config.ts 算出的 distDir；e2e 的 webServer.env 带着 EXPOSE_TESTING_API，
-  // 不去掉决定 distDir 的变量，它就写进 -e2e 目录，.next/types 照旧过期。
-  const typegenEnv = { ...process.env };
-  delete typegenEnv.EXPOSE_TESTING_API;
-  delete typegenEnv.NEXT_PUBLIC_MOCK_API;
+  // e2e 的 webServer.env 带着 EXPOSE_TESTING_API，原样继承的话 typegen 会写进 -e2e 目录。
   const typegen = spawnSync(process.execPath, [nextBin, "typegen"], {
     cwd: projectRoot,
     stdio: "inherit",
-    env: typegenEnv,
+    env: withoutBuildDirVars(process.env),
   });
   if (typegen.status !== 0) throw new Error("next typegen failed");
 }

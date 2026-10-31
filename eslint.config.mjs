@@ -8,6 +8,7 @@ import betterTailwindcss from "eslint-plugin-better-tailwindcss";
 import playwright from "eslint-plugin-playwright";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 
+import { BUILD_DIRS } from "./scripts/build-dirs.mjs";
 import createArchitecturePlugin, {
   layerZones,
 } from "./scripts/eslint/architecture-plugin.mjs";
@@ -326,11 +327,8 @@ const eslintConfig = defineConfig([
   },
   // 项目级忽略项在 Next 默认项上加入 worktree，避免重复检查其他 checkout。
   globalIgnores([
-    // 保留 Next 默认排除的构建产物与生成类型；其余 .next-* 是 demo:* 命令和 e2e 的产物目录（见 next.config.ts）。
-    ".next/**",
-    ".next-demo/**",
-    ".next-e2e/**",
-    ".next-demo-e2e/**",
+    // 保留 Next 默认排除的构建产物与生成类型；其余 .next-* 是 demo:* 命令和 e2e 的产物目录（scripts/build-dirs.mjs）。
+    ...BUILD_DIRS.map((dir) => `${dir}/**`),
     "out/**",
     "build/**",
     "next-env.d.ts",
