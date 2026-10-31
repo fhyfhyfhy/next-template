@@ -1,0 +1,5 @@
+interface:
+  display_name: "Setup Data Access"
+  short_description: "Configure the backend, response format, and credentials"
+policy:
+  allow_implicit_invocation: false

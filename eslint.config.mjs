@@ -1,31 +1,27 @@
-import { existsSync, statSync } from "node:fs";
-import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
+import pluginQuery from "@tanstack/eslint-plugin-query";
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
+import betterTailwindcss from "eslint-plugin-better-tailwindcss";
+import playwright from "eslint-plugin-playwright";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 
-import componentExportsRule from "./scripts/architecture/component-exports.mjs";
-import {
-  createProjectResolver,
-  featurePath,
-  SOURCE_EXTENSIONS,
-  SOURCE_GLOB,
-} from "./scripts/architecture/imports.mjs";
-import createFeatureCycleRule from "./scripts/architecture/no-feature-cycle.mjs";
+import createArchitecturePlugin, {
+  layerZones,
+} from "./scripts/eslint/architecture-plugin.mjs";
+import { SOURCE_EXTENSIONS, SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
+import createNamingPlugin from "./scripts/eslint/naming-plugin.mjs";
+import withWrapperImports, {
+  apiFileFactoriesRule,
+  mutationCallbacksRule,
+} from "./scripts/eslint/query-plugin.mjs";
+import { TAILWIND_PALETTES } from "./scripts/eslint/tailwind-palettes.mjs";
 
 const PROJECT_ROOT = import.meta.dirname;
-const resolveProjectImport = createProjectResolver(PROJECT_ROOT);
 const extensionGlob = `{${SOURCE_EXTENSIONS.join(",")}}`;
 const moduleExtensions = SOURCE_EXTENSIONS.map((extension) => `.${extension}`);
-const componentEntryPattern = new RegExp(
-  `^index\\.(?:d\\.)?(?:${SOURCE_EXTENSIONS.join("|")})$`,
-);
-const componentSourceEntryPattern = new RegExp(
-  `^index\\.(?:${SOURCE_EXTENSIONS.join("|")})$`,
-);
 
 // import 分组：npm/Node 包与副作用导入、@/ 别名、相对路径、CSS。
 const importGroups = [
@@ -65,340 +61,43 @@ const FEATURE_LAYERS = [
   files: [`features/*/${dir}/**`],
 }));
 
-// import/no-restricted-paths 的 except 不按 basePath 解析，所以这里不用 except，全部用 glob 表达
-function layerZones(layers, section) {
-  return layers.slice(1).map((layer, index) => {
-    const forbidden = layers.slice(0, index + 1);
-    const allowed = layers.slice(index + 1);
-    const rule = `${layer.name} can import its own layer and lower layers: ${allowed.map((other) => other.name).join(", ")}. Circular dependencies are forbidden.`;
-    return {
-      target: layer.files,
-      from: forbidden.flatMap((other) => other.files),
-      message: `${rule} Extract a lower-layer dependency within its owner, or move composition to the caller. Keep business code in its feature. See "${section}" and "Shared code ownership" in .claude/rules/architecture.md.`,
-    };
-  });
-}
-
-function importSpecifier(source) {
-  if (!source) return null;
-  const specifier =
-    source.type === "TemplateLiteral" && source.expressions.length === 0
-      ? source.quasis[0].value.cooked
-      : source.value;
-  return typeof specifier === "string" ? specifier : null;
-}
-
-function projectImport(filename, source) {
-  return resolveProjectImport(filename, importSpecifier(source));
-}
-
-function importVisitors(check) {
-  return {
-    ImportDeclaration: (node) => check(node.source),
-    ExportNamedDeclaration: (node) => check(node.source),
-    ExportAllDeclaration: (node) => check(node.source),
-    ImportExpression: (node) => check(node.source),
-    TSImportType: (node) => check(node.source),
-    TSExternalModuleReference: (node) => check(node.expression),
-    CallExpression: (node) => {
-      if (
-        node.callee.type === "Identifier" &&
-        node.callee.name === "require" &&
-        node.arguments.length === 1
-      ) {
-        check(node.arguments[0]);
-      }
-    },
-  };
-}
-
-function componentDirectory(filename) {
-  const parts = relative(PROJECT_ROOT, filename).split(sep);
-  const componentsIndex = parts.lastIndexOf("components");
-  if (parts[0] === ".." || componentsIndex === -1) return null;
-  // ui/ 是组件集合；components/ui/dialog/ 才是独立组件目录。
-  const componentIndex =
-    componentsIndex + (parts[componentsIndex + 1] === "ui" ? 2 : 1);
-  if (parts.length <= componentIndex + 1) return null;
-  return resolve(PROJECT_ROOT, ...parts.slice(0, componentIndex + 1));
-}
-
-const componentImportsRule = {
-  meta: {
-    type: "problem",
-    schema: [],
-    messages: {
-      private:
-        "Import through the public index entry of {{directory}}. Only files inside that component directory can directly access its implementation files.",
-      relative:
-        "Use a relative path between files inside the same component directory.",
-    },
-  },
-  create(context) {
-    const filename = context.filename;
-    const sourceDirectory = componentDirectory(filename);
-
-    return importVisitors((source) => {
-      const imported = projectImport(filename, source);
-      if (!imported) return;
-      const targetDirectory = componentDirectory(imported.target);
-      if (!targetDirectory) return;
-      if (targetDirectory === sourceDirectory) {
-        // The feature rule already reports this convention inside features.
-        if (!imported.isRelative && !featurePath(PROJECT_ROOT, filename)) {
-          context.report({ node: source, messageId: "relative" });
-        }
-        return;
-      }
-      if (
-        componentEntryPattern.test(relative(targetDirectory, imported.target))
-      )
-        return;
-
-      context.report({
-        node: source,
-        messageId: "private",
-        data: {
-          directory: relative(PROJECT_ROOT, targetDirectory)
-            .split(sep)
-            .join("/"),
-        },
-      });
-    });
-  },
-};
-
-const componentEntryRule = {
-  meta: {
-    type: "problem",
-    schema: [],
-    messages: {
-      multiple:
-        "Keep one component implementation entry in {{directory}}. Found: {{entries}}. Type declarations may accompany that entry.",
-    },
-  },
-  create(context) {
-    const directory = componentDirectory(context.filename);
-    if (
-      !directory ||
-      !componentSourceEntryPattern.test(relative(directory, context.filename))
-    )
-      return {};
-
-    return {
-      Program(node) {
-        const entries = SOURCE_EXTENSIONS.map(
-          (extension) => `index.${extension}`,
-        ).filter((entry) => {
-          const filename = resolve(directory, entry);
-          return existsSync(filename) && statSync(filename).isFile();
-        });
-        if (entries.length > 1) {
-          context.report({
-            node,
-            messageId: "multiple",
-            data: {
-              directory: relative(PROJECT_ROOT, directory).split(sep).join("/"),
-              entries: entries.sort().join(", "),
-            },
-          });
-        }
-      },
-    };
-  },
-};
-
-const featureImportsRule = {
-  meta: {
-    type: "problem",
-    schema: [],
-    messages: {
-      relative:
-        "Use a relative path within the same feature, including imports across its subdirectories.",
-      alias: "Use @/ for project imports that cross a feature boundary.",
-      entry:
-        "Import from the feature's entry (@/features/{name} or a root sub-entry like @/features/{name}/canvas). Internal files and directories are private.",
-      selfEntry:
-        "Feature implementations must import their dependencies directly, using relative paths, instead of importing their own feature's public entries. Component entries remain allowed.",
-    },
-  },
-  create(context) {
-    const filename = context.filename;
-    const sourceParts = featurePath(PROJECT_ROOT, filename);
-    const sourceFeature = sourceParts?.[0];
-
-    function check(source) {
-      const imported = projectImport(filename, source);
-      if (!imported) return;
-      const { target, isRelative, isAlias } = imported;
-      const targetParts = featurePath(PROJECT_ROOT, target);
-      const targetFeature = targetParts?.[0];
-
-      if (sourceFeature && sourceFeature === targetFeature) {
-        if (sourceParts.length > 2 && targetParts.length <= 2) {
-          context.report({ node: source, messageId: "selfEntry" });
-        } else if (!isRelative) {
-          context.report({ node: source, messageId: "relative" });
-        }
-        return;
-      }
-
-      if ((sourceFeature || targetFeature) && !isAlias) {
-        context.report({ node: source, messageId: "alias" });
-      }
-
-      if (
-        targetParts &&
-        (targetParts.length > 2 ||
-          (targetParts.length === 2 &&
-            existsSync(target) &&
-            statSync(target).isDirectory()))
-      ) {
-        context.report({ node: source, messageId: "entry" });
-      }
-    }
-
-    return importVisitors(check);
-  },
-};
-
-const rootImportsRule = {
-  meta: {
-    type: "problem",
-    schema: [],
-    messages: {
-      relative:
-        "Use a relative path (./) for project imports from the same directory or its subdirectories.",
-      alias:
-        "Use @/ for project imports outside the current directory and its subdirectories.",
-    },
-  },
-  create(context) {
-    const filename = context.filename;
-    if (featurePath(PROJECT_ROOT, filename)) return {};
-    const sourceComponent = componentDirectory(filename);
-
-    return importVisitors((source) => {
-      const imported = projectImport(filename, source);
-      if (!imported) return;
-      const { target, isRelative } = imported;
-      // feature 由 feature-imports 检查，同一组件目录由 component-imports 检查，node_modules 由 import/no-relative-packages 检查。
-      if (
-        featurePath(PROJECT_ROOT, target) ||
-        (sourceComponent && componentDirectory(target) === sourceComponent) ||
-        relative(PROJECT_ROOT, target).split(sep).includes("node_modules")
-      )
-        return;
-      const fromDirectory = relative(dirname(filename), target);
-      const isNested =
-        !isAbsolute(fromDirectory) && fromDirectory.split(sep)[0] !== "..";
-      if (isNested !== isRelative) {
-        context.report({
-          node: source,
-          messageId: isNested ? "relative" : "alias",
-        });
-      }
-    });
-  },
-};
-
-const reactQueryWrappers = new Set(
-  ["react-query", "react-query.client"].flatMap((name) =>
-    SOURCE_EXTENSIONS.map((extension) =>
-      resolve(PROJECT_ROOT, `lib/${name}.${extension}`),
-    ),
-  ),
-);
-const privateReactQueryFiles = new Set(
-  SOURCE_EXTENSIONS.map((extension) =>
-    resolve(PROJECT_ROOT, `lib/react-query.client.${extension}`),
-  ),
-);
-
-const wrapperImportsRule = {
-  meta: {
-    type: "problem",
-    schema: [],
-    messages: {
-      wrapper:
-        "Import from @/lib/react-query. Only the react-query wrapper files may access the original package or the private client module.",
-    },
-  },
-  create(context) {
-    const filename = context.filename;
-    if (reactQueryWrappers.has(filename)) return {};
-
-    return importVisitors((source) => {
-      const specifier = importSpecifier(source);
-      if (!specifier) return;
-      const originalPackage =
-        specifier === "@tanstack/react-query" ||
-        specifier.startsWith("@tanstack/react-query/");
-      const imported = projectImport(filename, source);
-      const privateClient =
-        imported &&
-        (privateReactQueryFiles.has(imported.target) ||
-          imported.target === resolve(PROJECT_ROOT, "lib/react-query.client"));
-      if (originalPackage || privateClient) {
-        context.report({ node: source, messageId: "wrapper" });
-      }
-    });
-  },
-};
-
-const kebabCase = /[a-z0-9]+(?:-[a-z0-9]+)*/.source;
-const routeParam = /[a-z][a-zA-Z0-9]*/.source;
-// 文件名按 . 分段检查（basic.example.tsx、index.d.ts）；允许 . 开头的目录和文件（.claude/）。
-const kebabCaseName = new RegExp(
-  String.raw`^\.?${kebabCase}(?:\.${kebabCase})*$`,
-);
-// app/ 下的目录还可以用 Next.js 路由写法：拦截前缀 (.)、(..)、(...)，(group)、@slot、_private，
-// 动态段 [param]、[...param]、[[...param]]。动态段名是 params 的 key，和 Next.js 文档一样用 camelCase。
-const appRouteDirectoryName = new RegExp(
-  String.raw`^(?:\(\.\)|\(\.\.\.\)|(?:\(\.\.\))+)?(?:${kebabCase}|\(${kebabCase}\)|@${kebabCase}|_${kebabCase}|\[(?:\.\.\.)?${routeParam}\]|\[\[\.\.\.${routeParam}\]\])$`,
-);
-
-// ESLint 只处理源码文件，所以只覆盖源码文件和它们所在的目录；CSS、图片、Markdown 等不在检查范围内。
-const kebabCasePathRule = {
-  meta: {
-    type: "suggestion",
-    schema: [],
-    messages: {
-      name: "Use kebab-case for file and directory names: {{names}} in {{path}}. Dots separate name segments (basic.example.tsx). Under app/, Next.js route folders such as (group), @slot, _private, [param] and [...param] are also allowed.",
-    },
-  },
-  create(context) {
-    const parts = relative(PROJECT_ROOT, context.filename).split(sep);
-    if (parts[0] === "..") return {};
-    const invalid = parts.filter((part, index) => {
-      if (kebabCaseName.test(part)) return false;
-      const isAppDirectory =
-        parts[0] === "app" && index > 0 && index < parts.length - 1;
-      return !(isAppDirectory && appRouteDirectoryName.test(part));
-    });
-    if (invalid.length === 0) return {};
-
-    return {
-      Program(node) {
-        context.report({
-          node,
-          messageId: "name",
-          data: { names: invalid.join(", "), path: parts.join("/") },
-        });
-      },
-    };
-  },
-};
+const queryPlugin = withWrapperImports(pluginQuery);
+const QUERY_LIBRARY_MESSAGE =
+  "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-fetching.md.";
 
 const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
 
+// 颜色只用 app/globals.css 的语义 token 和 black、white，圆角只用内置或 --radius-* token。
+const RESTRICTED_TAILWIND_CLASSES = [
+  {
+    pattern: `^(?:.*:)?!?[a-z-]+-(?:${TAILWIND_PALETTES.join("|")})-\\d+(?:/.+)?!?$`,
+    message:
+      'Use a semantic color token from app/globals.css instead of the Tailwind palette color "$0".',
+  },
+  {
+    // 任意值里的十六进制色值和颜色函数；引用 CSS 变量的写法不受限制。
+    // 任意值用 _ 代替空格，_ 属于 \w，所以边界用显式字符集而不是 \b、\w。
+    pattern:
+      "^.*\\[[^\\]]*(?:#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z-])|(?<![a-zA-Z-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\().*$",
+    message:
+      'Define a color token in app/globals.css instead of the hard-coded color in "$0".',
+  },
+  {
+    // 只需拦任意值：不是任意值、又不在内置或 --radius-* 主题里的圆角 class 由 no-unknown-classes 报出。
+    pattern: "^(?:.*:)?!?rounded(?:-[a-z]{1,2})?-[[(].*$",
+    message:
+      'Use a built-in radius or a --radius-* token from app/globals.css instead of "$0".',
+  },
+];
+
 const eslintConfig = defineConfig([
+  // 使用 Next.js 的 React、Hooks、可访问性和性能规则，随框架版本维护默认检查。
   ...nextVitals.map((config) =>
     config.name === "next"
       ? {
           ...config,
-          // Keep Next's parser, plugins and resolvers active for every supported extension, including .cjs.
+          // 所有支持的扩展名（含 .cjs）都需要 Next 的 parser、插件和 resolver。
           files: [SOURCE_GLOB],
           settings: {
             ...config.settings,
@@ -418,20 +117,23 @@ const eslintConfig = defineConfig([
         }
       : config,
   ),
+  // 复用 TypeScript 推荐检查，包括禁止显式 any、要求用有说明的 @ts-expect-error 代替 @ts-ignore。
+  // enum 由 tsconfig 的 erasableSyntaxOnly 检查。
   ...nextTs,
-  // any 和 @ts-ignore 由 nextTs 里 typescript-eslint recommended 的 no-explicit-any、ban-ts-comment 检查；enum 由 tsconfig 的 erasableSyntaxOnly 检查。
   {
     files: [SOURCE_GLOB],
     plugins: { "@eslint-community/eslint-comments": eslintComments },
     rules: {
-      // 用 eslint-disable 关掉 no-explicit-any 等规则时，要在 -- 后写明原因，和 ban-ts-comment 对 @ts-expect-error 的要求一致。
+      // ESLint 指令注释须在 -- 后说明原因，方便审查禁用规则等局部配置的必要性。
       "@eslint-community/eslint-comments/require-description": "error",
+      // 对象字面量类型定义统一用 interface，避免同类契约在两种写法之间来回切换。
       "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
-      // 用 warn：优先用 type guard 或 optional chaining，DOM、第三方类型等确实需要断言的地方可以保留。
+      // 对类型断言发出 warn，优先用类型标注或类型收窄；允许 const 断言。
       "@typescript-eslint/consistent-type-assertions": [
         "warn",
         { assertionStyle: "never" },
       ],
+      // 用 warn 提醒处理 null/undefined，避免非空断言 ! 隐藏实际可能为空的值。
       "@typescript-eslint/no-non-null-assertion": "warn",
     },
   },
@@ -442,33 +144,53 @@ const eslintConfig = defineConfig([
     settings: { "import/ignore": ["node_modules"] },
     plugins: {
       "simple-import-sort": simpleImportSort,
-      architecture: {
+      architecture: createArchitecturePlugin(PROJECT_ROOT),
+      naming: createNamingPlugin(PROJECT_ROOT),
+      "data-fetching": {
         rules: {
-          "feature-imports": featureImportsRule,
-          "root-imports": rootImportsRule,
-          "no-feature-cycle": createFeatureCycleRule(PROJECT_ROOT),
-          "component-imports": componentImportsRule,
-          "component-entry": componentEntryRule,
-          "component-exports": componentExportsRule,
-          "wrapper-imports": wrapperImportsRule,
-        },
-      },
-      naming: {
-        rules: {
-          "kebab-case": kebabCasePathRule,
+          "mutation-callbacks": mutationCallbacksRule,
+          "api-file-factories": apiFileFactoriesRule,
         },
       },
     },
     rules: {
+      // 按 importGroups 固定顺序并支持自动修复，减少增删依赖时无关的排序 diff。
       "simple-import-sort/imports": ["error", { groups: importGroups }],
+      // feature 内部用相对路径且不反向引用自身公共入口。
+      // 跨边界用 @/；访问其他 feature 时只走公共入口。
       "architecture/feature-imports": "error",
+      // 按 feature 聚合依赖（含类型引用），捕获文件图无环但 feature 之间互相依赖的情况。
       "architecture/no-feature-cycle": "error",
+      // 组件目录内用相对路径，对外只开放 index 入口，避免调用方依赖私有实现路径。
       "architecture/component-imports": "error",
+      // 每个组件目录只保留一个实现入口，避免多个 index 扩展名产生解析歧义；允许声明文件并存。
       "architecture/component-entry": "error",
+      // 约束条件导入的调用方、目标及顺序，防止未经支持的 # 路径绕过架构检查。
+      "architecture/package-imports": "error",
+      // React Query 统一从项目封装引入，避免直接使用原包而绕过项目的 QueryClient 策略。
       "architecture/wrapper-imports": "error",
+      // 源码路径统一用 kebab-case，同时保留 Next.js 路由目录的特殊命名约定。
       "naming/kebab-case": "error",
+      // 保留 factory 负责的缓存更新；调用方的成功、失败及结束回调放在 mutate 的第二个参数。
+      "data-fetching/mutation-callbacks": "error",
+      // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。
       "import/no-relative-packages": "error",
+      // 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query。
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: ["axios", "swr"].map((name) => ({
+            name,
+            message: QUERY_LIBRARY_MESSAGE,
+          })),
+          patterns: [
+            { group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE },
+          ],
+        },
+      ],
+      // 检查可解析的文件依赖环，忽略纯类型导入；跨 feature 的聚合循环由专用规则检查。
       "import/no-cycle": ["error", { commonjs: true }],
+      // 按层级表禁止下层引用上层，让依赖方向与项目架构保持一致。
       "import/no-restricted-paths": [
         "error",
         {
@@ -476,15 +198,30 @@ const eslintConfig = defineConfig([
           zones: [
             ...layerZones(ROOT_LAYERS, "Layers"),
             ...layerZones(FEATURE_LAYERS, "Feature structure"),
+            {
+              target: ["e2e/**"],
+              from: ROOT_LAYERS.flatMap((layer) => layer.files),
+              message:
+                'e2e/ observes the app only through the browser and the Mock API control endpoints, so it imports no application code. See "Where files go" in .claude/rules/architecture.md.',
+            },
           ],
         },
       ],
     },
   },
+  // 复用 TanStack 的严格推荐检查；queryPlugin 让这些规则识别项目封装的 import。
+  ...pluginQuery.configs["flat/recommended-strict"].map((config) => ({
+    ...config,
+    files: [SOURCE_GLOB],
+    plugins: { "@tanstack/query": queryPlugin },
+  })),
   {
     // 只查应用代码目录：scripts/ 和根目录配置文件不经过 Next.js 打包，解析不了 @/。
     files: ROOT_LAYERS.flatMap((layer) => layer.files),
-    rules: { "architecture/root-imports": "error" },
+    rules: {
+      // 当前目录及子目录用相对路径，跨目录用 @/；feature 和组件内部交给各自的规则。
+      "architecture/root-imports": "error",
+    },
   },
   {
     files: [
@@ -492,7 +229,9 @@ const eslintConfig = defineConfig([
       `**/components/ui/*/index.${extensionGlob}`,
     ],
     rules: {
+      // 追踪导入的 namespace 及其 const 别名，避免入口间接暴露整个命名空间。
       "architecture/component-exports": "error",
+      // 禁止入口直接使用 export * 和 export * as，要求显式列出公开成员。
       "no-restricted-syntax": [
         "error",
         {
@@ -507,12 +246,45 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    files: [SOURCE_GLOB],
+    // 测试里的 class 是 cn() 等函数的输入，不会渲染，会故意拼接或写成非规范形式。
+    ignores: [`**/*.{test,spec}.${extensionGlob}`],
+    plugins: { "better-tailwindcss": betterTailwindcss },
+    settings: {
+      "better-tailwindcss": {
+        entryPoint: "app/globals.css",
+        // 不设时插件不做 px 到 rem 的换算，lg:max-h-[520px] 这类可以写成 lg:max-h-130 的 class 就查不出来。
+        // globals.css 没有改根字号，按浏览器默认的 16px 算，和 Tailwind CSS IntelliSense 的默认值一致。
+        rootFontSize: 16,
+      },
+    },
+    // class 的排序、去重和空白由 prettier-plugin-tailwindcss 处理，这里只开它覆盖不到的规则。
+    rules: {
+      // 按 Tailwind 的 canonicalizeCandidates 改成规范写法，与编辑器里 IntelliSense 的提示一致。
+      "better-tailwindcss/enforce-canonical-classes": "error",
+      // 不在 Tailwind 和项目主题里的 class 不会生成样式，多半是拼写错误。
+      "better-tailwindcss/no-unknown-classes": "error",
+      // 同一字符串里设置相同 CSS 属性的 class 会互相覆盖，结果取决于生成顺序而不是书写顺序。
+      "better-tailwindcss/no-conflicting-classes": "error",
+      // 替换当前 Tailwind 版本已废弃的 class。
+      "better-tailwindcss/no-deprecated-classes": "error",
+      // Tailwind 按完整 class 名扫描源码，拼接出来的 class 不会生成样式。
+      "better-tailwindcss/no-concatenated-classes": "error",
+      // 颜色和圆角走主题 token，见 RESTRICTED_TAILWIND_CLASSES。
+      "better-tailwindcss/no-restricted-classes": [
+        "error",
+        { restrict: RESTRICTED_TAILWIND_CLASSES },
+      ],
+    },
+  },
+  {
     files: ["**/*.{jsx,tsx}"],
     ignores: [
       "**/*.{test,spec,story,stories,generated,gen}.{jsx,tsx}",
       "**/{test,tests,__tests__,stories,generated,__generated__}/**",
     ],
     rules: {
+      // 函数过长时提醒检查职责，避免一个组件或 helper 承担过多逻辑。
       "max-lines-per-function": [
         "warn",
         {
@@ -521,6 +293,7 @@ const eslintConfig = defineConfig([
           skipComments: true,
         },
       ],
+      // 文件过长时提醒检查拆分；使用 warn，让职责单一的大组件仍可保留。
       "max-lines": [
         "warn",
         {
@@ -531,10 +304,33 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Override default ignores of eslint-config-next.
+  {
+    files: ["features/*/api/**"],
+    rules: {
+      // options 工厂跟着文件名里的 HTTP 方法走，读接口的工厂不会混进写接口的文件，反之亦然。
+      "data-fetching/api-file-factories": "error",
+    },
+  },
+  // Playwright 推荐的 e2e 检查，比如不用固定时长的等待、expect.poll 必须 await。
+  {
+    ...playwright.configs["flat/recommended"],
+    files: ["e2e/**"],
+    rules: {
+      ...playwright.configs["flat/recommended"].rules,
+      // 断言写在 expectXxx helper 里的用例也算有断言。
+      "playwright/expect-expect": [
+        "warn",
+        { assertFunctionPatterns: ["^expect[A-Z]"] },
+      ],
+    },
+  },
+  // 项目级忽略项在 Next 默认项上加入 worktree，避免重复检查其他 checkout。
   globalIgnores([
-    // Default ignores of eslint-config-next:
+    // 保留 Next 默认排除的构建产物与生成类型；其余 .next-* 是 demo:* 命令和 e2e 的产物目录（见 next.config.ts）。
     ".next/**",
+    ".next-demo/**",
+    ".next-e2e/**",
+    ".next-demo-e2e/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
