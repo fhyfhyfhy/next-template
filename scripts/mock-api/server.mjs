@@ -138,7 +138,7 @@ function createRoutes(store, clock, context, publicUrl) {
     route("PUT", "/demo/tasks/:id/cover", async ({ params, req }) => {
       const file = (await readForm(req))?.get("file");
       if (!(file instanceof Blob)) {
-        throw new DomainError(badRequest("缺少 file 字段"));
+        throw new DomainError(badRequest("Missing file field"));
       }
       const task = store.setCover(params.id, {
         contentType: file.type,
@@ -210,9 +210,12 @@ function createRoutes(store, clock, context, publicUrl) {
         latencyMs > MAX_LATENCY_MS
       ) {
         throw new DomainError(
-          badRequest(`latency_ms 必须是 0 到 ${MAX_LATENCY_MS} 的整数`, {
-            param: "latency_ms",
-          }),
+          badRequest(
+            `latency_ms must be an integer from 0 to ${MAX_LATENCY_MS}`,
+            {
+              param: "latency_ms",
+            },
+          ),
         );
       }
       context.latencyMs = latencyMs;
@@ -287,7 +290,7 @@ async function handle(context, req, res) {
     response = !matched
       ? notFound(`No route for ${req.method} ${url.pathname}`)
       : context.resets !== resets && req.method !== "GET"
-        ? httpError(503, "Mock API 在处理这个写请求前被重置了")
+        ? httpError(503, "The Mock API was reset before this write was handled")
         : ((fault && faultResponse(fault)) ??
           (await matched.route.handler({
             params: matched.params,
@@ -338,7 +341,7 @@ async function readJson(req) {
   try {
     return JSON.parse(text);
   } catch {
-    throw new DomainError(badRequest("请求体不是合法的 JSON"));
+    throw new DomainError(badRequest("Request body is not valid JSON"));
   }
 }
 

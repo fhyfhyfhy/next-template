@@ -42,9 +42,9 @@ export function resolveApiUrl(path: ApiPath): string {
 
 ## Response format
 
-The template parses the wire format in `docs/api-response-format.md`. `fetchApi` validates the whole body against the caller's schema, `null` for an empty one. It throws `ApiError` for a non-2xx status, and for a 2xx whose body is exactly `{ error }`: a resource that carries its own `error` field alongside others stays a success. `ApiError` reads `code`, `param`, and `params` from the `{ error: { code, message, param?, params? } }` body, described by `errorSchema` in `lib/fetch.ts`. `pageSchema` in the same file validates a paginated list's `{ items, total, hasMore, page, pageSize }`.
+`lib/fetch.ts` defines the wire format the template parses; its schemas and doc comments are the reference. `fetchApi` validates the whole body against the caller's schema, `null` for an empty one. It throws `ApiError` for a non-2xx status, and for a 2xx whose only field is an `error` object matching `errorSchema`: a resource that carries its own `error` field alongside others stays a success. `ApiError` reads `code`, `param`, and `params` from the `{ error: { code, message, param?, params? } }` body, described by `errorSchema`. `pageSchema` in the same file validates a paginated list's `{ items, total, hasMore, page, pageSize }`.
 
-Whatever the backend sends, callers keep receiving what the doc's frontend contract (前端契约) describes, so features need no change. Adapt in `lib/`:
+Whatever the backend sends, callers keep receiving the same results: the caller's schema output from `fetchApi`, `pageSchema`'s fields for a paginated list, and `ApiError` or `SchemaValidationError` for a failure. Features then need no change. Adapt in `lib/`:
 
 **An envelope**: add a schema for it in `lib/fetch.ts`. `fetchApi` validates the caller's schema against the envelope's data field, and throws `ApiError` when the envelope's code is not the success value, even on a 2xx. `ApiError` reads `code` and the message from the envelope in place of `errorSchema`.
 
@@ -56,7 +56,7 @@ Whatever the backend sends, callers keep receiving what the doc's frontend contr
 
 - Rewrite every comment in `lib/fetch.ts` that describes the format: those above `errorSchema` and `errorOnlyBodySchema`, and those on `ApiError`, `SchemaValidationError`, `shouldRetryRequest`, `fetchApi`, `FetchApiConfig.schema`, and `pageSchema`.
 - Change the bodies `lib/fetch.test.mjs`'s test server returns to the new format, keeping a case for each failure: a non-2xx with and without an error body, a failure on a 2xx (an error body alone, or an envelope's failure code), and a body in the wrong shape. Keep the case where a 2xx resource carries its own `error` field and still succeeds.
-- `shouldRetryRequest` retries only statuses of 500 and above, so a failure code on a 2xx is never retried.
+- `shouldRetryRequest` never retries an `ApiError` below status 500, so a failure code on a 2xx is not retried.
 - When `message` is written for users, `handleRequestError` in `app/providers.tsx` can toast it, read from `error.body`, in place of the generic text.
 
 ## Credentials

@@ -3,21 +3,22 @@
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import { startTransition, useOptimistic } from "react";
 
-import { toast } from "@/components/ui/toaster";
+import { useMutation } from "@/lib/react-query";
 
-import { updateTaskFavoriteAction } from "../../api/update-task-favorite-action";
-
-interface FavoriteToggleProps {
-  taskId: string;
-  favorite: boolean;
-}
+import type { Task } from "../../api/get-task";
+import { updateTaskFavoriteMutationOptions } from "../../api/update-task-favorite";
 
 /**
- * Server Component 负责的数据用 `useOptimistic` 做乐观更新：点击后立即显示新状态，
+ * 这一行由 Server Component 负责，星标用 `useOptimistic` 做乐观更新：点击后立即显示新状态，
  * Server Action 让列表缓存失效并带回刷新后的列表；失败时 transition 结束，自动回到服务端给的值。
+ * 收藏也显示在 React Query 负责的作品广场和“我的收藏”里，所以经工厂的 mutation 调用 action，
+ * 由工厂同步浏览器里缓存的那些副本。
  */
-export function FavoriteToggle({ taskId, favorite }: FavoriteToggleProps) {
-  const [optimisticFavorite, setOptimisticFavorite] = useOptimistic(favorite);
+export function FavoriteToggle({ task }: { task: Task }) {
+  const [optimisticFavorite, setOptimisticFavorite] = useOptimistic(
+    task.favorite,
+  );
+  const updateFavorite = useMutation(updateTaskFavoriteMutationOptions());
   return (
     <button
       type="button"
@@ -29,10 +30,9 @@ export function FavoriteToggle({ taskId, favorite }: FavoriteToggleProps) {
         startTransition(async () => {
           setOptimisticFavorite(next);
           try {
-            await updateTaskFavoriteAction({ taskId, favorite: next });
+            await updateFavorite.mutateAsync({ task, favorite: next });
           } catch {
-            // 不是 React Query 的请求，不经过全局错误处理；用 feature 自己的提示，不占用全局请求错误的 toast ID。
-            toast.error("收藏失败，请稍后重试");
+            // 失败提示由全局错误处理弹出；这里只接住 rejection，免得它冒到错误边界。
           }
         });
       }}

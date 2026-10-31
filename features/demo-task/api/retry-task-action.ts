@@ -8,6 +8,7 @@ import { ApiError, fetchApi } from "@/lib/fetch";
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NOT_RETRYABLE } from "../constants/error-codes";
 import type { ActionResult } from "../types/action-result";
+import { assertMockApiRunning } from "../utils/assert-mock-api-running";
 import { type Task, taskSchema } from "./get-task";
 
 const inputSchema = z.object({ taskId: z.string().min(1) });
@@ -16,6 +17,7 @@ const inputSchema = z.object({ taskId: z.string().min(1) });
 export async function retryTaskAction(
   input: z.input<typeof inputSchema>,
 ): Promise<ActionResult<Task>> {
+  assertMockApiRunning();
   const { taskId } = inputSchema.parse(input);
   try {
     const task = await fetchApi({
@@ -28,7 +30,7 @@ export async function retryTaskAction(
     return { ok: true, data: task };
   } catch (error) {
     if (error instanceof ApiError && error.code === TASK_NOT_RETRYABLE) {
-      return { ok: false, code: error.code, message: "任务状态已变化" };
+      return { ok: false, code: error.code };
     }
     throw error;
   }

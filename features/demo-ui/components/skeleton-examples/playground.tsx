@@ -5,14 +5,14 @@ export interface SkeletonConfig {
   avatar: boolean;
 }
 
-// 括号将结束标记保留在表达式内；展示页只替换标记之间的 JSON 初始值。
+// 括号将结束标记保留在表达式内；UI demo 页面只替换标记之间的 JSON 初始值。
 // prettier-ignore
 export const initialConfig: SkeletonConfig = (/* @example-config */ {
   "lines": 2,
   "avatar": true
 } /* @end-example-config */);
 
-/** 不传参数时使用初始配置；展示页传入面板里的配置。 */
+/** 不传参数时使用初始配置；UI demo 页面传入面板里的配置。 */
 export function SkeletonPlayground({
   config = initialConfig,
 }: { config?: SkeletonConfig } = {}) {

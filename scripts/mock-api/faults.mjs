@@ -22,7 +22,7 @@ export function createFaults() {
 
     replace(input) {
       if (!Array.isArray(input)) {
-        throw new DomainError(badRequest("faults 必须是数组"));
+        throw new DomainError(badRequest("faults must be an array"));
       }
       faults = input.map(parseFault);
     },
@@ -50,10 +50,10 @@ export function createFaults() {
 /** 故障对应的响应；只加延迟的故障返回 null，请求照常处理。 */
 export function faultResponse(fault) {
   if (fault.status !== null) {
-    return httpError(fault.status, `Mock API 注入的 ${fault.status} 错误`);
+    return httpError(fault.status, `Injected ${fault.status} error`);
   }
   if (fault.code !== null) {
-    return errorOnSuccess(fault.code, `Mock API 注入的业务错误 ${fault.code}`);
+    return errorOnSuccess(fault.code, `Injected error code ${fault.code}`);
   }
   if (fault.malformed) return malformedSuccess();
   return null;
@@ -85,7 +85,7 @@ function parseFault(input) {
   if (!valid) {
     throw new DomainError(
       badRequest(
-        "故障配置不合法：path 必须是 /demo/ 下的路由模式，status 为 4xx 或 5xx，code 为整数，times 为正整数",
+        "Invalid fault: path must be a route pattern under /demo/, status 4xx or 5xx, code an integer, and times a positive integer",
       ),
     );
   }

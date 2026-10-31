@@ -3,13 +3,14 @@
 import { Suspense, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { useQueryClient, useSuspenseQuery } from "@/lib/react-query";
+import { useQueryClient } from "@/lib/react-query";
 
-import { getTaskQueryOptions } from "../api/get-task";
-import { TASK_DETAIL_ROUTE } from "../constants/mock-faults";
-import { useInjectMockFault } from "../hooks/use-inject-mock-fault";
-import { LabSection } from "./lab-section";
-import { QueryErrorBoundary } from "./query-error-boundary";
+import { getTaskQueryOptions } from "../../api/get-task";
+import { TASK_DETAIL_ROUTE } from "../../constants/mock-faults";
+import { useInjectMockFault } from "../../hooks/use-inject-mock-fault";
+import { LabSection } from "../lab-section";
+import { QueryErrorBoundary } from "../query-error-boundary";
+import { SuspenseTask } from "./suspense-task";
 
 const TASK_ID = "task-04";
 
@@ -48,15 +49,10 @@ export function LabSuspenseReset() {
           <Suspense
             fallback={<p className="text-sm text-muted-foreground">加载中…</p>}
           >
-            <SuspenseTask />
+            <SuspenseTask taskId={TASK_ID} />
           </Suspense>
         </QueryErrorBoundary>
       )}
     </LabSection>
   );
-}
-
-function SuspenseTask() {
-  const { data: task } = useSuspenseQuery(getTaskQueryOptions(TASK_ID));
-  return <p className="rounded-control bg-muted p-3 text-sm">{task.name}</p>;
 }

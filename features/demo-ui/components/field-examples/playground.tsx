@@ -10,7 +10,7 @@ export interface FieldConfig {
   error: string;
 }
 
-// 括号将结束标记保留在表达式内；展示页只替换标记之间的 JSON 初始值。
+// 括号将结束标记保留在表达式内；UI demo 页面只替换标记之间的 JSON 初始值。
 // prettier-ignore
 export const initialConfig: FieldConfig = (/* @example-config */ {
   "label": "项目名称",

@@ -8,7 +8,7 @@ import { toast } from "@/components/ui/toaster";
 import { useMutation } from "@/lib/react-query";
 
 import type { Task } from "../../api/get-task";
-import { downloadTaskModel } from "../../api/get-task-model";
+import { getTaskModel } from "../../api/get-task-model";
 import { retryTaskMutationOptions } from "../../api/retry-task";
 import { TASK_NOT_RETRYABLE } from "../../constants/error-codes";
 import { isTaskActionError } from "../../utils/task-action-error";
@@ -37,7 +37,7 @@ export function TaskActions({ task }: { task: Task }) {
             onClick={async () => {
               setDownloading(true);
               try {
-                await downloadTaskModel(task.id, task.name);
+                saveFile(await getTaskModel(task.id), `${task.name}.glb`);
               } catch {
                 // 下载不经过 React Query，失败提示由这里负责，不占用全局请求错误的 toast ID。
                 toast.error("下载失败，请稍后重试");
@@ -59,4 +59,14 @@ export function TaskActions({ task }: { task: Task }) {
       )}
     </div>
   );
+}
+
+/** 让浏览器把 `blob` 存成文件：经一个临时的下载链接触发。 */
+function saveFile(blob: Blob, filename: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(objectUrl);
 }

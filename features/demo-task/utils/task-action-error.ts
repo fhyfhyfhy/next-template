@@ -4,8 +4,8 @@ import type { ActionResult } from "../types/action-result";
 export class TaskActionError extends Error {
   readonly code: number;
 
-  constructor(code: number, message: string) {
-    super(message);
+  constructor(code: number) {
+    super(`Server Action failed with code ${code}`);
     this.name = "TaskActionError";
     this.code = code;
   }
@@ -16,7 +16,7 @@ export class TaskActionError extends Error {
  * React Query 把任何 resolve 的值都当成功，不转换的话失败的写入也会走 `onSuccess`。
  */
 export function unwrapActionResult<TData>(result: ActionResult<TData>): TData {
-  if (!result.ok) throw new TaskActionError(result.code, result.message);
+  if (!result.ok) throw new TaskActionError(result.code);
   return result.data;
 }
 

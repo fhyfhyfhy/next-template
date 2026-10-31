@@ -21,8 +21,9 @@ interface UpdateTaskFavoriteVariables {
 type CachedTaskList = TaskPage | InfiniteData<TaskPage> | Task[];
 
 /**
- * React Query 负责的收藏：作品广场的卡片和“我的收藏”侧栏同时乐观更新，失败时一起回滚。
- * `mutationFn` 调用的 Server Action 同时让列表页的服务端缓存失效。
+ * 收藏：浏览器里缓存的每份任务列表（作品广场的卡片、“我的收藏”侧栏等）同时乐观更新，失败时一起回滚。
+ * `mutationFn` 调用的 Server Action 同时让列表页的服务端缓存失效。全部任务页的收藏也走它，
+ * 那一页自己的星标另用 `useOptimistic`（`FavoriteToggle`）。
  */
 export const updateTaskFavoriteMutationOptions = () =>
   mutationOptions({

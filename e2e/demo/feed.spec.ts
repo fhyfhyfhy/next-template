@@ -1,6 +1,11 @@
 import type { Page, Request } from "@playwright/test";
 
-import { expect, resetThroughLab, test } from "./mock-api";
+import {
+  expect,
+  navigateThroughHeader,
+  resetThroughLab,
+  test,
+} from "./mock-api";
 
 // 作品广场：React Query 负责的无限滚动，第一页来自服务端缓存的快照。
 
@@ -103,4 +108,32 @@ test("在作品广场收藏后，列表页立即显示已收藏", async ({ page 
     "aria-pressed",
     "true",
   );
+});
+
+test("在全部任务页收藏后回到作品广场，卡片和“我的收藏”都已更新", async ({
+  page,
+}) => {
+  // 全程客户端导航：浏览器里的 React Query 缓存一直保留，这正是它可能显示旧收藏的情形。
+  await page.goto("/demos/search");
+  await navigateThroughHeader(page, "作品广场", "/demos/feed");
+  await expect(favorites(page)).toHaveCount(4);
+  await navigateThroughHeader(page, "全部任务", "/demos/tasks");
+  const row = page
+    .getByRole("list", { name: "任务列表" })
+    .getByRole("listitem")
+    .filter({ hasText: "多肉高模" });
+  const saved = page.waitForResponse(
+    (response) => response.request().headers()["next-action"] !== undefined,
+  );
+  await row.getByRole("button", { name: "收藏" }).click();
+  await saved;
+
+  await navigateThroughHeader(page, "作品广场", "/demos/feed");
+  await expect(
+    cards(page)
+      .filter({ hasText: "多肉高模" })
+      .getByRole("button", { name: "收藏" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(favorites(page)).toHaveCount(5);
+  await expect(favorites(page).first()).toContainText("多肉高模");
 });

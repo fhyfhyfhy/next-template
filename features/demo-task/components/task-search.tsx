@@ -81,11 +81,7 @@ export function TaskSearch() {
         >
           {search.data.map((task) => (
             <li key={task.id} className="p-3">
-              <TaskLinkRow
-                taskId={task.id}
-                name={task.name}
-                status={task.status}
-              />
+              <TaskLinkRow task={task} />
             </li>
           ))}
         </ul>

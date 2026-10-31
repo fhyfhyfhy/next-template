@@ -4,11 +4,8 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { INJECTED_FAILURE_CODE } from "../../constants/mock-faults";
-import {
-  type MockFaultInput,
-  useInjectMockFault,
-} from "../../hooks/use-inject-mock-fault";
+import { useInjectMockFault } from "../../hooks/use-inject-mock-fault";
+import { FAULT_KINDS, type FaultKind, toFault } from "./fault-kinds";
 import { OptionSelect } from "./option-select";
 
 const ENDPOINTS = [
@@ -29,15 +26,6 @@ const ENDPOINTS = [
 ] as const;
 type Endpoint = (typeof ENDPOINTS)[number];
 
-const KINDS = [
-  { value: "latency", label: "再延迟 2 秒" },
-  { value: "4xx", label: "返回 4xx" },
-  { value: "5xx", label: "返回 5xx" },
-  { value: "code", label: "2xx 但返回 error" },
-  { value: "malformed", label: "响应体不符合 schema" },
-] as const;
-type Kind = (typeof KINDS)[number]["value"];
-
 const TIMES = [
   { value: "1", label: "下 1 次" },
   { value: "3", label: "下 3 次" },
@@ -45,23 +33,10 @@ const TIMES = [
 ] as const;
 type Times = (typeof TIMES)[number]["value"];
 
-function toFault(endpoint: Endpoint, kind: Kind, times: Times): MockFaultInput {
-  const [method, path] = endpoint.split(" ");
-  return {
-    method,
-    path,
-    latencyMs: kind === "latency" ? 2000 : 0,
-    status: kind === "5xx" ? 503 : kind === "4xx" ? 409 : null,
-    code: kind === "code" ? INJECTED_FAILURE_CODE : null,
-    malformed: kind === "malformed",
-    times: times === "always" ? null : Number(times),
-  };
-}
-
 export function FaultForm() {
   const injectFault = useInjectMockFault();
   const [endpoint, setEndpoint] = useState<Endpoint>("GET /demo/tasks/:id");
-  const [kind, setKind] = useState<Kind>("latency");
+  const [kind, setKind] = useState<FaultKind>("latency");
   const [times, setTimes] = useState<Times>("always");
   const [pending, setPending] = useState(false);
   return (
@@ -75,7 +50,7 @@ export function FaultForm() {
       <OptionSelect
         label="故障"
         value={kind}
-        options={KINDS}
+        options={FAULT_KINDS}
         onChange={setKind}
       />
       <OptionSelect
@@ -90,7 +65,13 @@ export function FaultForm() {
         onClick={async () => {
           setPending(true);
           try {
-            await injectFault(toFault(endpoint, kind, times));
+            await injectFault(
+              toFault(
+                endpoint,
+                kind,
+                times === "always" ? null : Number(times),
+              ),
+            );
           } finally {
             setPending(false);
           }

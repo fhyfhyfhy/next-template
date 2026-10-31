@@ -25,6 +25,4 @@ export { FeedSkeleton } from "./components/feed-skeleton";
 export { getFeedInfiniteQueryOptions } from "./api/get-feed";
 export { getCommentsQueryOptions } from "./api/get-comments";
 export { getTaskQueryOptions, isTaskNotFound } from "./api/get-task";
-export type { TaskPage } from "./api/get-tasks";
 export { parseTaskListParams, toTaskFilters } from "./utils/task-urls";
-export type { TaskListParams } from "./utils/task-urls";

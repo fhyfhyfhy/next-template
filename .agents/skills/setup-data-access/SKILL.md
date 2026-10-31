@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Set up data access
 
-The template's `fetchApi` (`lib/fetch.ts`) calls one backend at `NEXT_PUBLIC_API_BASE_URL`, parses the response format in `docs/api-response-format.md`, and attaches the credential that `lib/credentials-server.ts` and `lib/credentials-browser.ts` return, which is none while they carry the template's `TODO`. This skill asks how the backend and sign-in work and changes the code to match.
+The template's `fetchApi` (`lib/fetch.ts`) calls one backend at `NEXT_PUBLIC_API_BASE_URL`, parses the response format that its schemas and `ApiError` define, and attaches the credential that `lib/credentials-server.ts` and `lib/credentials-browser.ts` return, which is none while they carry the template's `TODO`. This skill asks how the backend and sign-in work and changes the code to match.
 
 The code is the only record of the result. Other skills and rules read these files to learn, for example, whether the Next.js server can request data for the signed-in user, so each changed file's doc comments must describe what it does for this project.
 
@@ -38,7 +38,7 @@ Take the sections in order, one per message. Lead with the recommended answer, c
 
 Settle the env var holding each base URL, its local value, and where each deployed environment sets it.
 
-**B. Response format.** The template expects the wire format in `docs/api-response-format.md`: a success returns the resource itself, a list wraps its array in `items` with `total`, `hasMore`, `page`, and `pageSize` when paginated, and a failure has an `{ error: { code, message, param?, params? } }` body on a 4xx or 5xx status, or alone on a 2xx.
+**B. Response format.** The template expects the wire format that `lib/fetch.ts` parses: a success returns the resource itself, a list wraps its array in `items` with `total`, `hasMore`, `page`, and `pageSize` when paginated, and a failure has an `{ error: { code, message, param?, params? } }` body with a numeric `code` on a 4xx or 5xx status, or as the body's only field on a 2xx.
 
 - **The template's format**: nothing to change.
 - **An envelope**, such as `{ code, data, message }` with `code` 0 for success. Confirm the field names, the success value and its type, whether a failure can arrive with a 2xx status, and whether `message` is written for users.

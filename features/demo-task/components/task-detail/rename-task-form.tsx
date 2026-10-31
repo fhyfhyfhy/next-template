@@ -35,10 +35,12 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
         });
         onDone();
       } catch (error) {
-        // 撞名的提示文案来自 Server Action 返回的消息；其他失败已由全局错误处理提示。
+        // 只有撞名在字段上提示；其他失败已由全局错误处理提示。
         if (isTaskActionError(error, TASK_NAME_TAKEN)) {
           formApi.setErrorMap({
-            onSubmit: { fields: { name: [{ message: error.message }] } },
+            onSubmit: {
+              fields: { name: [{ message: "名称已被其他任务占用" }] },
+            },
           });
         }
       }

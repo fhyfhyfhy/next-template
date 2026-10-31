@@ -47,7 +47,7 @@ Set `NEXT_PUBLIC_API_BASE_URL` to the backend's base URL, for example in `.env.l
 
 Features call the backend only through `fetchApi`, so fitting the template to a backend touches these files alone:
 
-- `lib/fetch.ts`: the base URL, the response format including paginated lists, and the error types. As shipped, a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or alone on a 2xx ([docs/api-response-format.md](docs/api-response-format.md)).
+- `lib/fetch.ts`: the base URL, the response format including paginated lists, and the error types. As shipped, a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or as the only field of a 2xx body; the schemas and doc comments in `lib/fetch.ts` define the details.
 - `lib/credentials-server.ts` and `lib/credentials-browser.ts`: the signed-in user's credential for requests from the server and from the browser. Both send none as shipped. `package.json` resolves `#credentials` to the right one per environment.
 - `app/providers.tsx`: what a signed-out response does in the browser.
 
@@ -57,7 +57,7 @@ The `setup-data-access` skill (`/setup-data-access` in Claude Code) asks about t
 
 Skills live in `.agents/skills/`, which Codex reads directly. Claude Code reads `.claude/skills/`, which holds local links made by `scripts/link-skills.sh`; the SessionStart hook in `.claude/settings.json` runs it whenever a Claude Code session starts here. To make the links without starting a session, run `bash scripts/link-skills.sh` (in Git Bash on Windows).
 
-Next.js framework guidance comes from the installed `node_modules/next/dist/docs/`. The project [data-flow skill](.agents/skills/next-data-flow/SKILL.md) covers ownership and React Query integration; the official [Cache Components optimizer](.agents/skills/next-cache-components-optimizer/SKILL.md) and [Partial Prefetching optimizer](.agents/skills/next-partial-prefetching-optimizer/SKILL.md) provide targeted optimization workflows. [next-dev-loop](.agents/skills/next-dev-loop/SKILL.md) verifies development behavior using Next.js MCP and the user-level `browser-harness` skill. Official skill adaptations are recorded in `.agents/skill-patches/` and reapplied on updates as [Skill patches](.agents/skills/skills-and-rules/PATCHES.md) describes.
+Next.js framework guidance comes from the installed `node_modules/next/dist/docs/`. The project [data-flow skill](.agents/skills/next-data-flow/SKILL.md) covers ownership and React Query integration; the official [Cache Components optimizer](.agents/skills/next-cache-components-optimizer/SKILL.md) and [Partial Prefetching optimizer](.agents/skills/next-partial-prefetching-optimizer/SKILL.md) provide targeted optimization workflows. [next-dev-loop](.agents/skills/next-dev-loop/SKILL.md) verifies development behavior using Next.js MCP and the user-level `browser-harness` skill, which this repo does not ship: install it from [browser-use/browser-harness](https://github.com/browser-use/browser-harness) for every agent that runs these workflows. Official skill adaptations are recorded in `.agents/skill-patches/` and reapplied on updates as [Skill patches](.agents/skills/skills-and-rules/PATCHES.md) describes.
 
 Official Next.js skills record a versioned `ref` in `skills-lock.json`. When upgrading Next.js, select a compatible skill ref and reapply its patches; updating a pinned ref does not follow canary automatically.
 

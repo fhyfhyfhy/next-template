@@ -29,11 +29,7 @@ export function RelatedTasks({ taskId }: { taskId: string }) {
           <ul aria-label="同 prompt 的其他任务" className="space-y-2">
             {related.data.items.map((item) => (
               <li key={item.id}>
-                <TaskLinkRow
-                  taskId={item.id}
-                  name={item.name}
-                  status={item.status}
-                />
+                <TaskLinkRow task={item} />
               </li>
             ))}
           </ul>

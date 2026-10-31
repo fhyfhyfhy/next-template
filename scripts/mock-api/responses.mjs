@@ -1,4 +1,4 @@
-// Mock API 的响应格式，必须和 lib/fetch.ts 解析的格式一致（docs/api-response-format.md）：
+// Mock API 的响应格式，必须和 lib/fetch.ts 解析的格式一致（以它的 schema 为准）：
 // 成功直接返回资源，失败是 4xx 或 5xx 加 `{ error: { code, message, param?, params? } }`。
 // 项目调整响应格式时只改这个文件（setup-data-access skill）。
 

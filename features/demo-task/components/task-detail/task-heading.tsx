@@ -3,10 +3,9 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@/lib/react-query";
 
-import { getTaskQueryOptions, type Task } from "../../api/get-task";
-import { TaskStatusBadge } from "../task-status-badge";
+import type { Task } from "../../api/get-task";
+import { LiveTaskStatus } from "./live-task-status";
 import { RenameTaskForm } from "./rename-task-form";
 
 interface TaskHeadingProps {
@@ -29,19 +28,5 @@ export function TaskHeading({ task, editable }: TaskHeadingProps) {
         </Button>
       )}
     </div>
-  );
-}
-
-/** 用 `select` 只订阅 status：轮询带回的进度变化不会让它重新渲染。 */
-function LiveTaskStatus({ taskId }: { taskId: string }) {
-  const { data: status } = useQuery({
-    ...getTaskQueryOptions(taskId),
-    select: (task) => task.status,
-  });
-  if (!status) return null;
-  return (
-    <span data-testid="task-status">
-      <TaskStatusBadge status={status} />
-    </span>
   );
 }

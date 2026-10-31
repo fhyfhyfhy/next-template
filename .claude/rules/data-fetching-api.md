@@ -145,5 +145,5 @@ const deleteTaskMutation = useMutation(deleteTaskMutationOptions());
 deleteTaskMutation.mutate({ taskId }, { onSuccess: () => onClose() });
 ```
 
-- The factory's callbacks update the cache for every caller, reaching the `QueryClient` through the callbacks' last argument. A caller's own reaction, such as closing a dialog or navigating, goes in the second argument of `mutate`: those callbacks run after the factory's, and only while the component is mounted.
-- Values that change per call are variables (`mutate({ taskId })`). Context fixed for the mutation and used only for cache keys, such as a parent list's ID, is a factory argument (`createTaskMutationOptions(listId)`), so variables stay the request payload.
+- The factory's callbacks update the cache for every caller, reaching the `QueryClient` through the callbacks' last argument. A caller's own reaction, such as closing a dialog or navigating, stays at the call site, never in the factory. Put it in the second argument of `mutate`, whose callbacks run after the factory's and only while the component is mounted, or after `await mutateAsync(...)` when the caller needs the promise, such as a form's `onSubmit` that keeps the form submitting until the write settles.
+- Values that change per call are variables (`mutate({ taskId })`). Context fixed for the mutation, such as the record a comment belongs to, is a factory argument (`createCommentMutationOptions(taskId)`): it can build the request URL as well as the cache keys, and variables stay the per-call payload.

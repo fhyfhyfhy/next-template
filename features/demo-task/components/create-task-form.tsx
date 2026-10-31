@@ -47,7 +47,9 @@ export function CreateTaskForm() {
         if (isTaskActionError(error, TASK_NAME_TAKEN)) {
           // 记在 onSubmit 下：改动后重新校验通过时，TanStack Form 会清掉它。
           formApi.setErrorMap({
-            onSubmit: { fields: { name: [{ message: error.message }] } },
+            onSubmit: {
+              fields: { name: [{ message: "名称已被其他任务占用" }] },
+            },
           });
         }
       }

@@ -50,7 +50,7 @@ export function createStore() {
 
   function getTask(id) {
     const task = state.tasks.find((candidate) => candidate.id === id);
-    if (!task) throw new DomainError(notFound(`任务 ${id} 不存在`));
+    if (!task) throw new DomainError(notFound(`Task ${id} not found`));
     return task;
   }
 
@@ -59,7 +59,7 @@ export function createStore() {
       state.tasks.some((task) => task.name === name && task.id !== exceptId)
     ) {
       throw new DomainError(
-        conflict(ErrorCode.TASK_NAME_TAKEN, `名称“${name}”已被占用`, {
+        conflict(ErrorCode.TASK_NAME_TAKEN, `Name "${name}" is already taken`, {
           param: "name",
         }),
       );
@@ -156,7 +156,7 @@ export function createStore() {
     setFavorite(id, { favorite }) {
       const task = getTask(id);
       if (typeof favorite !== "boolean") {
-        throw new DomainError(badRequest("favorite 必须是布尔值"));
+        throw new DomainError(badRequest("favorite must be a boolean"));
       }
       task.favorite = favorite;
       task.updatedAt = Date.now();
@@ -169,7 +169,7 @@ export function createStore() {
         throw new DomainError(
           conflict(
             ErrorCode.TASK_NOT_RETRYABLE,
-            "只有失败的任务可以重试，任务状态可能已经变化",
+            "Only failed tasks can be retried; the task status may have changed",
           ),
         );
       }
@@ -184,7 +184,7 @@ export function createStore() {
     setCover(id, { contentType, bytes }) {
       const task = getTask(id);
       if (!contentType.startsWith("image/")) {
-        throw new DomainError(badRequest("封面图必须是图片"));
+        throw new DomainError(badRequest("Cover must be an image"));
       }
       task.cover = {
         kind: "upload",
@@ -198,7 +198,8 @@ export function createStore() {
 
     getCover(id) {
       const task = getTask(id);
-      if (!task.cover) throw new DomainError(notFound(`任务 ${id} 没有封面图`));
+      if (!task.cover)
+        throw new DomainError(notFound(`Task ${id} has no cover`));
       if (task.cover.kind === "upload") return task.cover;
       return {
         contentType: "image/svg+xml",
@@ -211,7 +212,10 @@ export function createStore() {
       const task = getTask(id);
       if (task.status !== "done") {
         throw new DomainError(
-          conflict(ErrorCode.TASK_NOT_DONE, "任务完成后才能下载模型"),
+          conflict(
+            ErrorCode.TASK_NOT_DONE,
+            "The model is available once the task is done",
+          ),
         );
       }
       return { filename: `${task.name}.glb`, bytes: cubeGlb() };
@@ -250,7 +254,8 @@ export function createStore() {
       const exists = state.comments.some(
         (comment) => comment.id === commentId && comment.taskId === taskId,
       );
-      if (!exists) throw new DomainError(notFound(`评论 ${commentId} 不存在`));
+      if (!exists)
+        throw new DomainError(notFound(`Comment ${commentId} not found`));
       state.comments = state.comments.filter(
         (comment) => comment.id !== commentId,
       );
@@ -263,7 +268,7 @@ function requireText(value, field, maxLength) {
   const text = typeof value === "string" ? value.trim() : "";
   if (text.length === 0 || text.length > maxLength) {
     throw new DomainError(
-      badRequest(`${field} 必须是 1 到 ${maxLength} 个字`, {
+      badRequest(`${field} must be 1 to ${maxLength} characters`, {
         param: field,
         params: { max: maxLength },
       }),

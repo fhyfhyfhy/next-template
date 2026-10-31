@@ -65,7 +65,7 @@ export function LabQueryStates() {
             )}
           </p>
         ) : task.error ? (
-          <p className="text-destructive">加载失败：{task.error.message}</p>
+          <p className="text-destructive">加载失败</p>
         ) : (
           <p className="text-muted-foreground">加载中…</p>
         )}

@@ -7,6 +7,7 @@ import { ApiError } from "@/lib/fetch";
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
 import type { ActionResult } from "../types/action-result";
+import { assertMockApiRunning } from "../utils/assert-mock-api-running";
 import { createTask, type CreateTaskInput } from "./create-task-request";
 import type { Task } from "./get-task";
 
@@ -17,13 +18,14 @@ import type { Task } from "./get-task";
 export async function createTaskAction(
   input: CreateTaskInput,
 ): Promise<ActionResult<Task>> {
+  assertMockApiRunning();
   try {
     const task = await createTask(input);
     updateTag(TASK_LIST_TAG);
     return { ok: true, data: task };
   } catch (error) {
     if (error instanceof ApiError && error.code === TASK_NAME_TAKEN) {
-      return { ok: false, code: error.code, message: "名称已被其他任务占用" };
+      return { ok: false, code: error.code };
     }
     throw error;
   }

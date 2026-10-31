@@ -69,9 +69,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
     );
   }
   if (task.error) {
-    return (
-      <p className="text-sm text-destructive">加载失败：{task.error.message}</p>
-    );
+    return <p className="text-sm text-destructive">加载失败</p>;
   }
   return <p className="text-sm text-muted-foreground">加载中…</p>;
 }

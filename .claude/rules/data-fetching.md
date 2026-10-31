@@ -29,7 +29,7 @@ Render server data from its owner: props or a promise from a Server Component, o
 
 Concurrent failures share one generic toast. Keep its ID reserved for global request errors so feature-specific feedback remains separate.
 
-Render a query's states in this order, data first: a failed refresh keeps its data, and checking `error` first would replace data the user can still use.
+Render a query's states in this order, data first: a failed refresh keeps its data, and checking `error` first would replace data the user can still use. The error state shows the feature's own copy, chosen from `error.code` or `error.status` when it needs to vary; `ApiError.message` is written for developers and logs (`lib/fetch.ts`).
 
 ```tsx
 const todos = useQuery(getTodosQueryOptions());
@@ -38,7 +38,7 @@ if (todos.data) {
   return <div>{todos.data.map(renderTodo)}</div>;
 }
 if (todos.error) {
-  return "An error has occurred: " + todos.error.message;
+  return "Couldn't load the todos.";
 }
 
 return "Loading...";

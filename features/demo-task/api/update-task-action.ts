@@ -8,6 +8,7 @@ import { ApiError, fetchApi } from "@/lib/fetch";
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
 import type { ActionResult } from "../types/action-result";
+import { assertMockApiRunning } from "../utils/assert-mock-api-running";
 import { type Task, taskNameSchema, taskSchema } from "./get-task";
 
 const inputSchema = z.object({
@@ -19,6 +20,7 @@ const inputSchema = z.object({
 export async function updateTaskAction(
   input: z.input<typeof inputSchema>,
 ): Promise<ActionResult<Task>> {
+  assertMockApiRunning();
   const { taskId, name } = inputSchema.parse(input);
   try {
     const task = await fetchApi({
@@ -32,7 +34,7 @@ export async function updateTaskAction(
     return { ok: true, data: task };
   } catch (error) {
     if (error instanceof ApiError && error.code === TASK_NAME_TAKEN) {
-      return { ok: false, code: error.code, message: "名称已被其他任务占用" };
+      return { ok: false, code: error.code };
     }
     throw error;
   }

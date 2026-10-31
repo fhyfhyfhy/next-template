@@ -3,26 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery } from "@/lib/react-query";
 
-import {
-  getMockFaultsQueryOptions,
-  type MockFault,
-} from "../../api/get-mock-faults";
+import { getMockFaultsQueryOptions } from "../../api/get-mock-faults";
 import { updateMockFaultsMutationOptions } from "../../api/update-mock-faults";
 import { LabSection } from "../lab-section";
 import { DefaultLatencySelect } from "./default-latency-select";
 import { FaultForm } from "./fault-form";
-
-function describeFault(fault: MockFault) {
-  const effect = fault.status
-    ? `返回 ${fault.status}`
-    : fault.code
-      ? `2xx 但返回 error ${fault.code}`
-      : fault.malformed
-        ? "响应体不符合 schema"
-        : `再延迟 ${fault.latencyMs}ms`;
-  const times = fault.times === null ? "一直生效" : `还剩 ${fault.times} 次`;
-  return `${fault.method} ${fault.path}：${effect}，${times}`;
-}
+import { describeFault } from "./fault-kinds";
 
 /** Mock API 当前的故障配置。故障对所有 Data demo 页面的请求生效，包括服务端渲染时的请求。 */
 export function FaultPanel() {

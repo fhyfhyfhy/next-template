@@ -1,7 +1,12 @@
 import { instant } from "@next/playwright";
 import type { Page } from "@playwright/test";
 
-import { expect, resetThroughLab, test } from "./mock-api";
+import {
+  expect,
+  navigateThroughHeader,
+  resetThroughLab,
+  test,
+} from "./mock-api";
 
 // 全部任务页：数据由 Server Component 负责，筛选、排序、分页都在 URL 里。
 
@@ -14,19 +19,23 @@ const rows = (page: Page) =>
 
 /**
  * 从别的 Data demo 页面经导航栏进入全部任务页，等列表出现。整页加载时列表在自己的 Suspense 边界里，
- * 可能比页面其他部分晚 hydrate，那之前换筛选，React 会丢掉服务端渲染的列表、直接显示骨架屏；
- * 客户端导航在浏览器里渲染整页，没有要等 hydrate 的部分。起点页导航栏的进行中徽标只在浏览器里请求，
- * 它和导航链接在同一个 Suspense 边界里，徽标出现说明链接已经 hydrate，点击是客户端导航。
+ * 可能比页面其他部分晚 hydrate：那之前的点击可能丢失，换筛选时 React 还会丢掉服务端渲染的列表、直接显示骨架屏。
+ * 客户端导航（`navigateThroughHeader`）在浏览器里渲染整页，没有要等 hydrate 的部分。
  */
 async function openTasksPage(page: Page) {
   await page.goto("/demos/search");
-  await expect(page.getByLabel(/^进行中的任务 \d+ 个$/)).toBeVisible();
-  await page
-    .getByRole("navigation", { name: "Data demo 导航" })
-    .getByRole("link", { name: "全部任务" })
-    .click();
-  await expect(page).toHaveURL("/demos/tasks");
+  await navigateThroughHeader(page, "全部任务", "/demos/tasks");
   await expect(rows(page).first()).toBeVisible();
+}
+
+/** 在已经打开的全部任务页上点一个状态筛选，等新列表到达。 */
+async function filterByStatus(page: Page, label: string, url: string) {
+  await page
+    .getByRole("navigation", { name: "按状态筛选" })
+    .getByRole("link", { name: label })
+    .click();
+  await expect(page).toHaveURL(url);
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 }
 
 /** 去作品广场再按 Back 回来：离开时 Next 用 <Activity> 隐藏这一页，返回时保留状态、重新创建 effect。 */
@@ -44,6 +53,7 @@ test("从 Demo 首页进入全部任务，默认按创建时间倒序显示第�
   page,
 }) => {
   await page.goto("/demos");
+  // 首页没有只在浏览器里渲染的内容可等；hydration 之前点击链接会整页导航，下面的断言照样成立。
   await page.getByRole("link", { name: /全部任务/ }).click();
 
   await expect(page).toHaveURL("/demos/tasks");
@@ -52,7 +62,7 @@ test("从 Demo 首页进入全部任务，默认按创建时间倒序显示第�
 });
 
 test("按状态筛选写进 URL，Back 回到上一个筛选", async ({ page }) => {
-  await page.goto("/demos/tasks");
+  await openTasksPage(page);
   await page.getByRole("link", { name: "失败" }).click();
 
   await expect(page).toHaveURL("/demos/tasks?status=failed");
@@ -94,7 +104,7 @@ test("换筛选后立即显示新的选择，新列表到达前旧列表标记�
 });
 
 test("排序和分页写进 URL，前进后退都显示对应的数据", async ({ page }) => {
-  await page.goto("/demos/tasks");
+  await openTasksPage(page);
   await page.getByRole("combobox", { name: "排序" }).click();
   await page.getByRole("option", { name: "名称" }).click();
   await expect(page).toHaveURL("/demos/tasks?sort=name_asc");
@@ -319,7 +329,8 @@ test("收藏立即生效，请求完成前就显示已收藏", async ({ page, mo
   await mockApi.setFaults([
     { method: "PUT", path: "/demo/tasks/:id/favorite", latency_ms: 1500 },
   ]);
-  await page.goto("/demos/tasks?status=failed");
+  await openTasksPage(page);
+  await filterByStatus(page, "失败", "/demos/tasks?status=failed");
   const star = rows(page).first().getByRole("button", { name: "收藏" });
   // 收藏走 Server Action，它返回时后端已经写入。
   const saved = page.waitForResponse(
@@ -336,16 +347,17 @@ test("收藏立即生效，请求完成前就显示已收藏", async ({ page, mo
   ).toHaveAttribute("aria-pressed", "true");
 });
 
-test("收藏失败时星标恢复原状并提示", async ({ page, mockApi }) => {
+test("收藏失败时星标恢复原状，只弹一个全局提示", async ({ page, mockApi }) => {
   await mockApi.setFaults([
     { method: "PUT", path: "/demo/tasks/:id/favorite", status: 500 },
   ]);
-  await page.goto("/demos/tasks?status=failed");
+  await openTasksPage(page);
+  await filterByStatus(page, "失败", "/demos/tasks?status=failed");
   const star = rows(page).first().getByRole("button", { name: "收藏" });
 
   await star.click();
 
-  await expect(page.getByText("收藏失败，请稍后重试")).toBeVisible();
+  await expect(page.getByText("请求失败，请稍后重试")).toHaveCount(1);
   await expect(star).toHaveAttribute("aria-pressed", "false");
 });
 
@@ -366,7 +378,7 @@ test("详情链接进入视口后就被预取", async ({ page }) => {
 });
 
 test("点进详情立即显示预取的骨架屏，详情随后送达", async ({ page }) => {
-  await page.goto("/demos/tasks");
+  await openTasksPage(page);
   const link = rows(page).first().getByRole("link");
   const name = (await link.textContent()) ?? "";
 
@@ -384,7 +396,10 @@ test("点进详情立即显示预取的骨架屏，详情随后送达", async ({
 });
 
 test("点进详情后 Back 回到原来的筛选和页码", async ({ page }) => {
-  await page.goto("/demos/tasks?status=done&page=2");
+  await openTasksPage(page);
+  await filterByStatus(page, "已完成", "/demos/tasks?status=done");
+  await page.getByRole("link", { name: "下一页" }).click();
+  await expect(page).toHaveURL("/demos/tasks?status=done&page=2");
   const link = rows(page).first().getByRole("link");
   const name = await link.textContent();
 

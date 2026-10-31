@@ -32,7 +32,7 @@ export function RecentTasks() {
         return (
           <li key={id} className="p-3 text-sm">
             {data ? (
-              <TaskLinkRow taskId={id} name={data.name} status={data.status} />
+              <TaskLinkRow task={data} />
             ) : isTaskNotFound(error) ? (
               <span className="text-muted-foreground">
                 任务已被删除（{id}）

@@ -51,8 +51,10 @@ Search the source and config for:
 - **Otherwise**: the static shell and streamed parts arrive together once the whole render finishes. Suspense fallbacks never show, and time to first byte equals the slowest read.
 - **Live**: against a route with a slow Suspense boundary, print when each chunk arrives. The first chunk, the static shell, must arrive well before the last; a single chunk, or all chunks at once, fails.
 
+  The same command runs in bash and Windows PowerShell: the script uses backtick strings because Windows PowerShell 5.1 strips the double quotes inside an argument it passes to `node`.
+
   ```bash
-  node -e 'const t=Date.now();fetch(process.argv[1]).then(async(r)=>{for await(const c of r.body)console.log(Date.now()-t,"ms",c.length,"bytes")})' "https://<host>/<route>"
+  node -e 'const t=Date.now();fetch(process.argv[1]).then(async(r)=>{for await(const c of r.body)console.log(Date.now()-t,`ms`,c.length,`bytes`)})' "https://<host>/<route>"
   ```
 
 - **Source**: `02-guides/self-hosting.md` (Streaming and Suspense), `02-guides/streaming.md`.

@@ -35,7 +35,7 @@ Optimistic updates follow the owner of the displayed value:
 - **Server Component**: call the Server Action inside a transition and set the value with `useOptimistic`. The optimistic value lasts until the transition ends, so a failure falls back to the server's value without rollback code. Catch the action's rejection inside the transition and give feature feedback; an uncaught rejection reaches the nearest error boundary.
 - **React Query**: in the factory's `onMutate`, cancel the affected queries, snapshot them, and write the new value into every displayed copy; restore the snapshot in `onError` and invalidate in `onSettled`. Failure feedback stays with the global toast.
 
-When both owners display the value, combine the React Query path with a factory `mutationFn` that calls the Server Action.
+When both owners display the value, combine the React Query path with a factory `mutationFn` that calls the Server Action. This holds even when the query-owned copies are on other pages, where they may sit in the browser cache: a Server Component display keeps its `useOptimistic` value and awaits the factory's `mutateAsync` inside the transition, and the global toast reports a failure.
 
 ## Changes made elsewhere
 

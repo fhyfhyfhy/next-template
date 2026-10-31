@@ -61,7 +61,7 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
                 </p>
               </div>
               <TaskStatusBadge status={task.status} />
-              <FavoriteToggle taskId={task.id} favorite={task.favorite} />
+              <FavoriteToggle task={task} />
             </li>
           ))}
         </ul>

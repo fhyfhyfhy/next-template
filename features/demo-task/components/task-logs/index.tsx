@@ -8,7 +8,7 @@ type StreamState = "streaming" | "ended" | "failed";
 
 /**
  * 生成日志是 SSE 推送的追加流，不属于任何 query：按传输例外用 raw `fetch` 读取，累积在组件自己的 state 里。
- * 卸载时中止连接。调用方在任务重新开始（重试）时换 key，重新订阅。
+ * 卸载时中止连接。调用方在任务进入或离开进行中状态时换 key：结束时重新挂载读完整日志，重试后重新订阅。
  */
 export function TaskLogs({ taskId }: { taskId: string }) {
   const [lines, setLines] = useState<string[]>([]);
