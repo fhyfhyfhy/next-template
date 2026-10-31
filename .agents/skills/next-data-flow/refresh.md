@@ -33,9 +33,11 @@ When only the browser can perform the write, use a client mutation and coordinat
 Optimistic updates follow the owner of the displayed value:
 
 - **Server Component**: call the Server Action inside a transition and set the value with `useOptimistic`. The optimistic value lasts until the transition ends, so a failure falls back to the server's value without rollback code. Catch the action's rejection inside the transition and give feature feedback; an uncaught rejection reaches the nearest error boundary.
-- **React Query**: in the factory's `onMutate`, cancel the affected queries, snapshot them, and write the new value into every displayed copy; restore the snapshot in `onError` and invalidate in `onSettled`. Failure feedback stays with the global toast.
+- **React Query**: in the factory's `onMutate`, cancel the affected queries, snapshot them, and write the new value into every displayed copy, inserting into a list where its server order puts it so the refetch does not move it; restore the snapshot in `onError` and invalidate in `onSettled`. Failure feedback stays with the global toast.
 
 When both owners display the value, combine the React Query path with a factory `mutationFn` that calls the Server Action. This holds even when the query-owned copies are on other pages, where they may sit in the browser cache: a Server Component display keeps its `useOptimistic` value and awaits the factory's `mutateAsync` inside the transition, and the global toast reports a failure.
+
+On a page that React Query owns, that action's `updateTag` still makes the action response render the current page, so the page's server reads run once more although the browser keeps its own queries; Next.js 16.4.3 has no option to skip that render (`server/app-render/action-handler.js`, `skipPageRendering`). Accept that read rather than splitting the write path, and keep the page's hydration from replacing the browser's data, as [Hydration](react-query-integration.md#hydration) describes for infinite queries.
 
 ## Changes made elsewhere
 

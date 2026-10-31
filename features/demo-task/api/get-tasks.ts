@@ -42,9 +42,9 @@ export const getTasksQueryOptions = (filters: TaskFilters) =>
     queryFn: () => getTasks(filters),
   });
 
-/** “我的收藏”侧栏的列表；作品广场收藏时，乐观更新在这里加入或移除任务。 */
+/** “我的收藏”侧栏的列表，按创建时间从新到旧；收藏的乐观更新按同样的顺序加入任务（update-task-favorite.ts）。 */
 export const favoriteTasksQueryOptions = () =>
-  getTasksQueryOptions({ favorite: true, pageSize: 50 });
+  getTasksQueryOptions({ favorite: true, sort: "created_desc", pageSize: 50 });
 
 /**
  * 进行中的任务：header 徽标显示总数，全部任务页比较其中的 id 和状态，有变化就重新读取列表。

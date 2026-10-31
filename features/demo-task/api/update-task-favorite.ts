@@ -44,7 +44,10 @@ export const updateTaskFavoriteMutationOptions = () =>
           page && {
             ...page,
             items: favorite
-              ? [updated, ...page.items.filter((item) => item.id !== task.id)]
+              ? [
+                  ...page.items.filter((item) => item.id !== task.id),
+                  updated,
+                ].sort(newestFirst)
               : page.items.filter((item) => item.id !== task.id),
           },
       );
@@ -62,6 +65,11 @@ export const updateTaskFavoriteMutationOptions = () =>
       });
     },
   });
+
+/** 和 `favoriteTasksQueryOptions` 的 `created_desc` 一致，乐观插入的位置就是重新请求后的位置。 */
+function newestFirst(a: Task, b: Task) {
+  return b.createdAt - a.createdAt;
+}
 
 /** 把任务的新值写进每一个缓存里的任务列表：分页列表、无限列表和搜索结果。 */
 function setTaskInLists(client: QueryClient, task: Task) {

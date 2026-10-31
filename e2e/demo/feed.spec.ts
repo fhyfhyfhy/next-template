@@ -181,3 +181,25 @@ test("加载到第二页后收藏第一页的作品，已加载的页不会被�
   // eslint-disable-next-line playwright/prefer-to-have-count -- fewest 是一段时间里的最小值，toHaveCount 只能断言当前的数量。
   expect(fewest).toBe(12);
 });
+
+test("收藏一个较早的作品，“我的收藏”里它直接出现在按创建时间排好的位置", async ({
+  page,
+  mockApi,
+}) => {
+  // 拖慢收藏请求：断言的是请求返回之前，乐观更新时的顺序。
+  await mockApi.setFaults([
+    { method: "PUT", path: "/demo/tasks/:id/favorite", latency_ms: 3000 },
+  ]);
+  await openFeed(page);
+  await expect(favorites(page)).toHaveCount(4);
+
+  await cards(page)
+    .filter({ hasText: "长剑低模" })
+    .getByRole("button", { name: "收藏" })
+    .click();
+
+  await expect(favorites(page)).toHaveText(
+    ["薄荷绿跑车", "长剑低模", "木屋夜景", "重装机甲", "低多边形狐狸"],
+    { timeout: 1000 },
+  );
+});
