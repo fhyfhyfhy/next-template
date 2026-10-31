@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { draftMode } from "next/headers";
+import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import {
@@ -13,17 +15,17 @@ import {
   PageIntro,
 } from "@/features/demo-task";
 
-export const metadata: Metadata = { title: "故障实验室 · Data demo" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("app.demos.lab");
+  return { title: t("metadataTitle") };
+}
 
 export default function LabPage() {
+  const t = useTranslations("app.demos.lab");
   return (
     <>
-      <PageIntro title="故障实验室">
-        <p>
-          给 Mock API
-          的接口注入延迟和各种失败，观察请求失败时页面的反应。故障配置对所有
-          Data demo 页面生效，包括服务端渲染时发出的请求。
-        </p>
+      <PageIntro title={t("title")}>
+        <p>{t("intro")}</p>
       </PageIntro>
       <div className="mb-6">
         <MockResetButton />

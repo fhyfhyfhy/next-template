@@ -3,10 +3,94 @@
     "title": "Next Demo",
     "description": "An interactive, customizable, and reusable Next.js template."
   },
-  "requestError": "Request failed. Please try again later.",
+  "requestError": "Request failed. Please retry later.",
   "globalNotFound": {
     "title": "Page not found",
     "description": "The link may be wrong, or the page has moved.",
     "home": "Back to home"
+  },
+  "demos": {
+    "metadataTitle": "Demo · Next Demo",
+    "eyebrow": "NEXT DEMO",
+    "title": "Demo",
+    "intro": "Runnable reference implementations written to this template's conventions. Follow them as you write code.",
+    "sections": {
+      "ui": {
+        "title": "UI demo",
+        "description": "How to use the design-system components: interactive playgrounds and examples you can copy on their own."
+      },
+      "tasks": {
+        "title": "Data demo · All tasks",
+        "description": "A list owned by a Server Component: URL filters and pagination, server caching, writes through a Server Action, and useOptimistic."
+      },
+      "feed": {
+        "title": "Data demo · Gallery",
+        "description": "Infinite scroll owned by React Query: the first page is rendered on the server and arrives with the HTML, and adding a favorite updates several places optimistically at once."
+      },
+      "search": {
+        "title": "Data demo · Search",
+        "description": "Search as you type: debounce, shallow URL updates, and aborting stale requests."
+      },
+      "recent": {
+        "title": "Data demo · Recently viewed",
+        "description": "Requests that depend on localStorage and go out only after hydration."
+      },
+      "lab": {
+        "title": "Data demo · Fault lab",
+        "description": "Inject latency and failures into the API, then watch error messages, retry behavior, and error boundaries."
+      }
+    },
+    "dataError": {
+      "title": "Couldn't load the page",
+      "description": "A request failed while rendering this page. You can retry later, or clear the injected faults in the fault lab.",
+      "retry": "Retry"
+    },
+    "tasks": {
+      "metadataTitle": "All tasks · Data demo",
+      "title": "All tasks",
+      "intro": {
+        "ownership": "The list is owned by a Server Component: filters, sorting, and pagination live in the URL, every choice is a navigation, and the server reads the list again for the new URL. The result goes into the server cache, so the list is a short-lived snapshot; your own writes, such as creating a task or adding a favorite, invalidate the cache at once. Task status advances on its own: while any task is in progress, the page checks every 3 seconds and reads the list again when something changed.",
+        "tryIt": "Try it: change the status filter and the sort, then press the browser's Back button; create a task and stay on this page to watch it finish; create a task with a name that already exists; favorite a task."
+      }
+    },
+    "taskDetail": {
+      "metadataTitle": "{name} · Data demo",
+      "mockApiOffTitle": "Data demo",
+      "note": {
+        "ownership": "React Query owns the details: the task advances on its own while you stay, a queued or generating task is polled every 1.5 seconds until it reaches a final state, and then the in-progress count in the header refreshes. The server prefetches the first screen's data, and comments stream in afterwards.",
+        "tryIt": "Try it: retry a failed task; rename it to a name that already exists; change the cover image and go back to the list; post and delete comments."
+      },
+      "notFound": {
+        "title": "Task not found",
+        "description": "It may have been deleted.",
+        "back": "Back to all tasks"
+      }
+    },
+    "feed": {
+      "metadataTitle": "Gallery · Data demo",
+      "title": "Gallery",
+      "intro": {
+        "loading": "Finished tasks are sorted by creation time, and scrolling to the bottom loads the next page; React Query owns the data. The first page comes from a snapshot in the server cache: it is rendered on the server and delivered with the HTML, so the browser doesn't request it again.",
+        "favorites": "Favorites use React Query's optimistic updates: the card and “My favorites” on the right change together and roll back together on failure. They write the same field as favorites on the All tasks page, but that page's data is owned by a Server Component, which uses useOptimistic."
+      }
+    },
+    "search": {
+      "metadataTitle": "Search · Data demo",
+      "title": "Search",
+      "intro": {
+        "typing": "Requests go out as you type, and React Query owns the data: a server render on every keystroke would lag noticeably. After a 300ms pause the keyword goes into the URL, but only as a shallow update: no navigation and no new history entry, yet a reload or a shared link restores it.",
+        "tryIt": "Try it: change the keyword quickly and the requests for old keywords are aborted; the list keeps the previous results until new ones arrive."
+      }
+    },
+    "recent": {
+      "metadataTitle": "Recently viewed · Data demo",
+      "title": "Recently viewed",
+      "intro": "Task details you open are recorded in this browser's localStorage. The server can't read localStorage, so the list can only be requested in the browser: once hydration finishes and the records are read, one request goes out per task."
+    },
+    "lab": {
+      "metadataTitle": "Fault lab · Data demo",
+      "title": "Fault lab",
+      "intro": "Inject latency and failures of all kinds into the Mock API's endpoints, then watch how pages react when requests fail. The fault settings apply to every Data demo page, including requests sent during server rendering."
+    }
   }
 }

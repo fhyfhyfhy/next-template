@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import {
@@ -23,14 +25,17 @@ import {
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/demos/tasks/[id]">): Promise<Metadata> {
-  if (!MOCK_API_RUNNING) return { title: "Data demo" };
+  const t = await getTranslations("app.demos.taskDetail");
+  if (!MOCK_API_RUNNING) return { title: t("mockApiOffTitle") };
   const { id } = await params;
   // 和页面里的 prefetch 是同一个 GET，一次渲染内只请求一次（fetchApi 不传 signal 时参与去重）。
   const task = await getTask(id).catch((error: unknown) => {
     if (isTaskNotFound(error)) return null;
     throw error;
   });
-  return { title: `${task?.name ?? "任务不存在"} · Data demo` };
+  return {
+    title: t("metadataTitle", { name: task?.name ?? t("notFound.title") }),
+  };
 }
 
 // page 保持同步，只在 Suspense 里读 params：骨架屏进静态 shell，导航时立即显示。代价是不存在的任务
@@ -38,18 +43,12 @@ export async function generateMetadata({
 export default function TaskDetailPage({
   params,
 }: PageProps<"/[locale]/demos/tasks/[id]">) {
+  const t = useTranslations("app.demos.taskDetail.note");
   return (
     <>
       <DemoNote>
-        <p>
-          详情由 React Query
-          负责：任务在你停留时会自己推进，排队中和生成中的任务每 1.5
-          秒轮询一次，到终态后停止，并刷新 header
-          的进行中任务数。首屏数据由服务端 prefetch，评论随后流式送达。
-        </p>
-        <p>
-          试试：重试一个失败的任务；把它重命名成已存在的名称；换一张封面图后回到列表；在评论区发表和删除评论。
-        </p>
+        <p>{t("ownership")}</p>
+        <p>{t("tryIt")}</p>
       </DemoNote>
       <Suspense fallback={<TaskDetailSkeleton />}>
         {params.then(({ id }) => (

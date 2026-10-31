@@ -8,5 +8,89 @@
     "title": "页面不存在",
     "description": "链接可能有误，或者页面已经被移走了。",
     "home": "回到首页"
+  },
+  "demos": {
+    "metadataTitle": "Demo · Next Demo",
+    "eyebrow": "NEXT DEMO",
+    "title": "Demo",
+    "intro": "按这个模板的约定写成的可运行参考实现。写代码时可以照着看。",
+    "sections": {
+      "ui": {
+        "title": "UI demo",
+        "description": "设计系统组件的用法：可交互的 playground 和可以单独复制的 example。"
+      },
+      "tasks": {
+        "title": "Data demo · 全部任务",
+        "description": "Server Component 负责的列表：URL 筛选分页、服务端缓存、Server Action 写入和 useOptimistic。"
+      },
+      "feed": {
+        "title": "Data demo · 作品广场",
+        "description": "React Query 负责的无限滚动：第一页在服务端渲染、随 HTML 送达，收藏时多处同时乐观更新。"
+      },
+      "search": {
+        "title": "Data demo · 搜索",
+        "description": "边输入边搜索：debounce、shallow URL、中止过期请求。"
+      },
+      "recent": {
+        "title": "Data demo · 最近查看",
+        "description": "依赖 localStorage 的请求，hydration 之后才发出。"
+      },
+      "lab": {
+        "title": "Data demo · 故障实验室",
+        "description": "给接口注入延迟和失败，观察错误提示、重试和错误边界。"
+      }
+    },
+    "dataError": {
+      "title": "页面加载失败",
+      "description": "渲染这个页面时请求出错了。可以稍后重试，或去故障实验室清除注入的故障。",
+      "retry": "重试"
+    },
+    "tasks": {
+      "metadataTitle": "全部任务 · Data demo",
+      "title": "全部任务",
+      "intro": {
+        "ownership": "列表由 Server Component 负责：筛选、排序、分页都写在 URL 里，每次选择都是一次导航，服务端按新的 URL 重新读取。读取结果进了服务端缓存，列表只是一个短时间内的快照；创建、收藏这类你自己的写入会让缓存立即失效。任务状态会自己推进：有进行中的任务时，页面每 3 秒检查一次，有变化就重新读取列表。",
+        "tryIt": "试试：切换状态和排序后按浏览器后退；创建一个任务，停在这一页看它推进到已完成；创建一个已存在名称的任务；收藏一个任务。"
+      }
+    },
+    "taskDetail": {
+      "metadataTitle": "{name} · Data demo",
+      "mockApiOffTitle": "Data demo",
+      "note": {
+        "ownership": "详情由 React Query 负责：任务在你停留时会自己推进，排队中和生成中的任务每 1.5 秒轮询一次，到终态后停止，并刷新 header 的进行中任务数。首屏数据由服务端 prefetch，评论随后流式送达。",
+        "tryIt": "试试：重试一个失败的任务；把它重命名成已存在的名称；换一张封面图后回到列表；在评论区发表和删除评论。"
+      },
+      "notFound": {
+        "title": "任务不存在",
+        "description": "它可能已经被删除了。",
+        "back": "回到全部任务"
+      }
+    },
+    "feed": {
+      "metadataTitle": "作品广场 · Data demo",
+      "title": "作品广场",
+      "intro": {
+        "loading": "已完成的任务按创建时间排列，滚到底部自动加载下一页，数据由 React Query 负责。第一页来自服务端缓存的快照，在服务端渲染好、随 HTML 送达，浏览器不用再请求第一页。",
+        "favorites": "收藏走 React Query 的乐观更新：卡片和右侧“我的收藏”同时变化，失败时一起回滚。它和全部任务页的收藏写同一个字段，但那边的数据由 Server Component 负责，用的是 useOptimistic。"
+      }
+    },
+    "search": {
+      "metadataTitle": "搜索 · Data demo",
+      "title": "搜索",
+      "intro": {
+        "typing": "边输入边请求，数据由 React Query 负责：每次按键都走一遍服务端渲染会明显滞后。输入停顿 300ms 后关键词写进 URL，但只是 shallow 更新，不触发导航、不新增历史记录，刷新或分享链接时能还原。",
+        "tryIt": "试试：快速改关键词，旧关键词的请求会被中止；新结果返回前列表保留上一次的结果。"
+      }
+    },
+    "recent": {
+      "metadataTitle": "最近查看 · Data demo",
+      "title": "最近查看",
+      "intro": "打开过的任务详情记在这个浏览器的 localStorage 里。服务端读不到 localStorage，所以列表只能在浏览器里请求，等 hydration 完成、读到记录之后，每个任务发一个请求。"
+    },
+    "lab": {
+      "metadataTitle": "故障实验室 · Data demo",
+      "title": "故障实验室",
+      "intro": "给 Mock API 的接口注入延迟和各种失败，观察请求失败时页面的反应。故障配置对所有 Data demo 页面生效，包括服务端渲染时发出的请求。"
+    }
   }
 }

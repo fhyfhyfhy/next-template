@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import {
@@ -16,22 +18,18 @@ import {
   getCachedFeedSnapshot,
 } from "@/features/demo-task/server";
 
-export const metadata: Metadata = { title: "作品广场 · Data demo" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("app.demos.feed");
+  return { title: t("metadataTitle") };
+}
 
 export default function FeedPage() {
+  const t = useTranslations("app.demos.feed");
   return (
     <>
-      <PageIntro title="作品广场">
-        <p>
-          已完成的任务按创建时间排列，滚到底部自动加载下一页，数据由 React Query
-          负责。第一页来自服务端缓存的快照，在服务端渲染好、随 HTML
-          送达，浏览器不用再请求第一页。
-        </p>
-        <p>
-          收藏走 React Query
-          的乐观更新：卡片和右侧“我的收藏”同时变化，失败时一起回滚。它和全部任务页的收藏写同一个字段，但那边的数据由
-          Server Component 负责，用的是 useOptimistic。
-        </p>
+      <PageIntro title={t("title")}>
+        <p>{t("intro.loading")}</p>
+        <p>{t("intro.favorites")}</p>
       </PageIntro>
       <div className="grid gap-8 lg:grid-cols-[1fr_240px]">
         {/* FeedHydration 要等缓存的快照：HTML 里先是骨架屏，第一页作为片段写在同一份 HTML 后面，由内联脚本换上，不用等应用的 JS。 */}

@@ -1,59 +1,37 @@
 import { IconArrowRight } from "@tabler/icons-react";
 import type { Metadata } from "next";
+import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
 import { Link } from "@/lib/i18n-navigation";
 
-export const metadata: Metadata = {
-  title: "Demo · Next Demo",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("app.demos");
+  return { title: t("metadataTitle") };
+}
 
 const sections = [
-  {
-    href: "/demos/ui",
-    title: "UI demo",
-    description:
-      "设计系统组件的用法：可交互的 playground 和可以单独复制的 example。",
-  },
-  {
-    href: "/demos/tasks",
-    title: "Data demo · 全部任务",
-    description:
-      "Server Component 负责的列表：URL 筛选分页、服务端缓存、Server Action 写入和 useOptimistic。",
-  },
-  {
-    href: "/demos/feed",
-    title: "Data demo · 作品广场",
-    description:
-      "React Query 负责的无限滚动：第一页在服务端渲染、随 HTML 送达，收藏时多处同时乐观更新。",
-  },
-  {
-    href: "/demos/search",
-    title: "Data demo · 搜索",
-    description: "边输入边搜索：debounce、shallow URL、中止过期请求。",
-  },
-  {
-    href: "/demos/recent",
-    title: "Data demo · 最近查看",
-    description: "依赖 localStorage 的请求，hydration 之后才发出。",
-  },
-  {
-    href: "/demos/lab",
-    title: "Data demo · 故障实验室",
-    description: "给接口注入延迟和失败，观察错误提示、重试和错误边界。",
-  },
+  { key: "ui", href: "/demos/ui" },
+  { key: "tasks", href: "/demos/tasks" },
+  { key: "feed", href: "/demos/feed" },
+  { key: "search", href: "/demos/search" },
+  { key: "recent", href: "/demos/recent" },
+  { key: "lab", href: "/demos/lab" },
 ] as const;
 
 export default function DemosPage() {
+  const t = useTranslations("app.demos");
   return (
     <main className="mx-auto max-w-5xl px-5 py-12 sm:px-8 lg:py-20">
       <p className="font-mono text-[10px] tracking-[0.16em] text-muted-foreground">
-        NEXT DEMO
+        {t("eyebrow")}
       </p>
       <h1 className="mt-5 text-5xl font-medium tracking-[-0.055em] sm:text-6xl">
-        Demo<span className="text-primary">.</span>
+        {t("title")}
+        <span className="text-primary">.</span>
       </h1>
       <p className="mt-5 max-w-2xl text-base/7 text-muted-foreground">
-        按这个模板的约定写成的可运行参考实现。写代码时可以照着看。
+        {t("intro")}
       </p>
       <ul className="mt-10 grid gap-4">
         {sections.map((section) => (
@@ -64,10 +42,10 @@ export default function DemosPage() {
             >
               <span>
                 <span className="block text-lg font-medium">
-                  {section.title}
+                  {t(`sections.${section.key}.title`)}
                 </span>
                 <span className="mt-1 block text-sm text-muted-foreground">
-                  {section.description}
+                  {t(`sections.${section.key}.description`)}
                 </span>
               </span>
               <IconArrowRight
