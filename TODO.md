@@ -10,6 +10,10 @@
 - [ ] TanStack Form v2 正式发布后评估升级：v2 的 `onSubmit` 可以直接返回字段错误（`createValidationError`），能替换现在服务端字段错误用的 `formApi.setErrorMap`。
 - [ ] 复杂表单：字段数组、联动字段、多步骤表单还没有场景用到，第一次需要时补示例，并更新 `.claude/rules/libraries.md` 的 Forms 约定。
 
+## Next.js 升级
+
+- [ ] 升级到包含 vercel/next.js#100728 的版本（16.5.0-canary.28 起，等 16.5 正式版）后，确认打开故障实验室的 Draft Mode 时，服务器日志里不再出现 `Unexpected cache miss after cache warming phase during prerendering`。16.4.3 在 Draft Mode 下不把 `use cache` 的结果写进 Resume Data Cache，`partialPrefetching` 的预取到最终渲染时找不到条目，就打出这条警告（vercel/next.js#100680）；页面内容和 e2e 不受影响。
+
 ## 文案、国际化与错误恢复
 
 - [ ] 详细制定文案与 i18n 规范：覆盖可见文案、可访问性标签、提示和错误文案，明确翻译 key 的复用、命名与命名空间、领域文案归属，以及未启用 i18n 时的处理方式。
