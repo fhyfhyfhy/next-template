@@ -13,12 +13,20 @@ const rows = (page: Page) =>
   page.getByRole("list", { name: "任务列表" }).getByRole("listitem");
 
 /**
- * 打开全部任务页并等表单接管。导航栏的进行中徽标只在浏览器里请求；它在 layout 的 Suspense 边界里，
- * 这个边界在页面主体之后才 hydrate，所以徽标出现时表单已经接管。
+ * 从别的 Data demo 页面经导航栏进入全部任务页，等列表出现。整页加载时列表在自己的 Suspense 边界里，
+ * 可能比页面其他部分晚 hydrate，那之前换筛选，React 会丢掉服务端渲染的列表、直接显示骨架屏；
+ * 客户端导航在浏览器里渲染整页，没有要等 hydrate 的部分。起点页导航栏的进行中徽标只在浏览器里请求，
+ * 它和导航链接在同一个 Suspense 边界里，徽标出现说明链接已经接管，点击是客户端导航。
  */
 async function openTasksPage(page: Page) {
-  await page.goto("/demos/tasks");
+  await page.goto("/demos/search");
   await expect(page.getByLabel(/^进行中的任务 \d+ 个$/)).toBeVisible();
+  await page
+    .getByRole("navigation", { name: "Data demo 导航" })
+    .getByRole("link", { name: "全部任务" })
+    .click();
+  await expect(page).toHaveURL("/demos/tasks");
+  await expect(rows(page).first()).toBeVisible();
 }
 
 /** 去作品广场再按 Back 回来：离开时 Next 用 <Activity> 隐藏这一页，返回时保留状态、重新创建 effect。 */
@@ -142,6 +150,64 @@ test("创建任务后列表立即出现新任务，表单清空", async ({ page 
   await expect(rows(page).first()).toContainText("新建的跑车");
   await expect(rows(page).first()).toContainText("排队中");
   await expect(page.getByLabel("名称")).toHaveValue("");
+});
+
+// 页面每 3 秒检查一次进行中的任务，发现变化后再重新读取列表，等列表跟上要比默认的 5 秒宽。
+const untilPolled = { timeout: 10_000 };
+
+test("停在列表上，新任务的状态一直推进到已完成，header 的进行中数同时更新", async ({
+  page,
+  mockApi,
+}) => {
+  await openTasksPage(page);
+  await page.getByLabel("名称").fill("推进中的任务");
+  await page.getByLabel("Prompt").fill("一只狐狸");
+  await page.getByRole("button", { name: "创建任务" }).click();
+  const row = rows(page).filter({ hasText: "推进中的任务" });
+  await expect(row).toContainText("排队中");
+  // 种子数据里另有 4 个进行中的任务，时钟暂停，它们一直不变。
+  await expect(page.getByLabel("进行中的任务 5 个")).toBeVisible();
+
+  const href = await row.getByRole("link").getAttribute("href");
+  const taskId = href?.split("/").at(-1) ?? "";
+  await mockApi.advance(taskId);
+  await expect(row).toContainText("生成中", untilPolled);
+
+  await mockApi.advance(taskId, 5);
+  await expect(row).toContainText("已完成", untilPolled);
+  await expect(page.getByLabel("进行中的任务 4 个")).toBeVisible();
+});
+
+test("停在「生成中」筛选上，任务结束后从列表里消失，总数随之减少", async ({
+  page,
+  mockApi,
+}) => {
+  await page.goto("/demos/tasks?status=running");
+  const finishing = rows(page).filter({ hasText: "复古跑车 v3" });
+  await expect(finishing).toContainText("生成中");
+  await expect(page.getByText("共 2 个任务")).toBeVisible();
+
+  // 种子里生成中的任务进度是 50%，再推进 3 步到终态。
+  await mockApi.advance("task-16", 3);
+
+  await expect(finishing).toHaveCount(0, untilPolled);
+  await expect(page.getByText("共 1 个任务")).toBeVisible();
+});
+
+test("停在「已完成」筛选上，别处的任务结束后出现在列表里", async ({
+  page,
+  mockApi,
+}) => {
+  await page.goto("/demos/tasks?status=done");
+  await expect(rows(page).first()).toBeVisible();
+  await expect(rows(page).filter({ hasText: "复古跑车 v3" })).toHaveCount(0);
+
+  await mockApi.advance("task-16", 3);
+
+  await expect(rows(page).filter({ hasText: "复古跑车 v3" })).toContainText(
+    "已完成",
+    untilPolled,
+  );
 });
 
 test("JS 接管之前创建表单不可用", async ({ page }) => {

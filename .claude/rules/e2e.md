@@ -9,6 +9,8 @@ paths:
 
 Actionability checks pass on server-rendered HTML before React attaches its handlers, so a click or `setInputFiles` sent before hydration can be lost without an error. Before acting on a page, wait for a readiness signal: something only the browser renders, inside the same Suspense boundary as the control, such as data from a browser-only query. Wrap the navigation and that wait in a per-page helper, like `openTask` in `e2e/demo/task-detail.spec.ts`.
 
+When the assertion observes another Suspense boundary, that boundary must be hydrated as well. An update that reaches a boundary before it hydrates discards its server-rendered content and shows the fallback, so a navigation can replace a list with its skeleton instead of keeping it on screen. Wait for a browser-only signal inside that boundary, or enter the page through a client-side navigation, which renders every boundary in the browser, as `openTasksPage` in `e2e/demo/tasks.spec.ts` does.
+
 ## Loading UI
 
 | To assert | Use |

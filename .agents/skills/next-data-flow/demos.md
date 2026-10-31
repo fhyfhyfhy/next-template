@@ -8,7 +8,7 @@ The Data demo under `/demos` is the runnable reference for this skill and its ru
 
 | Page | Owner | Why |
 | --- | --- | --- |
-| `/demos/tasks` | Server Component | Filters, sort, and page change on navigation; the user's own writes refresh it |
+| `/demos/tasks` | Server Component | Filters, sort, and page change on navigation; the user's own writes refresh it. A browser poll of the in-progress tasks refreshes it when one of them changes |
 | `/demos/tasks/[id]` | React Query | A task advances while the user stays |
 | `/demos/feed` | React Query | Infinite scroll; favorites update two components together |
 | `/demos/search` | React Query | Re-requested as the user types |
@@ -45,5 +45,6 @@ The Data demo under `/demos` is the runnable reference for this skill and its ru
 | 24 | Binary download with raw `fetch` | [Transport](../../../.claude/rules/data-fetching.md#transport) | `api/get-task-model.ts`, `components/task-detail/task-actions.tsx` | `e2e/demo/task-detail.spec.ts` |
 | 25 | `Link` prefetch, instant navigation to the prefetched skeleton, and Back/Forward restoring URL state | [URL changes](refresh.md#url-changes) | `components/task-list/index.tsx`, `app/demos/(data)/tasks/[id]/page.tsx` | `e2e/demo/tasks.spec.ts` |
 | 26 | Prerenderable hydration state from a cached snapshot | [Hydration](react-query-integration.md#hydration) | `app/demos/(data)/feed/page.tsx`, `api/get-cached-feed-snapshot.ts`, `utils/hydration-state.ts` | `e2e/demo/feed.spec.ts` |
+| 27 | Server Component list kept current while the user stays: the in-progress poll shared with the header is the change signal, and an action expires the list cache and returns the refreshed page. The Mock API emits no events, so the browser detects the change | [Changes made elsewhere](refresh.md#changes-made-elsewhere) | `hooks/use-refresh-task-list-when-active-changes.ts`, `api/get-tasks.ts`, `api/expire-task-list-action.ts`, `components/data-demo-header/` | `e2e/demo/tasks.spec.ts` |
 
 Not covered: session changes and credentialed reads. The Data demo sends `auth: false` only, so the template's credential files stay untouched.

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use } from "react";
 
 import type { TaskPage } from "../../api/get-tasks";
+import { useRefreshTaskListWhenActiveChanges } from "../../hooks/use-refresh-task-list-when-active-changes";
 import { formatDateTime } from "../../utils/format-date-time";
 import {
   taskDetailHref,
@@ -24,6 +25,7 @@ interface TaskListProps {
 export function TaskList({ tasksPromise, params }: TaskListProps) {
   const { items, total, hasMore } = use(tasksPromise);
   const { pending, navigate } = useTaskListNavigation(params);
+  useRefreshTaskListWhenActiveChanges(items);
   const previousPage = { ...params, page: params.page - 1 };
   const nextPage = { ...params, page: params.page + 1 };
   return (

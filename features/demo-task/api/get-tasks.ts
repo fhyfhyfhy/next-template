@@ -47,11 +47,12 @@ export const favoriteTasksQueryOptions = () =>
   getTasksQueryOptions({ favorite: true, pageSize: 50 });
 
 /**
- * header 徽标显示的进行中任务数。任务会自己推进，标签页重新获得焦点时要立即刷新，
- * 所以不沿用全局 60 秒的 staleTime。
+ * 进行中的任务：header 徽标显示总数，全部任务页比较其中的 id 和状态，有变化就重新读取列表。
+ * 任务会自己推进，标签页重新获得焦点时要立即刷新，所以不沿用全局 60 秒的 staleTime。
+ * 一页取到 Mock API 的上限 50 条；超过时 `hasMore` 为 true，之后的任务只体现在 `total` 里。
  */
 export const activeTasksQueryOptions = () =>
   queryOptions({
-    ...getTasksQueryOptions({ status: ["pending", "running"], pageSize: 1 }),
+    ...getTasksQueryOptions({ status: ["pending", "running"], pageSize: 50 }),
     staleTime: 0,
   });
