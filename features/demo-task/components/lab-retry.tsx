@@ -55,6 +55,26 @@ export function LabRetry() {
   const [failures, setFailures] = useState(0);
   if (task.failureCount > failures) setFailures(task.failureCount);
 
+  function describeResult() {
+    if (task.isFetching) {
+      return task.failureCount > 0
+        ? t("retrying", { count: task.failureCount })
+        : t("requesting");
+    }
+    if (task.status === "success") {
+      return failures > 0
+        ? t("succeededAfterRetry", { count: failures })
+        : t("succeeded");
+    }
+    if (task.status === "error") {
+      return failures > 1
+        ? t("failedAfterRetry", { count: failures - 1 })
+        : t("failedWithoutRetry");
+    }
+    return null;
+  }
+  const result = describeResult();
+
   return (
     <LabSection title={t("title")} description={t("description")}>
       <div className="mb-4 flex flex-wrap gap-2">
@@ -75,22 +95,12 @@ export function LabRetry() {
         ))}
       </div>
       <p className="rounded-control bg-muted p-3 text-sm" aria-live="polite">
-        {scenario &&
-          t("scenarioPrefix", { scenario: t(`scenarios.${scenario}`) })}
-        {task.isFetching &&
-          task.failureCount > 0 &&
-          t("retrying", { count: task.failureCount })}
-        {!task.isFetching &&
-          task.status === "success" &&
-          (failures > 0
-            ? t("succeededAfterRetry", { count: failures })
-            : t("succeeded"))}
-        {!task.isFetching &&
-          task.status === "error" &&
-          (failures > 1
-            ? t("failedAfterRetry", { count: failures - 1 })
-            : t("failedWithoutRetry"))}
-        {task.isFetching && task.failureCount === 0 && t("requesting")}
+        {scenario && result
+          ? t("scenarioResult", {
+              scenario: t(`scenarios.${scenario}`),
+              result,
+            })
+          : result}
       </p>
     </LabSection>
   );

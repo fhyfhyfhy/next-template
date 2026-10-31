@@ -15,7 +15,7 @@ import type { DemoTaskTranslator } from "../types/translator";
 import { assertMockApiRunning } from "../utils/assert-mock-api-running";
 import { createTaskNameSchema, type Task, taskSchema } from "./get-task";
 
-const createInputSchema = (t: DemoTaskTranslator) =>
+const createRenameInputSchema = (t: DemoTaskTranslator) =>
   z.object({
     taskId: z.string().min(1),
     name: createTaskNameSchema(t),
@@ -27,7 +27,7 @@ const createInputSchema = (t: DemoTaskTranslator) =>
  */
 export async function updateTaskAction(
   locale: Locale,
-  input: z.input<ReturnType<typeof createInputSchema>>,
+  input: z.input<ReturnType<typeof createRenameInputSchema>>,
 ): Promise<ActionResult<Task>> {
   assertMockApiRunning();
   // 参数来自浏览器，类型约束不了实际传来的值。
@@ -35,7 +35,7 @@ export async function updateTaskAction(
     throw new Error(`Unsupported locale: ${String(locale)}`);
   }
   const t = await getTranslations({ locale, namespace: "demo-task" });
-  const { taskId, name } = createInputSchema(t).parse(input);
+  const { taskId, name } = createRenameInputSchema(t).parse(input);
   try {
     const task = await fetchApi({
       url: `/demo/tasks/${taskId}`,

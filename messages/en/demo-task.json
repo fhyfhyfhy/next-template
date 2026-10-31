@@ -169,7 +169,7 @@
       "errorBody": "2xx with error",
       "malformed": "Schema mismatch"
     },
-    "scenarioPrefix": "{scenario}: ",
+    "scenarioResult": "{scenario}: {result}",
     "retrying": "Failure {count}, retrying…",
     "succeededAfterRetry": "Succeeded on retry after {count, plural, one {# failure} other {# failures}}",
     "succeeded": "Succeeded",

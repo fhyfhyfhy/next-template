@@ -20,14 +20,18 @@ import { isTaskActionError } from "../utils/task-action-error";
 
 const defaultValues: CreateTaskInput = { name: "", prompt: "" };
 
-// label、placeholder 是 `demo-task` 文案 `createTask` 下的 key。
+// 两个 key 都在 `demo-task` 文案的 `createTask` 下。
 const fields = [
-  { name: "name", label: "nameLabel", placeholder: "namePlaceholder" },
-  { name: "prompt", label: "promptLabel", placeholder: "promptPlaceholder" },
+  { name: "name", labelKey: "nameLabel", placeholderKey: "namePlaceholder" },
+  {
+    name: "prompt",
+    labelKey: "promptLabel",
+    placeholderKey: "promptPlaceholder",
+  },
 ] as const satisfies readonly {
   name: keyof CreateTaskInput;
-  label: string;
-  placeholder: string;
+  labelKey: string;
+  placeholderKey: string;
 }[];
 
 /**
@@ -71,7 +75,7 @@ export function CreateTaskForm() {
         void form.handleSubmit();
       }}
     >
-      {fields.map(({ name, label, placeholder }) => (
+      {fields.map(({ name, labelKey, placeholderKey }) => (
         <form.Field key={name} name={name}>
           {(field) => (
             <FieldRoot
@@ -81,10 +85,10 @@ export function CreateTaskForm() {
               dirty={field.state.meta.isDirty}
               touched={field.state.meta.isTouched}
             >
-              <FieldLabel>{t(`createTask.${label}`)}</FieldLabel>
+              <FieldLabel>{t(`createTask.${labelKey}`)}</FieldLabel>
               <Input
                 value={field.state.value}
-                placeholder={t(`createTask.${placeholder}`)}
+                placeholder={t(`createTask.${placeholderKey}`)}
                 onValueChange={(value) => field.handleChange(value)}
                 onBlur={field.handleBlur}
               />

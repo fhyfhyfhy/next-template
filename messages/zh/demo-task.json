@@ -169,7 +169,7 @@
       "errorBody": "2xx 返回 error",
       "malformed": "schema 不匹配"
     },
-    "scenarioPrefix": "{scenario}：",
+    "scenarioResult": "{scenario}：{result}",
     "retrying": "第 {count} 次失败，正在重试…",
     "succeededAfterRetry": "成功，失败 {count} 次后重试成功",
     "succeeded": "成功",

@@ -24,7 +24,7 @@ export type CreateTaskInput = z.input<ReturnType<typeof createTaskInputSchema>>;
 /** 校验通过的输入：首尾空白已经去掉。 */
 type CreateTaskData = z.output<ReturnType<typeof createTaskInputSchema>>;
 
-/** `data` 要先经 `createTaskInputSchema` 校验，无效输入在发请求前就抛错。 */
+/** `data` 是 `createTaskInputSchema` 解析后的值；类型和未校验的输入相同，校验由调用方（`createTaskAction`）负责。 */
 export const createTask = (data: CreateTaskData) =>
   fetchApi({
     url: "/demo/tasks",

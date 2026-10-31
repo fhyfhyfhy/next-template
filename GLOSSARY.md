@@ -26,7 +26,7 @@ _Avoid_: mock server、假后端、fake backend
 
 ## 多语言
 
-**Source locale**:
+**Source locale**（源语言）:
 写新文案时使用的语言，其他 locale 的文案都由它翻译而来。它的文案一旦修改，其他 locale 都要重新翻译。
 _Avoid_: 基准语言、主语言；也不要叫默认语言，默认 locale 是用户偏好未知时显示的语言，是另一个概念
 

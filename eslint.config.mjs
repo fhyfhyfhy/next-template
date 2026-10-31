@@ -71,6 +71,29 @@ const QUERY_LIBRARY_MESSAGE =
 const LOCALE_NAVIGATION_MESSAGE =
   "Import Link, redirect, useRouter, and usePathname from @/lib/i18n-navigation: the next/* versions drop the locale prefix of non-default locales. See .claude/rules/i18n.md.";
 
+// 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query；
+// 站内导航走 next-intl 生成的 API，非默认 locale 的 URL 前缀才不会丢。
+const RESTRICTED_IMPORTS = {
+  paths: [
+    ...["axios", "swr"].map((name) => ({
+      name,
+      message: QUERY_LIBRARY_MESSAGE,
+    })),
+    { name: "next/link", message: LOCALE_NAVIGATION_MESSAGE },
+    {
+      name: "next/navigation",
+      importNames: [
+        "redirect",
+        "permanentRedirect",
+        "useRouter",
+        "usePathname",
+      ],
+      message: LOCALE_NAVIGATION_MESSAGE,
+    },
+  ],
+  patterns: [{ group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE }],
+};
+
 const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
 
@@ -181,33 +204,7 @@ const eslintConfig = defineConfig([
       "data-fetching/mutation-callbacks": "error",
       // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。
       "import/no-relative-packages": "error",
-      // 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query；
-      // 站内导航走 next-intl 生成的 API，非默认 locale 的 URL 前缀才不会丢。
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            ...["axios", "swr"].map((name) => ({
-              name,
-              message: QUERY_LIBRARY_MESSAGE,
-            })),
-            { name: "next/link", message: LOCALE_NAVIGATION_MESSAGE },
-            {
-              name: "next/navigation",
-              importNames: [
-                "redirect",
-                "permanentRedirect",
-                "useRouter",
-                "usePathname",
-              ],
-              message: LOCALE_NAVIGATION_MESSAGE,
-            },
-          ],
-          patterns: [
-            { group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE },
-          ],
-        },
-      ],
+      "no-restricted-imports": ["error", RESTRICTED_IMPORTS],
       // 检查可解析的文件依赖环，忽略纯类型导入；跨 feature 的聚合循环由专用规则检查。
       "import/no-cycle": ["error", { commonjs: true }],
       // 按层级表禁止下层引用上层，让依赖方向与项目架构保持一致。
@@ -407,10 +404,13 @@ const eslintConfig = defineConfig([
     ignores: ["e2e/test.ts"],
     rules: {
       // e2e/test.ts 的 test 带着全局 fixture（比如页面缺少文案时失败），直接用 Playwright 的 test 会绕过它们。
+      // 同一条规则在后面的配置里会整个替换前面的选项，所以带上全局的限制再追加。
       "no-restricted-imports": [
         "error",
         {
+          ...RESTRICTED_IMPORTS,
           paths: [
+            ...RESTRICTED_IMPORTS.paths,
             {
               name: "@playwright/test",
               importNames: ["test", "expect"],

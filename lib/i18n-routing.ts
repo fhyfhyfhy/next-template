@@ -15,9 +15,3 @@ export const routing = defineRouting({
 export const SOURCE_LOCALE = "zh" satisfies (typeof routing.locales)[number];
 
 export type Locale = (typeof routing.locales)[number];
-
-/** 每种语言用它自己的写法显示，不随当前 locale 翻译，用户才认得出自己的语言。 */
-export const LOCALE_NAMES: Record<Locale, string> = {
-  zh: "中文",
-  en: "English",
-};

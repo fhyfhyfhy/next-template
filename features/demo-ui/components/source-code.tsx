@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
-const copyLabels = {
+const copyStatusKeys = {
   idle: "copy",
   copied: "copied",
   failed: "copyFailed",
@@ -21,7 +21,7 @@ export function SourceCode({
   filename: string;
 }) {
   const t = useTranslations("demo-ui.sourceCode");
-  const [status, setStatus] = useState<keyof typeof copyLabels>("idle");
+  const [status, setStatus] = useState<keyof typeof copyStatusKeys>("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
   async function copy() {
@@ -46,7 +46,7 @@ export function SourceCode({
           ) : (
             <IconCopy aria-hidden />
           )}
-          <span aria-live="polite">{t(copyLabels[status])}</span>
+          <span aria-live="polite">{t(copyStatusKeys[status])}</span>
         </Button>
       </div>
       <pre

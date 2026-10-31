@@ -4,7 +4,13 @@ import { useLocale } from "next-intl";
 
 import { cn } from "@/lib/cn";
 import { getPathname } from "@/lib/i18n-navigation";
-import { LOCALE_NAMES, routing } from "@/lib/i18n-routing";
+import { type Locale, routing } from "@/lib/i18n-routing";
+
+// 每种语言用它自己的写法显示，不随当前 locale 翻译，用户才认得出自己的语言；加 locale 时类型检查会要求补上。
+const LOCALE_NAMES: Record<Locale, string> = {
+  zh: "中文",
+  en: "English",
+};
 
 const itemClassName =
   "rounded-control px-2 py-1 text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring";
