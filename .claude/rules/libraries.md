@@ -26,7 +26,8 @@ Used directly:
 - Icons: `@tabler/icons-react`
 - Forms: `@tanstack/react-form`, with Base UI `Field` from `@/components/ui/field`
 - Charts: `@tanstack/react-charts`
-- Dates: native `Intl.DateTimeFormat` and `Date`; `dayjs` for what they can't handle
+- i18n: `next-intl`, set up in `lib/i18n-*.ts` ([i18n.md](i18n.md))
+- Formatting dates and numbers for display: next-intl's `useFormatter` and `getFormatter`; date math: native `Date`, and `dayjs` for what it can't handle
 - IDs: `nanoid`
 - Domain-neutral hooks (debounce, intersection, media queries, element size…): `@mantine/hooks`. Write one in `hooks/` only for behavior it lacks.
 

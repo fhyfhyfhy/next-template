@@ -26,7 +26,7 @@ The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node 
 
 `pnpm check` runs `format:check`, `lint`, `typecheck`, and `test` in that order and stops at the first failure. The e2e sets run on their own (see [Tests](#tests)).
 
-`pnpm typecheck` runs `next typegen` before `tsc --noEmit`, because helpers such as `PageProps<"/demos/tasks">` come from the route types Next generates in `.next/types`. `tsconfig.json` excludes the copies that `next dev`, the `demo:` scripts, and the e2e builds keep in `.next/dev` and the other `.next-*` directories: after a route is removed or renamed, they stay stale until their script runs again.
+`pnpm typecheck` runs `next typegen` before `tsc --noEmit`, because helpers such as `PageProps<"/[locale]/demos/tasks">` come from the route types Next generates in `.next/types`. `tsconfig.json` excludes the copies that `next dev`, the `demo:` scripts, and the e2e builds keep in `.next/dev` and the other `.next-*` directories: after a route is removed or renamed, they stay stale until their script runs again.
 
 ## Tests
 
@@ -52,6 +52,12 @@ Features call the backend only through `fetchApi`, so fitting the template to a 
 - `app/providers.tsx`: what a signed-out response does in the browser.
 
 The `setup-data-access` skill (`/setup-data-access` in Claude Code) asks about the backend, makes these changes, keeps the Mock API's response format in step, and verifies the result in a production build.
+
+## Internationalization
+
+Pages are translated with [next-intl](https://next-intl.dev) into the locales listed in `lib/i18n-routing.ts`: `zh`, the default locale and the one new text is written in, and `en`. URLs of the default locale have no prefix (`/demos`), the others carry one (`/en/demos`), and every locale is prerendered ([ADR 0002](docs/adr/0002-locale-routing-as-needed-prefix.md)). For a URL without a prefix, `proxy.ts` picks the locale from the `NEXT_LOCALE` cookie, then `Accept-Language`.
+
+Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates are formatted in the fixed `Asia/Shanghai` time zone (`lib/i18n-request.ts`), so server rendering and hydration produce the same text.
 
 ## Agent skills
 

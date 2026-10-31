@@ -5,6 +5,8 @@ paths:
 
 # E2E specs
 
+Import `test` and `expect` from `e2e/test.ts`, or from `e2e/demo/mock-api.ts` in the Data demo's specs, which builds on it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (the Playwright configs); a test that needs another one sets `test.use({ locale })`, as `e2e/locale.spec.ts` does.
+
 ## Hydration
 
 Actionability checks pass on server-rendered HTML before React attaches its handlers, so a click or `setInputFiles` sent before hydration can be lost without an error. Before acting on a page, wait for a readiness signal: something only the browser renders, inside the same Suspense boundary as the control, such as data from a browser-only query. Wrap the navigation and that wait in a per-page helper, like `openTask` in `e2e/demo/task-detail.spec.ts`. ESLint's `e2e/act-after-ready` reports an action that follows `page.goto` or `reload` before any `expect` or bare helper call; a control that only the browser renders, so finding it proves hydration, takes an `eslint-disable-next-line` comment that says so.
