@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 export const metadata = {
   title: "服务端返回的字段错误",
@@ -26,6 +27,8 @@ async function save(name: string) {
 
 /** 错误由服务端结果决定，不在浏览器里预判；提交中按钮不可用。 */
 export function Example() {
+  // 服务端渲染的表单在 hydration 之前提交，会变成浏览器原生的 GET 提交、刷新整页，所以先不可用。
+  const hydrated = useHydrated();
   const [saved, setSaved] = useState<string | null>(null);
   const form = useForm({
     defaultValues: { name: "低多边形狐狸" },
@@ -55,6 +58,7 @@ export function Example() {
         {(field) => (
           <FieldRoot
             name={field.name}
+            disabled={!hydrated}
             invalid={!field.state.meta.isValid}
             dirty={field.state.meta.isDirty}
             touched={field.state.meta.isTouched}
@@ -73,7 +77,7 @@ export function Example() {
       </form.Field>
       <form.Subscribe selector={(state) => state.isSubmitting}>
         {(isSubmitting) => (
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={!hydrated || isSubmitting}>
             {isSubmitting ? "保存中…" : "保存"}
           </Button>
         )}

@@ -37,7 +37,8 @@ function parse(raw: string): string[] {
 
 /**
  * 最近查看过的任务 id，存在 localStorage，最新的在前。服务端和 hydration 首轮拿不到 localStorage，
- * 这时返回 `null`，调用方据此推迟依赖它的请求。
+ * 这时返回 `null`，调用方据此推迟依赖它的请求。没用 `useHydrated`：这里还要跟着本页的记录和其他标签页的
+ * `storage` 事件更新，`useSyncExternalStore` 的服务端快照 `null` 同时承担了 hydration 前的判断。
  */
 export function useRecentTaskIds() {
   const raw = useSyncExternalStore(subscribe, read, () => null);

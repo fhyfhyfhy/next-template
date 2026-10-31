@@ -238,7 +238,12 @@ export function createStore() {
 
     addComment(taskId, { content }) {
       getTask(taskId);
-      const text = requireText(content, "content", COMMENT_MAX_LENGTH);
+      const text = requireText(
+        content,
+        "content",
+        COMMENT_MAX_LENGTH,
+        ErrorCode.COMMENT_CONTENT_INVALID,
+      );
       const comment = {
         id: `comment-${String(state.nextCommentNumber++).padStart(2, "0")}`,
         taskId,
@@ -263,15 +268,16 @@ export function createStore() {
   };
 }
 
-/** 去掉首尾空白后长度在 1 到 `maxLength` 之间，否则按参数错误拒绝。 */
-function requireText(value, field, maxLength) {
+/** 去掉首尾空白后长度在 1 到 `maxLength` 之间，否则按参数错误拒绝；业务码为 `code`，不传时是通用的 BAD_REQUEST。 */
+function requireText(value, field, maxLength, code) {
   const text = typeof value === "string" ? value.trim() : "";
   if (text.length === 0 || text.length > maxLength) {
     throw new DomainError(
-      badRequest(`${field} must be 1 to ${maxLength} characters`, {
-        param: field,
-        params: { max: maxLength },
-      }),
+      badRequest(
+        `${field} must be 1 to ${maxLength} characters`,
+        { param: field, params: { max: maxLength } },
+        code,
+      ),
     );
   }
   return text;

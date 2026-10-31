@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 export const metadata = {
   title: "配合 TanStack Form",
@@ -27,6 +28,8 @@ const fields = [
 
 /** 字段状态从 TanStack 的 field.state.meta 传给 FieldRoot。 */
 export function Example() {
+  // 服务端渲染的表单在 hydration 之前提交，会变成浏览器原生的 GET 提交、刷新整页，所以先不可用。
+  const hydrated = useHydrated();
   const [submitted, setSubmitted] = useState<string | null>(null);
   const form = useForm({
     defaultValues: { name: "", email: "" },
@@ -48,6 +51,7 @@ export function Example() {
           {(field) => (
             <FieldRoot
               name={field.name}
+              disabled={!hydrated}
               invalid={!field.state.meta.isValid}
               dirty={field.state.meta.isDirty}
               touched={field.state.meta.isTouched}
@@ -66,7 +70,9 @@ export function Example() {
           )}
         </form.Field>
       ))}
-      <Button type="submit">提交</Button>
+      <Button type="submit" disabled={!hydrated}>
+        提交
+      </Button>
       {submitted && (
         <p role="status" className="text-sm text-muted-foreground">
           已提交：{submitted}

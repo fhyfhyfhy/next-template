@@ -2,9 +2,13 @@
 // 成功直接返回资源，失败是 4xx 或 5xx 加 `{ error: { code, message, param?, params? } }`。
 // 项目调整响应格式时只改这个文件（setup-data-access skill）。
 
-/** 业务错误码，Data demo 在 features/demo-task 的 constants 里有同值的常量。 */
+/**
+ * 业务错误码，前三位是响应的 HTTP status。Data demo 需要识别的码在
+ * features/demo-task/constants/error-codes.ts 里有同值的常量。
+ */
 export const ErrorCode = {
   BAD_REQUEST: 40000,
+  COMMENT_CONTENT_INVALID: 40001,
   NOT_FOUND: 40400,
   TASK_NAME_TAKEN: 40901,
   TASK_NOT_RETRYABLE: 40902,
@@ -40,8 +44,9 @@ export function apiError(status, code, message, details) {
   return { status, body: { error: { code, message, ...details } } };
 }
 
-export function badRequest(message, details) {
-  return apiError(400, ErrorCode.BAD_REQUEST, message, details);
+/** 请求参数不合法；`code` 默认是通用的 BAD_REQUEST，有专门含义的参数错误传自己的码。 */
+export function badRequest(message, details, code = ErrorCode.BAD_REQUEST) {
+  return apiError(400, code, message, details);
 }
 
 export function notFound(message) {

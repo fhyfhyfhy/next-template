@@ -283,10 +283,11 @@ test("评论按发表时间从早到晚排列，内容去掉首尾空白后为 1
     const rejected = await request("POST", "/demo/tasks/task-01/comments", {
       content,
     });
-    expect([rejected.status, rejected.body.error.param]).toStrictEqual([
-      400,
-      "content",
-    ]);
+    expect([
+      rejected.status,
+      rejected.body.error.code,
+      rejected.body.error.param,
+    ]).toStrictEqual([400, 40001, "content"]);
   }
   const longest = await control("POST", "/demo/tasks/task-01/comments", {
     content: "长".repeat(500),
