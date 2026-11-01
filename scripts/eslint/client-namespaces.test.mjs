@@ -281,14 +281,20 @@ export function Bad({ namespace, name }: { namespace: "app"; name: string }) {
   const b = useTranslations();
   const c = intl.useTranslations(namespace);
   const alias = useTranslations;
+  const { useTranslations: useT } = intl;
+  const d = intl["useTranslations"]("app");
   void import(name);
   void import(\`\${name}/x\`);
   void require(name);
-  return <p>{a("x")}{b("app.x")}{c("x")}{String(alias)}</p>;
+  void import("next-intl");
+  void require.context("./widgets", true);
+  void import.meta.glob("./widgets/*.tsx");
+  return <p>{a("x")}{b("app.x")}{c("x")}{d("x")}{String(alias)}{String(useT)}</p>;
 }
 `,
     "components/reexport.ts": `export { useTranslations } from "next-intl";`,
     "components/star.ts": `export * from "next-intl";`,
+    "components/namespace.ts": `export * as intl from "next-intl";`,
   });
   expect(await lint(root)).toStrictEqual({
     "app/layout.tsx": ["mdxRoute", "unused app"],
@@ -299,12 +305,34 @@ export function Bad({ namespace, name }: { namespace: "app"; name: string }) {
       "missingNamespace",
       "literalNamespace",
       "indirectUse",
+      "indirectUse",
+      "indirectUse",
       "dynamicImport",
+      "dynamicImport",
+      "dynamicImport",
+      "indirectUse",
       "dynamicImport",
       "dynamicImport",
     ],
     "components/reexport.ts": ["indirectUse"],
     "components/star.ts": ["indirectUse"],
+    "components/namespace.ts": ["indirectUse"],
+  });
+});
+
+test("从 use-intl 导入的 useTranslations 同样算", async () => {
+  const root = fixture({
+    "app/page.tsx": PAGE(
+      `import { Greeting } from "./greeting";`,
+      "<Greeting />",
+    ),
+    "app/greeting.tsx": CLIENT("Greeting", "greeting").replace(
+      'from "next-intl"',
+      'from "use-intl"',
+    ),
+  });
+  expect(await lint(root)).toStrictEqual({
+    "app/layout.tsx": ["unused app", "missing greeting"],
   });
 });
 
@@ -329,7 +357,7 @@ export * from "./d";`,
   });
 });
 
-test("Client 端引入的 Server Action 和类型 import 不往下走", async () => {
+test("Client 端调用的 Server Action 按服务端继续走：它自己用的文案不算，它返回的 Client Component 算；类型 import 不往下走", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(`import { Form } from "./form";`, "<Form />"),
     "app/form.tsx": CLIENT(
@@ -340,14 +368,21 @@ import type { Props } from "./typed";
 import { type Other } from "./typed-too";
 export const action = save;`,
     ),
-    "app/actions.ts": `"use server";
+    "app/actions.tsx": `"use server";
 import { useTranslations } from "next-intl";
-export async function save() { return useTranslations("action"); }`,
+import { Toast } from "./toast";
+export async function save() {
+  useTranslations("action");
+  return <Toast />;
+}`,
+    "app/toast.tsx": CLIENT("Toast", "toast"),
     "app/typed.tsx": CLIENT("Typed", "typed") + "export type Props = {};",
     "app/typed-too.tsx":
       CLIENT("TypedToo", "typed-too") + "export type Other = {};",
   });
-  expect(await lint(root)).toStrictEqual({});
+  expect(await lint(root)).toStrictEqual({
+    "app/layout.tsx": ["missing toast"],
+  });
 });
 
 test("ClientMessages 只管元素里面渲染的东西；同文件的组件按它被渲染的位置算", async () => {
@@ -373,24 +408,49 @@ export default function Page() {
   });
 });
 
-test("layout 把 children 渲染在 ClientMessages 外面时报错", async () => {
-  const root = fixture({
-    "app/(shop)/layout.tsx": `import type { ReactNode } from "react";
+test("layout 把 children 渲染在 ClientMessages 外面时报错，不管 props 怎么取；看不出来时也报错", async () => {
+  const layout = (
+    signature,
+    children,
+    wrap = (body) => body,
+  ) => `import type { ReactNode } from "react";
 import { ClientMessages } from "@/lib/i18n/client-messages";
-import { Header } from "./header";
-export default function Layout({ children }: { children: ReactNode }) {
-  return <><ClientMessages namespaces={["shop"]}><Header /></ClientMessages>{children}</>;
-}
-`,
-    "app/(shop)/header.tsx": CLIENT("Header", "shop"),
-    "app/(shop)/page.tsx": PAGE(
+import { Header } from "@/components/header";
+const withTracking = <P,>(component: (props: P) => ReactNode) => component;
+export default ${wrap(`function Layout(${signature}) {
+  return <><ClientMessages namespaces={["shop"]}><Header /></ClientMessages>${children}</>;
+}`)}
+`;
+  const root = fixture({
+    "components/header.tsx": CLIENT("Header", "shop"),
+    "app/(destructured)/layout.tsx": layout(
+      "{ children }: { children: ReactNode }",
+      "{children}",
+    ),
+    "app/(props)/layout.tsx": layout(
+      "props: { children: ReactNode }",
+      "{props.children}",
+    ),
+    "app/(renamed)/layout.tsx": layout(
+      "{ children: content }: { children: ReactNode }",
+      "{content}",
+    ),
+    "app/(wrapped)/layout.tsx": layout(
+      "{ children }: { children: ReactNode }",
+      "",
+      (body) => `withTracking(${body})`,
+    ),
+    "app/page.tsx": PAGE(
       `import { Greeting } from "./greeting";`,
       "<Greeting />",
     ),
-    "app/(shop)/greeting.tsx": CLIENT("Greeting", "app"),
+    "app/greeting.tsx": CLIENT("Greeting", "app"),
   });
   expect(await lint(root)).toStrictEqual({
-    "app/(shop)/layout.tsx": ["childrenOutside"],
+    "app/(destructured)/layout.tsx": ["childrenOutside"],
+    "app/(props)/layout.tsx": ["childrenOutside"],
+    "app/(renamed)/layout.tsx": ["childrenOutside"],
+    "app/(wrapped)/layout.tsx": ["childrenUnknown"],
   });
 });
 
@@ -455,7 +515,7 @@ test("error.tsx 这类 Client 文件的 namespace 算在所在 layout 上；glob
   });
 });
 
-test("template 的 ClientMessages 包着 page，不包平行路由的 slot", async () => {
+test("template 的 ClientMessages 包着 page 和平行路由的 slot", async () => {
   const root = fixture({
     "app/(shop)/layout.tsx": `import type { ReactNode } from "react";
 import { ClientMessages } from "@/lib/i18n/client-messages";
@@ -481,19 +541,38 @@ import { Shop } from "./shop";`,
     ),
     "app/greeting.tsx": CLIENT("Greeting", "app"),
   });
-  expect(await lint(root)).toStrictEqual({
-    "app/(shop)/layout.tsx": ["missing cart"],
-  });
+  expect(await lint(root)).toStrictEqual({});
 });
 
-test("workspace 包沿真实路径继续分析，第三方包不分析", async () => {
+test("workspace 包沿真实路径继续分析，第三方包不分析；只有类型声明、没有 JS 的包报错", async () => {
+  const builtPackage = (name) =>
+    JSON.stringify({
+      name,
+      exports: {
+        ".": { types: "./dist/index.d.ts", default: "./dist/index.js" },
+      },
+    });
   const root = fixture({
     "packages/ui/package.json": JSON.stringify({
       name: "@acme/ui",
       exports: { ".": "./src/index.ts" },
+      imports: { "#local": "./src/local.tsx" },
     }),
     "packages/ui/src/index.ts": `export { Button } from "./button";`,
-    "packages/ui/src/button.tsx": CLIENT("Button", "button"),
+    "packages/ui/src/button.tsx": CLIENT(
+      "Button",
+      "button",
+      'import { Local } from "#local";',
+    ).replace("<p>", "<p><Local />"),
+    "packages/ui/src/local.tsx": CLIENT("Local", "local"),
+    "packages/built/package.json": builtPackage("@acme/built"),
+    "packages/built/dist/index.d.ts": "export declare function Built(): null;",
+    "packages/built/dist/index.js": `"use client";
+import { useTranslations } from "next-intl";
+export function Built() { return useTranslations("built")("x"); }`,
+    "packages/unbuilt/package.json": builtPackage("@acme/unbuilt"),
+    "packages/unbuilt/dist/index.d.ts":
+      "export declare function Unbuilt(): null;",
     "node_modules/vendor/package.json": JSON.stringify({
       name: "vendor",
       main: "index.js",
@@ -503,51 +582,60 @@ import { useTranslations } from "next-intl";
 export function Vendor() { return useTranslations("vendor")("x"); }`,
     "app/page.tsx": PAGE(
       `import { Button } from "@acme/ui";
+import { Built } from "@acme/built";
+import { Unbuilt } from "@acme/unbuilt";
 import { Vendor } from "vendor";
 import { Greeting } from "./greeting";`,
-      "<Button /><Vendor /><Greeting />",
+      "<Button /><Built /><Unbuilt /><Vendor /><Greeting />",
     ),
     "app/greeting.tsx": CLIENT("Greeting", "app"),
   });
   mkdirSync(join(root, "node_modules/@acme"), { recursive: true });
-  symlinkSync(
-    join(root, "packages/ui"),
-    join(root, "node_modules/@acme/ui"),
-    "junction",
-  );
+  for (const name of ["ui", "built", "unbuilt"])
+    symlinkSync(
+      join(root, "packages", name),
+      join(root, "node_modules/@acme", name),
+      "junction",
+    );
   expect(await lint(root)).toStrictEqual({
-    "app/layout.tsx": ["missing button"],
+    "app/layout.tsx": ["missing built", "missing button", "missing local"],
+    "app/page.tsx": ["unresolvedPackage @acme/unbuilt"],
   });
 });
 
-test("package.json imports 的条件入口按所在环境选分支", async () => {
+test("package.json imports：Client 端可能选中的分支都跟进去（包括 development），带 * 的 key 按 Node 的规则匹配", async () => {
+  const shared = (name, namespace) =>
+    CLIENT(name, namespace).replace('"use client";', "");
   const root = fixture({
     "package.json": JSON.stringify({
       name: "fixture",
       imports: {
         "#impl": {
           "react-server": "./lib/impl-server.tsx",
+          development: "./lib/impl-dev.tsx",
           default: "./lib/impl-browser.tsx",
         },
+        "#widgets/*": "./lib/widgets/*.tsx",
       },
     }),
-    "lib/impl-server.tsx": CLIENT("Impl", "impl-server").replace(
-      '"use client";',
-      "",
-    ),
-    "lib/impl-browser.tsx": CLIENT("Impl", "impl-browser").replace(
-      '"use client";',
-      "",
-    ),
+    "lib/impl-server.tsx": shared("Impl", "impl-server"),
+    "lib/impl-dev.tsx": shared("Impl", "impl-dev"),
+    "lib/impl-browser.tsx": shared("Impl", "impl-browser"),
+    "lib/widgets/star.tsx": shared("Star", "star"),
     "app/page.tsx": PAGE(`import { Panel } from "./panel";`, "<Panel />"),
     "app/panel.tsx": CLIENT(
       "Panel",
       "app",
-      'import { Impl } from "#impl";',
-    ).replace("<p>", "<p><Impl />"),
+      `import { Impl } from "#impl";
+import { Star } from "#widgets/star";`,
+    ).replace("<p>", "<p><Impl /><Star />"),
   });
   expect(await lint(root)).toStrictEqual({
-    "app/layout.tsx": ["missing impl-browser"],
+    "app/layout.tsx": [
+      "missing impl-browser",
+      "missing impl-dev",
+      "missing star",
+    ],
   });
 });
 

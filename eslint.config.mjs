@@ -72,7 +72,7 @@ const QUERY_LIBRARY_MESSAGE =
 const LOCALE_NAVIGATION_MESSAGE =
   "Import Link, redirect, useRouter, and usePathname from @/lib/i18n/navigation: the next/* versions drop the locale prefix of non-default locales. See .claude/rules/i18n.md.";
 
-// lib/i18n/client-messages.tsx 以外直接用 next-intl 的 provider 下发文案，i18n/client-namespaces 就查不到。
+// lib/i18n/ 以外直接用 next-intl 的 provider 和 useMessages 下发文案，i18n/client-namespaces 就查不到。
 const INTL_PROVIDER_RESTRICTION = {
   name: "next-intl",
   importNames: ["NextIntlClientProvider", "useMessages"],
@@ -251,12 +251,18 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ROOT_LAYERS.flatMap((layer) => layer.files),
-    ignores: [`**/*.{test,spec}.${extensionGlob}`],
+    // 应用代码都查，包括 monorepo 里 workspace 包的源码；scripts/、e2e/ 和根目录的配置文件不进页面。
+    files: [SOURCE_GLOB],
+    ignores: [
+      `**/*.{test,spec}.${extensionGlob}`,
+      "scripts/**",
+      "e2e/**",
+      `*.${extensionGlob}`,
+    ],
     plugins: { i18n: createI18nPlugin(PROJECT_ROOT) },
     rules: {
-      // 每个 ClientMessages 发的 namespace 和它下面 Client Component 用到的一致，--fix 改写列表
-      // （.claude/rules/i18n.md）。它分析整个项目，和 feature 循环检查一样不能配合 --cache。
+      // 每个 ClientMessages 发的 namespace 和它下面 Client Component 用到的一致，--fix 改写列表。
+      // 分析整个项目，lint 不能加 --cache（.claude/rules/i18n.md）。
       "i18n/client-namespaces": "error",
     },
   },
