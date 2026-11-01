@@ -22,7 +22,7 @@ Server code never requests the app's own Route Handlers: a prerender at build ti
 ## Results
 
 - Map database rows to the feature's types in `types/` through one mapping function per resource. These are the same types that Route Handlers serialize and `fetchApi` validates in the browser, so they hold only JSON-native values: timestamps as epoch milliseconds, `null` rather than `undefined`, no `Date` or `bigint`. A server prefetch puts them in the browser cache through RSC serialization and a refetch through JSON; both must produce the same value.
-- Wire names are the type's names: Route Handlers return the data layer's result unchanged.
+- Wire names are the type's names: Route Handlers serialize the data layer's result without renaming or reshaping its fields. A list the data layer returns as an array goes out in the `{ items }` envelope that `lib/fetch.ts` expects of lists.
 
 ## Errors
 
@@ -41,4 +41,4 @@ Test the data layer through the feature's `server.ts` entry against a real datab
 
 ## Demo-only parts
 
-`demoOperation` in `features/demo-task/server/demo-controls.ts` adds the fault lab's latency, injected faults, and call log around the Demo's operations. Project data layers do not need it.
+`demoOperation` in `features/demo-task/server/demo-controls.ts` adds the fault lab's latency, injected faults, and call log around the Demo's operations, and `features/demo-task/server/lab.ts` holds the fault lab's control functions. Project data layers need neither.

@@ -1,10 +1,6 @@
 import "server-only";
 import { Kysely, PostgresDialect } from "kysely";
-import { Client, Pool, types } from "pg";
-
-// pg 默认把 int8（count()、bigserial）解析成字符串，以免超出 Number 的精度。本项目的计数和序号都远小于
-// 2^53，统一解析成 number；全进程生效，所以放在这里而不是某个调用方。
-types.setTypeParser(types.builtins.INT8, (value) => Number(value));
+import { Client, Pool } from "pg";
 
 declare global {
   // dev 热更新会重新执行模块，连接池挂在 globalThis 上，按连接串复用，不会越开越多。
@@ -14,6 +10,8 @@ declare global {
 /**
  * 按连接串取一个 Kysely 实例，同一个连接串在进程内共用一个 pg 连接池。`TDatabase` 只描述调用方拥有的表：
  * 多个 feature 共用一个库时，各自用自己的表类型调用它，得到的是同一个连接池上的不同类型视图。
+ * pg 把 int8（`count()`、bigint 列）返回成字符串，以免超出 Number 的精度；表类型照实写成 string，需要数字的地方
+ * 在数据层的映射里转换。
  * Kysely 实例本身不持有连接，每次调用新建一个开销很小。
  */
 export function createDb<TDatabase>(

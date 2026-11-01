@@ -298,6 +298,22 @@ test.describe("写入", () => {
     );
     expect(await demoBackend.calls("task.setCover")).toStrictEqual([]);
   });
+
+  test("选中的图片超过 5 MB 时直接提示，不签发上传", async ({
+    page,
+    demoBackend,
+  }) => {
+    await openTask(page, "task-03");
+
+    await page.getByLabel("更换封面图").setInputFiles({
+      name: "huge.png",
+      mimeType: "image/png",
+      buffer: Buffer.alloc(5 * 1024 * 1024 + 1),
+    });
+
+    await expect(page.getByText("图片不能超过 5 MB。")).toBeVisible();
+    expect(await demoBackend.calls("task.setCover")).toStrictEqual([]);
+  });
 });
 
 test.describe("下载", () => {
@@ -307,6 +323,23 @@ test.describe("下载", () => {
     await page.getByRole("button", { name: "下载模型" }).click();
 
     expect((await download).suggestedFilename()).toBe("低多边形狐狸.glb");
+  });
+
+  test("下载接口 302 到对象存储的短期地址，文件以任务名作为附件名", async ({
+    request,
+  }) => {
+    const redirect = await request.get("/api/demo/tasks/task-01/model", {
+      maxRedirects: 0,
+    });
+    expect(redirect.status()).toBe(302);
+    const location = redirect.headers().location ?? "";
+    expect(new URL(location).searchParams.has("X-Amz-Signature")).toBe(true);
+
+    const file = await request.get(location);
+    expect(file.status()).toBe(200);
+    expect(file.headers()["content-disposition"]).toBe(
+      `attachment; filename*=UTF-8''${encodeURIComponent("低多边形狐狸.glb")}`,
+    );
   });
 
   test("下载失败时提示", async ({ page, demoBackend }) => {

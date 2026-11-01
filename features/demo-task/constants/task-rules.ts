@@ -14,3 +14,8 @@ export const MAX_PAGE_SIZE = 50;
 export const SEARCH_LIMIT = 20;
 /** 每推进一步增加的进度。 */
 export const PROGRESS_STEP = 25;
+/**
+ * Demo 生成器推进一步的间隔，也是详情页轮询运行中任务的间隔：一个任务从 pending 到终态走 6 步，约 9 秒，
+ * 停在详情页能看到进度推进。
+ */
+export const TASK_STEP_INTERVAL_MS = 1500;

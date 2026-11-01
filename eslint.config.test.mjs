@@ -228,6 +228,28 @@ addCase("feature 内部反向依赖仍然禁止", {
   source: "../components/value",
   rule: "import/no-restricted-paths",
 });
+addCase("feature 的 api 层可以导入它下面的 server 层", {
+  from: "features/CASE/api/create-thing-action.ts",
+  to: "features/CASE/server/things.ts",
+  source: "../server/things",
+});
+addCase("feature 的 server 层可以导入它下面的 utils 和 types", {
+  from: "features/CASE/server/things.ts",
+  to: "features/CASE/utils/rules.ts",
+  source: "../utils/rules",
+});
+addCase("feature 的 server 层不能反过来导入 api 层", {
+  from: "features/CASE/server/things.ts",
+  to: "features/CASE/api/get-things.ts",
+  source: "../api/get-things",
+  rule: "import/no-restricted-paths",
+});
+addCase("feature 的 utils 层不能导入 server 层", {
+  from: "features/CASE/utils/rules.ts",
+  to: "features/CASE/server/things.ts",
+  source: "../server/things",
+  rule: "import/no-restricted-paths",
+});
 cases.push({
   name: "同层文件之间的值导入循环仍然禁止",
   from: "lib/cycle/main.ts",

@@ -125,9 +125,14 @@ export const listTasks = cache(
       if (filters.excludeId !== undefined) {
         query = query.where("id", "!=", filters.excludeId);
       }
-      const { total } = await query
-        .select((eb) => eb.fn.countAll<number>().as("total"))
-        .executeTakeFirstOrThrow();
+      // count() 是 int8，pg 返回字符串（lib/db.ts）；任务数远小于 2^53。
+      const total = Number(
+        (
+          await query
+            .select((eb) => eb.fn.countAll<string>().as("total"))
+            .executeTakeFirstOrThrow()
+        ).total,
+      );
       let rowsQuery = query.selectAll();
       switch (filters.sort) {
         case "created_asc":
@@ -199,7 +204,7 @@ export const listFeed = cache(
   demoOperation(
     "feed.list",
     "read",
-    async (cursor: string | null, limit: number): Promise<FeedPage> => {
+    async (cursor: string | null, limit?: number): Promise<FeedPage> => {
       const size = clampPageSize(limit);
       let query = getTaskDb()
         .selectFrom("tasks")
@@ -233,10 +238,8 @@ export const listFeed = cache(
 );
 
 /** done 任务的模型文件的短期下载地址，文件名是任务名；没完成的任务按 `TASK_NOT_DONE` 拒绝。 */
-export const getTaskModelUrl = demoOperation(
-  "task.model",
-  "read",
-  async (id: string) => {
+export const getTaskModelUrl = cache(
+  demoOperation("task.model", "read", async (id: string) => {
     const task = await findTaskRow(getTaskDb(), id);
     const url =
       task.status === "done"
@@ -254,7 +257,7 @@ export const getTaskModelUrl = demoOperation(
       );
     }
     return url;
-  },
+  }),
 );
 
 // ---- 写 ----

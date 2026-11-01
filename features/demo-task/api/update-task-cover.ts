@@ -1,8 +1,15 @@
-import { uploadFile } from "@/features/demo-upload";
+import {
+  UPLOAD_ALREADY_USED,
+  UPLOAD_NOT_READY,
+  uploadFile,
+} from "@/features/demo-upload";
 import { createUploadAction } from "@/features/demo-upload/actions";
 import { mutationOptions } from "@/lib/react-query";
 
-import { unwrapActionResult } from "../utils/task-action-error";
+import {
+  isTaskActionError,
+  unwrapActionResult,
+} from "../utils/task-action-error";
 import { getTaskQueryOptions } from "./get-task";
 import { taskListKey } from "./get-tasks";
 import { updateTaskCoverAction } from "./update-task-cover-action";
@@ -35,4 +42,16 @@ export const updateTaskCoverMutationOptions = () =>
       client.setQueryData(getTaskQueryOptions(task.id).queryKey, task);
       void client.invalidateQueries({ queryKey: taskListKey });
     },
+    meta: {
+      // 关联时的预期失败由封面面板就地提示（TaskCoverPanel），其他失败仍走全局提示。
+      suppressErrorToast: isCoverRejection,
+    },
   });
+
+/** 关联封面时数据层按业务规则拒绝：这次上传已被别的记录使用，或文件没有按声明传完。 */
+export function isCoverRejection(error: unknown) {
+  return (
+    isTaskActionError(error, UPLOAD_ALREADY_USED) ||
+    isTaskActionError(error, UPLOAD_NOT_READY)
+  );
+}

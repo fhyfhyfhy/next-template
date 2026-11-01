@@ -1,7 +1,9 @@
+import { sql } from "kysely";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { UPLOAD_ALREADY_USED } from "@/features/demo-upload";
 import { createUpload } from "@/features/demo-upload/server";
+import { createDb } from "@/lib/db";
 import { DomainError, ErrorCode } from "@/lib/domain-error";
 
 import {
@@ -470,6 +472,23 @@ describe("Demo 生成器", () => {
 });
 
 describe("生成日志", () => {
+  test("监听连接断开时，正在推送的流以错误结束，不会一直等下去", async () => {
+    const controller = new AbortController();
+    const stream = await streamTaskLogs("task-03", controller.signal);
+    const reader = stream.getReader();
+    // 读完已有的 3 条日志，流停在等待新日志的状态。
+    for (let read = 0; read < 3; read += 1) await reader.read();
+
+    // 模拟数据库断开这条 LISTEN 连接（比如数据库重启）。
+    await sql`select pg_terminate_backend(pid) from pg_stat_activity
+      where query = 'listen demo_task_changed' and datname = current_database()`.execute(
+      createDb(process.env.DEMO_DATABASE_URL ?? ""),
+    );
+
+    await expect(reader.read()).rejects.toThrow(/subscription/);
+    controller.abort();
+  });
+
   test("已在终态的任务推送全部日志后以 end 结束", async () => {
     expect(await readLogs("task-05", 10)).toStrictEqual([
       { type: "log", line: "开始生成" },

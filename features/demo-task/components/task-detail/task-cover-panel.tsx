@@ -14,7 +14,10 @@ import { cn } from "@/lib/cn";
 import { useMutation } from "@/lib/react-query";
 
 import type { Task } from "../../api/get-task";
-import { updateTaskCoverMutationOptions } from "../../api/update-task-cover";
+import {
+  isCoverRejection,
+  updateTaskCoverMutationOptions,
+} from "../../api/update-task-cover";
 import { TaskCover } from "../task-cover";
 
 interface TaskCoverPanelProps {
@@ -69,6 +72,11 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
           {problem === "contentType"
             ? t("notAnImage")
             : t("tooLarge", { max: String(MAX_COVER_MB) })}
+        </p>
+      )}
+      {isCoverRejection(upload.error) && (
+        <p role="alert" className="text-sm text-destructive">
+          {t("rejected")}
         </p>
       )}
     </div>

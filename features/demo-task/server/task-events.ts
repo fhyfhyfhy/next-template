@@ -17,7 +17,12 @@ export async function notifyTaskChanged(
   await sql`select pg_notify(${CHANNEL}, ${taskId})`.execute(trx);
 }
 
-type Listener = () => void;
+interface Listener {
+  /** 任务变化了。 */
+  onChange: () => void;
+  /** 监听连接断开了，之后的变化收不到，订阅方要结束自己。 */
+  onLost: () => void;
+}
 
 interface ListenerConnection {
   url: string;
@@ -25,8 +30,11 @@ interface ListenerConnection {
   listeners: Map<string, Set<Listener>>;
 }
 
-// 每个进程每个库只开一条专用的监听连接，在内存里分发给各个 SSE 流；连接池里的连接会被别的查询借走，不能用来 LISTEN。
-let connection: ListenerConnection | undefined;
+declare global {
+  // 每个进程每个库只开一条专用的监听连接，在内存里分发给各个 SSE 流；连接池里的连接会被别的查询借走，
+  // 不能用来 LISTEN。挂在 globalThis 上：dev 热更新重新执行模块时沿用它，不会多开连接。
+  var __demoTaskListener: ListenerConnection | undefined;
+}
 
 function connect(url: string): ListenerConnection {
   const listeners = new Map<string, Set<Listener>>();
@@ -36,31 +44,45 @@ function connect(url: string): ListenerConnection {
     client: (async () => {
       const client = new Client({ connectionString: url });
       client.on("notification", ({ payload }) => {
-        for (const listener of listeners.get(payload ?? "") ?? []) listener();
+        for (const listener of listeners.get(payload ?? "") ?? []) {
+          listener.onChange();
+        }
       });
-      // 连接断开后丢掉它，下一个订阅重新连接；已经订阅的流收不到之后的通知，等客户端重连。
-      client.on("error", () => {
-        if (connection === current) connection = undefined;
-      });
+      // 连接断开后丢掉它，下一个订阅重新连接；已经订阅的流收不到之后的通知，通知它们结束。
+      client.on("error", () => drop(current));
       await client.connect();
       await client.query(`listen ${CHANNEL}`);
       return client;
     })(),
   };
-  current.client.catch(() => {
-    if (connection === current) connection = undefined;
-  });
+  current.client.catch(() => drop(current));
   return current;
 }
 
+function drop(current: ListenerConnection) {
+  if (globalThis.__demoTaskListener === current) {
+    globalThis.__demoTaskListener = undefined;
+  }
+  for (const set of current.listeners.values()) {
+    for (const listener of set) listener.onLost();
+  }
+  current.listeners.clear();
+  void current.client.then((client) => client.end()).catch(() => {});
+}
+
 /**
- * 任务 `taskId` 每次变化（推进、重试、删除）时调用 `listener`。等监听连接就绪后才返回，之后发生的变化不会漏掉。
- * 返回取消订阅的函数。
+ * 任务 `taskId` 每次变化（推进、重试、删除）时调用 `onChange`；监听连接断开时调用 `onLost`，之后不再通知。
+ * 等监听连接就绪后才返回，之后发生的变化不会漏掉。返回取消订阅的函数。
  */
 export async function subscribeTaskChanges(taskId: string, listener: Listener) {
   const url = process.env.DEMO_DATABASE_URL ?? "";
-  if (connection?.url !== url) connection = connect(url);
-  const current = connection;
+  let current = globalThis.__demoTaskListener;
+  if (current?.url !== url) {
+    // 测试会在同一个进程里换库，旧库的连接不再需要。
+    if (current) drop(current);
+    current = connect(url);
+    globalThis.__demoTaskListener = current;
+  }
   const set = current.listeners.get(taskId) ?? new Set();
   set.add(listener);
   current.listeners.set(taskId, set);

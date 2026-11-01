@@ -19,6 +19,8 @@ const UPLOAD_URL_TTL_SECONDS = 5 * 60;
 const DOWNLOAD_URL_TTL_SECONDS = 60;
 /** 种子文件的 key 前缀。重置和清理都不删这个前缀下的对象：它们由种子数据共用，删了就要重新生成。 */
 export const SEED_KEY_PREFIX = "seed/";
+/** 用户上传和服务端产出的文件的 key 前缀，重置时整体清空。 */
+const UPLOAD_KEY_PREFIX = "uploads/";
 
 /**
  * 调用方的数据库连接或事务。多个 feature 共用 Demo 数据库，调用方传来的是它自己的表类型视图，
@@ -74,7 +76,7 @@ export async function createUpload(input: {
     });
   }
   const id = nanoid();
-  const key = `uploads/${id}`;
+  const key = `${UPLOAD_KEY_PREFIX}${id}`;
   await uploadDb()
     .insertInto("uploads")
     .values({
@@ -242,17 +244,18 @@ export async function getAttachedUploadDownloadUrl(
 }
 
 /**
- * 服务端自己产出的文件（比如 Demo 生成器写的模型）：写入存储，再记下这次上传，返回它的 id，由调用方关联。
- * 不经过签发，所以不受 constants/upload-purposes.ts 的限制。
+ * 服务端自己产出的文件（比如 Demo 生成器写的模型）：先记下这次上传、再写入存储，返回它的 id，由调用方关联。
+ * 不经过签发，所以不受 constants/upload-purposes.ts 的限制。记录用自己的连接立即提交，不加入调用方的事务：
+ * 调用方的事务回滚时，这次上传只是没被使用，由清理任务连同文件一起删除；文件写入失败时同理。
  */
-export async function saveServerUpload(
-  input: { purpose: string; contentType: string; body: Uint8Array },
-  executor?: Executor,
-): Promise<string> {
+export async function saveServerUpload(input: {
+  purpose: string;
+  contentType: string;
+  body: Uint8Array;
+}): Promise<string> {
   const id = nanoid();
-  const key = `uploads/${id}`;
-  await getUploadStorage().put(key, input.body, input.contentType);
-  await uploadDb(executor)
+  const key = `${UPLOAD_KEY_PREFIX}${id}`;
+  await uploadDb()
     .insertInto("uploads")
     .values({
       id,
@@ -262,6 +265,7 @@ export async function saveServerUpload(
       size: input.body.byteLength,
     })
     .execute();
+  await getUploadStorage().put(key, input.body, input.contentType);
   return id;
 }
 
@@ -326,18 +330,18 @@ export async function restoreSeedUploads(
 }
 
 /**
- * 删除所有上传记录和关联，以及种子以外的文件，给重置用；之后由调用方恢复种子数据。
+ * 删除所有上传记录和关联，以及存储里 `uploads/` 前缀下的全部文件（种子文件不在这个前缀下），给重置用；
+ * 之后由调用方恢复种子数据。文件按前缀列出来删，没有记录对应的文件也一起删掉。
  * 文件在调用方的事务提交后再删（返回的函数），事务回滚时文件还在。
  */
 export async function clearUploads(
   executor?: Executor,
 ): Promise<() => Promise<void>> {
   const db = uploadDb(executor);
-  const rows = await db.selectFrom("uploads").select("key").execute();
   await db.deleteFrom("upload_attachments").execute();
   await db.deleteFrom("uploads").execute();
-  const keys = rows
-    .map((row) => row.key)
-    .filter((key) => !key.startsWith(SEED_KEY_PREFIX));
-  return () => getUploadStorage().delete(keys);
+  return async () => {
+    const storage = getUploadStorage();
+    await storage.delete(await storage.list(UPLOAD_KEY_PREFIX));
+  };
 }

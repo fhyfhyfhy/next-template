@@ -3,7 +3,10 @@ import { z } from "zod";
 import { ApiError, fetchApi } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
 
-import { TASK_NAME_MAX_LENGTH } from "../constants/task-rules";
+import {
+  TASK_NAME_MAX_LENGTH,
+  TASK_STEP_INTERVAL_MS,
+} from "../constants/task-rules";
 import { taskSchema } from "../types/task";
 import type { TaskStatus } from "../types/task-filters";
 import type { DemoTaskTranslator } from "../types/translator";
@@ -23,9 +26,6 @@ export const createTaskNameSchema = (t: DemoTaskTranslator) =>
       TASK_NAME_MAX_LENGTH,
       t("validation.nameTooLong", { max: TASK_NAME_MAX_LENGTH }),
     );
-
-/** 运行中的任务每次轮询的间隔，和 Demo 生成器推进一步的间隔一致。 */
-const POLL_INTERVAL_MS = 1500;
 
 export function isTaskActive(status: TaskStatus | undefined) {
   return status === "pending" || status === "running";
@@ -50,7 +50,7 @@ export const getTaskQueryOptions = (id: string) =>
     refetchInterval: (query) =>
       isTaskActive(query.state.data?.status) &&
       !isTaskNotFound(query.state.error)
-        ? POLL_INTERVAL_MS
+        ? TASK_STEP_INTERVAL_MS
         : false,
     meta: {
       // 任务在别处被删除后 refetch 得到 404，详情页显示“已删除”，不再弹通用提示。

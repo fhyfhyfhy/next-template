@@ -18,17 +18,17 @@ For History API integration, read `node_modules/next/dist/docs/01-app/02-guides/
 
 ## After a write
 
-First confirm where the write's inputs and credentials are available. A read's owner determines which display must refresh, but does not guarantee that the same environment can perform the write.
+Every write runs in a Server Action ([API modules: Server Actions](../../../.claude/rules/data-fetching-api.md#server-actions)), so first confirm its inputs can reach one: an action receives serializable arguments within its request body limit, so a file goes from the browser straight to object storage and the action then records it, as the Data demo's cover upload does. A read's owner determines which display must refresh.
 
 | Affected data owner | Default write path when eligible | After success |
 | --- | --- | --- |
 | Server Component | Server Action | Invalidate affected server-cached reads as needed and request updated server output |
-| React Query | Feature `mutationOptions` factory, consumed through `useMutation` | Update or invalidate the affected queries in the factory's `onSuccess` |
+| React Query | Feature `mutationOptions` factory whose `mutationFn` calls a Server Action, consumed through `useMutation` | Update or invalidate the affected queries in the factory's `onSuccess` |
 | Both | Factory whose `mutationFn` calls a Server Action | Action refreshes the server-owned data; factory refreshes the queries |
 
 For the combined path, adapt expected action failures as [React Query integration](react-query-integration.md#server-action-errors) describes so only successful writes reach `onSuccess`. Factory/caller callback responsibilities remain in [API modules](../../../.claude/rules/data-fetching-api.md#mutations).
 
-When only the browser can perform the write, use a client mutation and coordinate the server-owned displays after success. `router.refresh()` requests the current route again but leaves server caches reusable; cached reads also need an authorized invalidation path. If that path is unavailable, revisit the affected view's owner or cache policy.
+When part of the write happens only in the browser, such as the direct upload, run it inside the mutation before calling the action, and coordinate the server-owned displays after success. `router.refresh()` requests the current route again but leaves server caches reusable; cached reads also need an authorized invalidation path. If that path is unavailable, revisit the affected view's owner or cache policy.
 
 Optimistic updates follow the owner of the displayed value:
 

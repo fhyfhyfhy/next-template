@@ -129,7 +129,8 @@
     "uploading": "上传中…",
     "change": "更换封面图",
     "notAnImage": "只能上传图片。",
-    "tooLarge": "图片不能超过 {max} MB。"
+    "tooLarge": "图片不能超过 {max} MB。",
+    "rejected": "图片没能设为封面，请重新选择。"
   },
   "deleteTask": {
     "trigger": "删除任务",

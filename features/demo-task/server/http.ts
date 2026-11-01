@@ -138,9 +138,9 @@ function errorResponse(error: unknown): Response {
   }
   console.error(error);
   return Response.json(
-    {
-      error: { code: ErrorCode.SERVER_ERROR, message: "Internal server error" },
-    },
+    errorBody(
+      new DomainError(500, ErrorCode.SERVER_ERROR, "Internal server error"),
+    ),
     { status: 500 },
   );
 }

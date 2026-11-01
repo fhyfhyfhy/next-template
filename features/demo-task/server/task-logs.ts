@@ -25,6 +25,7 @@ export async function streamTaskLogs(
   const db = getTaskDb();
   await findTaskRow(db, taskId);
 
+  // 最后推送的日志序号。seq 是 bigint，pg 返回字符串，这里转成数字保存；序号远小于 2^53。
   let lastSeq = 0;
   let flushing: Promise<void> | null = null;
   let again = false;
@@ -43,6 +44,12 @@ export async function streamTaskLogs(
           // 客户端断开时流已经被取消，不能再关闭。
         }
       };
+      // 监听连接断开后收不到新日志：让流以错误结束，浏览器显示读取失败，而不是一直等下去。
+      const fail = () => {
+        if (closed) return;
+        closed = true;
+        controller.error(new Error("Lost the task change subscription"));
+      };
       // 通知可能连续到达，同一时间只跑一次查询，期间到达的通知合并成下一次。
       const flush = (): Promise<void> => {
         if (flushing) {
@@ -56,13 +63,13 @@ export async function streamTaskLogs(
               .selectFrom("task_logs")
               .select(["seq", "line"])
               .where("task_id", "=", taskId)
-              .where("seq", ">", lastSeq)
+              .where("seq", ">", String(lastSeq))
               .orderBy("seq")
               .execute();
             for (const log of logs) {
               if (closed) return;
               controller.enqueue(event("log", { line: log.line }));
-              lastSeq = log.seq;
+              lastSeq = Number(log.seq);
             }
             const task = await db
               .selectFrom("tasks")
@@ -81,7 +88,10 @@ export async function streamTaskLogs(
         });
         return flushing;
       };
-      unsubscribe = await subscribeTaskChanges(taskId, () => void flush());
+      unsubscribe = await subscribeTaskChanges(taskId, {
+        onChange: () => void flush(),
+        onLost: fail,
+      });
       signal.addEventListener("abort", close, { once: true });
       await flush();
     },

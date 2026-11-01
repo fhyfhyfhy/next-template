@@ -3,6 +3,7 @@ import "server-only";
 import { attachUpload, saveServerUpload } from "@/features/demo-upload/server";
 import { startLeaderInterval } from "@/lib/db";
 
+import { TASK_STEP_INTERVAL_MS } from "../constants/task-rules";
 import { nextTaskStep } from "../utils/task-progress";
 import { getTaskDb } from "./connection";
 import { cubeGlb } from "./generated-files";
@@ -12,8 +13,6 @@ import { findTaskRow, toTask } from "./tasks";
 
 // Demo 生成器：模拟一个外部的生成服务，只有它推进任务。业务读写的代码不碰推进逻辑。
 
-/** 一个任务从 pending 到终态走 6 步，约 9 秒，停在详情页能看到进度推进；浏览器轮询的间隔和它一致。 */
-export const GENERATOR_INTERVAL_MS = 1500;
 // 和上传清理、写种子的锁用不同的 key。
 const GENERATOR_LOCK_KEY = 2_026_110_201;
 
@@ -44,14 +43,12 @@ export async function advanceTask(taskId: string) {
         .values({ task_id: taskId, line: step.log })
         .execute();
       if (step.status === "done") {
-        const uploadId = await saveServerUpload(
-          {
-            purpose: "task-model",
-            contentType: "model/gltf-binary",
-            body: cubeGlb(),
-          },
-          trx,
-        );
+        // 上传记录不随这个事务回滚，回滚时由 demo-upload 的清理任务删除（saveServerUpload）。
+        const uploadId = await saveServerUpload({
+          purpose: "task-model",
+          contentType: "model/gltf-binary",
+          body: cubeGlb(),
+        });
         await attachUpload(
           {
             uploadId,
@@ -95,7 +92,7 @@ export async function advanceActiveTasks() {
 
 /** 在后台定期推进任务，同一个 Demo 数据库上只有一个进程在推进（`startLeaderInterval`）。返回停止函数。 */
 export function startDemoGenerator({
-  intervalMs = GENERATOR_INTERVAL_MS,
+  intervalMs = TASK_STEP_INTERVAL_MS,
 }: { intervalMs?: number } = {}) {
   return startLeaderInterval({
     connectionString: process.env.DEMO_DATABASE_URL ?? "",

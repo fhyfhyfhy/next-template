@@ -74,6 +74,9 @@ export const demoFaultListSchema = z.object({
   faults: z.array(demoFaultSchema),
 });
 
+/** 业务操作当前的默认延迟（毫秒）。 */
+export const demoLatencySchema = z.object({ latencyMs: z.number() });
+
 /** 调用记录的一条。`source` 为 `server` 时是服务端直接调用（渲染、Server Action），`http` 时是浏览器经 Route Handler 调用。 */
 export const demoCallSchema = z.object({
   operation: z.string(),

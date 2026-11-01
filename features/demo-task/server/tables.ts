@@ -24,16 +24,17 @@ export interface TaskCommentsTable {
 }
 
 export interface TaskLogsTable {
-  /** 写入顺序，SSE 按它推送增量、去重。 */
-  seq: Generated<number>;
+  /** 写入顺序，SSE 按它推送增量、去重。bigint，pg 返回字符串。 */
+  seq: Generated<string>;
   task_id: string;
   line: string;
   created_at: Generated<Date>;
 }
 
-/** 故障实验室注入的故障，按 `id` 的顺序匹配。字段含义见 demo-controls.ts 的 `DemoFault`。 */
+/** 故障实验室注入的故障，按 `id` 的顺序匹配。字段含义见 types/demo-fault.ts 的 `demoFaultSchema`。 */
 export interface DemoFaultsTable {
-  id: Generated<number>;
+  /** bigint，pg 返回字符串。 */
+  id: Generated<string>;
   operation: string;
   kind: string;
   latency_ms: number;
@@ -56,7 +57,8 @@ export interface DemoSettingsTable {
 }
 
 export interface DemoCallsTable {
-  id: Generated<number>;
+  /** bigint，pg 返回字符串。 */
+  id: Generated<string>;
   operation: string;
   /** `server`：服务端直接调用；`http`：浏览器经 Route Handler 调用。 */
   source: string;

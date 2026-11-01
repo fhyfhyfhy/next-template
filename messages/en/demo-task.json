@@ -129,7 +129,8 @@
     "uploading": "Uploading…",
     "change": "Change cover image",
     "notAnImage": "Only images can be uploaded.",
-    "tooLarge": "Images can be at most {max} MB."
+    "tooLarge": "Images can be at most {max} MB.",
+    "rejected": "The image couldn't be set as the cover. Choose it again."
   },
   "deleteTask": {
     "trigger": "Delete task",

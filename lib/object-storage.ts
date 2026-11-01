@@ -3,6 +3,7 @@ import {
   DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   NotFound,
   PutObjectCommand,
   S3Client,
@@ -50,6 +51,8 @@ export interface ObjectStorage {
   ): Promise<void>;
   /** 删除这些 key 的对象，不存在的 key 忽略。 */
   delete(keys: string[]): Promise<void>;
+  /** 以 `prefix` 开头的全部 key。 */
+  list(prefix: string): Promise<string[]>;
   publicUrl(key: string): string;
 }
 
@@ -147,6 +150,25 @@ export function createObjectStorage(
           }),
         );
       }
+    },
+
+    async list(prefix) {
+      const keys: string[] = [];
+      let token: string | undefined;
+      do {
+        const page = await client.send(
+          new ListObjectsV2Command({
+            Bucket: bucket,
+            Prefix: prefix,
+            ContinuationToken: token,
+          }),
+        );
+        for (const object of page.Contents ?? []) {
+          if (object.Key) keys.push(object.Key);
+        }
+        token = page.IsTruncated ? page.NextContinuationToken : undefined;
+      } while (token);
+      return keys;
     },
 
     publicUrl(key) {
