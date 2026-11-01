@@ -1,8 +1,9 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 
+import { DateTime } from "@/components/date-time";
 import { useQuery } from "@/lib/react-query";
 
 import {
@@ -28,7 +29,6 @@ import { TaskProgress } from "./task-progress";
  */
 export function TaskDetail({ taskId }: { taskId: string }) {
   const t = useTranslations("demo-task");
-  const format = useFormatter();
   const task = useQuery(getTaskQueryOptions(taskId));
   const { record } = useRecentTaskIds();
   useRefreshListsWhenSettled(task.data?.status);
@@ -63,7 +63,9 @@ export function TaskDetail({ taskId }: { taskId: string }) {
             <dt className="text-muted-foreground">
               {t("taskDetail.createdAt")}
             </dt>
-            <dd>{format.dateTime(data.createdAt, DATE_TIME_FORMAT)}</dd>
+            <dd>
+              <DateTime value={data.createdAt} format={DATE_TIME_FORMAT} />
+            </dd>
           </dl>
           {!deleted && <TaskActions task={data} />}
           <TaskLogs

@@ -57,7 +57,7 @@ The `setup-data-access` skill (`/setup-data-access` in Claude Code) asks about t
 
 Pages are translated with [next-intl](https://next-intl.dev) into the locales listed in `lib/i18n/routing.ts`: `zh`, the default locale and the one new text is written in, and `en`. URLs of the default locale have no prefix (`/demos`), the others carry one (`/en/demos`), and every locale is prerendered ([ADR 0002](docs/adr/0002-locale-routing-as-needed-prefix.md)). For a URL without a prefix, `proxy.ts` picks the locale from the `NEXT_LOCALE` cookie, then `Accept-Language`.
 
-Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates are formatted in the fixed `Asia/Shanghai` time zone (`lib/i18n/request.ts`), so server rendering and hydration produce the same text.
+Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates and times show in the computer's time zone: `<DateTime>` (`components/date-time.tsx`) renders them in the browser once the page has hydrated.
 
 ## Agent skills
 

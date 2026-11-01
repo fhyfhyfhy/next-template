@@ -112,6 +112,40 @@ const RESTRICTED_IMPORTS = {
 const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
 
+// Dates and times show in the computer's time zone, which only the browser
+// knows, so components/date-time.tsx alone formats them (.claude/rules/i18n.md).
+const DATE_TIME_MESSAGE =
+  "Show a date or time with <DateTime> from @/components/date-time, which renders it in the browser in the computer's time zone. See .claude/rules/i18n.md.";
+const DATE_TIME_FORMATTING = [
+  {
+    selector: "CallExpression[callee.property.name=/^dateTime(Range)?$/]",
+    message: DATE_TIME_MESSAGE,
+  },
+  {
+    selector:
+      "MemberExpression[object.name='Intl'][property.name='DateTimeFormat']",
+    message: DATE_TIME_MESSAGE,
+  },
+];
+
+// The no-restricted-syntax restrictions every application file is under.
+const RESTRICTED_SYNTAX = [...DATE_TIME_FORMATTING];
+const DATE_TIME_EXEMPT = RESTRICTED_SYNTAX.filter(
+  (restriction) => !DATE_TIME_FORMATTING.includes(restriction),
+);
+
+// Code that reaches a page: workspace packages' sources in a monorepo
+// included; scripts/, e2e/, tests and the root config files never do.
+const APPLICATION_CODE = {
+  files: [SOURCE_GLOB],
+  ignores: [
+    `**/*.{test,spec}.${extensionGlob}`,
+    "scripts/**",
+    "e2e/**",
+    `*.${extensionGlob}`,
+  ],
+};
+
 // Colors only from app/globals.css's semantic tokens plus black and white;
 // radii only built-in or --radius-* tokens.
 const RESTRICTED_TAILWIND_CLASSES = [
@@ -139,6 +173,12 @@ const RESTRICTED_TAILWIND_CLASSES = [
   },
 ];
 
+// ESLint does not merge one rule's options across config objects: a later
+// object that sets no-restricted-imports or no-restricted-syntax for a file
+// replaces the earlier options whole. So each object below that sets one of
+// them names every restriction its files are under, as RESTRICTED_IMPORTS and
+// RESTRICTED_SYNTAX spread into it; eslint.config.test.mjs checks that they
+// all hold.
 const eslintConfig = defineConfig([
   // Next.js's React, Hooks, accessibility and performance rules, kept up with
   // the framework's version.
@@ -284,15 +324,11 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // All application code, workspace packages' sources in a monorepo
-    // included; scripts/, e2e/ and the root config files never reach a page.
-    files: [SOURCE_GLOB],
-    ignores: [
-      `**/*.{test,spec}.${extensionGlob}`,
-      "scripts/**",
-      "e2e/**",
-      `*.${extensionGlob}`,
-    ],
+    ...APPLICATION_CODE,
+    rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
+  },
+  {
+    ...APPLICATION_CODE,
     plugins: { i18n: createI18nPlugin(PROJECT_ROOT) },
     rules: {
       // The namespaces each ClientMessages sends match those the Client
@@ -330,6 +366,7 @@ const eslintConfig = defineConfig([
       // No export * or export * as in an entry: its public members are listed.
       "no-restricted-syntax": [
         "error",
+        ...RESTRICTED_SYNTAX,
         {
           selector: "ExportAllDeclaration",
           message: COMPONENT_INDEX_EXPORT_MESSAGE,
@@ -339,6 +376,17 @@ const eslintConfig = defineConfig([
           message: COMPONENT_INDEX_EXPORT_MESSAGE,
         },
       ],
+    },
+  },
+  {
+    // The one place that formats dates and times; the other restrictions stay.
+    // An object that gives a rule only its severity keeps the earlier options,
+    // so with none left the rule is turned off.
+    files: ["components/date-time.tsx"],
+    rules: {
+      "no-restricted-syntax": DATE_TIME_EXEMPT.length
+        ? ["error", ...DATE_TIME_EXEMPT]
+        : "off",
     },
   },
   {

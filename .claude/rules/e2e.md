@@ -5,7 +5,7 @@ paths:
 
 # E2E specs
 
-Import `test` and `expect` from `e2e/test.ts`, or from `e2e/demo/mock-api.ts` in the Data demo's specs, which builds on it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (the Playwright configs); a test that needs another one sets `test.use({ locale })`, as `e2e/locale.spec.ts` does.
+Import `test` and `expect` from `e2e/test.ts`, or from `e2e/demo/mock-api.ts` in the Data demo's specs, which builds on it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (the Playwright configs); a test that needs another one sets `test.use({ locale })`, as `e2e/locale.spec.ts` does. Dates and times render in the browser's time zone after hydration (`components/date-time.tsx`): a spec that asserts one sets `timezoneId`, as `e2e/demo/date-time.spec.ts` does.
 
 ## Hydration
 

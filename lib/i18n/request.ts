@@ -6,8 +6,8 @@ import { getRequestConfig } from "next-intl/server";
 import { loadMessages } from "./messages";
 import { routing } from "./routing";
 
-// Server rendering and browser hydration format times in the same time zone, so their text matches.
-// Showing times in the user's own time zone is in TODO.md.
+// Only completes next-intl's config: nothing on screen is formatted in it.
+// Dates and times show in the computer's time zone (components/date-time.tsx).
 const TIME_ZONE = "Asia/Shanghai";
 
 /**

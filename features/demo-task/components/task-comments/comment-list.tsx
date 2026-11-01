@@ -1,8 +1,9 @@
 "use client";
 
 import { IconX } from "@tabler/icons-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 
+import { DateTime } from "@/components/date-time";
 import { useMutation, useSuspenseQuery } from "@/lib/react-query";
 
 import { deleteCommentMutationOptions } from "../../api/delete-comment";
@@ -11,7 +12,6 @@ import { DATE_TIME_FORMAT } from "../../constants/date-time";
 
 export function CommentList({ taskId }: { taskId: string }) {
   const t = useTranslations("demo-task.comments");
-  const format = useFormatter();
   // The server dehydrated a pending query; this takes its promise, and the
   // enclosing Suspense shows the placeholder until it resolves.
   const { data: comments } = useSuspenseQuery(getCommentsQueryOptions(taskId));
@@ -31,9 +31,11 @@ export function CommentList({ taskId }: { taskId: string }) {
               {comment.content}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {comment.sending
-                ? t("sending")
-                : format.dateTime(comment.createdAt, DATE_TIME_FORMAT)}
+              {comment.sending ? (
+                t("sending")
+              ) : (
+                <DateTime value={comment.createdAt} format={DATE_TIME_FORMAT} />
+              )}
             </p>
           </div>
           {!comment.sending && (
