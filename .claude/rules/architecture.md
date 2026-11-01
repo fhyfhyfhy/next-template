@@ -68,7 +68,7 @@ Same ordering rule: each layer may import from the same layer and any layer belo
 ### Where files go
 
 - Use only the directories in the two tables above. To add a new kind of directory, update this document first.
-- Browser end-to-end specs live in top-level `e2e/`, outside the layers. They observe the app through the browser and import no application code; ESLint enforces this. The Data demo's specs live in `e2e/demo/` and also drive the Mock API control endpoints; `pnpm demo:test:e2e` runs them, and `pnpm test:e2e` runs the rest.
+- Browser end-to-end specs live in top-level `e2e/`, outside the layers. They observe the app through the browser and import no application code; ESLint enforces this.
 - Translated text lives in top-level `messages/{locale}/{namespace}.json`, outside the layers: it is data that `lib/i18n/messages.ts` loads, owned per namespace as [i18n.md](i18n.md) describes.
 - Layer directories (`hooks/`, `utils/`, `features/{name}/api/`, etc.) contain only files, with two exceptions:
   - Any `components/` may contain one level of component directories (see "Component directories"), and so may the reserved `components/ui/`.
