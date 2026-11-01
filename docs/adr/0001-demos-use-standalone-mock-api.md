@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0003
+---
+
 # Demo 经 fetchApi 请求独立进程的 Mock API
 
 Demo 会长期保留，供 agent 照着写代码，所以它的请求代码必须和接真实后端时完全一样：经 `fetchApi` 发 HTTP 请求，按响应格式解析，按状态码和业务 code 抛错或重试，并支持服务端 prefetch。因此 Demo 的后端是 `scripts/mock-api/` 下一个独立的 Node 进程（Mock API），由 Demo 专用的 `demo:*` 命令和 Next 一起启动。官方 demo 常用进程内的假数据或本 app 的 Route Handler，这里没有采用。
