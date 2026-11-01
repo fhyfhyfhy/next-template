@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// The app's own e2e (pnpm test:e2e); the Data demo's specs under e2e/demo/ are
-// the other set (playwright.demo.config.ts).
+// The app's own e2e (pnpm test:e2e), against a production build, which serves
+// no demos (lib/demos.ts); the demos' specs under e2e/demo/ are the other set
+// (playwright.demo.config.ts).
 // The port stays clear of 3000 and the ports after it, which dev and start try
 // in turn, and of the Data demo e2e's 3999, so the two sets can run at once.
 // When another checkout on the same machine is running e2e too, choose another

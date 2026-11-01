@@ -1,8 +1,8 @@
-import { expect, test } from "./test";
+import { expect, test } from "./mock-api";
 
 // The routing rules are in docs/adr/0002-locale-routing-as-needed-prefix.md:
 // the default locale (zh) has no prefix, and en lives under /en.
-// playwright.config.ts sets the browser's language to zh-CN; the tests below
+// The Playwright configs set the browser's language to zh-CN; the tests below
 // that need an English browser set it themselves.
 
 test("en pages live under /en and render wholly in English", async ({

@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 // Ports nothing else uses by default: clear of 3000 and the ports after it,
 // which dev and start try in turn, and of the app e2e's 3998
 // (playwright.config.ts).
-// When another checkout on the same machine is running the Data demo e2e too,
+// When another checkout on the same machine is running the demos' e2e too,
 // choose other ports with DEMO_E2E_PORT and DEMO_E2E_MOCK_API_PORT.
 const PORT = Number(process.env.DEMO_E2E_PORT ?? 3999);
 const BASE_URL = `http://localhost:${PORT}`;
@@ -15,7 +15,7 @@ const BASE_URL = `http://localhost:${PORT}`;
 const MOCK_API_PORT = process.env.DEMO_E2E_MOCK_API_PORT ?? "4999";
 process.env.MOCK_API_PORT = MOCK_API_PORT;
 
-// The Data demo's e2e (pnpm demo:test:e2e) runs against a production build
+// The demos' e2e (pnpm demo:test:e2e) runs against a demo production build
 // with the Mock API: cache freshness and prefetching can be trusted only under
 // next start.
 // By default it always builds and starts its own server; while debugging, set
