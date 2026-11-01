@@ -6,7 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { ApiError, fetchApi } from "@/lib/fetch";
-import { type Locale, routing } from "@/lib/i18n-routing";
+import { type Locale, routing } from "@/lib/i18n/routing";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";

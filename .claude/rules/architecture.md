@@ -69,8 +69,10 @@ Same ordering rule: each layer may import from the same layer and any layer belo
 
 - Use only the directories in the two tables above. To add a new kind of directory, update this document first.
 - Browser end-to-end specs live in top-level `e2e/`, outside the layers. They observe the app through the browser and import no application code; ESLint enforces this. The Data demo's specs live in `e2e/demo/` and also drive the Mock API control endpoints; `pnpm demo:test:e2e` runs them, and `pnpm test:e2e` runs the rest.
-- Translated text lives in top-level `messages/{locale}/{namespace}.json`, outside the layers: it is data that `lib/i18n-messages.ts` loads, owned per namespace as [i18n.md](i18n.md) describes.
-- Layer directories (`hooks/`, `utils/`, `features/{name}/api/`, etc.) contain only files. The one exception is component directories: any `components/` may contain one level of component directories (see "Component directories"), and so may the reserved `components/ui/`.
+- Translated text lives in top-level `messages/{locale}/{namespace}.json`, outside the layers: it is data that `lib/i18n/messages.ts` loads, owned per namespace as [i18n.md](i18n.md) describes.
+- Layer directories (`hooks/`, `utils/`, `features/{name}/api/`, etc.) contain only files, with two exceptions:
+  - Any `components/` may contain one level of component directories (see "Component directories"), and so may the reserved `components/ui/`.
+  - `lib/` may group an adapter that spans several files into one level of directory; a single-file adapter stays a file. Files inside import each other by relative path. When outside code uses one module and the other files only serve it, that module is the directory's `index` (`lib/fetch/index.ts`, imported as `@/lib/fetch`). When outside code uses several modules, it imports each by its path (`@/lib/i18n/navigation`), with no `index` re-exporting them: such an entry would put modules that run only on the server, such as `lib/i18n/request.ts`, into the import graph of Client Components.
 - Independent hooks go in `hooks/` and utility functions in `utils/`. Component-specific private contexts, hooks, helpers, and types may stay in the component directory (see "Component directories").
 - Keep types with the module or schema that owns them. Extract a shared contract into that owner's `types/` when needed to preserve dependency direction or give the contract an independent role.
 - Choose feature or root placement by "Shared code ownership" below.
@@ -99,9 +101,9 @@ Architecture checks are configured in [eslint.config.mjs](../../eslint.config.mj
 
 ### Conditional credential entry
 
-`lib/fetch.ts` uses `#credentials` as an environment boundary: `package.json` selects the server or browser credential adapter. A relative import cannot preserve that selection. The `architecture/package-imports` rule reserves this exception for that caller, verifies the two ordered targets, and rejects other `#` imports. Extend the architecture checks before introducing another conditional project entry.
+`lib/fetch/index.ts` uses `#credentials` as an environment boundary: `package.json` selects the server or browser credential adapter. A relative import cannot preserve that selection. The `architecture/package-imports` rule reserves this exception for that caller, verifies the two ordered targets, and rejects other `#` imports. Extend the architecture checks before introducing another conditional project entry.
 
-The project's boundary and feature-cycle resolver follows relative and `@/` imports; it does not build a graph for conditional package imports. The separate layer and file-cycle rules currently resolve `#credentials` through its default browser branch. They do not establish that the `react-server` branch is cycle-free. When changing either credential adapter or its dependencies, check both runtime dependency paths for cycles, including a path back to `lib/fetch.ts`.
+The project's boundary and feature-cycle resolver follows relative and `@/` imports; it does not build a graph for conditional package imports. The separate layer and file-cycle rules currently resolve `#credentials` through its default browser branch. They do not establish that the `react-server` branch is cycle-free. When changing either credential adapter or its dependencies, check both runtime dependency paths for cycles, including a path back to `lib/fetch/index.ts`.
 
 ### Component directories
 

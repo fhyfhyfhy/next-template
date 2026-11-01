@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useHydrated } from "@/hooks/use-hydrated";
-import { Link } from "@/lib/i18n-navigation";
+import { Link } from "@/lib/i18n/navigation";
 
 const themes = [
   { value: "system", icon: IconDeviceDesktop },

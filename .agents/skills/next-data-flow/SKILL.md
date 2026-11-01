@@ -16,7 +16,7 @@ The Server Component render owns a read unless a React Query signal applies:
 | Signal | Owner |
 | --- | --- |
 | Changes on navigation or after this user's own write, including filters, sorting, or pagination changed in one click or selection | Server Component |
-| Needs the signed-in user, and the Next.js server cannot send their credential (`lib/credentials-server.ts`) | React Query |
+| Needs the signed-in user, and the Next.js server cannot send their credential (`lib/fetch/credentials-server.ts`) | React Query |
 | Updates while the user stays: polling, progress, notifications, other users' edits | React Query |
 | Re-requested as the user types, where routing every change through RSC navigation would lag | React Query |
 | Infinite scroll appending pages | React Query |

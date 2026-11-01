@@ -69,7 +69,7 @@ const QUERY_LIBRARY_MESSAGE =
   "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-fetching.md.";
 
 const LOCALE_NAVIGATION_MESSAGE =
-  "Import Link, redirect, useRouter, and usePathname from @/lib/i18n-navigation: the next/* versions drop the locale prefix of non-default locales. See .claude/rules/i18n.md.";
+  "Import Link, redirect, useRouter, and usePathname from @/lib/i18n/navigation: the next/* versions drop the locale prefix of non-default locales. See .claude/rules/i18n.md.";
 
 // 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query；
 // 站内导航走 next-intl 生成的 API，非默认 locale 的 URL 前缀才不会丢。

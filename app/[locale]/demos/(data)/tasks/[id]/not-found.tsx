@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 
-import { Link } from "@/lib/i18n-navigation";
+import { Link } from "@/lib/i18n/navigation";
 
 export default function TaskNotFound() {
   const t = useTranslations("app.demos.taskDetail.notFound");

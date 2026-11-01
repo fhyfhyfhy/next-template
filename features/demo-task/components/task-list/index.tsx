@@ -3,7 +3,7 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { use } from "react";
 
-import { Link } from "@/lib/i18n-navigation";
+import { Link } from "@/lib/i18n/navigation";
 
 import type { TaskPage } from "../../api/get-tasks";
 import { DATE_TIME_FORMAT } from "../../constants/date-time";

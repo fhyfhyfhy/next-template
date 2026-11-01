@@ -270,9 +270,9 @@ export default function createArchitecturePlugin(projectRoot) {
         unsupported:
           "Only #credentials is supported as a package import. Use @/ or relative paths for other project modules.",
         owner:
-          "Only lib/fetch.ts may import #credentials. Backend consumers use fetchApi from @/lib/fetch.",
+          "Only lib/fetch/index.ts may import #credentials. Backend consumers use fetchApi from @/lib/fetch.",
         mapping:
-          'Keep package.json imports["#credentials"] as { "react-server": "./lib/credentials-server.ts", "default": "./lib/credentials-browser.ts" }, in that order. Other conditional targets are not covered by the architecture checks.',
+          'Keep package.json imports["#credentials"] as { "react-server": "./lib/fetch/credentials-server.ts", "default": "./lib/fetch/credentials-browser.ts" }, in that order. Other conditional targets are not covered by the architecture checks.',
       },
     },
     create(context) {
@@ -283,7 +283,7 @@ export default function createArchitecturePlugin(projectRoot) {
           context.report({ node: source, messageId: "unsupported" });
           return;
         }
-        if (context.filename !== resolve(projectRoot, "lib/fetch.ts")) {
+        if (context.filename !== resolve(projectRoot, "lib/fetch/index.ts")) {
           context.report({ node: source, messageId: "owner" });
           return;
         }
@@ -295,8 +295,8 @@ export default function createArchitecturePlugin(projectRoot) {
         if (
           JSON.stringify(manifest.imports?.["#credentials"]) !==
           JSON.stringify({
-            "react-server": "./lib/credentials-server.ts",
-            default: "./lib/credentials-browser.ts",
+            "react-server": "./lib/fetch/credentials-server.ts",
+            default: "./lib/fetch/credentials-browser.ts",
           })
         ) {
           context.report({ node: source, messageId: "mapping" });

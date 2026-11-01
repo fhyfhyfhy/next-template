@@ -1,4 +1,4 @@
-import { Link } from "@/lib/i18n-navigation";
+import { Link } from "@/lib/i18n/navigation";
 
 import type { Task } from "../api/get-task";
 import { taskDetailHref } from "../utils/task-urls";

@@ -12,8 +12,8 @@ import {
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
-import { NAMESPACES } from "@/lib/i18n-messages";
-import { routing, SOURCE_LOCALE } from "@/lib/i18n-routing";
+import { NAMESPACES } from "@/lib/i18n/messages";
+import { routing, SOURCE_LOCALE } from "@/lib/i18n/routing";
 
 const MESSAGES_DIR = import.meta.dirname;
 const TARGET_LOCALES = routing.locales.filter(

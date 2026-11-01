@@ -5,7 +5,7 @@ import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
 import { ApiError } from "@/lib/fetch";
-import { type Locale, routing } from "@/lib/i18n-routing";
+import { type Locale, routing } from "@/lib/i18n/routing";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";

@@ -5,7 +5,7 @@ import {
   MOCK_API_RUNNING,
   MockApiNotice,
 } from "@/features/demo-task";
-import { ClientMessages } from "@/lib/i18n-client-messages";
+import { ClientMessages } from "@/lib/i18n/client-messages";
 
 /** Data demo 各页面的外壳。Mock API 没有运行时只显示说明，页面本身不渲染、不发请求。 */
 export default function DataDemoLayout({ children }: { children: ReactNode }) {

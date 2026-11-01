@@ -4,7 +4,7 @@ Use this reference when applying the official TanStack Query patterns to this re
 
 ## Credentials and initial data
 
-Choose server prefetch only when the server can obtain the inputs and send the required credential; inspect `lib/credentials-server.ts`. Otherwise fetch in the browser after readiness. This choice does not change the [data owner](SKILL.md#ownership).
+Choose server prefetch only when the server can obtain the inputs and send the required credential; inspect `lib/fetch/credentials-server.ts`. Otherwise fetch in the browser after readiness. This choice does not change the [data owner](SKILL.md#ownership).
 
 For browser-only inputs or credentials, `useQuery` can wait with `enabled`. `useSuspenseQuery` has no `enabled` or `skipToken` and may fetch during server rendering, where this repo's browser credential helper has no credential. Delay mounting that consumer until browser readiness; Suspense alone does not make it browser-only. Check the installed `@tanstack/react-query/src/useSuspenseQuery.ts` and `useBaseQuery.ts` when upgrading.
 

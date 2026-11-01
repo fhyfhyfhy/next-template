@@ -5,7 +5,7 @@ import type demoTask from "@/messages/zh/demo-task.json";
 import type demoUi from "@/messages/zh/demo-ui.json";
 import type ui from "@/messages/zh/ui.json";
 
-import type { Locale } from "./i18n-routing";
+import type { Locale } from "./routing";
 
 /**
  * 全部文案，类型取自 Source locale 的文件。每个 namespace 对应 `messages/{locale}/{namespace}.json`，
@@ -48,7 +48,7 @@ export async function loadMessages(
   const entries = await Promise.all(
     NAMESPACES.map(async (namespace) => {
       // 模板路径要用相对路径：打包器按它收集 messages/ 下所有匹配的文件。
-      const file = await import(`../messages/${locale}/${namespace}.json`);
+      const file = await import(`../../messages/${locale}/${namespace}.json`);
       return [namespace, file.default] as const;
     }),
   );

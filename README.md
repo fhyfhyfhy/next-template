@@ -47,17 +47,17 @@ Set `NEXT_PUBLIC_API_BASE_URL` to the backend's base URL, for example in `.env.l
 
 Features call the backend only through `fetchApi`, so fitting the template to a backend touches these files alone:
 
-- `lib/fetch.ts`: the base URL, the response format including paginated lists, and the error types. As shipped, a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or as the only field of a 2xx body; the schemas and doc comments in `lib/fetch.ts` define the details.
-- `lib/credentials-server.ts` and `lib/credentials-browser.ts`: the signed-in user's credential for requests from the server and from the browser. Both send none as shipped. `package.json` resolves `#credentials` to the right one per environment.
+- `lib/fetch/index.ts`: the base URL, the response format including paginated lists, and the error types. As shipped, a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or as the only field of a 2xx body; the schemas and doc comments in `lib/fetch/index.ts` define the details.
+- `lib/fetch/credentials-server.ts` and `lib/fetch/credentials-browser.ts`: the signed-in user's credential for requests from the server and from the browser. Both send none as shipped. `package.json` resolves `#credentials` to the right one per environment.
 - `app/providers.tsx`: what a signed-out response does in the browser.
 
 The `setup-data-access` skill (`/setup-data-access` in Claude Code) asks about the backend, makes these changes, keeps the Mock API's response format in step, and verifies the result in a production build.
 
 ## Internationalization
 
-Pages are translated with [next-intl](https://next-intl.dev) into the locales listed in `lib/i18n-routing.ts`: `zh`, the default locale and the one new text is written in, and `en`. URLs of the default locale have no prefix (`/demos`), the others carry one (`/en/demos`), and every locale is prerendered ([ADR 0002](docs/adr/0002-locale-routing-as-needed-prefix.md)). For a URL without a prefix, `proxy.ts` picks the locale from the `NEXT_LOCALE` cookie, then `Accept-Language`.
+Pages are translated with [next-intl](https://next-intl.dev) into the locales listed in `lib/i18n/routing.ts`: `zh`, the default locale and the one new text is written in, and `en`. URLs of the default locale have no prefix (`/demos`), the others carry one (`/en/demos`), and every locale is prerendered ([ADR 0002](docs/adr/0002-locale-routing-as-needed-prefix.md)). For a URL without a prefix, `proxy.ts` picks the locale from the `NEXT_LOCALE` cookie, then `Accept-Language`.
 
-Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates are formatted in the fixed `Asia/Shanghai` time zone (`lib/i18n-request.ts`), so server rendering and hydration produce the same text.
+Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates are formatted in the fixed `Asia/Shanghai` time zone (`lib/i18n/request.ts`), so server rendering and hydration produce the same text.
 
 ## Agent skills
 

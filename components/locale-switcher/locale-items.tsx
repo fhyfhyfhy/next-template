@@ -3,8 +3,8 @@
 import { useLocale } from "next-intl";
 
 import { cn } from "@/lib/cn";
-import { getPathname } from "@/lib/i18n-navigation";
-import { type Locale, routing } from "@/lib/i18n-routing";
+import { getPathname } from "@/lib/i18n/navigation";
+import { type Locale, routing } from "@/lib/i18n/routing";
 
 // 每种语言用它自己的写法显示，不随当前 locale 翻译，用户才认得出自己的语言；加 locale 时类型检查会要求补上。
 const LOCALE_NAMES: Record<Locale, string> = {

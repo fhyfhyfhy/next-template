@@ -2,7 +2,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import type { ReactNode } from "react";
 
-import { BASE_CLIENT_NAMESPACES, type Namespace } from "./i18n-messages";
+import { BASE_CLIENT_NAMESPACES, type Namespace } from "./messages";
 
 interface ClientMessagesProps {
   /**

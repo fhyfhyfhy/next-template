@@ -3,8 +3,8 @@ import * as rootParams from "next/root-params";
 import { hasLocale } from "next-intl";
 import { getRequestConfig } from "next-intl/server";
 
-import { loadMessages } from "./i18n-messages";
-import { routing } from "./i18n-routing";
+import { loadMessages } from "./messages";
+import { routing } from "./routing";
 
 // 服务端渲染和浏览器 hydration 用同一个时区格式化时间，文本才一致。按用户所在时区显示见 TODO.md。
 const TIME_ZONE = "Asia/Shanghai";

@@ -1,6 +1,6 @@
 import createMiddleware from "next-intl/middleware";
 
-import { routing } from "@/lib/i18n-routing";
+import { routing } from "@/lib/i18n/routing";
 
 /**
  * 按 URL 前缀、`NEXT_LOCALE` cookie、`Accept-Language` 的顺序决定 locale：默认 locale 的请求 rewrite 到

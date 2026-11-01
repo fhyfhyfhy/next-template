@@ -584,18 +584,24 @@ for (const syntax of [
   });
 }
 addCase("fetchApi 可以通过条件入口选择凭证实现", {
-  from: "lib/fetch.ts",
-  to: "lib/credentials-browser.ts",
+  from: "lib/fetch/index.ts",
+  to: "lib/fetch/credentials-browser.ts",
   source: "#credentials",
 });
-addCase("fetch 子目录中的同名文件不能使用条件凭证入口", {
-  from: "lib/CASE/fetch.ts",
+addCase("其他 lib 目录的 index 不能使用条件凭证入口", {
+  from: "lib/CASE/index.ts",
   source: "#credentials",
   rule: packageImportsRule,
   messageId: "owner",
 });
-addCase("fetch.tsx 不能使用条件凭证入口", {
-  from: "lib/fetch.tsx",
+addCase("fetch 目录里 index 以外的文件不能使用条件凭证入口", {
+  from: "lib/fetch/CASE.ts",
+  source: "#credentials",
+  rule: packageImportsRule,
+  messageId: "owner",
+});
+addCase("index.tsx 不能使用条件凭证入口", {
+  from: "lib/fetch/index.tsx",
   source: "#credentials",
   rule: packageImportsRule,
   messageId: "owner",
@@ -1187,7 +1193,7 @@ describe("架构依赖和 feature、组件导入约定", () => {
     );
     const credentialImports = manifest.imports["#credentials"];
     const manifestPath = () => join(fixture, "package.json");
-    const filePath = () => join(fixture, "lib/fetch.ts");
+    const filePath = () => join(fixture, "lib/fetch/index.ts");
     let originalManifest;
     const restoreManifest = () =>
       writeFileSync(manifestPath(), originalManifest, "utf8");
@@ -1209,7 +1215,7 @@ describe("架构依赖和 feature、组件导入约定", () => {
       ],
       [
         "default 分支不能换成其他 lib 文件",
-        { ...credentialImports, default: "./lib/fetch.ts" },
+        { ...credentialImports, default: "./lib/fetch/index.ts" },
       ],
       [
         "default 不能排在 server 分支之前",

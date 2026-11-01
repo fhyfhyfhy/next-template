@@ -1,6 +1,6 @@
 import { createNavigation } from "next-intl/navigation";
 
-import { routing } from "./i18n-routing";
+import { routing } from "./routing";
 
 /**
  * 带 locale 的导航 API：href 写不带 locale 的路径（`/demos/tasks`），按当前 locale 补前缀。
