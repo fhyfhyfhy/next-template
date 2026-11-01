@@ -3,8 +3,9 @@ import { createNavigation } from "next-intl/navigation";
 import { routing } from "./routing";
 
 /**
- * 带 locale 的导航 API：href 写不带 locale 的路径（`/demos/tasks`），按当前 locale 补前缀。
- * `next/link` 和 `next/navigation` 的同名 API 会丢掉非默认 locale 的前缀，ESLint 禁止直接使用。
+ * Locale-aware navigation APIs: an href is a path without the locale (`/demos/tasks`), and they add
+ * the current locale's prefix. The APIs of the same names in `next/link` and `next/navigation` drop
+ * the prefix of a non-default locale, so ESLint forbids using them directly.
  */
 export const {
   Link,

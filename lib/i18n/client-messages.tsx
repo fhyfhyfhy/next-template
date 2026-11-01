@@ -7,8 +7,9 @@ import type { Namespace } from "./messages";
 
 interface ClientMessagesProps {
   /**
-   * 这一层新增下发的 namespace。外层已经下发的会合并进来，不用再列。ESLint 的
-   * `i18n/client-namespaces` 按子树里 Client Component 实际用到的 namespace 检查这个列表，`--fix` 会改写它。
+   * The namespaces this level adds. Those already sent from outside are merged in, so don't list
+   * them again. ESLint's `i18n/client-namespaces` checks this list against the namespaces the
+   * subtree's Client Components actually use, and `--fix` rewrites it.
    */
   namespaces: readonly Namespace[];
   children: ReactNode;
@@ -22,8 +23,9 @@ async function pickMessages(namespaces: readonly Namespace[]) {
 }
 
 /**
- * 根 layout 里最外层的文案下发：同时给 Client Component 提供 locale、时区和格式化配置。
- * 每个根 layout 用一次，里面的 `ClientMessages` 和它合并。
+ * The outermost message provider, in a root layout; it also gives Client Components the locale, time
+ * zone and formatting config. Use it once in each root layout; the `ClientMessages` inside it merge
+ * with it.
  */
 export async function RootClientMessages({
   namespaces,
@@ -37,9 +39,10 @@ export async function RootClientMessages({
 }
 
 /**
- * 给子树里的 Client Component 追加 namespace，页面不用背着全量文案。只能放在 layout、template、page 里，
- * 外面要有 `RootClientMessages`。Server Component 用 `getTranslations` 在服务端拿得到全部文案，不受它限制；
- * 漏发的 namespace 在客户端渲染成 `namespace.key`，并打出 `MISSING_MESSAGE` 错误。
+ * Adds namespaces for the Client Components in its subtree, so a page doesn't carry every message.
+ * Use it only in a layout, template or page, inside a `RootClientMessages`. Server Components get
+ * every message on the server through `getTranslations` and are not limited by it; a namespace left
+ * unsent renders as `namespace.key` on the client and logs a `MISSING_MESSAGE` error.
  */
 export async function ClientMessages({
   namespaces,

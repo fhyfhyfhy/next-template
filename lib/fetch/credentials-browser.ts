@@ -1,9 +1,11 @@
 /**
- * 浏览器请求后端时附加的凭证，`fetchApi` 经 `#credentials` 引入，拆分原因见 `credentials-server.ts`。
- * Client Component 在服务端渲染和单元测试（Vitest）也解析到本文件，那时没有 `window`、拿不到浏览器里的
- * 凭证：填写时先在 `typeof window === "undefined"` 时返回 `{}`。浏览器自己携带的 cookie 不经过这里。
+ * The credentials a browser request to the backend carries; `fetchApi` imports them through
+ * `#credentials`, and `credentials-server.ts` says why the two files are split.
+ * Client Components also resolve to this file during server rendering and in unit tests (Vitest),
+ * where there is no `window` and no browser credential: when filling it in, first return `{}` when
+ * `typeof window === "undefined"`. The cookies the browser sends on its own do not pass through here.
  */
 export async function credentialHeaders(): Promise<Record<string, string>> {
-  // TODO: 模板还没配置凭证；按后端的认证方式填写（setup-data-access skill），只靠浏览器自带 cookie 或接口全部公开时改为写明这一点。
+  // TODO: no credentials are configured yet; fill this in for the backend's authentication (setup-data-access skill), or, when the browser's own cookies are enough or every endpoint is public, say so here instead.
   return {};
 }

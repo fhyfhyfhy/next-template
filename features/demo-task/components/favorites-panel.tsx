@@ -8,7 +8,10 @@ import { useQuery } from "@/lib/react-query";
 import { favoriteTasksQueryOptions } from "../api/get-tasks";
 import { taskDetailHref } from "../utils/task-urls";
 
-/** 和作品广场的卡片显示同一批任务的收藏状态；收藏的乐观更新会同时改这里。 */
+/**
+ * Shows the favorite state of the same tasks as the Gallery's cards; an
+ * optimistic favorite update changes both.
+ */
 export function FavoritesPanel() {
   const t = useTranslations("demo-task");
   const favorites = useQuery(favoriteTasksQueryOptions());

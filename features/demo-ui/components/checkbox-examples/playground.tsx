@@ -19,11 +19,12 @@ export interface CheckboxConfig {
   required: boolean;
 }
 
-// 括号将结束标记保留在表达式内；UI demo 页面只替换标记之间的 JSON 初始值。
+// The parentheses keep the end marker inside the expression; the UI demo page
+// replaces only the initial JSON between the markers.
 // prettier-ignore
 export const initialConfig: CheckboxConfig = (/* @example-config */ {
   "size": "md",
-  "label": "接收产品更新",
+  "label": "Get product updates",
   "checked": true,
   "indeterminate": false,
   "disabled": false,
@@ -31,7 +32,10 @@ export const initialConfig: CheckboxConfig = (/* @example-config */ {
   "required": false
 } /* @end-example-config */);
 
-/** 不传参数时使用本地状态；UI demo 页面传入同一份配置供面板与预览共享。 */
+/**
+ * Without a config it keeps its own state; the UI demo page passes one config
+ * that the panel and the preview share.
+ */
 export function CheckboxPlayground({
   config,
   onConfigChange,

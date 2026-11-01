@@ -7,7 +7,10 @@ import { createTaskNameSchema, taskSchema } from "./get-task";
 
 const PROMPT_MAX_LENGTH = 500;
 
-/** 创建任务的输入校验，浏览器里的表单和服务端的 `createTaskAction` 共用；校验文案由传入的 `t` 生成。 */
+/**
+ * Validates the input for creating a task, shared by the form in the browser
+ * and `createTaskAction` on the server; the `t` passed in builds the messages.
+ */
 export const createTaskInputSchema = (t: DemoTaskTranslator) =>
   z.object({
     name: createTaskNameSchema(t),
@@ -21,10 +24,13 @@ export const createTaskInputSchema = (t: DemoTaskTranslator) =>
       ),
   });
 export type CreateTaskInput = z.input<ReturnType<typeof createTaskInputSchema>>;
-/** 校验通过的输入：首尾空白已经去掉。 */
+/** Validated input, with leading and trailing whitespace trimmed. */
 type CreateTaskData = z.output<ReturnType<typeof createTaskInputSchema>>;
 
-/** `data` 是 `createTaskInputSchema` 解析后的值；类型和未校验的输入相同，校验由调用方（`createTaskAction`）负责。 */
+/**
+ * `data` is the value `createTaskInputSchema` parsed. Its type is the same as
+ * unvalidated input, so validating is the caller's job (`createTaskAction`).
+ */
 export const createTask = (data: CreateTaskData) =>
   fetchApi({
     url: "/demo/tasks",

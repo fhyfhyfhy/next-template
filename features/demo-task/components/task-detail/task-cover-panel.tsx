@@ -16,7 +16,11 @@ interface TaskCoverPanelProps {
   editable: boolean;
 }
 
-/** 封面图由浏览器直接上传给后端；上传成功后工厂刷新详情、列表 query，并让列表页的服务端缓存失效。 */
+/**
+ * The browser uploads the cover straight to the backend. After a successful
+ * upload the factory refreshes the detail and list queries and expires the list
+ * page's server cache.
+ */
 export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
   const t = useTranslations("demo-task.taskCover");
   const upload = useMutation(updateTaskCoverMutationOptions());

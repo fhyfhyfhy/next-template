@@ -10,7 +10,7 @@ import { formatExampleSource } from "./example-source.ts";
 const start = "/* @example-config */";
 const end = "/* @end-example-config */";
 
-test("参数中的引号、换行和代码字符只作为字符串保存", () => {
+test("quotes, newlines and code characters in the config stay plain strings", () => {
   const prefix = `const config = ${start}`;
   const suffix = `${end};\nexport function Example() { return config; }`;
   const config = {
@@ -28,7 +28,7 @@ test("参数中的引号、换行和代码字符只作为字符串保存", () =>
   );
 });
 
-test("标记缺失、重复或倒置时拒绝生成误导代码", () => {
+test("missing, repeated or reversed markers refuse to produce misleading code", () => {
   for (const source of [
     "",
     start,
@@ -40,7 +40,7 @@ test("标记缺失、重复或倒置时拒绝生成误导代码", () => {
   }
 });
 
-test("可调预览格式化后仍可替换参数，所有发现的示例都可独立复制", async () => {
+test("a formatted playground still takes a config, and every discovered example copies on its own", async () => {
   for (const [component, examples] of Object.entries(exampleFiles)) {
     const directory = new URL(
       `../components/${component}-examples/`,

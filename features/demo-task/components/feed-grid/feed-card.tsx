@@ -11,7 +11,11 @@ import { updateTaskFavoriteMutationOptions } from "../../api/update-task-favorit
 import { taskDetailHref } from "../../utils/task-urls";
 import { TaskCover } from "../task-cover";
 
-/** 收藏走 React Query 的乐观更新：卡片的星标和“我的收藏”在工厂的 onMutate 里一起改，失败一起回滚。 */
+/**
+ * Favoriting is a React Query optimistic update: the card's star and "My
+ * favorites" change together in the factory's onMutate, and roll back together
+ * on failure.
+ */
 export function FeedCard({ task }: { task: Task }) {
   const t = useTranslations("demo-task.feed");
   const favorite = useMutation(updateTaskFavoriteMutationOptions());

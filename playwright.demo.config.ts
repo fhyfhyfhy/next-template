@@ -1,22 +1,35 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// 默认用不常用的端口：避开 3000 起 dev/start 自动顺延的那几个端口，也和项目 e2e 的 3998（playwright.config.ts）错开。
-// 同一台机器上另一份 checkout 也在跑 Data demo e2e 时，用 DEMO_E2E_PORT 和 DEMO_E2E_MOCK_API_PORT 换端口。
+// Ports nothing else uses by default: clear of 3000 and the ports after it,
+// which dev and start try in turn, and of the app e2e's 3998
+// (playwright.config.ts).
+// When another checkout on the same machine is running the Data demo e2e too,
+// choose other ports with DEMO_E2E_PORT and DEMO_E2E_MOCK_API_PORT.
 const PORT = Number(process.env.DEMO_E2E_PORT ?? 3999);
 const BASE_URL = `http://localhost:${PORT}`;
-// e2e 自己的 Mock API，和 demo:* 命令默认的 4010 分开：测试会重置数据、暂停时钟、注入故障，不能动到开着的 demo:dev。
-// 写进 process.env：webServer 的 build 和 start 继承它，测试进程里的 e2e/demo/mock-api.ts 也读它。
+// The e2e's own Mock API, apart from the demo:* commands' default 4010: the
+// specs reset its data, pause its clock and inject faults, which must not
+// touch a running demo:dev.
+// Set in process.env: webServer's build and start inherit it, and
+// e2e/demo/mock-api.ts reads it in the test process.
 const MOCK_API_PORT = process.env.DEMO_E2E_MOCK_API_PORT ?? "4999";
 process.env.MOCK_API_PORT = MOCK_API_PORT;
 
-// Data demo 的 e2e（pnpm demo:test:e2e）：对着带 Mock API 的生产构建运行，缓存新鲜度和 prefetch 只有在 next start 下才可信。
-// 默认总是自己 build 并启动；调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务（比如设 MOCK_API_PORT=4999
-// 后运行 pnpm demo:dev --port 3999，Mock API 端口要和上面一致），这时依赖生产行为的用例（如预取）会失败。
+// The Data demo's e2e (pnpm demo:test:e2e) runs against a production build
+// with the Mock API: cache freshness and prefetching can be trusted only under
+// next start.
+// By default it always builds and starts its own server; while debugging, set
+// E2E_REUSE_SERVER=1 to reuse a server already on this port (for example
+// pnpm demo:dev --port 3999 run with MOCK_API_PORT=4999, the Mock API port
+// above), and the specs that depend on production behavior, such as
+// prefetching, then fail.
 export default defineConfig({
   testDir: "./e2e/demo",
-  // 和项目 e2e（playwright.config.ts）分开输出目录，同时跑时互不清空。
+  // An output directory apart from the app e2e's (playwright.config.ts), so
+  // neither set empties the other's when both run.
   outputDir: "test-results/demo",
-  // 所有测试共用一个 Mock API 的内存状态和故障配置，只能串行。
+  // Every test shares one Mock API's in-memory state and faults, so the tests
+  // run one at a time.
   workers: 1,
   fullyParallel: false,
   forbidOnly: true,
@@ -26,7 +39,9 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: "retain-on-failure",
   },
-  // 设备预设的 locale 是 en-US，proxy 会按 Accept-Language 把不带前缀的 URL 跳到 /en；用例看默认 locale 的页面。
+  // The device preset's locale is en-US, for which the proxy would redirect an
+  // unprefixed URL to /en by Accept-Language; the specs see the default
+  // locale's pages.
   projects: [
     {
       name: "chromium",
@@ -34,9 +49,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // 即 pnpm demo:build 和 demo:start。直接用 node 调用：只装了 corepack 的环境里 PATH 上没有 pnpm。
+    // That is, pnpm demo:build and demo:start. Called through node: where only
+    // corepack is installed, pnpm is not on PATH.
     command: `node scripts/run-next.mjs build --demo && node scripts/run-next.mjs start --demo --port ${PORT}`,
-    // 打开 instant() 依赖的测试 API，产物也因此放进单独的目录，不覆盖正在运行的 demo:start（next.config.ts）。
+    // Turns on the testing API that instant() relies on, which also puts the
+    // build in a directory of its own, so it does not overwrite a running
+    // demo:start (next.config.ts).
     env: { EXPOSE_TESTING_API: "1", MOCK_API_PORT },
     url: `${BASE_URL}/demos`,
     reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",

@@ -2,11 +2,11 @@ import type { ReactNode } from "react";
 
 interface PageIntroProps {
   title: string;
-  /** 这页演示了什么、怎么操作，几句话即可。 */
+  /** What the page demonstrates and how to try it, in a few sentences. */
   children: ReactNode;
 }
 
-/** Data demo 页面的标题和说明。 */
+/** A Data demo page's title and introduction. */
 export function PageIntro({ title, children }: PageIntroProps) {
   return (
     <div className="mb-8">

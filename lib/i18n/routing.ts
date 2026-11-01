@@ -1,9 +1,9 @@
 import { defineRouting } from "next-intl/routing";
 
 /**
- * 支持的 locale 和它们的 URL 规则。默认 locale 的 URL 不带前缀，其他 locale 带 `/{locale}` 前缀
- * （docs/adr/0002-locale-routing-as-needed-prefix.md）。加 locale 时要在 `messages/` 下补齐它的全部文件，
- * `messages/messages.test.ts` 会检查。
+ * The supported locales and their URL rules. A default-locale URL has no prefix; another locale's
+ * has a `/{locale}` prefix (docs/adr/0002-locale-routing-as-needed-prefix.md). A new locale needs
+ * all of its files under `messages/`, which `messages/messages.test.ts` checks.
  */
 export const routing = defineRouting({
   locales: ["zh", "en"],
@@ -11,7 +11,7 @@ export const routing = defineRouting({
   localePrefix: "as-needed",
 });
 
-/** 写新文案用的语言（GLOSSARY.md 的 Source locale）；messages 的类型和校验都以它为准。 */
+/** The language new text is written in (Source locale in GLOSSARY.md); the messages' types and checks follow it. */
 export const SOURCE_LOCALE = "zh" satisfies (typeof routing.locales)[number];
 
 export type Locale = (typeof routing.locales)[number];

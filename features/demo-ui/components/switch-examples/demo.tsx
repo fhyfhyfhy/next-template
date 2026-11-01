@@ -14,7 +14,7 @@ export const metadata = {
   icon: "IconToggleRight",
 } satisfies ComponentMetadata;
 
-/** Switch 的可调预览与参数控制。 */
+/** Switch's adjustable preview and its controls. */
 export function Demo({ source }: { source: string }) {
   const [config, setConfig] = useState(initialConfig);
   const [resetKey, setResetKey] = useState(0);

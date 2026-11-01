@@ -13,8 +13,10 @@ import { SortSelect } from "./sort-select";
 const statusTabs = [undefined, ...TASK_STATUSES];
 
 /**
- * 状态筛选和排序。每次选择都写进 URL：分享、刷新和前进后退都能还原，Server Component 按新 URL 重新读取。
- * 新列表到达前先显示新的选择；这期间再选，在这次选择的基础上继续改。
+ * Status filter and sort. Every choice goes into the URL, so sharing, reloading
+ * and back/forward restore it, and the Server Component reads again for the new
+ * URL. The new choice shows before the new list arrives; another choice
+ * meanwhile builds on it.
  */
 export function TaskListToolbar({ params }: { params: TaskListParams }) {
   const t = useTranslations("demo-task");
@@ -31,7 +33,8 @@ export function TaskListToolbar({ params }: { params: TaskListParams }) {
             <Link
               key={status ?? "all"}
               href={taskListHref(next)}
-              // 用 onNavigate 而不是 onClick：Ctrl/Cmd 点击在新标签页打开时不触发它，交给浏览器处理。
+              // onNavigate rather than onClick: a Ctrl/Cmd-click that opens a
+              // new tab doesn't fire it and is left to the browser.
               onNavigate={(event) => {
                 event.preventDefault();
                 navigate(next);

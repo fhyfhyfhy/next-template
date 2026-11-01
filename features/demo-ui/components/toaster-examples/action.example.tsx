@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
 
 export const metadata = {
-  title: "撤销操作",
-  description: "提示中带一个操作按钮，用户可以在提示消失前撤回刚才的操作。",
+  title: "Undo",
+  description:
+    "The toast carries an action button, so the user can undo what they just did before it goes away.",
   order: 20,
 };
 
-/** 归档立即生效，撤销恢复到归档前的状态。 */
+/** Archiving takes effect at once; Undo restores the state from before it. */
 export function Example() {
   const [archived, setArchived] = useState(false);
   return (
@@ -21,15 +22,17 @@ export function Example() {
         disabled={archived}
         onClick={() => {
           setArchived(true);
-          toast("项目已归档", {
-            action: { label: "撤销", onClick: () => setArchived(false) },
+          toast("Project archived", {
+            action: { label: "Undo", onClick: () => setArchived(false) },
           });
         }}
       >
-        归档项目
+        Archive project
       </Button>
       <p aria-live="polite" className="text-xs text-muted-foreground">
-        {archived ? "项目在归档列表中" : "项目在进行中列表中"}
+        {archived
+          ? "The project is in the archived list"
+          : "The project is in the active list"}
       </p>
     </div>
   );

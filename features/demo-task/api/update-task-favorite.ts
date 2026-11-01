@@ -21,9 +21,11 @@ interface UpdateTaskFavoriteVariables {
 type CachedTaskList = TaskPage | InfiniteData<TaskPage> | Task[];
 
 /**
- * 收藏：浏览器里缓存的每份任务列表（作品广场的卡片、“我的收藏”侧栏等）同时乐观更新，失败时一起回滚。
- * `mutationFn` 调用的 Server Action 同时让列表页的服务端缓存失效。全部任务页的收藏也走它，
- * 那一页自己的星标另用 `useOptimistic`（`FavoriteToggle`）。
+ * Favoriting: every task list cached in the browser (the Gallery's cards, the
+ * "My favorites" sidebar and so on) updates optimistically at once and rolls
+ * back together on failure. The Server Action that `mutationFn` calls also
+ * expires the list page's server cache. The All tasks page favorites through
+ * this too; that page's own star also uses `useOptimistic` (`FavoriteToggle`).
  */
 export const updateTaskFavoriteMutationOptions = () =>
   mutationOptions({
@@ -66,12 +68,18 @@ export const updateTaskFavoriteMutationOptions = () =>
     },
   });
 
-/** 和 `favoriteTasksQueryOptions` 的 `created_desc` 一致，乐观插入的位置就是重新请求后的位置。 */
+/**
+ * Matches `created_desc` in `favoriteTasksQueryOptions`, so an optimistic
+ * insert lands where the refetch will put it.
+ */
 function newestFirst(a: Task, b: Task) {
   return b.createdAt - a.createdAt;
 }
 
-/** 把任务的新值写进每一个缓存里的任务列表：分页列表、无限列表和搜索结果。 */
+/**
+ * Writes the task's new value into every cached task list: paged lists,
+ * infinite lists and search results.
+ */
 function setTaskInLists(client: QueryClient, task: Task) {
   const replace = (items: Task[]) =>
     items.map((item) => (item.id === task.id ? task : item));

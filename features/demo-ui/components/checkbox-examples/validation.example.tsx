@@ -6,12 +6,13 @@ import { useId, useState } from "react";
 import { CheckboxIndicator, CheckboxRoot } from "@/components/ui/checkbox";
 
 export const metadata = {
-  title: "勾选校验",
-  description: "勾选同意条款后清除错误，取消勾选后再次显示。",
+  title: "Required checkbox",
+  description:
+    "Agreeing to the terms clears the error; unchecking shows it again.",
   order: 30,
 };
 
-/** 调用方维护勾选状态及校验结果。 */
+/** The caller holds the checked state and the validation result. */
 export function Example() {
   const [checked, setChecked] = useState(false);
   const descriptionId = useId();
@@ -31,7 +32,7 @@ export function Example() {
             <IconCheck aria-hidden />
           </CheckboxIndicator>
         </CheckboxRoot>
-        我已阅读并同意使用条款
+        I have read and agree to the terms of use
       </label>
       <p
         id={descriptionId}
@@ -39,7 +40,9 @@ export function Example() {
           invalid ? "text-xs text-destructive" : "text-xs text-muted-foreground"
         }
       >
-        {invalid ? "请先同意使用条款。" : "已同意使用条款，可以继续。"}
+        {invalid
+          ? "Agree to the terms of use first."
+          : "You agreed to the terms of use and can continue."}
       </p>
     </div>
   );

@@ -1,13 +1,16 @@
 import "server-only";
 
 /**
- * Server Component、Server Action、Route Handler 请求后端时附加的凭证，`fetchApi` 经 `#credentials` 引入：
- * package.json 的 `imports` 只在 `react-server` 条件下解析到本文件，浏览器侧是 `credentials-browser.ts`。
- * 不合并成一个按 `typeof window` 分支的文件：Client Component 在服务端渲染时也没有 `window`，
- * 服务端分支会被打进那里，而那里静态引入 `next/headers` 或 `server-only` 会让构建失败。
- * 读本次请求的 cookie 时，调用方按请求执行，`use cache` 里的调用要传 `auth: false`。
+ * The credentials a request to the backend from a Server Component, Server Action or Route Handler
+ * carries; `fetchApi` imports them through `#credentials`: package.json's `imports` resolves to this
+ * file only under the `react-server` condition, and to `credentials-browser.ts` on the browser side.
+ * Not one file branching on `typeof window`: Client Components have no `window` during server
+ * rendering either, so the server branch would be bundled there, where a static import of
+ * `next/headers` or `server-only` fails the build.
+ * When it reads this request's cookies, its callers run per request, and a call inside `use cache`
+ * must pass `auth: false`.
  */
 export async function credentialHeaders(): Promise<Record<string, string>> {
-  // TODO: 模板还没配置凭证，需要登录态的接口在服务端拿不到用户；按后端的认证方式填写（setup-data-access skill），接口全部公开时改为写明这一点。
+  // TODO: no credentials are configured yet, so endpoints that need a signed-in user get none on the server; fill this in for the backend's authentication (setup-data-access skill), or, when every endpoint is public, say so here instead.
   return {};
 }

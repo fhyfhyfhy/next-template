@@ -22,7 +22,9 @@ const searchTasks = (term: string, signal?: AbortSignal) =>
 export const searchTasksQueryOptions = (term: string) =>
   queryOptions({
     queryKey: [...taskListKey, "search", { term }],
-    // 边输入边搜索时旧关键词的请求要中止。signal 只在浏览器传：服务端带 signal 的 fetch 不参与渲染内去重。
+    // Searching as you type must abort the old term's request. The signal is
+    // passed only in the browser: on the server, a fetch with a signal is left
+    // out of per-render dedupe.
     queryFn: ({ signal }) =>
       searchTasks(term, environmentManager.isServer() ? undefined : signal),
   });

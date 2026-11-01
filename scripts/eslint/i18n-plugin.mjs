@@ -25,7 +25,7 @@ const MESSAGES = {
   mdxRoute: `{{file}} is an MDX route. ${NO_MDX}`,
 };
 
-/** 为项目创建 i18n 插件，规则说明见 .claude/rules/i18n.md「Reading messages」。 */
+/** Creates the project's i18n plugin; its rule is described in "Reading messages" in .claude/rules/i18n.md. */
 export default function createI18nPlugin(projectRoot) {
   const check = createClientNamespaceChecker(projectRoot);
   return {

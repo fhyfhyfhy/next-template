@@ -17,14 +17,15 @@ export interface InputConfig {
   invalid: boolean;
 }
 
-// 括号将结束标记保留在表达式内；UI demo 页面只替换标记之间的 JSON 初始值。
+// The parentheses keep the end marker inside the expression; the UI demo page
+// replaces only the initial JSON between the markers.
 // prettier-ignore
 export const initialConfig: InputConfig = (/* @example-config */ {
   "size": "md",
   "type": "text",
-  "label": "项目名称",
-  "description": "给你的下一个想法起个名字。",
-  "placeholder": "例如：我的设计系统",
+  "label": "Project name",
+  "description": "Give your next idea a name.",
+  "placeholder": "e.g. My design system",
   "value": "",
   "disabled": false,
   "readOnly": false,
@@ -32,7 +33,10 @@ export const initialConfig: InputConfig = (/* @example-config */ {
   "invalid": false
 } /* @end-example-config */);
 
-/** 不传参数时使用本地状态；UI demo 页面传入同一份配置供面板与预览共享。 */
+/**
+ * Without a config it keeps its own state; the UI demo page passes one config
+ * that the panel and the preview share.
+ */
 export function InputPlayground({
   config,
   onConfigChange,

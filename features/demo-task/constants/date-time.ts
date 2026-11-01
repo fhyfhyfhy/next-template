@@ -1,4 +1,7 @@
-/** 任务和评论的时间显示格式，传给 next-intl 的 `format.dateTime`；时区由 lib/i18n/request.ts 统一指定。 */
+/**
+ * How task and comment times display, passed to next-intl's `format.dateTime`;
+ * lib/i18n/request.ts sets one time zone for all of them.
+ */
 export const DATE_TIME_FORMAT = {
   dateStyle: "medium",
   timeStyle: "short",

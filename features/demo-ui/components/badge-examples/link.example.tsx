@@ -4,12 +4,16 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "@/lib/i18n/navigation";
 
 export const metadata = {
-  title: "渲染为链接",
-  description: "用 render 换成链接，保留链接的语义和键盘操作。",
+  title: "Rendered as a link",
+  description:
+    "render swaps in a link, which keeps a link's semantics and keyboard behavior.",
   order: 20,
 };
 
-/** Badge 只提供外观，交互由 render 传入的元素负责。 */
+/**
+ * Badge provides only the look; the element passed to render handles
+ * interaction.
+ */
 export function Example() {
   return (
     <Badge
@@ -17,7 +21,7 @@ export function Example() {
       render={<Link href="/demos/tasks?status=failed" />}
       className="hover:text-foreground"
     >
-      查看失败的任务
+      View failed tasks
       <IconArrowUpRight aria-hidden />
     </Badge>
   );

@@ -11,7 +11,10 @@ import { assertMockApiRunning } from "../utils/assert-mock-api-running";
 
 const inputSchema = z.object({ taskId: z.string().min(1) });
 
-/** 删除任务及其评论。任务已经不存在时按删除成功处理，重复删除不报错。 */
+/**
+ * Deletes a task and its comments. A task that no longer exists counts as
+ * deleted, so deleting twice is not an error.
+ */
 export async function deleteTaskAction(
   input: z.input<typeof inputSchema>,
 ): Promise<ActionResult<null>> {

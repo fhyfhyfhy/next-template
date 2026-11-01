@@ -19,16 +19,19 @@ import {
 import type { Task } from "./get-task";
 
 /**
- * 创建任务。名称被占用是预期失败，返回 `ok: false`；其他错误照常抛出。
- * 成功后让列表页的服务端缓存失效，Server Action 的响应会带回刷新后的列表。
- * Server Action 读不到 `[locale]`，`locale` 由调用方传入，用来生成校验文案。
+ * Creates a task. A taken name is an expected failure and returns `ok: false`;
+ * other errors are thrown as usual. On success it expires the list page's
+ * server cache, and the Server Action's response brings back the refreshed
+ * list. A Server Action can't read `[locale]`, so the caller passes `locale`
+ * for the validation messages.
  */
 export async function createTaskAction(
   locale: Locale,
   input: CreateTaskInput,
 ): Promise<ActionResult<Task>> {
   assertMockApiRunning();
-  // 参数来自浏览器，类型约束不了实际传来的值。
+  // The arguments come from the browser; their types don't constrain what
+  // actually arrives.
   if (!hasLocale(routing.locales, locale)) {
     throw new Error(`Unsupported locale: ${String(locale)}`);
   }

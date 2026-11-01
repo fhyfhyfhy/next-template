@@ -5,15 +5,19 @@ import { buildDir } from "./scripts/build-dirs.mjs";
 
 const withNextIntl = createNextIntlPlugin("./lib/i18n/request.ts");
 
-// 每种产物各放一个目录，规则和要同步排除它们的文件见 scripts/build-dirs.mjs。
+// One directory per kind of build; scripts/build-dirs.mjs lists them and the
+// files that must exclude them too.
 const distDir = buildDir(process.env);
 
 const nextConfig: NextConfig = {
   distDir,
   cacheComponents: true,
-  // 内置的内存 handler 在生产环境过了 cacheLife 的 revalidate 就丢弃条目，请求只能同步等新数据；
-  // 这个 handler 保留到 expire，生产环境和 dev 一样先返回旧数据、后台刷新。
-  // 必须是绝对路径：Next 校验配置时按当前目录解析，运行时又按 distDir 解析相对路径。
+  // The built-in in-memory handler drops an entry in production once its
+  // cacheLife revalidate passes, so the request waits for fresh data; this
+  // one keeps it until expire, so production serves the stale entry and
+  // refreshes in the background, as dev does. An absolute path: Next checks
+  // the config against the working directory but resolves a relative path
+  // against distDir at run time.
   cacheHandlers: { default: require.resolve("./lib/cache-handler.mts") },
   partialPrefetching: true,
   outputFileTracingIncludes: {
@@ -24,12 +28,14 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     agentUpgrade: "security",
-    // @next/playwright 的 instant() 要用；只由 e2e 的 build 打开（playwright*.config.ts 的 webServer.env），
-    // 不要带进面向用户的部署。
+    // For @next/playwright's instant(); only the e2e builds turn it on
+    // (webServer.env in playwright*.config.ts). Never in a deployed build.
     exposeTestingApiInProductionBuild: process.env.EXPOSE_TESTING_API === "1",
-    // @mantine/hooks 不在 Next 默认优化的包里；不加的话 dev 会加载它 barrel 里的全部模块。
+    // @mantine/hooks is not among the packages Next optimizes by default;
+    // without it dev loads every module of its barrel.
     optimizePackageImports: ["@mantine/hooks"],
-    // 根 layout 在 [locale] 下，没有匹配任何路由的请求由 app/global-not-found.tsx 渲染。
+    // The root layout sits under [locale], so a request that matches no
+    // route renders app/global-not-found.tsx.
     globalNotFound: true,
   },
 };

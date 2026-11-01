@@ -27,7 +27,7 @@ function namespaceFiles(locale: string) {
     .sort();
 }
 
-/** 一个 namespace 的全部文案，key 是 next-intl 里用的点分路径（`taskList.emptyTitle`）。 */
+/** Every message of a namespace, keyed by the dotted path next-intl uses (`taskList.emptyTitle`). */
 function readMessages(locale: string, namespace: string) {
   const json: unknown = JSON.parse(
     readFileSync(join(MESSAGES_DIR, locale, `${namespace}.json`), "utf8"),
@@ -46,24 +46,24 @@ function readMessages(locale: string, namespace: string) {
   return messages;
 }
 
-/** 文案不是非空字符串，或者不是合法的 ICU message 时返回原因。 */
+/** Why a message is not a non-empty string or not a valid ICU message, if it is not. */
 function invalidReason(message: unknown) {
-  if (typeof message !== "string") return "不是字符串";
-  if (message.trim() === "") return "是空字符串";
+  if (typeof message !== "string") return "not a string";
+  if (message.trim() === "") return "an empty string";
   try {
     parse(message);
   } catch (error) {
-    return `ICU 语法错误：${String(error)}`;
+    return `ICU syntax error: ${String(error)}`;
   }
 }
 
 describe.each(routing.locales)("%s", (locale) => {
-  test("namespace 文件和 NAMESPACES 一一对应", () => {
+  test("the namespace files match NAMESPACES one to one", () => {
     expect(namespaceFiles(locale)).toStrictEqual([...NAMESPACES].sort());
   });
 
   test.each(NAMESPACES)(
-    "%s 的文案都是非空、合法的 ICU message",
+    "every message of %s is a non-empty, valid ICU message",
     (namespace) => {
       const invalid = [...readMessages(locale, namespace)].flatMap(
         ([key, message]) => {
@@ -76,7 +76,7 @@ describe.each(routing.locales)("%s", (locale) => {
   );
 });
 
-/** message 用到的插值参数和 rich text 标签名，包括 plural、select 分支里的。 */
+/** The interpolated arguments and rich text tag names a message uses, those in plural and select branches included. */
 function argumentNames(message: unknown) {
   const names = new Set<string>();
   const visit = (elements: MessageFormatElement[]) => {
@@ -99,7 +99,7 @@ const termsSchema = z.strictObject({
   keep: z.array(z.string().min(1)),
   translations: z.record(
     z.string().min(1),
-    // 缺了哪个 locale 由下面的用例逐条报出，这里不要求齐全。
+    // A missing locale is reported per term by the test below, so this does not require every one.
     z.partialRecord(z.enum(TARGET_LOCALES), z.string().min(1)),
   ),
 });
@@ -107,7 +107,7 @@ const terms = termsSchema.parse(
   JSON.parse(readFileSync(join(MESSAGES_DIR, "terms.json"), "utf8")),
 );
 
-/** 源语言文案里出现的术语，对应 locale 的译文必须包含的写法；大小写不敏感，句首大写也算。 */
+/** How the terms in a source-locale message must appear in the locale's translation; case-insensitive, so a capitalized first word counts. */
 function requiredTerms(
   source: string,
   locale: (typeof TARGET_LOCALES)[number],
@@ -123,7 +123,7 @@ function requiredTerms(
 }
 
 test.each(Object.keys(terms.translations))(
-  "术语「%s」给每个非源语言都规定了译法",
+  'the term "%s" has a translation for every locale but the source locale',
   (term) => {
     expect(Object.keys(terms.translations[term]).sort()).toStrictEqual(
       [...TARGET_LOCALES].sort(),
@@ -131,29 +131,37 @@ test.each(Object.keys(terms.translations))(
   },
 );
 
-describe.each(TARGET_LOCALES)("%s 对照 Source locale", (locale) => {
-  test.each(NAMESPACES)("%s 的译文遵守 terms.json", (namespace) => {
-    const target = readMessages(locale, namespace);
-    const violations = [...readMessages(SOURCE_LOCALE, namespace)].flatMap(
-      ([key, source]) => {
-        if (typeof source !== "string") return [];
-        const translation = String(target.get(key) ?? "").toLowerCase();
-        return requiredTerms(source, locale)
-          .filter((term) => !translation.includes(term.toLowerCase()))
-          .map((term) => `${key}: 缺少「${term}」`);
-      },
-    );
-    expect(violations).toStrictEqual([]);
-  });
-
-  test.each(NAMESPACES)("%s 的 key 和 Source locale 一致", (namespace) => {
-    const source = readMessages(SOURCE_LOCALE, namespace);
-    const target = readMessages(locale, namespace);
-    expect([...target.keys()].sort()).toStrictEqual([...source.keys()].sort());
-  });
+describe.each(TARGET_LOCALES)("%s against the source locale", (locale) => {
+  test.each(NAMESPACES)(
+    "the %s translation follows terms.json",
+    (namespace) => {
+      const target = readMessages(locale, namespace);
+      const violations = [...readMessages(SOURCE_LOCALE, namespace)].flatMap(
+        ([key, source]) => {
+          if (typeof source !== "string") return [];
+          const translation = String(target.get(key) ?? "").toLowerCase();
+          return requiredTerms(source, locale)
+            .filter((term) => !translation.includes(term.toLowerCase()))
+            .map((term) => `${key}: missing "${term}"`);
+        },
+      );
+      expect(violations).toStrictEqual([]);
+    },
+  );
 
   test.each(NAMESPACES)(
-    "%s 的插值参数和标签和 Source locale 一致",
+    "the keys of %s match the source locale's",
+    (namespace) => {
+      const source = readMessages(SOURCE_LOCALE, namespace);
+      const target = readMessages(locale, namespace);
+      expect([...target.keys()].sort()).toStrictEqual(
+        [...source.keys()].sort(),
+      );
+    },
+  );
+
+  test.each(NAMESPACES)(
+    "the arguments and tags of %s match the source locale's",
     (namespace) => {
       const source = readMessages(SOURCE_LOCALE, namespace);
       const target = readMessages(locale, namespace);
@@ -162,7 +170,7 @@ describe.each(TARGET_LOCALES)("%s 对照 Source locale", (locale) => {
         const actual = argumentNames(target.get(key)).join(", ");
         return expected === actual
           ? []
-          : [`${key}: {${actual}}，应为 {${expected}}`];
+          : [`${key}: {${actual}}, expected {${expected}}`];
       });
       expect(mismatched).toStrictEqual([]);
     },

@@ -15,7 +15,11 @@ const updateMockLatency = (latencyMs: number) =>
     auth: false,
   });
 
-/** 修改 Mock API 业务接口的默认延迟，对所有 Data demo 页面的请求生效，重置 Mock 数据时恢复。 */
+/**
+ * Changes the default latency of the Mock API's business endpoints. It applies
+ * to the requests of every Data demo page and is restored when the Mock data is
+ * reset.
+ */
 export const updateMockLatencyMutationOptions = () =>
   mutationOptions({
     mutationFn: updateMockLatency,

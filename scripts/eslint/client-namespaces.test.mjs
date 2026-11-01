@@ -48,7 +48,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 }
 `;
 
-// Client Component：用 namespace 渲染一段文字，extra 放额外的 import 或代码。
+// A Client Component that renders some text with namespace; extra holds additional imports or code.
 const CLIENT = (name, namespace, extra = "") => `"use client";
 import { useTranslations } from "next-intl";
 ${extra}
@@ -109,7 +109,8 @@ function eslintFor(root, fix = false) {
   });
 }
 
-// 每个有问题的文件对应一组 "messageId namespace"，没有 namespace 的只写 messageId。
+// Maps each file with problems to its "messageId namespace" entries, or just messageId when there
+// is no namespace.
 function summarize(root, results) {
   const summary = {};
   for (const result of results) {
@@ -138,7 +139,7 @@ async function fix(root) {
 
 const read = (root, file) => readFileSync(join(root, file), "utf8");
 
-test("每层发全了就不报错；Server Component 里用到的 namespace 不需要下发", async () => {
+test("reports nothing when every level sends all it needs; namespaces used in Server Components need not be sent", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(
       `import { Greeting } from "@/components/greeting";
@@ -151,7 +152,7 @@ function Server() { const t = useTranslations("server-only"); return <p>{t("x")}
   expect(await lint(root)).toStrictEqual({});
 });
 
-test("缺的 namespace 报在包着用到它的组件的那层 ClientMessages 上，--fix 补进那一层", async () => {
+test("a missing namespace is reported on the ClientMessages enclosing the component that uses it, and --fix adds it there", async () => {
   const root = fixture({
     "app/(shop)/layout.tsx": LAYOUT(["shop"]),
     "app/(shop)/cart/page.tsx": PAGE(
@@ -176,7 +177,7 @@ import { Shop } from "@/features/cart/shop";`,
   expect(await lint(root)).toStrictEqual({});
 });
 
-test("外层已经发过的和没人用的 namespace 报错，--fix 删掉", async () => {
+test("namespaces already sent further out and unused ones are reported, and --fix removes them", async () => {
   const root = fixture({
     "app/(shop)/layout.tsx": LAYOUT(["app", "shop", "shop", "unused"]),
     "app/(shop)/page.tsx": PAGE(
@@ -200,7 +201,7 @@ import { Header } from "./header";`,
   );
 });
 
-test("没写指令的组件：被 Server 文件引入时在服务端渲染，被 Client 文件引入时才要下发", async () => {
+test("a component without a directive renders on the server when a Server file imports it, and needs its namespace sent only when a Client file imports it", async () => {
   const server = fixture({
     "app/page.tsx": PAGE(
       `import { Shared } from "./shared";
@@ -226,7 +227,7 @@ import { Greeting } from "./greeting";`,
   });
 });
 
-test("动态 import 都算：next/dynamic、React.lazy、事件处理里的 import()", async () => {
+test("every dynamic import counts: next/dynamic, React.lazy, and import() in an event handler", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(
       `import dynamic from "next/dynamic";
@@ -250,7 +251,7 @@ export async function load() { return import("./exporter"); }`,
   });
 });
 
-test("带变量的动态 import 按 bundler 的做法展开成目录下所有匹配的文件", async () => {
+test("a dynamic import with variables expands, as a bundler does, to every matching file in the directory", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(`import { Widgets } from "./widgets";`, "<Widgets />"),
     "app/widgets.tsx": CLIENT(
@@ -267,7 +268,7 @@ test("带变量的动态 import 按 bundler 的做法展开成目录下所有匹
   });
 });
 
-test("分析不了的写法直接报错，不悄悄跳过", async () => {
+test("code it can't analyze is reported rather than quietly skipped", async () => {
   const root = fixture({
     "app/page.tsx": PAGE("", ""),
     "app/docs/page.mdx": "# Docs",
@@ -320,7 +321,7 @@ export function Bad({ namespace, name }: { namespace: "app"; name: string }) {
   });
 });
 
-test("从 use-intl 导入的 useTranslations 同样算", async () => {
+test("useTranslations imported from use-intl counts too", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(
       `import { Greeting } from "./greeting";`,
@@ -336,7 +337,7 @@ test("从 use-intl 导入的 useTranslations 同样算", async () => {
   });
 });
 
-test("经过 feature 入口时只沿用到的导出走，export * 也一样", async () => {
+test("through a feature entry only the exports in use are followed, export * included", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(
       `import { A } from "@/features/named";
@@ -357,7 +358,7 @@ export * from "./d";`,
   });
 });
 
-test("Client 端调用的 Server Action 按服务端继续走：它自己用的文案不算，它返回的 Client Component 算；类型 import 不往下走", async () => {
+test("a Server Action called from the client is followed as server: its own messages don't count, the Client Components it returns do; type imports are not followed", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(`import { Form } from "./form";`, "<Form />"),
     "app/form.tsx": CLIENT(
@@ -385,7 +386,7 @@ export async function save() {
   });
 });
 
-test("ClientMessages 只管元素里面渲染的东西；同文件的组件按它被渲染的位置算", async () => {
+test("ClientMessages covers only what renders inside the element; a component in the same file counts where it is rendered", async () => {
   const root = fixture({
     "app/page.tsx": `import { ClientMessages } from "@/lib/i18n/client-messages";
 import { Inside } from "./inside";
@@ -408,7 +409,7 @@ export default function Page() {
   });
 });
 
-test("layout 把 children 渲染在 ClientMessages 外面时报错，不管 props 怎么取；看不出来时也报错", async () => {
+test("a layout rendering children outside ClientMessages is reported however it reads props, and so is one where that can't be told", async () => {
   const layout = (
     signature,
     children,
@@ -454,7 +455,7 @@ export default ${wrap(`function Layout(${signature}) {
   });
 });
 
-test("根 layout 要用 RootClientMessages，其他地方不能用；ClientMessages 只能放在 layout、template、page", async () => {
+test("the root layout must use RootClientMessages and nothing else may; ClientMessages goes only in a layout, template or page", async () => {
   const root = fixture({
     "app/layout.tsx": `import type { ReactNode } from "react";
 import { Theme } from "./theme";
@@ -490,7 +491,7 @@ const list = ["shop"] as const;`,
   });
 });
 
-test("error.tsx 这类 Client 文件的 namespace 算在所在 layout 上；global-error 在所有 ClientMessages 外面", async () => {
+test("the namespaces of Client files such as error.tsx count toward their layout; global-error is outside every ClientMessages", async () => {
   const root = fixture({
     "app/(shop)/layout.tsx": LAYOUT(["shop"]),
     "app/(shop)/page.tsx": PAGE(`import { Shop } from "./shop";`, "<Shop />"),
@@ -515,7 +516,7 @@ test("error.tsx 这类 Client 文件的 namespace 算在所在 layout 上；glob
   });
 });
 
-test("template 的 ClientMessages 包着 page 和平行路由的 slot", async () => {
+test("a template's ClientMessages encloses the page and the slots of parallel routes", async () => {
   const root = fixture({
     "app/(shop)/layout.tsx": `import type { ReactNode } from "react";
 import { ClientMessages } from "@/lib/i18n/client-messages";
@@ -544,7 +545,7 @@ import { Shop } from "./shop";`,
   expect(await lint(root)).toStrictEqual({});
 });
 
-test("workspace 包沿真实路径继续分析，第三方包不分析；只有类型声明、没有 JS 的包报错", async () => {
+test("workspace packages are followed by their real paths and third-party packages are not analyzed; a package with type declarations but no JS is reported", async () => {
   const builtPackage = (name) =>
     JSON.stringify({
       name,
@@ -603,7 +604,7 @@ import { Greeting } from "./greeting";`,
   });
 });
 
-test("package.json imports：Client 端可能选中的分支都跟进去（包括 development），带 * 的 key 按 Node 的规则匹配", async () => {
+test("package.json imports: every branch the client side may select is followed (development included), and keys with * match by Node's rules", async () => {
   const shared = (name, namespace) =>
     CLIENT(name, namespace).replace('"use client";', "");
   const root = fixture({
@@ -639,7 +640,7 @@ import { Star } from "#widgets/star";`,
   });
 });
 
-test("依赖成环时也能走完；src/app 和多个根 layout 都适用", async () => {
+test("the walk finishes even when dependencies form a cycle; src/app and multiple root layouts work too", async () => {
   const root = fixture({
     "app/layout.tsx": null,
     "src/app/(a)/layout.tsx": ROOT_LAYOUT([]),
@@ -664,7 +665,7 @@ test("依赖成环时也能走完；src/app 和多个根 layout 都适用", asyn
   });
 });
 
-test("编辑器里未保存的内容参与分析，磁盘上的文件变了结果也跟着变", async () => {
+test("unsaved content in the editor is analyzed, and the result follows changes to files on disk", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(
       `import { Greeting } from "./greeting";`,
@@ -688,7 +689,7 @@ import { Cart } from "./cart";`,
   const [layout] = await eslint.lintText(read(root, "app/layout.tsx"), {
     filePath: join(root, "app/layout.tsx"),
   });
-  // 磁盘上的 page 还没引入 Cart，所以根 layout 不缺 cart。
+  // The page on disk doesn't import Cart yet, so the root layout isn't missing cart.
   expect(layout.messages).toStrictEqual([]);
 
   writeFileSync(

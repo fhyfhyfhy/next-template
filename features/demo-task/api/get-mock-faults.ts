@@ -3,7 +3,8 @@ import { z } from "zod";
 import { fetchApi } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
 
-// Mock API 的控制接口，只给故障实验室使用；真实后端没有这组接口。
+// Mock API control endpoints, used only by the Fault lab; a real backend has
+// none of them.
 
 export const mockFaultSchema = z
   .object({

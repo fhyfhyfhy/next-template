@@ -22,15 +22,17 @@ const createRenameInputSchema = (t: DemoTaskTranslator) =>
   });
 
 /**
- * 重命名任务。名称被占用是预期失败，返回 `ok: false`；其他错误照常抛出。
- * Server Action 读不到 `[locale]`，`locale` 由调用方传入，用来生成校验文案。
+ * Renames a task. A taken name is an expected failure and returns `ok: false`;
+ * other errors are thrown as usual. A Server Action can't read `[locale]`, so
+ * the caller passes `locale` for the validation messages.
  */
 export async function updateTaskAction(
   locale: Locale,
   input: z.input<ReturnType<typeof createRenameInputSchema>>,
 ): Promise<ActionResult<Task>> {
   assertMockApiRunning();
-  // 参数来自浏览器，类型约束不了实际传来的值。
+  // The arguments come from the browser; their types don't constrain what
+  // actually arrives.
   if (!hasLocale(routing.locales, locale)) {
     throw new Error(`Unsupported locale: ${String(locale)}`);
   }

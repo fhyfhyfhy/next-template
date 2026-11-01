@@ -22,7 +22,10 @@ interface OptionSelectProps<TValue extends string> {
   onChange: (value: TValue) => void;
 }
 
-/** 故障表单里的下拉选择：组合项目的 Select，label 作为触发器的可访问名称。 */
+/**
+ * A dropdown in the fault form: composes the project's Select, with the label
+ * as the trigger's accessible name.
+ */
 export function OptionSelect<TValue extends string>({
   label,
   value,

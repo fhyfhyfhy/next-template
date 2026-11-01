@@ -9,7 +9,8 @@ import { routing } from "@/lib/i18n/routing";
 
 import "@/app/globals.css";
 
-// Cache Components 要求每个 root param 至少预渲染一个值；每个 locale 各出一份静态页面。
+// Cache Components needs at least one prerendered value for each root param;
+// each locale gets its own static pages.
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }

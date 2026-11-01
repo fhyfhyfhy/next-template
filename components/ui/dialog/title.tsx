@@ -4,7 +4,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 
 import { cn } from "@/lib/cn";
 
-/** 为同一 Root 内的弹层提供可访问名称。 */
+/** Gives the popup in the same Root its accessible name. */
 export function DialogTitle({
   className,
   ...props

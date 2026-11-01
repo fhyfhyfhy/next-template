@@ -5,7 +5,10 @@ import { useQuery } from "@/lib/react-query";
 import { getTaskQueryOptions } from "../../api/get-task";
 import { TaskStatusBadge } from "../task-status-badge";
 
-/** 用 `select` 只订阅 status：轮询带回的进度变化不会让它重新渲染。 */
+/**
+ * Subscribes to status alone through `select`, so progress changes from polling
+ * don't re-render it.
+ */
 export function LiveTaskStatus({ taskId }: { taskId: string }) {
   const { data: status } = useQuery({
     ...getTaskQueryOptions(taskId),

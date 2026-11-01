@@ -21,7 +21,11 @@ import { TaskCoverPanel } from "./task-cover-panel";
 import { TaskHeading } from "./task-heading";
 import { TaskProgress } from "./task-progress";
 
-/** 任务详情由 React Query 负责：任务会在用户停留时自己推进，pending、running 时轮询。首屏数据来自服务端 prefetch。 */
+/**
+ * React Query owns the task detail: the task advances on its own while the user
+ * stays, so it polls while pending or running. The first paint's data comes
+ * from the server prefetch.
+ */
 export function TaskDetail({ taskId }: { taskId: string }) {
   const t = useTranslations("demo-task");
   const format = useFormatter();
@@ -30,7 +34,9 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   useRefreshListsWhenSettled(task.data?.status);
   useEffect(() => record(taskId), [record, taskId]);
 
-  // 先看 data：刷新失败时保留已有数据。404 由 query 工厂的 meta 关掉通用提示，这里显示已删除。
+  // Check data first, so a failed refresh keeps the data. For a 404 the query
+  // factory's meta turns off the generic toast, and this shows the task as
+  // deleted.
   if (task.data) {
     const deleted = isTaskNotFound(task.error);
     const { data } = task;

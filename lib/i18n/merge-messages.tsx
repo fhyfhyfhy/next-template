@@ -14,8 +14,9 @@ interface MergeMessagesProps {
 }
 
 /**
- * `ClientMessages` 的客户端部分。next-intl 嵌套的 provider 传了 `messages` 就整个替换外层的，这里先把外层的
- * 合并进来；时区、now、formats 由 provider 从外层继承，只有 `locale` 要显式传。
+ * The client part of `ClientMessages`. A nested next-intl provider given `messages` replaces the
+ * outer messages entirely, so this merges the outer ones in first; the provider inherits the time
+ * zone, now and formats from the outer one, and only `locale` must be passed explicitly.
  */
 export function MergeMessages({ messages, children }: MergeMessagesProps) {
   const outer = useMessages();

@@ -1,7 +1,9 @@
 import { expect, test } from "./test";
 
-// 用普通命令 build 和 start 时没有 Mock API，Data demo 只能显示说明。服务端的请求没有后端地址可发，
-// 一发就让 build 或页面报错；浏览器发出的业务请求由下面的监听记下。
+// A build and start with the plain commands has no Mock API, so the Data demo
+// can only show an explanation. Server requests have no backend URL to go to,
+// and sending one would fail the build or the page; the listener below records
+// the business requests the browser sends.
 const DATA_DEMO_PAGES = [
   "/demos/tasks",
   "/demos/tasks/task-01",
@@ -11,7 +13,7 @@ const DATA_DEMO_PAGES = [
   "/demos/lab",
 ];
 
-test("没有 Mock API 时，Data demo 页面只显示说明，不请求业务接口", async ({
+test("without the Mock API, Data demo pages show only an explanation and request no business API", async ({
   page,
 }) => {
   const businessRequests: string[] = [];
@@ -27,7 +29,7 @@ test("没有 Mock API 时，Data demo 页面只显示说明，不请求业务接
     await expect(
       page.getByRole("heading", { name: "Mock API 未运行" }),
     ).toBeVisible();
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言页面 hydrate 之后的一段时间里也不发业务请求，等待是断言的一部分。
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- asserts that no business request is sent for a while after the page hydrates either; the wait is part of the assertion.
     await page.waitForTimeout(300);
   }
 

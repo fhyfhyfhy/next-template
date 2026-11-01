@@ -19,7 +19,10 @@ import { TaskStatusBadge } from "../task-status-badge";
 import { FavoriteToggle } from "./favorite-toggle";
 
 interface TaskListProps {
-  /** Server Component 不 await 直接传下来的读取结果，这里用 `use()` 取值，未完成时由外层 Suspense 显示骨架屏。 */
+  /**
+   * The read the Server Component passes down without awaiting. `use()` unwraps
+   * it here; until it resolves, the enclosing Suspense shows the skeleton.
+   */
   tasksPromise: Promise<TaskPage>;
   params: TaskListParams;
 }
@@ -33,7 +36,7 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
   const previousPage = { ...params, page: params.page - 1 };
   const nextPage = { ...params, page: params.page + 1 };
   return (
-    // 导航期间显示的还是旧列表，标记为更新中并调淡。
+    // During navigation this is still the old list, so mark it busy and dim it.
     <div
       aria-busy={pending}
       className="transition-opacity aria-busy:opacity-60"

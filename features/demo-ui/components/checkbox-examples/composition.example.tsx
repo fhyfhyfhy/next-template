@@ -6,15 +6,16 @@ import { useState } from "react";
 import { CheckboxIndicator, CheckboxRoot } from "@/components/ui/checkbox";
 
 export const metadata = {
-  title: "全选与混合状态",
-  description: "Root 与 Indicator 独立组合，混合状态由选中项计算。",
+  title: "Select all and the mixed state",
+  description:
+    "Root and Indicator compose separately; the mixed state is computed from the checked items.",
   order: 20,
 };
 
-/** 混合状态由调用方根据选中项计算。 */
+/** The caller computes the mixed state from the checked items. */
 export function Example() {
-  const [selected, setSelected] = useState(["设计"]);
-  const options = ["设计", "开发", "产品"];
+  const [selected, setSelected] = useState(["Design"]);
+  const options = ["Design", "Engineering", "Product"];
   const all = selected.length === options.length;
   const mixed = selected.length > 0 && !all;
   return (
@@ -29,7 +30,7 @@ export function Example() {
             {mixed ? <IconMinus aria-hidden /> : <IconCheck aria-hidden />}
           </CheckboxIndicator>
         </CheckboxRoot>
-        选择全部
+        Select all
       </label>
       <div className="space-y-3 border-l border-border pl-5">
         {options.map((option) => (

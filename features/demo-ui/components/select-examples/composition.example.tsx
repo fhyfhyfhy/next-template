@@ -17,28 +17,32 @@ import {
 } from "@/components/ui/select";
 
 export const metadata = {
-  title: "多选与定位",
-  description: "多个选择共享一个值，Positioner 独立控制浮层位置。",
+  title: "Multiple selection and positioning",
+  description:
+    "The selections share one value; Positioner controls where the popup sits on its own.",
   order: 20,
 };
 
-/** 多选值由调用方维护，定位参数直接传给 Positioner。 */
+/**
+ * The caller holds the selected values and passes the positioning props
+ * straight to Positioner.
+ */
 export function Example() {
   const [value, setValue] = useState(["design"]);
   const id = useId();
   const items = [
-    { value: "design", label: "设计" },
-    { value: "code", label: "代码" },
-    { value: "writing", label: "写作" },
+    { value: "design", label: "Design" },
+    { value: "code", label: "Code" },
+    { value: "writing", label: "Writing" },
   ];
   return (
     <div className="w-full max-w-xs space-y-2">
       <span id={id} className="text-sm font-medium">
-        兴趣领域
+        Interests
       </span>
       <SelectRoot multiple items={items} value={value} onValueChange={setValue}>
         <SelectTrigger aria-labelledby={id}>
-          <SelectValue placeholder="可选择多个领域" />
+          <SelectValue placeholder="Pick one or more areas" />
           <SelectIcon>
             <IconChevronDown className="size-4" aria-hidden />
           </SelectIcon>
@@ -65,7 +69,7 @@ export function Example() {
         </SelectPortal>
       </SelectRoot>
       <p className="text-xs text-muted-foreground">
-        已选择 {value.length} 个领域
+        {value.length} areas selected
       </p>
     </div>
   );

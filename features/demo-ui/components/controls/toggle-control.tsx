@@ -1,6 +1,6 @@
 import { SwitchRoot, SwitchThumb } from "@/components/ui/switch";
 
-/** 参数面板的布尔开关。 */
+/** A boolean switch for the controls panel. */
 export function ToggleControl({
   label,
   value,
