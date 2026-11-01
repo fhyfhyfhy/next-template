@@ -54,11 +54,21 @@ export function createProjectResolver(projectRoot, host = ts.sys) {
     compilerOptions = parsed.options;
   }
 
-  return (filename, specifier) => {
+  // packages 为 true 时也解析包名，返回 TypeScript 解析到的真实路径（workspace 包会解析到仓库内的源码）。
+  return (filename, specifier, { packages = false } = {}) => {
     if (typeof specifier !== "string") return null;
     const isRelative = /^(?:\.{1,2})(?:\/|$)/.test(specifier);
     const isAlias = specifier.startsWith("@/");
-    if (!isRelative && !isAlias) return null;
+    if (!isRelative && !isAlias) {
+      if (!packages) return null;
+      const target = ts.resolveModuleName(
+        specifier,
+        filename,
+        compilerOptions,
+        host,
+      ).resolvedModule?.resolvedFileName;
+      return target ? { target: resolve(target), isRelative, isAlias } : null;
+    }
 
     const fallback = isAlias
       ? resolve(root, specifier.slice(2))

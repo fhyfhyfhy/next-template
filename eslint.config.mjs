@@ -14,6 +14,7 @@ import createArchitecturePlugin, {
   layerZones,
 } from "./scripts/eslint/architecture-plugin.mjs";
 import e2ePlugin from "./scripts/eslint/e2e-plugin.mjs";
+import createI18nPlugin from "./scripts/eslint/i18n-plugin.mjs";
 import { SOURCE_EXTENSIONS, SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
 import createNamingPlugin from "./scripts/eslint/naming-plugin.mjs";
 import withWrapperImports, {
@@ -71,6 +72,14 @@ const QUERY_LIBRARY_MESSAGE =
 const LOCALE_NAVIGATION_MESSAGE =
   "Import Link, redirect, useRouter, and usePathname from @/lib/i18n/navigation: the next/* versions drop the locale prefix of non-default locales. See .claude/rules/i18n.md.";
 
+// lib/i18n/client-messages.tsx 以外直接用 next-intl 的 provider 下发文案，i18n/client-namespaces 就查不到。
+const INTL_PROVIDER_RESTRICTION = {
+  name: "next-intl",
+  importNames: ["NextIntlClientProvider", "useMessages"],
+  message:
+    "Send messages to Client Components with ClientMessages from @/lib/i18n/client-messages, so i18n/client-namespaces can check them. See .claude/rules/i18n.md.",
+};
+
 // 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query；
 // 站内导航走 next-intl 生成的 API，非默认 locale 的 URL 前缀才不会丢。
 const RESTRICTED_IMPORTS = {
@@ -90,6 +99,7 @@ const RESTRICTED_IMPORTS = {
       ],
       message: LOCALE_NAVIGATION_MESSAGE,
     },
+    INTL_PROVIDER_RESTRICTION,
   ],
   patterns: [{ group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE }],
 };
@@ -238,6 +248,31 @@ const eslintConfig = defineConfig([
     rules: {
       // 当前目录及子目录用相对路径，跨目录用 @/；feature 和组件内部交给各自的规则。
       "architecture/root-imports": "error",
+    },
+  },
+  {
+    files: ROOT_LAYERS.flatMap((layer) => layer.files),
+    ignores: [`**/*.{test,spec}.${extensionGlob}`],
+    plugins: { i18n: createI18nPlugin(PROJECT_ROOT) },
+    rules: {
+      // 每个 ClientMessages 发的 namespace 和它下面 Client Component 用到的一致，--fix 改写列表
+      // （.claude/rules/i18n.md）。它分析整个项目，和 feature 循环检查一样不能配合 --cache。
+      "i18n/client-namespaces": "error",
+    },
+  },
+  {
+    // ClientMessages 自己要用 next-intl 的 provider 和 useMessages；同一条规则后面的配置会整个替换前面的选项。
+    files: ["lib/i18n/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          ...RESTRICTED_IMPORTS,
+          paths: RESTRICTED_IMPORTS.paths.filter(
+            (path) => path !== INTL_PROVIDER_RESTRICTION,
+          ),
+        },
+      ],
     },
   },
   {
