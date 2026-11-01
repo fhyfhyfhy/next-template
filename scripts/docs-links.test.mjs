@@ -85,7 +85,7 @@ function missingDemoPaths(text) {
     const [, , , code, spec] = row[0].split(" | ");
     for (const [, path] of `${code} ${spec}`.matchAll(/`([^`]+)`/g)) {
       if (!path.includes("/")) continue;
-      const full = /^(app|e2e)\//.test(path)
+      const full = /^(app|e2e|features|lib|scripts)\//.test(path)
         ? path
         : `features/demo-task/${path}`;
       const found = path.includes("*")

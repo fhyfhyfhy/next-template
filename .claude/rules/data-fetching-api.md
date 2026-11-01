@@ -5,36 +5,33 @@ paths:
 
 # API modules
 
-Define backend requests and reusable React Query options for server and browser consumers. Request configuration applies wherever a backend request is implemented; the file conventions below apply to a feature's `api/` modules. Next.js Route Handlers under `app/api/` follow the framework's `route.ts` convention. The `next-data-flow` skill chooses the data owner; [data-fetching.md](data-fetching.md) covers data consumers and error presentation. Read `lib/fetch.ts` and `lib/react-query.ts` for their available options and exports. `features/demo-task/api/` follows these conventions end to end; the [Data demo](../../.agents/skills/next-data-flow/demos.md) maps each one to its code.
+Define the browser's requests, Server Actions, and reusable React Query options. The file conventions below apply to a feature's `api/` modules; the server data layer they reach lives in the feature's `server/` ([data-layer.md](data-layer.md)), and Next.js Route Handlers under `app/api/` follow the framework's `route.ts` convention. The `next-data-flow` skill chooses the data owner; [data-fetching.md](data-fetching.md) covers data consumers and error presentation. Read `lib/fetch.ts` and `lib/react-query.ts` for their available options and exports. `features/demo-task/api/` follows these conventions end to end; the [Data demo](../../.agents/skills/next-data-flow/demos.md) maps each one to its code.
 
 ## Files
 
-- One endpoint per file, named `<verb>-<resource>.ts` after its HTTP method: GET → `get-` (plural for a list, `get-tasks.ts`), POST → `create-`, PUT and PATCH → `update-`, DELETE → `delete-`, and a domain verb for other actions (`cancel-task.ts`). Keep its schema and request function together. Add a `queryOptions`, `infiniteQueryOptions`, or `mutationOptions` factory when a React Query caller needs one; a server-only read or write needs no factory. Server Actions have a separate module boundary, described below.
-- A schema several endpoints share stays in the file that owns it, usually the GET, and siblings import it relatively. Move it to the feature's `types/` once it is a contract of its own or a lower layer such as `utils/` needs it ([Shared code ownership](architecture.md#shared-code-ownership)).
-- A server read cached with `use cache` wraps the endpoint's request function in its own module guarded by `import "server-only"`, one cached read per file, named `get-cached-<resource>.ts` after the function it exports, such as `api/get-cached-task-page.ts` wrapping the request in `get-tasks.ts`: `use cache` functions cannot enter a client bundle, and browser query factories import the request module.
-- Server Components, `generateMetadata`, Route Handlers, and Server Actions call the needed data functions directly. For consumers outside the feature, expose server readers and writers through a `server.ts` sub-entry guarded by `import "server-only"`; implementation files inside the feature use relative imports, following [Feature public API](architecture.md#feature-public-api).
+- One request per file, named `<verb>-<resource>.ts` after the operation: GET → `get-` (plural for a list, `get-tasks.ts`), POST → `create-`, PUT and PATCH → `update-`, DELETE → `delete-`, and a domain verb for other actions (`cancel-task.ts`). Its response schema lives in the feature's `types/`, shared with the data layer that produces the data. Add a `queryOptions`, `infiniteQueryOptions`, or `mutationOptions` factory when a React Query caller needs one; a server-only read or write calls the data layer and needs no factory. Server Actions have a separate module boundary, described below.
+- A server read cached with `use cache` wraps the data-layer read in its own module guarded by `import "server-only"`, one cached read per file, named `get-cached-<resource>.ts` after the function it exports, such as `api/get-cached-task-page.ts` wrapping `listTasks` from `server/tasks.ts`: `use cache` functions cannot enter a client bundle.
+- Server Components, `generateMetadata`, Route Handlers, and Server Actions call the data layer directly. For consumers outside the feature, expose server readers and writers through a `server.ts` sub-entry guarded by `import "server-only"`; implementation files inside the feature use relative imports, following [Feature public API](architecture.md#feature-public-api).
 - The client-facing feature entry exports the options factories that code outside the feature uses, such as a route's server prefetch or another feature's cache update; factories used only inside the feature stay private like other implementation files ([Feature public API](architecture.md#feature-public-api)). Query consumers pass them to hooks from `@/lib/react-query`; keep request functions private unless another data function or server consumer needs them. Add a feature hook only for logic beyond one query or mutation, such as combining two queries.
 
 ## Requests
 
-- A request to a public endpoint passes `auth: false`, even while the project sends no credential. Once `lib/credentials-server.ts` reads the request's cookies, a credentialed call makes its caller per request and throws inside `use cache`.
-- The credential each environment sends is in `lib/credentials-server.ts` and `lib/credentials-browser.ts`. While they carry the template's `TODO`, credentials are not configured: before adding a request that needs the signed-in user, ask the user to run the `setup-data-access` skill.
-- When a backend response needs raw `fetch` under the [transport exceptions](data-fetching.md#transport), build its URL with `resolveApiUrl` so the base URL stays configured in one place.
+- `fetchApi` runs in the browser only and requests same-origin paths such as `/api/demo/tasks`; on the server it throws, because server code calls the data layer. A raw `fetch` under the [transport exceptions](data-fetching.md#transport) also uses the same-origin path, or the full URL it was handed, such as a presigned object-storage URL.
 - Query parameters go in `params` rather than into the `url` string; `FetchApiConfig` in `lib/fetch.ts` documents each option.
-- Types come from `z.infer` of the request's `schema`, never a parallel hand-written interface.
-- Wire names stop in this layer. When the backend uses snake_case, write the schema in the wire shape and `.transform()` it to camelCase, and take camelCase arguments that the function maps to wire names in `params` or `data`.
+- Types come from `z.infer` of the schema in `types/`, never a parallel hand-written interface.
+- Schemas describe JSON-native values only: timestamps as epoch milliseconds, `.nullable()` rather than `.optional()`, and no `.transform()`, `z.date()`, or `z.bigint()`. The data layer returns the same type and the Route Handler serializes it unchanged, so server-prefetched data (through RSC) and refetched data (through JSON) are identical ([data-layer.md](data-layer.md#results)).
 
 ## Error policy
 
 Configure error policies shared by all callers in the options factory's `meta` (`HandleRequestErrorOptions` from `@/lib/react-query`). For example, use `meta: { suppressErrorToast: true }` for a background mutation the user did not trigger. [Consumer error handling](data-fetching.md#errors-in-react-queryowned-data) defines the default feedback and call-site overrides.
 
-For a recoverable failure handled by the feature, suppress the generic toast for that case only. When a `queryFn` or `mutationFn` calls `fetchApi` directly in the browser, a predicate can match a backend error, such as `suppressErrorToast: (error) => error instanceof ApiError && error.code === TASK_NAME_TAKEN`. A `mutationFn` that calls a Server Action follows [Server Action errors](../../.agents/skills/next-data-flow/react-query-integration.md#server-action-errors) to produce a locally recognizable error before applying the policy.
+For a recoverable failure handled by the feature, suppress the generic toast for that case only. When a `queryFn` calls `fetchApi` in the browser, a predicate can match a failure response, such as `suppressErrorToast: (error) => error instanceof ApiError && error.status === 404`. A `mutationFn` that calls a Server Action follows [Server Action errors](../../.agents/skills/next-data-flow/react-query-integration.md#server-action-errors) to produce a locally recognizable error before applying the policy.
 
 For server-prefetched data, apply the [hydration guidance](../../.agents/skills/next-data-flow/react-query-integration.md#hydration) before passing state to a Client Component.
 
 ## Server Actions
 
-Keep an action imported by Client Components in its own top-level `"use server"` module, such as `api/create-task-action.ts`. Its runtime exports are only async Server Actions; validation and request helpers used only by that action may stay private there. A synchronous options factory belongs in an ordinary module, such as `api/create-task.ts`, which imports the action. When other callers need the same backend request or schema, extract it to a sibling such as `api/create-task-request.ts`; the action must not import the factory module that calls it.
+Every write goes through a Server Action, including writes whose data React Query owns. Keep an action imported by Client Components in its own top-level `"use server"` module, such as `api/create-task-action.ts`. It checks its inputs and calls the data layer; its runtime exports are only async Server Actions, and validation helpers used only by that action may stay private there. The data layer rejects business-rule violations with `DomainError`; the action returns the codes its caller handles as `{ ok: false, code }` (`toActionResult` in `features/demo-task/utils/action-result.ts`) and lets other errors throw. A synchronous options factory belongs in an ordinary module, such as `api/create-task.ts`, which imports the action. When other callers need the same input schema, extract it to a sibling such as `api/create-task-request.ts`; the action must not import the factory module that calls it.
 
 Expose actions needed outside the feature through a client-importable public sub-entry such as `actions.ts`, which re-exports the action references. Keep them separate from the `server-only` entry for direct server readers and writers. React Query callers normally consume the options factory instead. For expected errors crossing the action boundary and success-only refreshes, follow [Server Action errors](../../.agents/skills/next-data-flow/react-query-integration.md#server-action-errors).
 
@@ -46,18 +43,18 @@ import { z } from "zod";
 import { fetchApi } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
 
-export const taskSchema = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    status: z.enum(["pending", "running", "done", "failed"]),
-    created_at: z.number(),
-  })
-  .transform(({ created_at, ...task }) => ({ ...task, createdAt: created_at }));
+// types/task.ts
+export const taskSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.enum(["pending", "running", "done", "failed"]),
+  createdAt: z.number(),
+});
 export type Task = z.infer<typeof taskSchema>;
 
+// api/get-task.ts
 const getTask = (id: string) =>
-  fetchApi({ url: `/tasks/${id}`, schema: taskSchema });
+  fetchApi({ url: `/api/tasks/${id}`, schema: taskSchema });
 
 export const getTaskQueryOptions = (id: string) =>
   queryOptions({
@@ -76,32 +73,30 @@ const { data: status } = useQuery({
 });
 ```
 
-- The same factory feeds `useQuery`, `useSuspenseQuery`, `useQueries`, a server prefetch through `queryClient.query()`, and cache calls that need its key.
-- `queryFn` leaves React Query's `signal` out of the request by default. On the server, a `fetch` with a `signal` skips Next.js's in-render deduplication (`fetchApi`'s doc comment), so every Server Component that prefetches the same query would send its own request. Add the `signal` once a query actually needs its stale requests aborted, such as search as you type, and pass it in the browser only:
+- The same factory feeds `useQuery`, `useSuspenseQuery`, `useQueries`, and cache calls that need its key. A server prefetch spreads it and swaps only `queryFn` for the data layer, keeping the key and options in one place: `queryClient.query({ ...getTaskQueryOptions(id), queryFn: () => getTask(id) })` with `getTask` from the feature's `server.ts`.
+- `queryFn` leaves React Query's `signal` out of the request by default. Add it once a query actually needs its stale requests aborted, such as search as you type:
 
   ```ts
   const searchTasks = (term: string, signal?: AbortSignal) =>
-    fetchApi({ url: "/tasks/search", params: { term }, schema: taskListSchema, signal });
+    fetchApi({ url: "/api/tasks/search", params: { term }, schema: taskListSchema, signal });
 
   export const searchTasksQueryOptions = (term: string) =>
     queryOptions({
       queryKey: [...taskListKey, "search", { term }],
-      queryFn: ({ signal }) =>
-        searchTasks(term, environmentManager.isServer() ? undefined : signal),
+      queryFn: ({ signal }) => searchTasks(term, signal),
     });
   ```
 - Options for one caller, such as `select`, `enabled`, or `placeholderData`, go after the spread. `select` infers its result type, and a component that selects a slice does not re-render when other fields change.
 
-An infinite list uses `infiniteQueryOptions` with `useInfiniteQuery`:
+An infinite list uses `infiniteQueryOptions` with `useInfiniteQuery` and cursor pagination (`cursorPageSchema` in `lib/fetch.ts`): the next page starts strictly after the last item loaded, so items inserted while the user scrolls cause no duplicates. Page numbers (`pageSchema`) suit lists that show a total and jump between pages.
 
 ```ts
 export const getTasksInfiniteQueryOptions = (filters: TaskFilters) =>
   infiniteQueryOptions({
     queryKey: [...taskListKey, "infinite", filters],
-    queryFn: ({ pageParam }) => getTasks({ ...filters, page: pageParam }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, _pages, lastPageParam) =>
-      lastPage.hasMore ? lastPageParam + 1 : undefined,
+    queryFn: ({ pageParam }) => getTaskPage({ ...filters, cursor: pageParam }),
+    initialPageParam: "",
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 ```
 
@@ -125,12 +120,10 @@ Keys run from general to specific: `[feature, scope, ...params]`, with a resourc
 ```ts
 import { mutationOptions } from "@/lib/react-query";
 
-const deleteTask = ({ taskId }: { taskId: string }) =>
-  fetchApi({ url: `/tasks/${taskId}`, method: "DELETE", schema: z.null() });
-
 export const deleteTaskMutationOptions = () =>
   mutationOptions({
-    mutationFn: deleteTask,
+    mutationFn: async (variables: { taskId: string }) =>
+      unwrapActionResult(await deleteTaskAction(variables)),
     onSuccess: (_data, { taskId }, _onMutateResult, { client }) => {
       client.removeQueries({ queryKey: getTaskQueryOptions(taskId).queryKey });
       void client.invalidateQueries({ queryKey: taskListKey });

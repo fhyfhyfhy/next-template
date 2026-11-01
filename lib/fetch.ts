@@ -4,13 +4,11 @@ import queryString, {
 } from "query-string";
 import { z } from "zod";
 
-import { credentialHeaders } from "#credentials";
-
-/** 业务接口路径，由 `resolveApiUrl` 拼到 API base URL 之后。 */
+/** 本 app 的接口路径，同源，比如 `/api/demo/tasks`。 */
 export type ApiPath = `/${string}`;
 
 // 失败响应体 `{ error: { code, message, param?, params? } }` 里的错误对象。`message` 面向开发者，
-// UI 按 `code` 和 `params` 生成文案。后端的错误格式不同时在这里映射（setup-data-access skill）。
+// UI 按 `code` 和 `params` 生成文案。服务端按这个格式写失败响应（lib/domain-error.ts 的 `errorBody`）。
 const errorSchema = z.object({
   code: z.number(),
   message: z.string(),
@@ -39,13 +37,6 @@ export interface FetchApiConfig<TSchema extends z.ZodType> extends Omit<
   paramsSerializer?: StringifyOptions;
   /** 请求体：`FormData`、`Blob` 原样发送，其余值序列化为 JSON。 */
   data?: unknown;
-  /**
-   * 是否附加 `#credentials` 提供的当前用户凭证，默认附加；同名 header 以调用方传的为准，
-   * 浏览器自己携带的 cookie 不受它影响。公开接口传 `false`：服务端取凭证会读本次请求的 cookie，
-   * `use cache` 里不能读。
-   * @default true
-   */
-  auth?: boolean;
 }
 
 interface ApiErrorInit {
@@ -104,14 +95,6 @@ export class SchemaValidationError extends Error {
 const MAX_RETRIES = 3;
 
 /**
- * 业务接口的完整 URL，base URL 来自 `NEXT_PUBLIC_API_BASE_URL`。
- * 未配置时得到同源相对路径，只能在浏览器中请求。
- */
-export function resolveApiUrl(path: ApiPath): string {
-  return `${process.env.NEXT_PUBLIC_API_BASE_URL ?? ""}${path}`;
-}
-
-/**
  * React Query 的 `retry`：4xx、2xx 上的 `error` 和 schema 不匹配重试也不会成功，不重试；其余失败最多重试
  * 3 次，包括 5xx、网络错误，以及 `queryFn` 里抛出的其他异常。
  */
@@ -122,9 +105,9 @@ export function shouldRetryRequest(failureCount: number, error: unknown) {
 }
 
 /**
- * 请求业务接口，按 `schema` 校验响应体，返回 schema 的输出。
- * 服务端经 Next 的 fetch 发出，一次 Server Component 渲染内相同的 GET 只发一次；传了 `signal` 的调用
- * 不参与（见 node_modules/next/dist/docs/01-app/03-api-reference/04-functions/fetch.md 的 Memoization）。
+ * 浏览器请求本 app 的接口（`/api` 下的 Route Handler），按 `schema` 校验响应体，返回 schema 的输出。
+ * 只在浏览器里调用：服务端代码直接调用 feature 的数据层，不请求自己的 Route Handler（.claude/rules/data-layer.md），
+ * 在服务端调用时直接抛错。浏览器自己带着同源的 cookie，不另外附加凭证。
  * HTTP 非 2xx 或 2xx 的响应体只有 `error` 对象时抛 `ApiError`，响应体校验失败抛 `SchemaValidationError`；
  * 网络错误和 `signal` 的中止原样抛出。
  */
@@ -134,21 +117,17 @@ export async function fetchApi<TSchema extends z.ZodType>({
   params,
   paramsSerializer,
   data,
-  auth = true,
   headers,
   ...init
 }: FetchApiConfig<TSchema>): Promise<z.output<TSchema>> {
-  const requestHeaders = new Headers(headers);
-  if (auth) {
-    for (const [name, value] of Object.entries(await credentialHeaders())) {
-      if (!requestHeaders.has(name)) requestHeaders.set(name, value);
-    }
+  if (typeof window === "undefined") {
+    throw new Error(
+      `fetchApi(${url}) runs in the browser only; on the server, call the feature's data layer instead`,
+    );
   }
+  const requestHeaders = new Headers(headers);
   const response = await fetch(
-    queryString.stringifyUrl(
-      { url: resolveApiUrl(url), query: params },
-      paramsSerializer,
-    ),
+    queryString.stringifyUrl({ url, query: params }, paramsSerializer),
     {
       ...init,
       headers: requestHeaders,
@@ -164,7 +143,7 @@ export async function fetchApi<TSchema extends z.ZodType>({
   return result.data;
 }
 
-/** 页码分页的列表响应，用作 `fetchApi` 的 `schema`。后端的分页字段不同时在这里映射。 */
+/** 页码分页的列表响应，用作 `fetchApi` 的 `schema`：要显示总数、能跳页的列表用它。 */
 export function pageSchema<TItem extends z.ZodType>(item: TItem) {
   return z.object({
     items: z.array(item),

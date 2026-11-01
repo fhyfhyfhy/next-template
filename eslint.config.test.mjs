@@ -3,7 +3,6 @@ import {
   cpSync,
   mkdirSync,
   mkdtempSync,
-  readFileSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -557,13 +556,6 @@ for (const syntax of [
   "require",
   "importEquals",
 ]) {
-  addCase(`${syntax} 不能在 fetchApi 之外使用条件凭证入口`, {
-    from: "lib/CASE.ts",
-    source: "#credentials",
-    syntax,
-    rule: packageImportsRule,
-    messageId: "owner",
-  });
   addCase(`${syntax} 不能通过未支持的 package import 绕过架构检查`, {
     from: "app/CASE.ts",
     source: "#other",
@@ -583,22 +575,11 @@ for (const syntax of [
     syntax,
   });
 }
-addCase("fetchApi 可以通过条件入口选择凭证实现", {
+addCase("lib/fetch.ts 也不能使用 package import", {
   from: "lib/fetch.ts",
-  to: "lib/credentials-browser.ts",
-  source: "#credentials",
-});
-addCase("fetch 子目录中的同名文件不能使用条件凭证入口", {
-  from: "lib/CASE/fetch.ts",
   source: "#credentials",
   rule: packageImportsRule,
-  messageId: "owner",
-});
-addCase("fetch.tsx 不能使用条件凭证入口", {
-  from: "lib/fetch.tsx",
-  source: "#credentials",
-  rule: packageImportsRule,
-  messageId: "owner",
+  messageId: "unsupported",
 });
 addCase("React Query 原包的子路径也只能由封装引用", {
   from: "app/CASE.ts",
@@ -1179,96 +1160,6 @@ describe("架构依赖和 feature、组件导入约定", () => {
       }
     });
   }
-
-  describe("条件凭证入口只接受受支持的映射", () => {
-    // fixture 里的 package.json 复制自项目，映射用例在收集阶段就要确定，所以直接读项目的。
-    const manifest = JSON.parse(
-      readFileSync(join(project, "package.json"), "utf8"),
-    );
-    const credentialImports = manifest.imports["#credentials"];
-    const manifestPath = () => join(fixture, "package.json");
-    const filePath = () => join(fixture, "lib/fetch.ts");
-    let originalManifest;
-    const restoreManifest = () =>
-      writeFileSync(manifestPath(), originalManifest, "utf8");
-
-    beforeAll(() => {
-      originalManifest = readFileSync(manifestPath(), "utf8");
-    });
-    afterAll(restoreManifest);
-
-    for (const [name, mapping] of [
-      ["映射缺失", undefined],
-      ["直接映射丢失环境隔离", credentialImports.default],
-      [
-        "server 分支不能指向其他层",
-        {
-          ...credentialImports,
-          "react-server": "./features/account/api/credentials.ts",
-        },
-      ],
-      [
-        "default 分支不能换成其他 lib 文件",
-        { ...credentialImports, default: "./lib/fetch.ts" },
-      ],
-      [
-        "default 不能排在 server 分支之前",
-        {
-          default: credentialImports.default,
-          "react-server": credentialImports["react-server"],
-        },
-      ],
-      [
-        "额外 condition 不能绕过目标限制",
-        {
-          browser: "./features/account/api/credentials.ts",
-          ...credentialImports,
-        },
-      ],
-    ]) {
-      test(name, async () => {
-        writeFileSync(
-          manifestPath(),
-          JSON.stringify({
-            ...manifest,
-            imports: { ...manifest.imports, "#credentials": mapping },
-          }),
-          "utf8",
-        );
-        const [result] = await eslint.lintText(
-          statements.import("#credentials"),
-          { filePath: filePath() },
-        );
-        expect(result.fatalErrorCount).toBe(0);
-        expect(
-          result.messages
-            .filter(({ ruleId }) => ruleId === packageImportsRule)
-            .map(({ messageId }) => messageId),
-          JSON.stringify(result.messages, null, 2),
-        ).toStrictEqual(["mapping"]);
-      });
-    }
-
-    test("恢复受支持的映射后不再报错，其他 # 入口仍被拒绝", async () => {
-      restoreManifest();
-      const [restored] = await eslint.lintText(
-        statements.import("#credentials"),
-        { filePath: filePath() },
-      );
-      expect(restored.messages).toStrictEqual([]);
-      const [unsupported] = await eslint.lintText(statements.import("#other"), {
-        filePath: filePath(),
-      });
-      expect(
-        unsupported.messages.map(({ ruleId, messageId }) => ({
-          ruleId,
-          messageId,
-        })),
-      ).toStrictEqual([
-        { ruleId: packageImportsRule, messageId: "unsupported" },
-      ]);
-    });
-  });
 });
 
 describe("import 按四组自动修复，保留客户端指令和副作用导入的相对顺序", () => {

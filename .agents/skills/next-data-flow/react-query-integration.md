@@ -2,11 +2,11 @@
 
 Use this reference when applying the official TanStack Query patterns to this repo. Start with `node_modules/next/dist/docs/01-app/02-guides/client-side-data-fetching/tanstack-query.md` for browser fetching, hydration, streaming pending queries, and Cache Components. The following are project adaptations, checked against `@tanstack/react-query` 5.104.5.
 
-## Credentials and initial data
+## Browser-only inputs and initial data
 
-Choose server prefetch only when the server can obtain the inputs and send the required credential; inspect `lib/credentials-server.ts`. Otherwise fetch in the browser after readiness. This choice does not change the [data owner](SKILL.md#ownership).
+Choose server prefetch when the server can obtain the read's inputs; it calls the data layer, which reads the request's session itself. Otherwise fetch in the browser after readiness. This choice does not change the [data owner](SKILL.md#ownership).
 
-For browser-only inputs or credentials, `useQuery` can wait with `enabled`. `useSuspenseQuery` has no `enabled` or `skipToken` and may fetch during server rendering, where this repo's browser credential helper has no credential. Delay mounting that consumer until browser readiness; Suspense alone does not make it browser-only. Check the installed `@tanstack/react-query/src/useSuspenseQuery.ts` and `useBaseQuery.ts` when upgrading.
+For browser-only inputs, `useQuery` can wait with `enabled`. `useSuspenseQuery` has no `enabled` or `skipToken` and may fetch during server rendering, where those inputs do not exist and `fetchApi` throws. Delay mounting that consumer until browser readiness; Suspense alone does not make it browser-only. Check the installed `@tanstack/react-query/src/useSuspenseQuery.ts` and `useBaseQuery.ts` when upgrading.
 
 ## Adapt the official examples
 
@@ -33,7 +33,7 @@ For unexpected initial refetches, inspect the factory, call-site overrides, and 
 
 For a mutation calling a Server Action, follow [API modules: Server Actions](../../../.claude/rules/data-fetching-api.md#server-actions) for module boundaries and [Refresh coordination](refresh.md#after-a-write) for the success path.
 
-Validate inputs and authorize the write inside the action. Handle expected, recoverable `ApiError` codes there and return a serializable union such as `{ ok: true, data }` or `{ ok: false, code }`, exposing only browser-safe fields. Leave unexpected errors thrown. A thrown server error does not preserve its `ApiError` class or custom fields across Flight; production also hides its message.
+Validate inputs and authorize the write inside the action. Handle the expected, recoverable `DomainError` codes that the data layer raises and return a serializable union such as `{ ok: true, data }` or `{ ok: false, code }`, exposing only browser-safe fields. Leave unexpected errors thrown. A thrown server error does not preserve its `DomainError` class or custom fields across Flight; production also hides its message.
 
 In the factory's `mutationFn`, await the action result, return its data on success, and throw a feature-local `Error` carrying the safe code on expected failure. React Query treats every resolved value as success, including `{ ok: false }`; the adapter ensures failed writes do not run the factory's or caller's `onSuccess`. A plain action consumer branches on the result directly.
 

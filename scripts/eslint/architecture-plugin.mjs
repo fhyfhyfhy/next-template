@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 
 import componentExportsRule from "./component-exports.mjs";
@@ -268,38 +268,14 @@ export default function createArchitecturePlugin(projectRoot) {
       schema: [],
       messages: {
         unsupported:
-          "Only #credentials is supported as a package import. Use @/ or relative paths for other project modules.",
-        owner:
-          "Only lib/fetch.ts may import #credentials. Backend consumers use fetchApi from @/lib/fetch.",
-        mapping:
-          'Keep package.json imports["#credentials"] as { "react-server": "./lib/credentials-server.ts", "default": "./lib/credentials-browser.ts" }, in that order. Other conditional targets are not covered by the architecture checks.',
+          "The project has no package imports (#...): their targets depend on runtime conditions that the architecture checks do not follow. Use @/ or relative paths, and extend the checks before adding one.",
       },
     },
     create(context) {
       return importVisitors((source) => {
         const specifier = importSpecifier(source);
-        if (!specifier?.startsWith("#")) return;
-        if (specifier !== "#credentials") {
+        if (specifier?.startsWith("#")) {
           context.report({ node: source, messageId: "unsupported" });
-          return;
-        }
-        if (context.filename !== resolve(projectRoot, "lib/fetch.ts")) {
-          context.report({ node: source, messageId: "owner" });
-          return;
-        }
-
-        const manifest = JSON.parse(
-          readFileSync(resolve(projectRoot, "package.json"), "utf8"),
-        );
-        // 条件按键顺序匹配：default 放在前面会吞掉 react-server；额外分支也可能绕过架构检查。
-        if (
-          JSON.stringify(manifest.imports?.["#credentials"]) !==
-          JSON.stringify({
-            "react-server": "./lib/credentials-server.ts",
-            default: "./lib/credentials-browser.ts",
-          })
-        ) {
-          context.report({ node: source, messageId: "mapping" });
         }
       });
     },
