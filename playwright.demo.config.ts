@@ -37,7 +37,7 @@ export default defineConfig({
     // 即 pnpm demo:build 和 demo:start。直接用 node 调用：只装了 corepack 的环境里 PATH 上没有 pnpm。
     command: `node scripts/run-next.mjs build --demo && node scripts/run-next.mjs start --demo --port ${PORT}`,
     // 打开 instant() 依赖的测试 API，产物也因此放进单独的目录，不覆盖正在运行的 demo:start（next.config.ts）。
-    env: { EXPOSE_TESTING_API: "1", MOCK_API_PORT },
+    env: { EXPOSE_TESTING_API: "1", MOCK_API_PORT, DEMO_DATASET: "e2e" },
     url: `${BASE_URL}/demos`,
     reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",
     timeout: 300_000,

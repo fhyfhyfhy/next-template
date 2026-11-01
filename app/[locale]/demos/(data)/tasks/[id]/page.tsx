@@ -13,7 +13,10 @@ import {
   TaskDetail,
   TaskDetailSkeleton,
 } from "@/features/demo-task";
-import { getTask, omitFunctionMeta } from "@/features/demo-task/server";
+import {
+  getTaskFromMockApi as getTask,
+  omitFunctionMeta,
+} from "@/features/demo-task/server";
 import {
   defaultShouldDehydrateQuery,
   dehydrate,

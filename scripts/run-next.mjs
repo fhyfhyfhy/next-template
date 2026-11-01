@@ -4,6 +4,11 @@ import { createServer } from "node:net";
 import { resolve } from "node:path";
 
 import { withoutBuildDirVars } from "./build-dirs.mjs";
+import { datasetName } from "./demo-backend/datasets.mjs";
+import {
+  prepareDemoDataset,
+  startDemoServices,
+} from "./demo-backend/services.mjs";
 import {
   generateExampleIndexes,
   watchExampleIndexes,
@@ -53,11 +58,15 @@ if (command === "build" && (demo || process.env.EXPOSE_TESTING_API === "1")) {
 }
 
 const mockApi = demo ? await connectMockApi() : null;
+// Demo 后端的 Postgres 和对象存储：启动 compose 里的服务，准备 DEMO_DATASET 选择的数据集（默认 dev，
+// Data demo 的 e2e 用 e2e），把它的 DEMO_* 变量交给 next。
+const demoBackendEnv = demo ? await prepareDemoBackend() : {};
 // 进程里已有的变量优先于 .env* 文件，所以项目在 .env.local 里配置的后端地址不会覆盖这里。
 // NEXT_PUBLIC_MOCK_API 同时让 next.config.ts 把产物放进 demo 的目录。
 const childEnv = mockApi
   ? {
       ...process.env,
+      ...demoBackendEnv,
       NEXT_PUBLIC_API_BASE_URL: mockApi.url,
       NEXT_PUBLIC_MOCK_API: "1",
     }
@@ -88,6 +97,11 @@ try {
   await watcher?.close();
   await mockApi?.close();
   for (const [signal, handler] of signalHandlers) process.off(signal, handler);
+}
+
+async function prepareDemoBackend() {
+  startDemoServices();
+  return prepareDemoDataset(datasetName());
 }
 
 async function connectMockApi() {

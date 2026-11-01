@@ -1,0 +1,106 @@
+import "server-only";
+
+import { attachUpload, saveServerUpload } from "@/features/demo-upload/server";
+import { startLeaderInterval } from "@/lib/db";
+
+import { nextTaskStep } from "../utils/task-progress";
+import { getTaskDb } from "./connection";
+import { cubeGlb } from "./generated-files";
+import { ensureDemoSeeded } from "./seed";
+import { notifyTaskChanged } from "./task-events";
+import { findTaskRow, toTask } from "./tasks";
+
+// Demo 生成器：模拟一个外部的生成服务，只有它推进任务。业务读写的代码不碰推进逻辑。
+
+/** 一个任务从 pending 到终态走 6 步，约 9 秒，停在详情页能看到进度推进；浏览器轮询的间隔和它一致。 */
+export const GENERATOR_INTERVAL_MS = 1500;
+// 和上传清理、写种子的锁用不同的 key。
+const GENERATOR_LOCK_KEY = 2_026_110_201;
+
+/**
+ * 把任务推进一步（规则见 utils/task-progress.ts），写入这一步的日志；进入 done 时产出模型文件并关联到任务。
+ * 已在终态的任务不变。提交时通知正在推送这个任务日志的 SSE 连接。任务不存在时 404。
+ */
+export async function advanceTask(taskId: string) {
+  await ensureDemoSeeded();
+  const row = await getTaskDb()
+    .transaction()
+    .execute(async (trx) => {
+      const task = await findTaskRow(trx, taskId, { forUpdate: true });
+      const step = nextTaskStep(task);
+      if (!step) return task;
+      const updated = await trx
+        .updateTable("tasks")
+        .set({
+          status: step.status,
+          progress: step.progress,
+          updated_at: new Date(),
+        })
+        .where("id", "=", taskId)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      await trx
+        .insertInto("task_logs")
+        .values({ task_id: taskId, line: step.log })
+        .execute();
+      if (step.status === "done") {
+        const uploadId = await saveServerUpload(
+          {
+            purpose: "task-model",
+            contentType: "model/gltf-binary",
+            body: cubeGlb(),
+          },
+          trx,
+        );
+        await attachUpload(
+          {
+            uploadId,
+            purpose: "task-model",
+            recordType: "task",
+            recordId: taskId,
+            name: "model",
+          },
+          trx,
+        );
+      }
+      await notifyTaskChanged(trx, taskId);
+      return updated;
+    });
+  return toTask(row);
+}
+
+/** 时钟没有暂停时，把所有 pending 和 running 的任务各推进一步。 */
+export async function advanceActiveTasks() {
+  await ensureDemoSeeded();
+  const db = getTaskDb();
+  const settings = await db
+    .selectFrom("demo_settings")
+    .select("clock_paused")
+    .executeTakeFirstOrThrow();
+  if (settings.clock_paused) return;
+  const tasks = await db
+    .selectFrom("tasks")
+    .select("id")
+    .where("status", "in", ["pending", "running"])
+    .execute();
+  for (const { id } of tasks) {
+    try {
+      await advanceTask(id);
+    } catch (error) {
+      // 推进期间任务可能刚被删除，跳过它，不影响其他任务。
+      console.error(`Demo generator could not advance task ${id}`, error);
+    }
+  }
+}
+
+/** 在后台定期推进任务，同一个 Demo 数据库上只有一个进程在推进（`startLeaderInterval`）。返回停止函数。 */
+export function startDemoGenerator({
+  intervalMs = GENERATOR_INTERVAL_MS,
+}: { intervalMs?: number } = {}) {
+  return startLeaderInterval({
+    connectionString: process.env.DEMO_DATABASE_URL ?? "",
+    lockKey: GENERATOR_LOCK_KEY,
+    intervalMs,
+    run: advanceActiveTasks,
+  });
+}

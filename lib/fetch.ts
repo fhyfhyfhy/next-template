@@ -175,6 +175,17 @@ export function pageSchema<TItem extends z.ZodType>(item: TItem) {
   });
 }
 
+/**
+ * 游标分页的列表响应，无限滚动用：下一页传回 `nextCursor`，取严格排在上一页最后一条之后的记录，
+ * 滚动期间有新记录插进前面也不会重复或漏掉。`nextCursor` 为 null 表示没有下一页；它的内容由服务端定义，调用方只原样传回。
+ */
+export function cursorPageSchema<TItem extends z.ZodType>(item: TItem) {
+  return z.object({
+    items: z.array(item),
+    nextCursor: z.string().nullable(),
+  });
+}
+
 function requestBody(data: unknown, headers: Headers) {
   if (data === undefined) return undefined;
   // multipart 的 boundary 由浏览器写进 Content-Type，手动设置会让服务端解析失败。
