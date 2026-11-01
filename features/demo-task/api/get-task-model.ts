@@ -1,12 +1,13 @@
-import { ApiError, resolveApiUrl } from "@/lib/fetch";
+import { ApiError } from "@/lib/fetch";
 
 /**
- * 读取 done 任务的 3D 模型文件（`.glb`）。二进制响应按传输例外用 raw `fetch`；失败时（比如任务还没完成）
- * 转成和 `fetchApi` 一样的 `ApiError`。成功的响应是二进制，所以 2xx 上的 JSON 只可能是 error 对象。
+ * 读取 done 任务的 3D 模型文件（`.glb`）。二进制响应按传输例外用 raw `fetch`：Route Handler 302 到对象存储的
+ * 短期下载地址，fetch 跟随跳转读取文件。失败时（比如任务还没完成）转成和 `fetchApi` 一样的 `ApiError`。
+ * 成功的响应是二进制，所以 2xx 上的 JSON 只可能是 error 对象。
  */
 export async function getTaskModel(taskId: string): Promise<Blob> {
-  const url = `/demo/tasks/${taskId}/model` as const;
-  const response = await fetch(resolveApiUrl(url));
+  const url = `/api/demo/tasks/${taskId}/model` as const;
+  const response = await fetch(url);
   if (!response.ok || isJson(response)) {
     const text = await response.text();
     throw new ApiError({ url, status: response.status, body: parseJson(text) });

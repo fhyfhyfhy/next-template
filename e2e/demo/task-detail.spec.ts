@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import { returnToTab } from "../browser";
-import { expect, resetThroughLab, test } from "./mock-api";
+import { expect, resetThroughLab, test } from "./demo-backend";
 
 // 任务详情：数据由 React Query 负责（任务会在用户停留时自己推进），首屏由服务端 prefetch。
 
@@ -51,9 +51,9 @@ test.describe("首屏和 404", () => {
     );
   });
 
-  test("标题进 metadata，服务端渲染时详情接口只请求一次", async ({
+  test("标题进 metadata，服务端渲染时详情只读一次", async ({
     page,
-    mockApi,
+    demoBackend,
   }) => {
     await page.goto("/demos/tasks/task-01");
 
@@ -61,28 +61,32 @@ test.describe("首屏和 404", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "低多边形狐狸",
     );
-    expect(await mockApi.requests("/demo/tasks/:id")).toHaveLength(1);
+    // generateMetadata 和页面的 prefetch 读的是同一个用 React cache() 包过的数据层函数。
+    expect(await demoBackend.calls("task.get")).toStrictEqual([
+      { operation: "task.get", source: "server", calledAt: expect.any(Number) },
+    ]);
   });
 
   test("首屏 HTML 已经包含详情，hydration 后浏览器不再请求详情", async ({
     page,
     request,
-    mockApi,
+    demoBackend,
   }) => {
     const html = await (await request.get("/demos/tasks/task-01")).text();
     expect(html).toContain("一只低多边形风格的狐狸");
 
-    await mockApi.reset();
+    await demoBackend.reset();
     await page.goto("/demos/tasks/task-01");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言 hydration 后一段时间内没有再请求详情，等待是断言的一部分。
     await page.waitForTimeout(1000);
-    expect(await mockApi.requests("/demo/tasks/:id")).toHaveLength(1);
+    expect(await demoBackend.calls("task.get", "server")).toHaveLength(1);
+    expect(await demoBackend.calls("task.get", "http")).toStrictEqual([]);
   });
 
-  test("评论在详情之后流式出现", async ({ page, mockApi }) => {
-    await mockApi.setFaults([
-      { method: "GET", path: "/demo/tasks/:id/comments", latency_ms: 1500 },
+  test("评论在详情之后流式出现", async ({ page, demoBackend }) => {
+    await demoBackend.setFaults([
+      { operation: "comment.list", kind: "latency", latencyMs: 1500 },
     ]);
     await page.goto("/demos/tasks/task-01", { waitUntil: "commit" });
 
@@ -105,55 +109,55 @@ test.describe("首屏和 404", () => {
 test.describe("任务推进", () => {
   test("运行中的任务停留在页面上也会更新进度，到终态后徽标数量减少", async ({
     page,
-    mockApi,
+    demoBackend,
   }) => {
     await openTask(page, "task-11");
     await expect(page.getByText("进行中 4")).toBeVisible();
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
 
-    await mockApi.advance("task-11", 2);
+    await demoBackend.advance("task-11", 2);
     await expect(page.getByTestId("task-status")).toHaveText("生成中");
     await expect(page.getByRole("progressbar")).toHaveAttribute(
       "aria-valuenow",
       "25",
     );
 
-    await mockApi.advance("task-11", 4);
+    await demoBackend.advance("task-11", 4);
     await expect(page.getByTestId("task-status")).toHaveText("已完成");
     await expect(page.getByText("进行中 3")).toBeVisible();
   });
 
-  test("回到标签页时徽标立即刷新", async ({ page, mockApi }) => {
+  test("回到标签页时徽标立即刷新", async ({ page, demoBackend }) => {
     await openTask(page, "task-01");
     await expect(page.getByText("进行中 4")).toBeVisible();
 
-    await mockApi.advance("task-03", 3);
+    await demoBackend.advance("task-03", 3);
     await returnToTab(page);
 
     await expect(page.getByText("进行中 3")).toBeVisible({ timeout: 3000 });
   });
 
-  test("生成日志用 SSE 推送，到终态后结束", async ({ page, mockApi }) => {
+  test("生成日志用 SSE 推送，到终态后结束", async ({ page, demoBackend }) => {
     await openTask(page, "task-11");
     const logs = page.getByRole("log", { name: "生成日志" });
 
-    await mockApi.advance("task-11", 2);
+    await demoBackend.advance("task-11", 2);
     await expect(logs).toContainText("开始生成");
     await expect(logs).toContainText("解析 prompt");
 
-    await mockApi.advance("task-11", 4);
+    await demoBackend.advance("task-11", 4);
     await expect(logs).toContainText("生成完成");
     await expect(page.getByText("日志已结束")).toBeVisible();
   });
 
   test("任务在别处被删除后显示已删除，不弹通用提示", async ({
     page,
-    mockApi,
+    demoBackend,
   }) => {
     await openTask(page, "task-03");
     await expect(page.getByTestId("task-status")).toHaveText("生成中");
 
-    await mockApi.call("DELETE", "/demo/tasks/task-03");
+    await demoBackend.deleteTask("task-03");
 
     await expect(page.getByText("任务已被删除")).toBeVisible();
     await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(0);
@@ -167,13 +171,13 @@ test.describe("写入", () => {
 
   test("重试失败的任务后重新开始推进，列表立即反映新状态", async ({
     page,
-    mockApi,
+    demoBackend,
   }) => {
     await openTask(page, "task-05");
     await page.getByRole("button", { name: "重试" }).click();
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
 
-    await mockApi.advance("task-05", 1);
+    await demoBackend.advance("task-05", 1);
     await expect(page.getByTestId("task-status")).toHaveText("生成中");
 
     await page.goto("/demos/tasks?status=failed");
@@ -182,9 +186,12 @@ test.describe("写入", () => {
     ).toHaveCount(0);
   });
 
-  test("任务已在别处重试过时就地提示并刷新详情", async ({ page, mockApi }) => {
+  test("任务已在别处重试过时就地提示并刷新详情", async ({
+    page,
+    demoBackend,
+  }) => {
     await openTask(page, "task-05");
-    await mockApi.call("POST", "/demo/tasks/task-05/retry");
+    await demoBackend.retryTask("task-05");
 
     await page.getByRole("button", { name: "重试" }).click();
 
@@ -246,7 +253,9 @@ test.describe("写入", () => {
     await expect(page.getByLabel("新名称")).toHaveValue("低多边形狐狸");
   });
 
-  test("浏览器直接上传封面图后，详情和列表的缩略图都更新", async ({ page }) => {
+  test("浏览器把封面图直传对象存储后，详情和列表的缩略图都更新", async ({
+    page,
+  }) => {
     await openTask(page, "task-03");
     const cover = page.getByTestId("task-cover");
     await expect(cover).not.toHaveAttribute("src", /.+/);
@@ -258,7 +267,7 @@ test.describe("写入", () => {
     });
     await expect(page.getByTestId("task-cover")).toHaveAttribute(
       "src",
-      /\/demo\/tasks\/task-03\/cover\?v=1/,
+      /\/demo-e2e\/uploads\/[^/]+$/,
     );
 
     await page.goto("/demos/tasks?status=running");
@@ -266,8 +275,28 @@ test.describe("写入", () => {
     // 封面图是装饰性图片（alt 为空），没有 img 角色，按标签定位。
     await expect(row.locator("img")).toHaveAttribute(
       "src",
-      /\/demo\/tasks\/task-03\/cover\?v=1/,
+      /\/demo-e2e\/uploads\/[^/]+$/,
     );
+  });
+
+  test("选中的不是图片时直接提示，不签发上传", async ({
+    page,
+    demoBackend,
+  }) => {
+    await openTask(page, "task-03");
+
+    await page.getByLabel("更换封面图").setInputFiles({
+      name: "notes.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("not an image"),
+    });
+
+    await expect(page.getByText("只能上传图片。")).toBeVisible();
+    await expect(page.getByTestId("task-cover")).not.toHaveAttribute(
+      "src",
+      /.+/,
+    );
+    expect(await demoBackend.calls("task.setCover")).toStrictEqual([]);
   });
 });
 
@@ -280,9 +309,9 @@ test.describe("下载", () => {
     expect((await download).suggestedFilename()).toBe("低多边形狐狸.glb");
   });
 
-  test("下载失败时提示", async ({ page, mockApi }) => {
-    await mockApi.setFaults([
-      { method: "GET", path: "/demo/tasks/:id/model", status: 500 },
+  test("下载失败时提示", async ({ page, demoBackend }) => {
+    await demoBackend.setFaults([
+      { operation: "task.model", kind: "httpStatus", status: 500 },
     ]);
     await openTask(page, "task-01");
     await page.getByRole("button", { name: "下载模型" }).click();
@@ -299,10 +328,10 @@ test.describe("下载", () => {
 test.describe("评论", () => {
   test("发表评论立即显示为发送中，成功后标记消失", async ({
     page,
-    mockApi,
+    demoBackend,
   }) => {
-    await mockApi.setFaults([
-      { method: "POST", path: "/demo/tasks/:id/comments", latency_ms: 1500 },
+    await demoBackend.setFaults([
+      { operation: "comment.create", kind: "latency", latencyMs: 1500 },
     ]);
     await openTask(page, "task-01");
     await page.getByLabel("写评论").fill("新评论");
@@ -317,10 +346,10 @@ test.describe("评论", () => {
 
   test("发表失败时评论消失，输入框恢复内容，只弹一个全局提示", async ({
     page,
-    mockApi,
+    demoBackend,
   }) => {
-    await mockApi.setFaults([
-      { method: "POST", path: "/demo/tasks/:id/comments", status: 500 },
+    await demoBackend.setFaults([
+      { operation: "comment.create", kind: "unexpected" },
     ]);
     await openTask(page, "task-01");
     await page.getByLabel("写评论").fill("发不出去的评论");
@@ -331,7 +360,7 @@ test.describe("评论", () => {
     await expect(page.getByLabel("写评论")).toHaveValue("发不出去的评论");
   });
 
-  test("删除评论立即消失，失败时恢复原位", async ({ page, mockApi }) => {
+  test("删除评论立即消失，失败时恢复原位", async ({ page, demoBackend }) => {
     await openTask(page, "task-01");
     await comments(page)
       .first()
@@ -339,12 +368,8 @@ test.describe("评论", () => {
       .click();
     await expect(comments(page)).toHaveCount(1);
 
-    await mockApi.setFaults([
-      {
-        method: "DELETE",
-        path: "/demo/tasks/:id/comments/:commentId",
-        status: 500,
-      },
+    await demoBackend.setFaults([
+      { operation: "comment.delete", kind: "unexpected" },
     ]);
     await comments(page)
       .first()
@@ -354,7 +379,7 @@ test.describe("评论", () => {
     await expect(comments(page)).toHaveCount(1);
   });
 
-  test("空评论和超过 500 字的评论不能提交", async ({ page, mockApi }) => {
+  test("空评论和超过 500 字的评论不能提交", async ({ page, demoBackend }) => {
     await openTask(page, "task-01");
     await page.getByRole("button", { name: "发表" }).click();
     await expect(page.getByText("请输入评论")).toBeVisible();
@@ -362,7 +387,7 @@ test.describe("评论", () => {
     await page.getByLabel("写评论").fill("长".repeat(501));
     await page.getByRole("button", { name: "发表" }).click();
     await expect(page.getByText("评论最多 500 个字")).toBeVisible();
-    expect(await mockApi.requests("/demo/tasks/:id/comments")).toHaveLength(1);
+    expect(await demoBackend.calls("comment.create")).toStrictEqual([]);
   });
 
   test("hydration 之前评论表单不可用", async ({ page }) => {

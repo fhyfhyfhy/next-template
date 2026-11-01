@@ -5,11 +5,11 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useMutation } from "@/lib/react-query";
 
-import { resetMockMutationOptions } from "../api/reset-mock";
+import { resetDemoMutationOptions } from "../api/reset-demo";
 
-export function MockResetButton() {
-  const t = useTranslations("demo-task.mockReset");
-  const reset = useMutation(resetMockMutationOptions());
+export function DemoResetButton() {
+  const t = useTranslations("demo-task.demoReset");
+  const reset = useMutation(resetDemoMutationOptions());
   return (
     <div className="flex items-center gap-3">
       <Button

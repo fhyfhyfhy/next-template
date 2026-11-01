@@ -3,13 +3,13 @@
 import { updateTag } from "next/cache";
 import { z } from "zod";
 
-import { ApiError, fetchApi } from "@/lib/fetch";
-
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NOT_RETRYABLE } from "../constants/error-codes";
+import { assertDemoBackendEnabled } from "../server/connection";
+import { retryTask } from "../server/tasks";
 import type { ActionResult } from "../types/action-result";
-import { assertMockApiRunning } from "../utils/assert-mock-api-running";
-import { type Task, taskSchema } from "./get-task";
+import type { Task } from "../types/task";
+import { toActionResult } from "../utils/action-result";
 
 const inputSchema = z.object({ taskId: z.string().min(1) });
 
@@ -17,21 +17,12 @@ const inputSchema = z.object({ taskId: z.string().min(1) });
 export async function retryTaskAction(
   input: z.input<typeof inputSchema>,
 ): Promise<ActionResult<Task>> {
-  assertMockApiRunning();
+  assertDemoBackendEnabled();
   const { taskId } = inputSchema.parse(input);
-  try {
-    const task = await fetchApi({
-      url: `/demo/tasks/${taskId}/retry`,
-      method: "POST",
-      schema: taskSchema,
-      auth: false,
-    });
-    updateTag(TASK_LIST_TAG);
-    return { ok: true, data: task };
-  } catch (error) {
-    if (error instanceof ApiError && error.code === TASK_NOT_RETRYABLE) {
-      return { ok: false, code: error.code };
-    }
-    throw error;
-  }
+  const result = await toActionResult(
+    () => retryTask(taskId),
+    [TASK_NOT_RETRYABLE],
+  );
+  if (result.ok) updateTag(TASK_LIST_TAG);
+  return result;
 }

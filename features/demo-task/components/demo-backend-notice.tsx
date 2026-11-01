@@ -1,8 +1,8 @@
 import { useTranslations } from "next-intl";
 
-/** Mock API 没有运行时代替 Data demo 页面显示，页面不发任何请求。 */
-export function MockApiNotice() {
-  const t = useTranslations("demo-task.mockApiNotice");
+/** Demo 后端没有启用时代替 Data demo 页面显示，页面不读写任何数据。 */
+export function DemoBackendNotice() {
+  const t = useTranslations("demo-task.demoBackendNotice");
   const howToRun = t.rich("howToRun", {
     code: (chunks) => <code>{chunks}</code>,
   });

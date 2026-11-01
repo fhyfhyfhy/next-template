@@ -13,17 +13,11 @@ import {
   generateExampleIndexes,
   watchExampleIndexes,
 } from "./demo-ui/index-generator.mjs";
-import {
-  DEFAULT_MOCK_API_PORT,
-  findRunningMockApi,
-  startMockApi,
-} from "./mock-api/server.mjs";
 
 // 用法：node scripts/run-next.mjs <dev|build|start> [--demo] [其余参数传给 next]
-// --demo（package.json 的 demo:* 命令）先启动 Mock API，并让 next 指向它，不管项目配置的后端地址是什么。
-// build 和 start 各自启动一次 Mock API，端口固定，所以 build 时内联进产物的地址在 start 时仍然可用。
-// 端口上已经有 Mock API（比如开着 demo:dev 时再运行 demo:build）就直接用它，退出时也不关它：它跟着启动它的命令退出。
-// 端口由 MOCK_API_PORT 指定；Data demo 的 e2e 用自己的端口（playwright.demo.config.ts），不和 demo:dev 共用。
+// --demo（package.json 的 demo:* 命令）启用 Demo 后端：启动 compose.demo.yaml 里的 Postgres 和对象存储，准备
+// DEMO_DATASET 选择的数据集（默认 dev；Data demo 的 e2e 用 e2e，见 playwright.demo.config.ts），把它的 DEMO_* 变量交给
+// next。服务已经在运行时直接用，退出时也不停止它们：数据保存在 named volume 里，下次启动还在。
 
 const COMMANDS = new Set(["dev", "build", "start"]);
 const DEFAULT_PORT = 3000;
@@ -57,19 +51,9 @@ if (command === "build" && (demo || process.env.EXPOSE_TESTING_API === "1")) {
   if (typegen.status !== 0) throw new Error("next typegen failed");
 }
 
-const mockApi = demo ? await connectMockApi() : null;
-// Demo 后端的 Postgres 和对象存储：启动 compose 里的服务，准备 DEMO_DATASET 选择的数据集（默认 dev，
-// Data demo 的 e2e 用 e2e），把它的 DEMO_* 变量交给 next。
-const demoBackendEnv = demo ? await prepareDemoBackend() : {};
-// 进程里已有的变量优先于 .env* 文件，所以项目在 .env.local 里配置的后端地址不会覆盖这里。
-// NEXT_PUBLIC_MOCK_API 同时让 next.config.ts 把产物放进 demo 的目录。
-const childEnv = mockApi
-  ? {
-      ...process.env,
-      ...demoBackendEnv,
-      NEXT_PUBLIC_API_BASE_URL: mockApi.url,
-      NEXT_PUBLIC_MOCK_API: "1",
-    }
+// DEMO_DATABASE_URL 同时让 next.config.ts 把产物放进 demo 的目录（scripts/build-dirs.mjs）。
+const childEnv = demo
+  ? { ...process.env, ...(await prepareDemoBackend()) }
   : process.env;
 
 const watcher =
@@ -95,25 +79,12 @@ try {
   });
 } finally {
   await watcher?.close();
-  await mockApi?.close();
   for (const [signal, handler] of signalHandlers) process.off(signal, handler);
 }
 
 async function prepareDemoBackend() {
   startDemoServices();
   return prepareDemoDataset(datasetName());
-}
-
-async function connectMockApi() {
-  const port = Number(process.env.MOCK_API_PORT ?? DEFAULT_MOCK_API_PORT);
-  const runningUrl = await findRunningMockApi(port);
-  if (runningUrl) {
-    console.log(`Using the Mock API already running on ${runningUrl}`);
-    return { url: runningUrl, close: async () => {} };
-  }
-  const mockApi = await startMockApi({ port });
-  console.log(`Mock API listening on ${mockApi.url}`);
-  return mockApi;
 }
 
 /** 命令行参数或 PORT 已经指定了端口时，按指定的来，被占就让 next 报错。 */

@@ -3,12 +3,11 @@
 import { updateTag } from "next/cache";
 import { z } from "zod";
 
-import { fetchApi } from "@/lib/fetch";
-
 import { TASK_LIST_TAG } from "../constants/cache-tags";
+import { assertDemoBackendEnabled } from "../server/connection";
+import { setTaskFavorite } from "../server/tasks";
 import type { ActionResult } from "../types/action-result";
-import { assertMockApiRunning } from "../utils/assert-mock-api-running";
-import { type Task, taskSchema } from "./get-task";
+import type { Task } from "../types/task";
 
 const inputSchema = z.object({
   taskId: z.string().min(1),
@@ -19,15 +18,9 @@ const inputSchema = z.object({
 export async function updateTaskFavoriteAction(
   input: z.input<typeof inputSchema>,
 ): Promise<ActionResult<Task>> {
-  assertMockApiRunning();
+  assertDemoBackendEnabled();
   const { taskId, favorite } = inputSchema.parse(input);
-  const task = await fetchApi({
-    url: `/demo/tasks/${taskId}/favorite`,
-    method: "PUT",
-    data: { favorite },
-    schema: taskSchema,
-    auth: false,
-  });
+  const task = await setTaskFavorite(taskId, { favorite });
   updateTag(TASK_LIST_TAG);
   return { ok: true, data: task };
 }

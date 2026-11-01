@@ -6,7 +6,7 @@ import {
   navigateThroughHeader,
   resetThroughLab,
   test,
-} from "./mock-api";
+} from "./demo-backend";
 
 // 全部任务页：数据由 Server Component 负责，筛选、排序、分页都在 URL 里。
 
@@ -78,12 +78,12 @@ test("按状态筛选写进 URL，Back 回到上一个筛选", async ({ page }) 
 
 test("换筛选后立即显示新的选择，新列表到达前旧列表标记为更新中", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
   await openTasksPage(page);
-  // 列表在服务端读 Mock API，拖慢它才看得到新列表到达之前的样子。
-  await mockApi.setFaults([
-    { method: "GET", path: "/demo/tasks", latency_ms: 2000 },
+  // 列表在服务端读数据层，拖慢它才看得到新列表到达之前的样子。
+  await demoBackend.setFaults([
+    { operation: "task.list", kind: "latency", latencyMs: 2000 },
   ]);
   const failedTab = page
     .getByRole("navigation", { name: "按状态筛选" })
@@ -140,12 +140,12 @@ test("列表的骨架屏在静态 shell 里，数据随后流式送达", async (
 
 test("列表读服务端缓存：后端数据变了，缓存期内仍显示快照", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
   await page.goto("/demos/tasks?status=failed");
   await expect(rows(page)).toHaveCount(3);
 
-  await mockApi.call("PATCH", "/demo/tasks/task-05", { name: "后台改名" });
+  await demoBackend.renameTask("task-05", "后台改名");
   await page.reload();
 
   await expect(rows(page).filter({ hasText: "后台改名" })).toHaveCount(0);
@@ -167,7 +167,7 @@ const untilPolled = { timeout: 10_000 };
 
 test("停在列表上，新任务的状态一直推进到已完成，header 的进行中数同时更新", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
   await openTasksPage(page);
   await page.getByLabel("名称").fill("推进中的任务");
@@ -180,17 +180,17 @@ test("停在列表上，新任务的状态一直推进到已完成，header 的�
 
   const href = await row.getByRole("link").getAttribute("href");
   const taskId = href?.split("/").at(-1) ?? "";
-  await mockApi.advance(taskId);
+  await demoBackend.advance(taskId);
   await expect(row).toContainText("生成中", untilPolled);
 
-  await mockApi.advance(taskId, 5);
+  await demoBackend.advance(taskId, 5);
   await expect(row).toContainText("已完成", untilPolled);
   await expect(page.getByLabel("进行中的任务 4 个")).toBeVisible();
 });
 
 test("停在「生成中」筛选上，任务结束后从列表里消失，总数随之减少", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
   await page.goto("/demos/tasks?status=running");
   const finishing = rows(page).filter({ hasText: "复古跑车 v3" });
@@ -198,7 +198,7 @@ test("停在「生成中」筛选上，任务结束后从列表里消失，总�
   await expect(page.getByText("共 2 个任务")).toBeVisible();
 
   // 种子里生成中的任务进度是 50%，再推进 3 步到终态。
-  await mockApi.advance("task-16", 3);
+  await demoBackend.advance("task-16", 3);
 
   await expect(finishing).toHaveCount(0, untilPolled);
   await expect(page.getByText("共 1 个任务")).toBeVisible();
@@ -206,13 +206,13 @@ test("停在「生成中」筛选上，任务结束后从列表里消失，总�
 
 test("停在「已完成」筛选上，别处的任务结束后出现在列表里", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
   await page.goto("/demos/tasks?status=done");
   await expect(rows(page).first()).toBeVisible();
   await expect(rows(page).filter({ hasText: "复古跑车 v3" })).toHaveCount(0);
 
-  await mockApi.advance("task-16", 3);
+  await demoBackend.advance("task-16", 3);
 
   await expect(rows(page).filter({ hasText: "复古跑车 v3" })).toContainText(
     "已完成",
@@ -306,10 +306,10 @@ test("名称为空时在浏览器里就拦下，不发请求", async ({ page }) 
 
 test("创建出错时弹全局提示，填的内容还在，重试能成功", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
-  await mockApi.setFaults([
-    { method: "POST", path: "/demo/tasks", status: 500 },
+  await demoBackend.setFaults([
+    { operation: "task.create", kind: "unexpected" },
   ]);
   await openTasksPage(page);
   await page.getByLabel("名称").fill("出错的任务");
@@ -320,14 +320,14 @@ test("创建出错时弹全局提示，填的内容还在，重试能成功", as
   await expect(page.getByLabel("名称")).toHaveValue("出错的任务");
   await expect(page.getByLabel("Prompt")).toHaveValue("一只狐狸");
 
-  await mockApi.setFaults([]);
+  await demoBackend.setFaults([]);
   await page.getByRole("button", { name: "创建任务" }).click();
   await expect(rows(page).first()).toContainText("出错的任务");
 });
 
-test("收藏立即生效，请求完成前就显示已收藏", async ({ page, mockApi }) => {
-  await mockApi.setFaults([
-    { method: "PUT", path: "/demo/tasks/:id/favorite", latency_ms: 1500 },
+test("收藏立即生效，请求完成前就显示已收藏", async ({ page, demoBackend }) => {
+  await demoBackend.setFaults([
+    { operation: "task.setFavorite", kind: "latency", latencyMs: 1500 },
   ]);
   await openTasksPage(page);
   await filterByStatus(page, "失败", "/demos/tasks?status=failed");
@@ -347,9 +347,12 @@ test("收藏立即生效，请求完成前就显示已收藏", async ({ page, mo
   ).toHaveAttribute("aria-pressed", "true");
 });
 
-test("收藏失败时星标恢复原状，只弹一个全局提示", async ({ page, mockApi }) => {
-  await mockApi.setFaults([
-    { method: "PUT", path: "/demo/tasks/:id/favorite", status: 500 },
+test("收藏失败时星标恢复原状，只弹一个全局提示", async ({
+  page,
+  demoBackend,
+}) => {
+  await demoBackend.setFaults([
+    { operation: "task.setFavorite", kind: "unexpected" },
   ]);
   await openTasksPage(page);
   await filterByStatus(page, "失败", "/demos/tasks?status=failed");

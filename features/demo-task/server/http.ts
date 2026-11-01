@@ -1,5 +1,5 @@
 import "server-only";
-import { connection } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import type { z } from "zod";
 
 import {
@@ -10,6 +10,7 @@ import {
   notFound,
 } from "@/lib/domain-error";
 
+import { INJECTED_FAILURE_CODE } from "../constants/demo-faults";
 import {
   type TaskFilters,
   taskSortSchema,
@@ -17,9 +18,6 @@ import {
 } from "../types/task-filters";
 import { isDemoBackendEnabled } from "./connection";
 import { HttpFaultError, runAsHttpRequest } from "./demo-controls";
-
-/** 故障实验室注入"2xx 但响应体只有 error 对象"时默认的 code，不对应任何真实的业务错误。 */
-export const INJECTED_FAILURE_CODE = 50010;
 
 /**
  * `/api/demo` 下 Route Handler 的适配层：Demo 后端没有启用时一律 404；其余情况执行 `handler`，返回值序列化成
@@ -30,8 +28,9 @@ export function demoRoute<TContext>(
   handler: (request: Request, context: TContext) => Promise<unknown>,
 ) {
   return async (request: Request, context: TContext): Promise<Response> => {
-    // 开启 Cache Components 后，没读请求的 GET 会在 build 时尝试预渲染；Demo 的接口都要在请求时读写数据库。
-    await connection();
+    // 开启 Cache Components 后，GET 会在 build 时尝试预渲染；handler 一读数据库，预渲染就停下、改在请求时执行
+    // （node_modules/next/dist/docs/01-app/01-getting-started/15-route-handlers.md 的 With Cache Components）。
+    // Demo 后端没有启用的 build 里，这里的 404 会被预渲染成静态响应，正好就是要的结果。
     if (!isDemoBackendEnabled()) {
       return Response.json(errorBody(notFound("Not found")), { status: 404 });
     }
@@ -40,6 +39,8 @@ export function demoRoute<TContext>(
         const result = await handler(request, context);
         return result instanceof Response ? result : Response.json(result);
       } catch (error) {
+        // build 时预渲染读到 request.url 等请求数据会抛出 Next 自己的中断信号，要交还给 Next，不能当成 500。
+        unstable_rethrow(error);
         return errorResponse(error);
       }
     });

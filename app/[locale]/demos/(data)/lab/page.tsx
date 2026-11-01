@@ -5,13 +5,13 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import {
+  DemoResetButton,
   FaultPanel,
   LabConcurrentFailures,
   LabDraftMode,
   LabQueryStates,
   LabRetry,
   LabSuspenseReset,
-  MockResetButton,
   PageIntro,
 } from "@/features/demo-task";
 
@@ -28,7 +28,7 @@ export default function LabPage() {
         <p>{t("intro")}</p>
       </PageIntro>
       <div className="mb-6">
-        <MockResetButton />
+        <DemoResetButton />
       </div>
       {/* 下面的组件在客户端创建 query，读当前时间，放进 Suspense 才不会打断预渲染。 */}
       <Suspense fallback={null}>

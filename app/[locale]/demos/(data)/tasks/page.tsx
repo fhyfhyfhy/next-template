@@ -5,7 +5,6 @@ import { Suspense } from "react";
 
 import {
   CreateTaskForm,
-  MOCK_API_RUNNING,
   PageIntro,
   parseTaskListParams,
   TaskList,
@@ -14,7 +13,10 @@ import {
   TaskListToolbar,
   toTaskFilters,
 } from "@/features/demo-task";
-import { getCachedTaskPage } from "@/features/demo-task/server";
+import {
+  getCachedTaskPage,
+  isDemoBackendEnabled,
+} from "@/features/demo-task/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("app.demos.tasks");
@@ -41,7 +43,7 @@ export default function TasksPage({
         </Suspense>
         <Suspense fallback={<TaskListSkeleton />}>
           {searchParams.then((query) => {
-            if (!MOCK_API_RUNNING) return null;
+            if (!isDemoBackendEnabled()) return null;
             const params = parseTaskListParams(query);
             return (
               <TaskList

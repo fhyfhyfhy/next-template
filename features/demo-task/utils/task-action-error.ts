@@ -1,6 +1,6 @@
 import type { ActionResult } from "../types/action-result";
 
-/** Server Action 返回的预期业务失败，`code` 是 Mock API 的业务错误码。 */
+/** Server Action 返回的预期业务失败，`code` 是数据层拒绝时的业务错误码（constants/error-codes.ts）。 */
 export class TaskActionError extends Error {
   readonly code: number;
 

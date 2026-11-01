@@ -36,13 +36,13 @@
     "label": "{total, plural, one {# task} other {# tasks}} in progress",
     "text": "In progress {total}"
   },
-  "mockApiNotice": {
-    "title": "Mock API isn't running",
-    "why": "The Data demo runs only against the template's own Mock API, and only the Demo-specific commands start the Mock API. When you run the app with the regular commands, these pages send no requests, so demo writes never reach a real backend.",
-    "howToRun": "To see the Data demo, run <code>pnpm demo:dev</code>: it starts the Mock API and points the whole app at it, so during that run requests from the real product pages go to the Mock API too."
+  "demoBackendNotice": {
+    "title": "The Demo backend isn't enabled",
+    "why": "The Data demo reads and writes the template's own Demo backend, which keeps its data in a Demo-only database and object storage and is started only by the Demo-specific commands. When you run the app with the regular commands, these pages read and write no data.",
+    "howToRun": "To see the Data demo, start Docker and run <code>pnpm demo:dev</code>: it starts the Demo's database and object storage and enables the Demo backend."
   },
-  "mockReset": {
-    "button": "Reset mock data",
+  "demoReset": {
+    "button": "Reset Demo data",
     "done": "Reset"
   },
   "demoNote": {
@@ -127,7 +127,9 @@
   },
   "taskCover": {
     "uploading": "Uploading…",
-    "change": "Change cover image"
+    "change": "Change cover image",
+    "notAnImage": "Only images can be uploaded.",
+    "tooLarge": "Images can be at most {max} MB."
   },
   "deleteTask": {
     "trigger": "Delete task",
@@ -161,7 +163,7 @@
   },
   "labRetry": {
     "title": "Retry rules",
-    "description": "Each button injects a fault into the detail endpoint, then requests it again. A schema mismatch means the frontend and backend contracts have drifted apart, so the global handler logs a SchemaValidationError to the console.",
+    "description": "Each button injects a fault into reading the task detail, then requests it again in the browser. A schema mismatch means the frontend and backend contracts have drifted apart, so the global handler logs a SchemaValidationError to the console.",
     "scenarios": {
       "serverErrorRecovers": "5xx, recovers after two",
       "serverErrorPersists": "5xx, keeps failing",
@@ -179,7 +181,7 @@
   },
   "labConcurrentFailures": {
     "title": "Simultaneous failures",
-    "description": "The button injects 3 failures into the detail endpoint, then refreshes the 3 tasks below at once.",
+    "description": "The button injects 3 failures into reading the task detail, then refreshes the 3 tasks below at once.",
     "refreshFailed": "(refresh failed)",
     "refreshAll": "Refresh all at once (all fail)"
   },
@@ -205,27 +207,30 @@
   },
   "faultPanel": {
     "title": "Inject faults",
-    "description": "“Default latency” applies to every business endpoint, and a fault's latency adds to it. Pick an endpoint and a fault type; the fault disappears once its “times” run out. After injecting one, use other pages and watch how they react.",
+    "description": "“Default latency” applies to every business operation, and a fault's latency adds to it. Pick a data-layer operation and a fault type; the fault disappears once its “times” run out. Faults apply to server rendering, browser requests, and Server Actions alike; “4xx/5xx”, “error on 2xx”, and “schema mismatch” show up only on browser requests. After injecting one, use other pages and watch how they react.",
     "remove": "Remove",
     "clearAll": "Clear all",
     "empty": "No faults right now",
     "reading": "Reading the fault config…",
-    "faultRow": "{method} {path}: {effect}, {times}",
+    "faultRow": "{operation}: {effect}, {times}",
     "effects": {
       "status": "return {status}",
       "errorBody": "2xx with error {code}",
       "malformed": "body doesn't match the schema",
-      "latency": "add {latencyMs}ms latency"
+      "latency": "add {latencyMs}ms latency",
+      "unexpected": "throw an unexpected error",
+      "businessError": "reject with business error {code}"
     },
     "timesLeft": "{count} left"
   },
   "faultForm": {
-    "endpoint": "Endpoint",
+    "operation": "Operation",
     "kind": "Fault",
     "times": "Times",
     "submit": "Add fault",
     "kinds": {
       "latency": "Add 2 s latency",
+      "unexpected": "Throw an unexpected error",
       "clientError": "Return 4xx",
       "serverError": "Return 5xx",
       "errorBody": "2xx with error",

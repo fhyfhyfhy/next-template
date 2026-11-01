@@ -10,7 +10,12 @@ import {
   getAttachedUploadDownloadUrl,
   getAttachedUploadUrls,
 } from "@/features/demo-upload/server";
-import { badRequest, conflict, notFound } from "@/lib/domain-error";
+import {
+  badRequest,
+  conflict,
+  DomainError,
+  notFound,
+} from "@/lib/domain-error";
 
 import {
   TASK_NAME_TAKEN,
@@ -71,6 +76,11 @@ export async function findTaskRow(
   const row = await query.executeTakeFirst();
   if (!row) throw notFound(`Task ${id} not found`);
   return row;
+}
+
+/** 数据层按"任务不存在"拒绝：服务端渲染据此调用 notFound()。 */
+export function isTaskMissing(error: unknown) {
+  return error instanceof DomainError && error.status === 404;
 }
 
 function clampPageSize(pageSize: number | undefined) {

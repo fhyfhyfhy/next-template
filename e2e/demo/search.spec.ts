@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { expect, test } from "./mock-api";
+import { expect, test } from "./demo-backend";
 
 // 搜索：边输入边请求，数据由 React Query 负责；关键词只做 shallow URL 更新。
 
@@ -32,14 +32,14 @@ test("带关键词的链接打开时还原输入框和结果", async ({ page }) 
   await expect(results(page)).toHaveCount(3);
 });
 
-test("换关键词时中止还没返回的旧请求", async ({ page, mockApi }) => {
-  await mockApi.setFaults([
-    { method: "GET", path: "/demo/tasks/search", latency_ms: 1500 },
+test("换关键词时中止还没返回的旧请求", async ({ page, demoBackend }) => {
+  await demoBackend.setFaults([
+    { operation: "task.search", kind: "latency", latencyMs: 1500 },
   ]);
   const aborted: string[] = [];
   page.on("requestfailed", (request) => {
     const url = new URL(request.url());
-    if (url.pathname === "/demo/tasks/search") {
+    if (url.pathname === "/api/demo/tasks/search") {
       aborted.push(url.searchParams.get("term") ?? "");
     }
   });
@@ -55,11 +55,11 @@ test("换关键词时中止还没返回的旧请求", async ({ page, mockApi }) 
   expect(aborted).toEqual(["狐"]);
 });
 
-test("新结果返回前继续显示上一次的结果", async ({ page, mockApi }) => {
+test("新结果返回前继续显示上一次的结果", async ({ page, demoBackend }) => {
   await page.goto(`/demos/search?q=${encodeURIComponent("狐狸")}`);
   await expect(results(page)).toHaveCount(3);
-  await mockApi.setFaults([
-    { method: "GET", path: "/demo/tasks/search", latency_ms: 1500 },
+  await demoBackend.setFaults([
+    { operation: "task.search", kind: "latency", latencyMs: 1500 },
   ]);
 
   await page.getByLabel("搜索任务").fill("跑车");

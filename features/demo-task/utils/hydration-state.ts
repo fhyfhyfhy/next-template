@@ -40,9 +40,9 @@ export function buildHydrationState(
   };
 }
 
-/** 无限列表只有第一页时的 query 数据。 */
-export function firstPageData<TPage>(page: TPage): InfiniteData<TPage, number> {
-  return { pages: [page], pageParams: [1] };
+/** 游标分页的无限列表只有第一页时的 query 数据：第一页的 pageParam 是空字符串（没有游标，见 api/get-feed.ts）。 */
+export function firstPageData<TPage>(page: TPage): InfiniteData<TPage, string> {
+  return { pages: [page], pageParams: [""] };
 }
 
 /**

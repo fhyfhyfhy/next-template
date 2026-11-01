@@ -37,7 +37,7 @@
       },
       "lab": {
         "title": "Data demo · 故障实验室",
-        "description": "给接口注入延迟和失败，观察错误提示、重试和错误边界。"
+        "description": "给数据层操作注入延迟和失败，观察错误提示、重试和错误边界。"
       }
     },
     "dataError": {
@@ -55,7 +55,7 @@
     },
     "taskDetail": {
       "metadataTitle": "{name} · Data demo",
-      "mockApiOffTitle": "Data demo",
+      "demoBackendOffTitle": "Data demo",
       "note": {
         "ownership": "详情由 React Query 负责：任务在你停留时会自己推进，排队中和生成中的任务每 1.5 秒轮询一次，到终态后停止，并刷新 header 的进行中任务数。首屏数据由服务端 prefetch，评论随后流式送达。",
         "tryIt": "试试：重试一个失败的任务；把它重命名成已存在的名称；换一张封面图后回到列表；在评论区发表和删除评论。"
@@ -90,7 +90,7 @@
     "lab": {
       "metadataTitle": "故障实验室 · Data demo",
       "title": "故障实验室",
-      "intro": "给 Mock API 的接口注入延迟和各种失败，观察请求失败时页面的反应。故障配置对所有 Data demo 页面生效，包括服务端渲染时发出的请求。"
+      "intro": "给 Demo 后端的数据层操作注入延迟和各种失败，观察请求失败时页面的反应。故障配置对所有 Data demo 页面生效，包括服务端渲染时的读取和 Server Action 里的写入。"
     }
   }
 }

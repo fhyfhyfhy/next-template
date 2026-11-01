@@ -18,9 +18,9 @@ test("四种 build 各用自己的目录", () => {
     ".next-demo",
     ".next-demo-e2e",
   ]);
-  expect(buildDir({ NEXT_PUBLIC_MOCK_API: "1", EXPOSE_TESTING_API: "1" })).toBe(
-    ".next-demo-e2e",
-  );
+  expect(
+    buildDir({ DEMO_DATABASE_URL: "postgres://demo", EXPOSE_TESTING_API: "1" }),
+  ).toBe(".next-demo-e2e");
 });
 
 test("每个 build 目录都在 .gitignore 和 .prettierignore 里", () => {
@@ -46,7 +46,7 @@ test("tsconfig.json 排除 .next 以外的 build 目录，只读 .next/types", (
 test("去掉决定目录的变量后，typegen 写的是 .next", () => {
   const env = withoutBuildDirVars({
     EXPOSE_TESTING_API: "1",
-    NEXT_PUBLIC_MOCK_API: "1",
+    DEMO_DATABASE_URL: "postgres://demo",
     PATH: "/usr/bin",
   });
   expect(buildDir(env)).toBe(".next");

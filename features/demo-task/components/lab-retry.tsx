@@ -9,45 +9,51 @@ import { useQuery, useQueryClient } from "@/lib/react-query";
 import { getTaskQueryOptions } from "../api/get-task";
 import {
   INJECTED_FAILURE_CODE,
-  TASK_DETAIL_ROUTE,
-} from "../constants/mock-faults";
+  TASK_DETAIL_OPERATION,
+} from "../constants/demo-faults";
 import {
-  type MockFaultInput,
-  useInjectMockFault,
-} from "../hooks/use-inject-mock-fault";
+  type DemoFaultInput,
+  useInjectDemoFault,
+} from "../hooks/use-inject-demo-fault";
 import { LabSection } from "./lab-section";
 
 const TASK_ID = "task-07";
-const detailFault = (fault: Omit<MockFaultInput, "method" | "path">) => ({
-  method: "GET",
-  path: TASK_DETAIL_ROUTE,
+const detailFault = (fault: Omit<DemoFaultInput, "operation">) => ({
+  operation: TASK_DETAIL_OPERATION,
   ...fault,
 });
 
 const scenarios = [
   {
     key: "serverErrorRecovers",
-    fault: detailFault({ status: 503, times: 2 }),
+    fault: detailFault({ kind: "httpStatus", status: 503, times: 2 }),
   },
   // 首次请求加 3 次重试，4 次都失败才放弃。
   {
     key: "serverErrorPersists",
-    fault: detailFault({ status: 503, times: 4 }),
+    fault: detailFault({ kind: "httpStatus", status: 503, times: 4 }),
   },
-  { key: "clientError", fault: detailFault({ status: 409, times: 1 }) },
+  {
+    key: "clientError",
+    fault: detailFault({ kind: "httpStatus", status: 409, times: 1 }),
+  },
   {
     key: "errorBody",
-    fault: detailFault({ code: INJECTED_FAILURE_CODE, times: 1 }),
+    fault: detailFault({
+      kind: "errorOnSuccess",
+      code: INJECTED_FAILURE_CODE,
+      times: 1,
+    }),
   },
-  { key: "malformed", fault: detailFault({ malformed: true, times: 1 }) },
-] as const satisfies readonly { key: string; fault: MockFaultInput }[];
+  { key: "malformed", fault: detailFault({ kind: "malformed", times: 1 }) },
+] as const satisfies readonly { key: string; fault: DemoFaultInput }[];
 type ScenarioKey = (typeof scenarios)[number]["key"];
 
 /** `shouldRetryRequest`：5xx 和网络错误最多重试 3 次；4xx、2xx 上的 error、schema 不匹配重试也不会成功，直接失败。 */
 export function LabRetry() {
   const t = useTranslations("demo-task.labRetry");
   const queryClient = useQueryClient();
-  const injectFault = useInjectMockFault();
+  const injectFault = useInjectDemoFault();
   const options = getTaskQueryOptions(TASK_ID);
   const task = useQuery(options);
   const [scenario, setScenario] = useState<ScenarioKey | null>(null);

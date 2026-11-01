@@ -15,10 +15,8 @@ import {
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useMutation } from "@/lib/react-query";
 
-import {
-  COMMENT_MAX_LENGTH,
-  createCommentMutationOptions,
-} from "../../api/create-comment";
+import { createCommentMutationOptions } from "../../api/create-comment";
+import { COMMENT_MAX_LENGTH } from "../../constants/task-rules";
 import type { DemoTaskTranslator } from "../../types/translator";
 
 const createCommentSchema = (t: DemoTaskTranslator) =>

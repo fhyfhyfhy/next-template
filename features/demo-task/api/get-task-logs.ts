@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ApiError, resolveApiUrl } from "@/lib/fetch";
+import { ApiError } from "@/lib/fetch";
 
 import { taskStatusSchema } from "../types/task-filters";
 
@@ -19,8 +19,8 @@ export async function* streamTaskLogs(
   taskId: string,
   signal: AbortSignal,
 ): AsyncGenerator<TaskLogEvent> {
-  const url = `/demo/tasks/${taskId}/logs` as const;
-  const response = await fetch(resolveApiUrl(url), { signal });
+  const url = `/api/demo/tasks/${taskId}/logs` as const;
+  const response = await fetch(url, { signal });
   if (!response.ok || !response.body) {
     throw new ApiError({
       url,

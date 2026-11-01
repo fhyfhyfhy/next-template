@@ -3,11 +3,12 @@
 import { updateTag } from "next/cache";
 import { z } from "zod";
 
-import { ApiError, fetchApi } from "@/lib/fetch";
+import { DomainError } from "@/lib/domain-error";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
+import { assertDemoBackendEnabled } from "../server/connection";
+import { deleteTask } from "../server/tasks";
 import type { ActionResult } from "../types/action-result";
-import { assertMockApiRunning } from "../utils/assert-mock-api-running";
 
 const inputSchema = z.object({ taskId: z.string().min(1) });
 
@@ -15,17 +16,12 @@ const inputSchema = z.object({ taskId: z.string().min(1) });
 export async function deleteTaskAction(
   input: z.input<typeof inputSchema>,
 ): Promise<ActionResult<null>> {
-  assertMockApiRunning();
+  assertDemoBackendEnabled();
   const { taskId } = inputSchema.parse(input);
   try {
-    await fetchApi({
-      url: `/demo/tasks/${taskId}`,
-      method: "DELETE",
-      schema: z.null(),
-      auth: false,
-    });
+    await deleteTask(taskId);
   } catch (error) {
-    if (!(error instanceof ApiError && error.status === 404)) throw error;
+    if (!(error instanceof DomainError && error.status === 404)) throw error;
   }
   updateTag(TASK_LIST_TAG);
   return { ok: true, data: null };

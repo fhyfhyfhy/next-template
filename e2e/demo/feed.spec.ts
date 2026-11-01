@@ -5,7 +5,7 @@ import {
   navigateThroughHeader,
   resetThroughLab,
   test,
-} from "./mock-api";
+} from "./demo-backend";
 
 // 作品广场：React Query 负责的无限滚动，第一页来自服务端缓存的快照。
 
@@ -31,7 +31,7 @@ async function openFeed(page: Page) {
 function feedRequests(page: Page) {
   const requests: Request[] = [];
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/demo/feed")
+    if (new URL(request.url()).pathname === "/api/demo/feed")
       requests.push(request);
   });
   return requests;
@@ -58,9 +58,24 @@ test("第一页的卡片在服务端返回的 HTML 里，浏览器不再请求�
   // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言一段时间内没有请求第一页，等待是断言的一部分。
   await page.waitForTimeout(500);
 
+  // 第一页的请求不带游标。
   expect(
-    requests.map((item) => new URL(item.url()).searchParams.get("page")),
-  ).not.toContain("1");
+    requests.filter((item) => !new URL(item.url()).searchParams.has("cursor")),
+  ).toStrictEqual([]);
+});
+
+test("翻页期间有任务完成、排进第一页的范围，下一页也不重复已显示的作品", async ({
+  page,
+  demoBackend,
+}) => {
+  await openFeed(page);
+  // 复古跑车 v3 排在第一页的作品之间；它完成后，按页码翻页的话下一页会重复第一页最后一个作品。
+  await demoBackend.advance("task-16", 3);
+
+  await page.getByTestId("feed-end").scrollIntoViewIfNeeded();
+  await expect(cards(page)).toHaveCount(12);
+  const names = await cards(page).allTextContents();
+  expect(new Set(names).size).toBe(names.length);
 });
 
 test("滚动到底部时加载下一页，直到没有更多", async ({ page }) => {
@@ -73,9 +88,9 @@ test("滚动到底部时加载下一页，直到没有更多", async ({ page }) 
   await expect(page.getByText("没有更多作品了")).toBeVisible();
 });
 
-test("收藏时卡片和“我的收藏”同时立即更新", async ({ page, mockApi }) => {
-  await mockApi.setFaults([
-    { method: "PUT", path: "/demo/tasks/:id/favorite", latency_ms: 1500 },
+test("收藏时卡片和“我的收藏”同时立即更新", async ({ page, demoBackend }) => {
+  await demoBackend.setFaults([
+    { operation: "task.setFavorite", kind: "latency", latencyMs: 1500 },
   ]);
   await openFeed(page);
   await expect(favorites(page)).toHaveCount(4);
@@ -93,10 +108,10 @@ test("收藏时卡片和“我的收藏”同时立即更新", async ({ page, mo
 
 test("收藏失败时卡片和“我的收藏”一起回滚，只弹一个全局提示", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
-  await mockApi.setFaults([
-    { method: "PUT", path: "/demo/tasks/:id/favorite", status: 500 },
+  await demoBackend.setFaults([
+    { operation: "task.setFavorite", kind: "unexpected" },
   ]);
   await openFeed(page);
   await expect(favorites(page)).toHaveCount(4);
@@ -184,11 +199,11 @@ test("加载到第二页后收藏第一页的作品，已加载的页不会被�
 
 test("收藏一个较早的作品，“我的收藏”里它直接出现在按创建时间排好的位置", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
   // 拖慢收藏请求：断言的是请求返回之前，乐观更新时的顺序。
-  await mockApi.setFaults([
-    { method: "PUT", path: "/demo/tasks/:id/favorite", latency_ms: 3000 },
+  await demoBackend.setFaults([
+    { operation: "task.setFavorite", kind: "latency", latencyMs: 3000 },
   ]);
   await openFeed(page);
   await expect(favorites(page)).toHaveCount(4);

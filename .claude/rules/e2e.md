@@ -5,7 +5,7 @@ paths:
 
 # E2E specs
 
-Import `test` and `expect` from `e2e/test.ts`, or from `e2e/demo/mock-api.ts` in the Data demo's specs, which builds on it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (the Playwright configs); a test that needs another one sets `test.use({ locale })`, as `e2e/locale.spec.ts` does.
+Import `test` and `expect` from `e2e/test.ts`, or from `e2e/demo/demo-backend.ts` in the Data demo's specs, which builds on it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (the Playwright configs); a test that needs another one sets `test.use({ locale })`, as `e2e/locale.spec.ts` does.
 
 ## Hydration
 
@@ -19,8 +19,8 @@ When the assertion observes another Suspense boundary, that boundary must be hyd
 | --- | --- |
 | The static shell after `page.goto`, or the prefetched UI after a `<Link>` click | `instant()` from `@next/playwright`, as in `e2e/demo/tasks.spec.ts` |
 | UI rendered into the server's HTML rather than by the browser | Abort the app's script requests and assert the UI, as in `e2e/demo/feed.spec.ts`. `instant()` lets browser rendering through, and disabling JavaScript also stops the inline scripts that place a Suspense boundary's content when it resolves after the shell |
-| One streamed section arriving before another | A Mock API `latency_ms` fault on the later one, and `page.goto(url, { waitUntil: "commit" })`: `load` fires only after the stream ends |
-| A browser-side query's loading state | A `latency_ms` fault on its request; `instant()` holds back only server-rendered content |
+| One streamed section arriving before another | A `latency` fault on the later one's data-layer operation, and `page.goto(url, { waitUntil: "commit" })`: `load` fires only after the stream ends |
+| A browser-side query's loading state | A `latency` fault on the operation its Route Handler calls; `instant()` holds back only server-rendered content |
 
 ## Browser events
 
@@ -28,9 +28,9 @@ Playwright pages stay in the foreground, so a return to the tab is simulated: us
 
 ## Waiting
 
-- Task state changes only through `mockApi.advance()`: the `mockApi` fixture pauses the Mock API clock.
+- Task state changes only through `demoBackend.advance()`: the `demoBackend` fixture pauses the Demo 生成器's clock.
 - End each wait on the event that completes it, such as `page.waitForResponse` for a Server Action. A fixed wait fits only a negative assertion, "nothing else happens within N ms", and its `eslint-disable` comment gives that reason.
-- `mockApi.requests()` reads once. Poll it with `expect.poll` when the browser sends the request; read it directly for requests made while the server renders, which finish before the HTML arrives.
+- `demoBackend.calls()` reads the data-layer call log once. Poll it with `expect.poll` when the browser sends the request; read it directly for calls made while the server renders, which finish before the HTML arrives.
 
 ## Regression specs
 

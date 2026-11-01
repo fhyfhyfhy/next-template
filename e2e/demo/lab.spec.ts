@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { expect, resetThroughLab, test } from "./mock-api";
+import { expect, resetThroughLab, test } from "./demo-backend";
 
 // 故障实验室：注入故障，观察请求失败时的提示、重试和错误边界。
 
@@ -24,10 +24,14 @@ test("故障面板注入的故障对其他页面生效，服务端渲染失败�
   const panel = section(page, "注入故障");
   await choose(
     page,
-    panel.getByRole("combobox", { name: "接口" }),
-    "GET /demo/tasks",
+    panel.getByRole("combobox", { name: "操作" }),
+    "task.list",
   );
-  await choose(page, panel.getByRole("combobox", { name: "故障" }), "返回 5xx");
+  await choose(
+    page,
+    panel.getByRole("combobox", { name: "故障" }),
+    "抛出意外错误",
+  );
   await choose(page, panel.getByRole("combobox", { name: "次数" }), "一直生效");
   await panel.getByRole("button", { name: "添加故障" }).click();
   await expect(panel.getByRole("listitem")).toHaveCount(1);
@@ -50,9 +54,9 @@ test("故障面板注入的故障对其他页面生效，服务端渲染失败�
   await expect(page.getByRole("list", { name: "任务列表" })).toBeVisible();
 });
 
-test("故障面板修改默认延迟，重置 Mock 数据后恢复", async ({
+test("故障面板修改默认延迟，重置 Demo 数据后恢复", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
   const latency = section(page, "注入故障").getByRole("combobox", {
     name: "默认延迟",
@@ -60,12 +64,12 @@ test("故障面板修改默认延迟，重置 Mock 数据后恢复", async ({
   await expect(latency).toHaveText("500ms");
 
   await choose(page, latency, "2000ms");
-  await expect.poll(() => mockApi.latency()).toBe(2000);
+  await expect.poll(() => demoBackend.latency()).toBe(2000);
   await expect(latency).toHaveText("2000ms");
 
-  await page.getByRole("button", { name: "重置 Mock 数据" }).click();
+  await page.getByRole("button", { name: "重置 Demo 数据" }).click();
   await expect(latency).toHaveText("500ms");
-  expect(await mockApi.latency()).toBe(500);
+  expect(await demoBackend.latency()).toBe(500);
 });
 
 test("首次加载失败渲染错误；已有数据时刷新失败保留数据并弹提示", async ({
@@ -154,7 +158,7 @@ async function toggleDraftMode(page: Page, checked: boolean) {
 
 test("开启 Draft Mode 后跳过服务端缓存，关闭后恢复缓存", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
   const rows = page
     .getByRole("list", { name: "任务列表" })
@@ -163,7 +167,7 @@ test("开启 Draft Mode 后跳过服务端缓存，关闭后恢复缓存", async
   await expect(rows).toHaveCount(3);
 
   // 缓存里是改名前的快照；不开 Draft Mode 时重新加载仍显示它（tasks.spec.ts 的服务端缓存用例）。
-  await mockApi.call("PATCH", "/demo/tasks/task-05", { name: "开启后改名" });
+  await demoBackend.renameTask("task-05", "开启后改名");
   await openLab(page);
   await toggleDraftMode(page, true);
   await page.goto("/demos/tasks?status=failed");
@@ -176,7 +180,7 @@ test("开启 Draft Mode 后跳过服务端缓存，关闭后恢复缓存", async
   await toggleDraftMode(page, false);
 
   // Draft Mode 下的读取不写缓存，关闭后读到的还是开启前缓存的快照，之后的改动也要等缓存刷新。
-  await mockApi.call("PATCH", "/demo/tasks/task-05", { name: "关闭后改名" });
+  await demoBackend.renameTask("task-05", "关闭后改名");
   await page.goto("/demos/tasks?status=failed");
   await expect(rows).toHaveCount(3);
   await expect(rows.filter({ hasText: "关闭后改名" })).toHaveCount(0);

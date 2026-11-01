@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { expect, test } from "./mock-api";
+import { expect, test } from "./demo-backend";
 
 // 最近查看：任务 id 存在 localStorage 里，只有浏览器能读，请求要等 hydration 之后才发。
 
@@ -31,10 +31,10 @@ test("服务端渲染的 HTML 里没有任务数据", async ({ page, request }) 
 
 test("看过但已被删除的任务显示为已删除，不弹通用提示", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
   await visitTask(page, "task-02");
-  await mockApi.call("DELETE", "/demo/tasks/task-02");
+  await demoBackend.deleteTask("task-02");
 
   await page.goto("/demos/recent");
 
