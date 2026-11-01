@@ -302,9 +302,10 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // ClientMessages itself needs next-intl's provider and useMessages. A later
+    // ClientMessages itself needs next-intl's provider and useMessages, and so
+    // does a unit test that renders a component outside any route. A later
     // config object that sets the same rule replaces the earlier options whole.
-    files: ["lib/i18n/**"],
+    files: ["lib/i18n/**", `**/*.test.${extensionGlob}`],
     rules: {
       "no-restricted-imports": [
         "error",

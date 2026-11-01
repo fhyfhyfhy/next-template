@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
+import { BASE_PATH } from "./lib/base-path";
 import { buildDir } from "./scripts/build-dirs.mjs";
 
 const withNextIntl = createNextIntlPlugin("./lib/i18n/request.ts");
@@ -10,6 +11,7 @@ const withNextIntl = createNextIntlPlugin("./lib/i18n/request.ts");
 const distDir = buildDir(process.env);
 
 const nextConfig: NextConfig = {
+  basePath: BASE_PATH,
   distDir,
   cacheComponents: true,
   // The built-in in-memory handler drops an entry in production once its

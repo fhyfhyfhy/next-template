@@ -2,6 +2,7 @@
 
 import { useLocale } from "next-intl";
 
+import { BASE_PATH } from "@/lib/base-path";
 import { cn } from "@/lib/cn";
 import { getPathname } from "@/lib/i18n/navigation";
 import { type Locale, routing } from "@/lib/i18n/routing";
@@ -64,7 +65,8 @@ export function LocaleItems({ href }: LocaleItemsProps) {
     return (
       <a
         key={locale}
-        href={getPathname({ href, locale, forcePrefix: true })}
+        // A plain <a>, so the basePath that Next adds to its own links is ours to add.
+        href={BASE_PATH + getPathname({ href, locale, forcePrefix: true })}
         lang={locale}
         hrefLang={locale}
         className={itemClassName}

@@ -14,5 +14,9 @@ export default defineConfig({
     // own tests.
     exclude: [...configDefaults.exclude, ".claude/worktrees/**"],
     environment: "node",
+    // next-intl's navigation imports `next/navigation` without the extension,
+    // which only a bundler resolves; Vite resolves it when it bundles next-intl
+    // instead of leaving it to Node.
+    server: { deps: { inline: ["next-intl"] } },
   },
 });
