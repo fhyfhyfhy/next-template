@@ -4,7 +4,7 @@ import { ThemeProvider } from "next-themes";
 
 import { fontVariables } from "@/app/fonts";
 import { Providers } from "@/app/providers";
-import { ClientMessages } from "@/lib/i18n/client-messages";
+import { RootClientMessages } from "@/lib/i18n/client-messages";
 import { routing } from "@/lib/i18n/routing";
 
 import "@/app/globals.css";
@@ -35,11 +35,11 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ClientMessages>
+          <RootClientMessages namespaces={["app", "ui"]}>
             <Providers>
               <div className="isolate min-h-dvh">{children}</div>
             </Providers>
-          </ClientMessages>
+          </RootClientMessages>
         </ThemeProvider>
       </body>
     </html>

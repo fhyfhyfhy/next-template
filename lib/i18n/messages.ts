@@ -28,12 +28,6 @@ export const NAMESPACES = [
   "demo-ui",
 ] as const satisfies readonly Namespace[];
 
-/** 每个 Client Component 子树都会收到的 namespace；其余由 route 的 `ClientMessages` 按需下发。 */
-export const BASE_CLIENT_NAMESPACES = [
-  "app",
-  "ui",
-] as const satisfies readonly Namespace[];
-
 declare module "next-intl" {
   interface AppConfig {
     Locale: Locale;
