@@ -1,5 +1,11 @@
-/** 故障实验室注入“2xx 但返回 error 对象”时用的 code，不对应 Mock API 的任何真实业务错误。 */
+/**
+ * The code the Fault lab uses to inject "2xx with an error object"; it matches
+ * none of the Mock API's real business errors.
+ */
 export const INJECTED_FAILURE_CODE = 50010;
 
-/** 故障实验室的实验都打在任务详情接口上。故障按“方法 + 路由模式”匹配，不区分任务 id。 */
+/**
+ * Every Fault lab experiment targets the task detail endpoint. Faults match by
+ * method plus route pattern, whatever the task id.
+ */
 export const TASK_DETAIL_ROUTE = "/demo/tasks/:id";

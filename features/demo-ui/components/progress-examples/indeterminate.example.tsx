@@ -8,16 +8,20 @@ import {
 } from "@/components/ui/progress";
 
 export const metadata = {
-  title: "进度未知",
-  description: "还在排队、拿不到进度时把 value 设为 null。",
+  title: "Unknown progress",
+  description:
+    "Set value to null while the task is queued and has no progress yet.",
   order: 20,
 };
 
-/** value 为 null 时屏幕阅读器读出“进度未知”，不显示百分比。 */
+/**
+ * With value null, screen readers announce "indeterminate progress" and no
+ * percentage shows.
+ */
 export function Example() {
   return (
     <ProgressRoot value={null} className="w-full max-w-sm">
-      <ProgressLabel>排队中</ProgressLabel>
+      <ProgressLabel>Queued</ProgressLabel>
       <ProgressTrack>
         <ProgressIndicator className="w-1/3 animate-pulse" />
       </ProgressTrack>

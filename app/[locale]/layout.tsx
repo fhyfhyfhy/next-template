@@ -4,12 +4,13 @@ import { ThemeProvider } from "next-themes";
 
 import { fontVariables } from "@/app/fonts";
 import { Providers } from "@/app/providers";
-import { ClientMessages } from "@/lib/i18n-client-messages";
-import { routing } from "@/lib/i18n-routing";
+import { RootClientMessages } from "@/lib/i18n/client-messages";
+import { routing } from "@/lib/i18n/routing";
 
 import "@/app/globals.css";
 
-// Cache Components 要求每个 root param 至少预渲染一个值；每个 locale 各出一份静态页面。
+// Cache Components needs at least one prerendered value for each root param;
+// each locale gets its own static pages.
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
@@ -35,11 +36,11 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ClientMessages>
+          <RootClientMessages namespaces={["app", "ui"]}>
             <Providers>
               <div className="isolate min-h-dvh">{children}</div>
             </Providers>
-          </ClientMessages>
+          </RootClientMessages>
         </ThemeProvider>
       </body>
     </html>

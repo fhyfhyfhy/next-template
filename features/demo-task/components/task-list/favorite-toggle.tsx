@@ -10,10 +10,13 @@ import type { Task } from "../../api/get-task";
 import { updateTaskFavoriteMutationOptions } from "../../api/update-task-favorite";
 
 /**
- * 这一行由 Server Component 负责，星标用 `useOptimistic` 做乐观更新：点击后立即显示新状态，
- * Server Action 让列表缓存失效并带回刷新后的列表；失败时 transition 结束，自动回到服务端给的值。
- * 收藏也显示在 React Query 负责的作品广场和“我的收藏”里，所以经工厂的 mutation 调用 action，
- * 由工厂同步浏览器里缓存的那些副本。
+ * A Server Component owns this row, and the star updates optimistically with
+ * `useOptimistic`: a click shows the new state at once, and the Server Action
+ * expires the list cache and brings back the refreshed list. On failure the
+ * transition ends and it falls back to the server's value. Favorites also show
+ * in the Gallery and "My favorites", which React Query owns, so the action is
+ * called through the factory's mutation, which syncs those cached copies in the
+ * browser.
  */
 export function FavoriteToggle({ task }: { task: Task }) {
   const t = useTranslations("demo-task.taskList");
@@ -34,7 +37,8 @@ export function FavoriteToggle({ task }: { task: Task }) {
           try {
             await updateFavorite.mutateAsync({ task, favorite: next });
           } catch {
-            // 失败提示由全局错误处理弹出；这里只接住 rejection，免得它冒到错误边界。
+            // The global error handling shows the failure toast; this only
+            // catches the rejection so it doesn't reach the error boundary.
           }
         });
       }}

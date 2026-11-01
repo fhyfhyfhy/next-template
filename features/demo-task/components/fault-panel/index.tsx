@@ -12,10 +12,14 @@ import { DefaultLatencySelect } from "./default-latency-select";
 import { FaultForm } from "./fault-form";
 import { describeFault } from "./fault-kinds";
 
-/** Mock API 当前的故障配置。故障对所有 Data demo 页面的请求生效，包括服务端渲染时的请求。 */
+/**
+ * The Mock API's current fault config. Faults apply to the requests of every
+ * Data demo page, server rendering's included.
+ */
 export function FaultPanel() {
   const t = useTranslations("demo-task");
-  // 有故障时定期刷新：其他页面的请求会消耗故障次数，这里要跟着显示剩余次数。
+  // Refresh periodically while there are faults: other pages' requests use up
+  // their counts, and this shows how many remain.
   const faults = useQuery({
     ...getMockFaultsQueryOptions(),
     refetchInterval: (query) => (query.state.data?.length ? 2000 : false),

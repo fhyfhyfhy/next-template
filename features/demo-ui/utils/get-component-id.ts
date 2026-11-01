@@ -1,6 +1,9 @@
 import { catalog, type ComponentId } from "../constants/catalog";
 
-/** 无效或重复的查询参数回到目录中的第一个组件。 */
+/**
+ * An invalid or repeated query parameter falls back to the catalog's first
+ * component.
+ */
 export function getComponentId(
   value: string | string[] | undefined,
 ): ComponentId {

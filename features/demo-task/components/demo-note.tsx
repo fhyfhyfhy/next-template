@@ -1,7 +1,10 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
-/** 标题由页面数据决定的 Data demo 页面（比如任务详情）用它放“这页演示什么、怎么操作”的说明。 */
+/**
+ * Where a Data demo page whose title comes from its data, such as the task
+ * detail, says what the page demonstrates and how to try it.
+ */
 export function DemoNote({ children }: { children: ReactNode }) {
   const t = useTranslations("demo-task.demoNote");
   return (

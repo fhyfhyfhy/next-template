@@ -9,8 +9,10 @@ import { taskListKey } from "../api/get-tasks";
 import type { TaskStatus } from "../types/task-filters";
 
 /**
- * 任务从进行中变成终态时刷新浏览器里的任务列表：header 的进行中任务数、作品广场等列表不必等自己的轮询。
- * 只在这一次状态变化时触发，页面停留在终态任务上不会反复 invalidate。
+ * Refreshes the task lists in the browser when a task goes from active to a
+ * final state, so lists such as the header's active count and the Gallery don't
+ * wait for their own polling. It fires only on that status change, so staying
+ * on a finished task doesn't invalidate again and again.
  */
 export function useRefreshListsWhenSettled(status: TaskStatus | undefined) {
   const queryClient = useQueryClient();

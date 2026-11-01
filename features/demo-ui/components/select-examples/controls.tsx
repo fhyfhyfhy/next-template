@@ -5,7 +5,10 @@ import type { Dispatch, SetStateAction } from "react";
 import { OptionControl, TextControl, ToggleControl } from "../controls";
 import type { SelectConfig } from "./playground";
 
-/** 将选择器的内容、状态和定位参数呈现为可调控件。 */
+/**
+ * Presents the select's content, state and positioning props as adjustable
+ * controls.
+ */
 export function SelectControls({
   config,
   onChange,

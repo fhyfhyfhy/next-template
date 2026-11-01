@@ -6,8 +6,10 @@ import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { assertMockApiRunning } from "../utils/assert-mock-api-running";
 
 /**
- * 只让任务列表的服务端缓存失效，不写数据。给不经过 Next 服务端的变化用：浏览器直接完成的写入，
- * 以及浏览器轮询发现的、后端自己推进的任务状态。列表页的缓存需要这条授权的失效路径才能立即反映结果。
+ * Expires the task lists' server cache without writing data. For changes that
+ * bypass the Next server: writes the browser makes directly, and task status
+ * the backend advances on its own, which the browser's polling finds. The list
+ * page's cache needs this authorized expiry path to reflect them at once.
  */
 export async function expireTaskListAction() {
   assertMockApiRunning();

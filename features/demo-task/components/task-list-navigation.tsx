@@ -8,7 +8,7 @@ import {
   useOptimistic,
 } from "react";
 
-import { useRouter } from "@/lib/i18n-navigation";
+import { useRouter } from "@/lib/i18n/navigation";
 
 import { taskListHref, type TaskListParams } from "../utils/task-urls";
 
@@ -22,9 +22,12 @@ const TaskListNavigationContext = createContext<TaskListNavigationValue | null>(
 );
 
 /**
- * 全部任务页工具栏和列表共享的导航状态，包住两者所在的 Suspense。
- * 换筛选要等服务端返回新列表，这期间 URL 和服务端给的 params 还是旧的；导航用 `useOptimistic`
- * 记下目标 params，让选择立即显示，导航完成时 transition 结束，自动回到服务端的值。
+ * Navigation state shared by the All tasks page's toolbar and list; it wraps
+ * the Suspense they sit in. A new filter waits for the server to return the new
+ * list, and meanwhile the URL and the server's params are still the old ones.
+ * Navigation records the target params with `useOptimistic` so the choice shows
+ * at once; when the navigation completes, the transition ends and it falls back
+ * to the server's value.
  */
 export function TaskListNavigation({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -32,8 +35,9 @@ export function TaskListNavigation({ children }: { children: ReactNode }) {
     useOptimistic<TaskListParams | null>(null);
 
   function navigate(params: TaskListParams) {
-    // router.push 的 transition 在这里发起，和这个 transition 一起结束，目标 params 保留到新页面提交。
-    // 用 push：Back 可以撤销每次选择。
+    // router.push's transition starts here and ends with this one, so the
+    // target params last until the new page commits. push, so Back undoes each
+    // choice.
     startTransition(() => {
       setPendingParams(params);
       router.push(taskListHref(params));
@@ -48,8 +52,9 @@ export function TaskListNavigation({ children }: { children: ReactNode }) {
 }
 
 /**
- * 读全部任务页的导航状态。`params` 是这一次服务端渲染给的值；
- * 返回的 `selected` 在导航进行中是目标 params，否则就是 `params`。
+ * Reads the All tasks page's navigation state. `params` is what this server
+ * render gave; the returned `selected` is the target params while a navigation
+ * is pending, and `params` otherwise.
  */
 export function useTaskListNavigation(params: TaskListParams) {
   const context = use(TaskListNavigationContext);

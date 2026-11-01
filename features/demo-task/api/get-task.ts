@@ -9,8 +9,9 @@ import type { DemoTaskTranslator } from "../types/translator";
 const TASK_NAME_MAX_LENGTH = 40;
 
 /**
- * 任务名称的规则：去掉首尾空白后 1 到 40 个字，和 Mock API 的校验一致。创建、重命名的表单和 action 共用，
- * 校验文案由调用方传入的 `t` 按当前 locale 生成。
+ * The task name rule: 1 to 40 characters after trimming, matching the Mock
+ * API's validation. The create and rename forms and actions share it; the `t`
+ * the caller passes builds the messages in the current locale.
  */
 export const createTaskNameSchema = (t: DemoTaskTranslator) =>
   z
@@ -42,7 +43,10 @@ export const taskSchema = z
   }));
 export type Task = z.infer<typeof taskSchema>;
 
-/** 运行中的任务每次轮询的间隔，和 Mock API 推进一步的间隔一致。 */
+/**
+ * How often a running task is polled, the same interval at which the Mock API
+ * advances it a step.
+ */
 const POLL_INTERVAL_MS = 1500;
 
 export function isTaskActive(status: TaskStatus | undefined) {
@@ -60,14 +64,17 @@ export const getTaskQueryOptions = (id: string) =>
   queryOptions({
     queryKey: ["demo-task", "task", "detail", id],
     queryFn: () => getTask(id),
-    // 任务在 pending、running 时会自己推进，用户停留在页面上也要看到进度；到终态或任务已被删除后停止轮询。
+    // A pending or running task advances on its own, and a user who stays on
+    // the page should see the progress. Polling stops at a final state or once
+    // the task is deleted.
     refetchInterval: (query) =>
       isTaskActive(query.state.data?.status) &&
       !isTaskNotFound(query.state.error)
         ? POLL_INTERVAL_MS
         : false,
     meta: {
-      // 任务在别处被删除后 refetch 得到 404，详情页显示“已删除”，不再弹通用提示。
+      // After the task is deleted elsewhere, a refetch gets a 404; the detail
+      // page shows it as deleted instead of a generic toast.
       suppressErrorToast: isTaskNotFound,
     },
   });

@@ -1,16 +1,18 @@
-// 每种产物各放一个目录，免得互相覆盖：demo:* 命令（scripts/run-next.mjs --demo）把 Mock API 的地址内联进产物，
-// 和项目自己的 build 混用会让 pnpm start 跑起一个指向 Mock API 的版本；e2e 的 build 打开了测试 API，
-// 不能被当成正常产物 start，也不能覆盖正在运行的 start。next.config.ts 和 eslint.config.mjs 从这里取目录；
-// tsconfig.json、.gitignore、.prettierignore 写不了 import，由 build-dirs.test.mjs 检查它们覆盖了每个目录。
+// Each kind of build has its own directory, so that none overwrites another: the demo:* commands
+// (scripts/run-next.mjs --demo) inline the Mock API's address into the build, which, mixed with the
+// project's own build, would make pnpm start run a version pointed at the Mock API; the e2e build
+// turns on the testing API, so it must not be started as a normal build, nor overwrite a running
+// start. next.config.ts and eslint.config.mjs take the directories from here; tsconfig.json,
+// .gitignore and .prettierignore cannot import, so build-dirs.test.mjs checks that they cover each one.
 
-/** 决定目录的环境变量。 */
+/** The env vars that decide the directory. */
 export const BUILD_DIR_ENV_VARS = [
   "NEXT_PUBLIC_MOCK_API",
   "EXPOSE_TESTING_API",
 ];
 
 /**
- * 这次 build、start 或 typegen 用的目录，即 next.config.ts 的 `distDir`。
+ * The directory this build, start or typegen uses: next.config.ts's `distDir`.
  * @param {Record<string, string | undefined>} env
  */
 export function buildDir(env) {
@@ -23,7 +25,7 @@ export function buildDir(env) {
     .join("-");
 }
 
-/** 所有可能的目录：`.next`、`.next-e2e`、`.next-demo`、`.next-demo-e2e`。 */
+/** Every possible directory: `.next`, `.next-e2e`, `.next-demo` and `.next-demo-e2e`. */
 export const BUILD_DIRS = ["0", "1"].flatMap((demo) =>
   ["0", "1"].map((e2e) =>
     buildDir({ NEXT_PUBLIC_MOCK_API: demo, EXPOSE_TESTING_API: e2e }),
@@ -31,8 +33,9 @@ export const BUILD_DIRS = ["0", "1"].flatMap((demo) =>
 );
 
 /**
- * 去掉决定目录的变量，得到写 `.next` 的环境。tsconfig.json 只读 .next/types，demo 和 e2e 的 build
- * 之前要用这份环境跑 next typegen，否则它写进自己的目录，.next/types 照旧过期。
+ * The environment without the variables that decide the directory, which writes `.next`. tsconfig.json
+ * reads only .next/types, so before a demo or e2e build next typegen runs with this environment;
+ * otherwise it would write to the build's own directory, and .next/types would stay stale.
  * @param {Record<string, string | undefined>} env
  */
 export function withoutBuildDirVars(env) {

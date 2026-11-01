@@ -1,7 +1,10 @@
 const startMarker = "/* @example-config */";
 const endMarker = "/* @end-example-config */";
 
-/** 只替换示例的初始参数；其余 import、交互与 JSX 来自实际运行文件。 */
+/**
+ * Replaces only the example's initial config; the imports, interaction and JSX
+ * come from the file that runs.
+ */
 export function formatExampleSource(source: string, config: object): string {
   const start = source.indexOf(startMarker);
   const end = source.indexOf(endMarker);

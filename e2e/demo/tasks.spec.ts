@@ -8,7 +8,8 @@ import {
   test,
 } from "./mock-api";
 
-// 全部任务页：数据由 Server Component 负责，筛选、排序、分页都在 URL 里。
+// The All tasks page: a Server Component owns the data, and the filter, sort
+// and page are all in the URL.
 
 test.beforeEach(async ({ page }) => {
   await resetThroughLab(page);
@@ -18,9 +19,13 @@ const rows = (page: Page) =>
   page.getByRole("list", { name: "任务列表" }).getByRole("listitem");
 
 /**
- * 从别的 Data demo 页面经导航栏进入全部任务页，等列表出现。整页加载时列表在自己的 Suspense 边界里，
- * 可能比页面其他部分晚 hydrate：那之前的点击可能丢失，换筛选时 React 还会丢掉服务端渲染的列表、直接显示骨架屏。
- * 客户端导航（`navigateThroughHeader`）在浏览器里渲染整页，没有要等 hydrate 的部分。
+ * Enters the All tasks page from another Data demo page through the header's
+ * navigation and waits for the list. On a full page load the list sits in its
+ * own Suspense boundary and may hydrate later than the rest of the page: a
+ * click before then can be lost, and a filter change also makes React drop
+ * the server-rendered list and show the skeleton instead. A client-side
+ * navigation (`navigateThroughHeader`) renders the whole page in the browser,
+ * with nothing left to hydrate.
  */
 async function openTasksPage(page: Page) {
   await page.goto("/demos/search");
@@ -28,7 +33,7 @@ async function openTasksPage(page: Page) {
   await expect(rows(page).first()).toBeVisible();
 }
 
-/** 在已经打开的全部任务页上点一个状态筛选，等新列表到达。 */
+/** Clicks a status filter on the open All tasks page and waits for the new list. */
 async function filterByStatus(page: Page, label: string, url: string) {
   await page
     .getByRole("navigation", { name: "按状态筛选" })
@@ -38,7 +43,11 @@ async function filterByStatus(page: Page, label: string, url: string) {
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 }
 
-/** 去作品广场再按 Back 回来：离开时 Next 用 <Activity> 隐藏这一页，返回时保留状态、重新创建 effect。 */
+/**
+ * Goes to the Gallery and comes back with Back: on leaving, Next hides this
+ * page with <Activity>, and on return it keeps its state and recreates its
+ * effects.
+ */
 async function leaveAndReturn(page: Page) {
   await page
     .getByRole("navigation", { name: "Data demo 导航" })
@@ -49,11 +58,11 @@ async function leaveAndReturn(page: Page) {
   await expect(page).toHaveURL("/demos/tasks");
 }
 
-test("从 Demo 首页进入全部任务，默认按创建时间倒序显示第一页", async ({
+test("entering All tasks from the demos home shows the first page, newest first by default", async ({
   page,
 }) => {
   await page.goto("/demos");
-  // eslint-disable-next-line e2e/act-after-ready -- 首页没有只在浏览器里渲染的内容可等；hydration 之前点击链接会整页导航，下面的断言照样成立。
+  // eslint-disable-next-line e2e/act-after-ready -- the home page has nothing rendered only in the browser to wait for; a click on the link before hydration navigates the full page, and the assertions below hold all the same
   await page.getByRole("link", { name: /全部任务/ }).click();
 
   await expect(page).toHaveURL("/demos/tasks");
@@ -61,7 +70,9 @@ test("从 Demo 首页进入全部任务，默认按创建时间倒序显示第�
   await expect(rows(page).first()).toContainText("多肉高模");
 });
 
-test("按状态筛选写进 URL，Back 回到上一个筛选", async ({ page }) => {
+test("the status filter goes into the URL, and Back returns to the previous filter", async ({
+  page,
+}) => {
   await openTasksPage(page);
   await page.getByRole("link", { name: "失败" }).click();
 
@@ -76,12 +87,13 @@ test("按状态筛选写进 URL，Back 回到上一个筛选", async ({ page }) 
   await expect(rows(page)).toHaveCount(8);
 });
 
-test("换筛选后立即显示新的选择，新列表到达前旧列表标记为更新中", async ({
+test("a filter change shows the new choice at once and marks the old list busy until the new one arrives", async ({
   page,
   mockApi,
 }) => {
   await openTasksPage(page);
-  // 列表在服务端读 Mock API，拖慢它才看得到新列表到达之前的样子。
+  // The list reads the Mock API on the server; slowing it down is what shows
+  // the page before the new list arrives.
   await mockApi.setFaults([
     { method: "GET", path: "/demo/tasks", latency_ms: 2000 },
   ]);
@@ -103,7 +115,9 @@ test("换筛选后立即显示新的选择，新列表到达前旧列表标记�
   await expect(busyList).toHaveCount(0);
 });
 
-test("排序和分页写进 URL，前进后退都显示对应的数据", async ({ page }) => {
+test("sort and page go into the URL, and Back and Forward each show the matching data", async ({
+  page,
+}) => {
   await openTasksPage(page);
   await page.getByRole("combobox", { name: "排序" }).click();
   await page.getByRole("option", { name: "名称" }).click();
@@ -120,11 +134,12 @@ test("排序和分页写进 URL，前进后退都显示对应的数据", async (
   await expect(page).toHaveURL("/demos/tasks?sort=name_asc&page=2");
 });
 
-test("列表的骨架屏在静态 shell 里，数据随后流式送达", async ({
+test("the list's skeleton is in the static shell, and the data streams in after it", async ({
   page,
   baseURL,
 }) => {
-  // instant() 的作用域里，请求时才能渲染的内容都被扣住，页面停在静态 shell。
+  // Inside instant()'s scope, everything that renders only at request time is
+  // held back, so the page stays at the static shell.
   await instant(
     page,
     async () => {
@@ -138,7 +153,7 @@ test("列表的骨架屏在静态 shell 里，数据随后流式送达", async (
   await expect(rows(page).first()).toBeVisible();
 });
 
-test("列表读服务端缓存：后端数据变了，缓存期内仍显示快照", async ({
+test("the list reads the server cache: after the backend data changes, it shows the snapshot while the cache lasts", async ({
   page,
   mockApi,
 }) => {
@@ -151,7 +166,9 @@ test("列表读服务端缓存：后端数据变了，缓存期内仍显示快�
   await expect(rows(page).filter({ hasText: "后台改名" })).toHaveCount(0);
 });
 
-test("创建任务后列表立即出现新任务，表单清空", async ({ page }) => {
+test("creating a task shows it in the list at once and clears the form", async ({
+  page,
+}) => {
   await openTasksPage(page);
   await page.getByLabel("名称").fill("新建的跑车");
   await page.getByLabel("Prompt").fill("一辆红色跑车");
@@ -162,10 +179,12 @@ test("创建任务后列表立即出现新任务，表单清空", async ({ page 
   await expect(page.getByLabel("名称")).toHaveValue("");
 });
 
-// 页面每 3 秒检查一次进行中的任务，发现变化后再重新读取列表，等列表跟上要比默认的 5 秒宽。
+// The page checks the in-progress tasks every 3 s and reads the list again
+// when they change, so waiting for the list to catch up needs more than the
+// default 5 s.
 const untilPolled = { timeout: 10_000 };
 
-test("停在列表上，新任务的状态一直推进到已完成，header 的进行中数同时更新", async ({
+test("staying on the list, a new task advances all the way to done, and the header's in-progress count follows", async ({
   page,
   mockApi,
 }) => {
@@ -175,7 +194,8 @@ test("停在列表上，新任务的状态一直推进到已完成，header 的�
   await page.getByRole("button", { name: "创建任务" }).click();
   const row = rows(page).filter({ hasText: "推进中的任务" });
   await expect(row).toContainText("排队中");
-  // 种子数据里另有 4 个进行中的任务，时钟暂停，它们一直不变。
+  // The seed has 4 other tasks in progress; with the clock paused, they never
+  // change.
   await expect(page.getByLabel("进行中的任务 5 个")).toBeVisible();
 
   const href = await row.getByRole("link").getAttribute("href");
@@ -188,7 +208,7 @@ test("停在列表上，新任务的状态一直推进到已完成，header 的�
   await expect(page.getByLabel("进行中的任务 4 个")).toBeVisible();
 });
 
-test("停在「生成中」筛选上，任务结束后从列表里消失，总数随之减少", async ({
+test("staying on the running filter, a task that finishes leaves the list and the total drops", async ({
   page,
   mockApi,
 }) => {
@@ -197,14 +217,15 @@ test("停在「生成中」筛选上，任务结束后从列表里消失，总�
   await expect(finishing).toContainText("生成中");
   await expect(page.getByText("共 2 个任务")).toBeVisible();
 
-  // 种子里生成中的任务进度是 50%，再推进 3 步到终态。
+  // Running tasks in the seed are at 50%; 3 more steps reach the terminal
+  // status.
   await mockApi.advance("task-16", 3);
 
   await expect(finishing).toHaveCount(0, untilPolled);
   await expect(page.getByText("共 1 个任务")).toBeVisible();
 });
 
-test("停在「已完成」筛选上，别处的任务结束后出现在列表里", async ({
+test("staying on the done filter, a task that finishes elsewhere shows up in the list", async ({
   page,
   mockApi,
 }) => {
@@ -220,8 +241,8 @@ test("停在「已完成」筛选上，别处的任务结束后出现在列表�
   );
 });
 
-test("hydration 之前创建表单不可用", async ({ page }) => {
-  // 拦掉 JS bundle，页面停在 hydration 之前。
+test("the create form is disabled before hydration", async ({ page }) => {
+  // With the JS bundles aborted, the page stays unhydrated.
   await page.route(/\/_next\/static\/chunks\/.+\.js/, (route) => route.abort());
   await page.goto("/demos/tasks");
 
@@ -230,7 +251,7 @@ test("hydration 之前创建表单不可用", async ({ page }) => {
   await expect(page.getByRole("button", { name: "创建任务" })).toBeDisabled();
 });
 
-test("创建时名称被占用，错误显示在名称字段下，不弹全局提示", async ({
+test("a taken name on create shows the error under the name field, with no global toast", async ({
   page,
 }) => {
   await openTasksPage(page);
@@ -245,7 +266,7 @@ test("创建时名称被占用，错误显示在名称字段下，不弹全局�
   await expect(page.getByText("名称已被其他任务占用")).toHaveCount(0);
 });
 
-test("创建成功后再提交被占用的名称，错误照样显示在名称字段下", async ({
+test("after a successful create, submitting a taken name still shows the error under the name field", async ({
   page,
 }) => {
   await openTasksPage(page);
@@ -262,7 +283,9 @@ test("创建成功后再提交被占用的名称，错误照样显示在名称�
   await expect(page.getByText("名称已被其他任务占用")).toBeVisible();
 });
 
-test("填到一半离开再返回，输入还在，照样能提交", async ({ page }) => {
+test("leaving a half-filled form and coming back keeps the input, which still submits", async ({
+  page,
+}) => {
   await openTasksPage(page);
   await page.getByLabel("名称").fill("离开再回来");
 
@@ -274,7 +297,7 @@ test("填到一半离开再返回，输入还在，照样能提交", async ({ pa
   await expect(rows(page).first()).toContainText("离开再回来");
 });
 
-test("名称被占用后改了名字，离开再返回，改过的名字不会被改回去", async ({
+test("a name edited after a taken-name error stays edited after leaving and coming back", async ({
   page,
 }) => {
   await openTasksPage(page);
@@ -290,7 +313,9 @@ test("名称被占用后改了名字，离开再返回，改过的名字不会�
   await expect(page.getByText("名称已被其他任务占用")).toHaveCount(0);
 });
 
-test("名称为空时在浏览器里就拦下，不发请求", async ({ page }) => {
+test("an empty name is stopped in the browser, with no request sent", async ({
+  page,
+}) => {
   await openTasksPage(page);
   let created = false;
   page.on("request", (request) => {
@@ -304,7 +329,7 @@ test("名称为空时在浏览器里就拦下，不发请求", async ({ page }) 
   expect(created).toBe(false);
 });
 
-test("创建出错时弹全局提示，填的内容还在，重试能成功", async ({
+test("a failed create shows the global toast and keeps the input, and a retry succeeds", async ({
   page,
   mockApi,
 }) => {
@@ -325,14 +350,18 @@ test("创建出错时弹全局提示，填的内容还在，重试能成功", as
   await expect(rows(page).first()).toContainText("出错的任务");
 });
 
-test("收藏立即生效，请求完成前就显示已收藏", async ({ page, mockApi }) => {
+test("favoriting takes effect at once, showing as favorited before the request completes", async ({
+  page,
+  mockApi,
+}) => {
   await mockApi.setFaults([
     { method: "PUT", path: "/demo/tasks/:id/favorite", latency_ms: 1500 },
   ]);
   await openTasksPage(page);
   await filterByStatus(page, "失败", "/demos/tasks?status=failed");
   const star = rows(page).first().getByRole("button", { name: "收藏" });
-  // 收藏走 Server Action，它返回时后端已经写入。
+  // Favoriting goes through a Server Action; when it returns, the backend has
+  // written.
   const saved = page.waitForResponse(
     (response) => response.request().headers()["next-action"] !== undefined,
   );
@@ -347,7 +376,10 @@ test("收藏立即生效，请求完成前就显示已收藏", async ({ page, mo
   ).toHaveAttribute("aria-pressed", "true");
 });
 
-test("收藏失败时星标恢复原状，只弹一个全局提示", async ({ page, mockApi }) => {
+test("a failed favorite puts the star back and shows a single global toast", async ({
+  page,
+  mockApi,
+}) => {
   await mockApi.setFaults([
     { method: "PUT", path: "/demo/tasks/:id/favorite", status: 500 },
   ]);
@@ -361,8 +393,11 @@ test("收藏失败时星标恢复原状，只弹一个全局提示", async ({ pa
   await expect(star).toHaveAttribute("aria-pressed", "false");
 });
 
-test("详情链接进入视口后就被预取", async ({ page }) => {
-  // 生产构建里 Link 进入视口时预取目标路由；开发服务器不预取。
+test("a detail link is prefetched once it enters the viewport", async ({
+  page,
+}) => {
+  // In a production build, a Link prefetches its route when it enters the
+  // viewport; the dev server does not prefetch.
   const prefetchedPaths: string[] = [];
   page.on("request", (request) => {
     if (request.headers()["next-router-prefetch"] === "1")
@@ -377,12 +412,15 @@ test("详情链接进入视口后就被预取", async ({ page }) => {
     .toBe(true);
 });
 
-test("点进详情立即显示预取的骨架屏，详情随后送达", async ({ page }) => {
+test("opening a detail shows the prefetched skeleton at once, and the detail arrives after it", async ({
+  page,
+}) => {
   await openTasksPage(page);
   const link = rows(page).first().getByRole("link");
   const name = (await link.textContent()) ?? "";
 
-  // 作用域里只有预取到的部分能渲染：没预取到时导航提交不了，等 URL 会超时。
+  // Inside the scope only what was prefetched can render: without the prefetch
+  // the navigation cannot commit, and waiting for the URL times out.
   await instant(page, async () => {
     await link.click();
     await page.waitForURL(/\/demos\/tasks\/task-/);
@@ -395,7 +433,9 @@ test("点进详情立即显示预取的骨架屏，详情随后送达", async ({
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
 });
 
-test("点进详情后 Back 回到原来的筛选和页码", async ({ page }) => {
+test("Back from a detail returns to the same filter and page", async ({
+  page,
+}) => {
   await openTasksPage(page);
   await filterByStatus(page, "已完成", "/demos/tasks?status=done");
   await page.getByRole("link", { name: "下一页" }).click();

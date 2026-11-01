@@ -3,9 +3,10 @@ import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-// 用法：pnpm e2e:at <commit> [playwright test 的参数]
-// 用这份 checkout 的 e2e/ 和 Playwright 配置，测 <commit> 的应用代码：确认为某个 bug 写的 spec 在修复前的提交上
-// 会失败（.claude/rules/e2e.md 的 Regression specs）。端口照常由 E2E_PORT、DEMO_E2E_PORT 等变量决定。
+// Usage: pnpm e2e:at <commit> [playwright test args]
+// Tests <commit>'s app code with this checkout's e2e/ and Playwright config, to confirm that a spec
+// written for a bug fails on the commit before the fix (Regression specs in .claude/rules/e2e.md).
+// The ports come from E2E_PORT, DEMO_E2E_PORT and the like, as usual.
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const [ref, ...rest] = process.argv.slice(2);
@@ -23,7 +24,8 @@ rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true });
 await extract(sha, dir);
 
-// 换上当前的 spec 和配置：要测的是现在写的 spec，旧提交里可能还没有它们。
+// Swaps in the current specs and config: the specs under test are the ones written now, which an old
+// commit may not have.
 rmSync(join(dir, "e2e"), { recursive: true, force: true });
 cpSync(join(projectRoot, "e2e"), join(dir, "e2e"), { recursive: true });
 for (const file of ["playwright.config.ts", "playwright.demo.config.ts"]) {
@@ -46,7 +48,7 @@ function git(args) {
   return result.stdout;
 }
 
-/** `git archive` 的 tar 流直接交给 tar 解开；Windows 10 起自带 tar。 */
+/** Pipes `git archive`'s tar stream straight into tar to unpack; Windows has shipped tar since Windows 10. */
 function extract(commit, target) {
   return new Promise((resolveExtract, reject) => {
     const archive = spawn("git", ["archive", "--format=tar", commit], {
@@ -65,7 +67,7 @@ function extract(commit, target) {
   });
 }
 
-/** pnpm 有 JS 入口，也有原生可执行文件（pnpm 12 起），`npm_execpath` 指向哪一种就怎么运行。 */
+/** pnpm has a JS entry and, since pnpm 12, a native executable; it runs whichever one `npm_execpath` points to. */
 function runPnpm(args, { check = true } = {}) {
   const viaNode = /\.[cm]?js$/.test(pnpm);
   const result = spawnSync(

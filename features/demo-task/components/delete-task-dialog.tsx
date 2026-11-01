@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useRouter } from "@/lib/i18n-navigation";
+import { useRouter } from "@/lib/i18n/navigation";
 import { useMutation } from "@/lib/react-query";
 
 import { deleteTaskMutationOptions } from "../api/delete-task";
@@ -49,7 +49,9 @@ export function DeleteTaskDialog({ taskId, taskName }: DeleteTaskDialogProps) {
               onClick={() =>
                 deleteTask.mutate(
                   { taskId },
-                  // 工厂已经清理了缓存，这里只负责这个页面自己的反应：离开已删除任务的详情页。
+                  // The factory has already cleared the caches; this handles
+                  // only this page's own reaction: leaving the deleted task's
+                  // detail page.
                   { onSuccess: () => router.push("/demos/tasks") },
                 )
               }

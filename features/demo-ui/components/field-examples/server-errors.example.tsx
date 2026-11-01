@@ -9,34 +9,38 @@ import { Input } from "@/components/ui/input";
 import { useHydrated } from "@/hooks/use-hydrated";
 
 export const metadata = {
-  title: "服务端返回的字段错误",
+  title: "Field errors from the server",
   description:
-    "提交后服务端按字段返回的错误用 setErrorMap 记到对应字段上，显示在字段下，改动后清除。",
+    "After a submit, setErrorMap records the server's per-field errors on their fields; each shows under its field and clears once the field changes.",
   order: 20,
 };
 
-const takenNames = ["低多边形狐狸"];
+const takenNames = ["Low-poly fox"];
 
-/** 模拟一次服务端写入：名称冲突时返回字段错误。 */
+/** Simulates a server write: a name already taken returns a field error. */
 async function save(name: string) {
   await new Promise((resolve) => setTimeout(resolve, 600));
   return takenNames.includes(name.trim())
-    ? { ok: false as const, message: "名称已被其他任务占用" }
+    ? { ok: false as const, message: "Another task already uses this name" }
     : { ok: true as const };
 }
 
-/** 错误由服务端结果决定，不在浏览器里预判；提交中按钮不可用。 */
+/**
+ * The server's result decides the error, which the browser does not predict;
+ * the button is disabled while submitting.
+ */
 export function Example() {
-  // 服务端渲染的表单在 hydration 之前提交，会变成浏览器原生的 GET 提交、刷新整页，所以先不可用。
+  // A server-rendered form submitted before hydration falls back to the
+  // browser's native GET submit, which reloads the page, so it starts disabled.
   const hydrated = useHydrated();
   const [saved, setSaved] = useState<string | null>(null);
   const form = useForm({
-    defaultValues: { name: "低多边形狐狸" },
+    defaultValues: { name: "Low-poly fox" },
     onSubmit: async ({ value, formApi }) => {
       const result = await save(value.name);
       if (!result.ok) {
         setSaved(null);
-        // 记在 onSubmit 下：字段改动后 TanStack Form 会清掉它。
+        // Under onSubmit, TanStack Form clears it once the field changes.
         formApi.setErrorMap({
           onSubmit: { fields: { name: result.message } },
         });
@@ -63,14 +67,14 @@ export function Example() {
             dirty={field.state.meta.isDirty}
             touched={field.state.meta.isTouched}
           >
-            <FieldLabel>名称</FieldLabel>
+            <FieldLabel>Name</FieldLabel>
             <Input
               value={field.state.value}
               onValueChange={(value) => field.handleChange(value)}
               onBlur={field.handleBlur}
             />
             <FieldError match={!field.state.meta.isValid}>
-              {field.state.meta.errors.join("，")}
+              {field.state.meta.errors.join(", ")}
             </FieldError>
           </FieldRoot>
         )}
@@ -78,13 +82,13 @@ export function Example() {
       <form.Subscribe selector={(state) => state.isSubmitting}>
         {(isSubmitting) => (
           <Button type="submit" disabled={!hydrated || isSubmitting}>
-            {isSubmitting ? "保存中…" : "保存"}
+            {isSubmitting ? "Saving…" : "Save"}
           </Button>
         )}
       </form.Subscribe>
       {saved && (
         <p role="status" className="text-sm text-muted-foreground">
-          已保存：{saved}
+          Saved: {saved}
         </p>
       )}
     </form>

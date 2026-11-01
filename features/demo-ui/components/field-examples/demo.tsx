@@ -15,7 +15,7 @@ export const metadata = {
   icon: "IconClipboardCheck",
 } satisfies ComponentMetadata;
 
-/** Field 的可调预览与参数控制。 */
+/** Field's adjustable preview and its controls. */
 export function Demo({ source }: { source: string }) {
   const [config, setConfig] = useState(initialConfig);
   const [resetKey, setResetKey] = useState(0);

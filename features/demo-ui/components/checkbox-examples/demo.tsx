@@ -14,7 +14,7 @@ export const metadata = {
   icon: "IconCheckbox",
 } satisfies ComponentMetadata;
 
-/** Checkbox 的可调预览与参数控制。 */
+/** Checkbox's adjustable preview and its controls. */
 export function Demo({ source }: { source: string }) {
   const [config, setConfig] = useState(initialConfig);
   const [resetKey, setResetKey] = useState(0);

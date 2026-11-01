@@ -2,12 +2,15 @@ import { IconArrowRight } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/cn";
-import { Link } from "@/lib/i18n-navigation";
+import { Link } from "@/lib/i18n/navigation";
 
 import { catalog, type ComponentId } from "../constants/catalog";
 import { iconsByComponent } from "./component-registry.generated";
 
-/** 当前组件写入 URL，支持分享、刷新与浏览器历史。 */
+/**
+ * The current component goes in the URL, so sharing, reloading and browser
+ * history work.
+ */
 export function ComponentNavigation({ selected }: { selected: ComponentId }) {
   const t = useTranslations("demo-ui.navigation");
   return (

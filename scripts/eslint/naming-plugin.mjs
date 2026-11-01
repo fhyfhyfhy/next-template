@@ -2,19 +2,22 @@ import { relative, sep } from "node:path";
 
 const kebabCase = /[a-z0-9]+(?:-[a-z0-9]+)*/.source;
 const routeParam = /[a-z][a-zA-Z0-9]*/.source;
-// 文件名按 . 分段检查（basic.example.tsx、index.d.ts）；允许 . 开头的目录和文件（.claude/）。
+// A file name is checked per .-separated segment (basic.example.tsx, index.d.ts); directories and
+// files starting with . are allowed (.claude/).
 const kebabCaseName = new RegExp(
   String.raw`^\.?${kebabCase}(?:\.${kebabCase})*$`,
 );
-// app/ 下的目录还可以用 Next.js 路由写法：拦截前缀 (.)、(..)、(...)，(group)、@slot、_private，
-// 动态段 [param]、[...param]、[[...param]]。动态段名是 params 的 key，和 Next.js 文档一样用 camelCase。
+// Directories under app/ may also use Next.js route syntax: the intercepting prefixes (.), (..) and
+// (...), (group), @slot, _private, and the dynamic segments [param], [...param] and [[...param]]. A
+// dynamic segment's name is a key of params, so it is camelCase as in the Next.js docs.
 const appRouteDirectoryName = new RegExp(
   String.raw`^(?:\(\.\)|\(\.\.\.\)|(?:\(\.\.\))+)?(?:${kebabCase}|\(${kebabCase}\)|@${kebabCase}|_${kebabCase}|\[(?:\.\.\.)?${routeParam}\]|\[\[\.\.\.${routeParam}\]\])$`,
 );
 
-/** 为调用方的项目根目录创建路径命名插件，包含 Next.js 路由目录约定。 */
+/** Creates the path naming plugin for the caller's project root, Next.js route directory conventions included. */
 export default function createNamingPlugin(projectRoot) {
-  // ESLint 只处理源码文件，所以只覆盖源码文件和它们所在的目录；CSS、图片、Markdown 等不在检查范围内。
+  // ESLint handles only source files, so this covers only source files and their directories; CSS,
+  // images, Markdown and the like are not checked.
   const kebabCasePathRule = {
     meta: {
       type: "suggestion",

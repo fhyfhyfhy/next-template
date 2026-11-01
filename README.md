@@ -15,12 +15,12 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `demo:` 
 
 ## Demo
 
-`/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it:
+`/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it. They are served only under `pnpm dev` and the `pnpm demo:*` scripts: a plain production build (`pnpm build`, `pnpm start`) answers 404 for every `/demos` page, and its home page is a placeholder without a link to them (`lib/demos.ts`).
 
 - **UI demo** (`/demos/ui`): the design-system components; see [UI demo examples](#ui-demo-examples).
 - **Data demo** (the other `/demos` pages): a small task app that exercises the data-fetching rules against the Mock API. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.
 
-The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node process ([ADR 0001](docs/adr/0001-demos-use-standalone-mock-api.md)). The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo:start`: they start the Mock API on `127.0.0.1:4010` and point `NEXT_PUBLIC_API_BASE_URL` at it, overriding the project's backend URL, so during those runs every page, including the project's own features, talks to the Mock API. Their build output goes to `.next-demo`, leaving the project's `.next` alone. The Mock API answers its business endpoints (`/demo/*`) after 500 ms by default so loading states show; the fault lab's panel changes that delay until the next reset, and a fault's `latency_ms` adds to it. `pnpm dev`, `pnpm build`, and `pnpm start` never start the Mock API; under them the Data demo pages show a notice instead of sending requests. The Data demo's e2e specs are described under [Tests](#tests).
+The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node process ([ADR 0001](docs/adr/0001-demos-use-standalone-mock-api.md)). The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo:start`: they start the Mock API on `127.0.0.1:4010` and point `NEXT_PUBLIC_API_BASE_URL` at it, overriding the project's backend URL, so during those runs every page, including the project's own features, talks to the Mock API. Their build output goes to `.next-demo`, leaving the project's `.next` alone. The Mock API answers its business endpoints (`/demo/*`) after 500 ms by default so loading states show; the fault lab's panel changes that delay until the next reset, and a fault's `latency_ms` adds to it. `pnpm dev` never starts the Mock API; under it the Data demo pages show a notice instead of sending requests. The demos' e2e specs are described under [Tests](#tests).
 
 ## Checks
 
@@ -34,8 +34,8 @@ The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node 
 
 End-to-end specs run with Playwright in two sets, each against its own production build and port, so they can run side by side and alongside `pnpm dev`. Install the browser once with `pnpm exec playwright install chromium`.
 
-- `pnpm test:e2e` runs the project's own specs in `e2e/`, skipping `e2e/demo/`, against `pnpm build` and `pnpm start` on port 3998 (`E2E_PORT`). `e2e/home.spec.ts` is the minimal example to start from.
-- `pnpm demo:test:e2e` runs the Data demo's specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999, with their own Mock API on port 4999 (`DEMO_E2E_PORT`, `DEMO_E2E_MOCK_API_PORT`; set them when another checkout on the machine runs the same specs). The specs reset it before each test, pause its clock, and inject faults; a running `demo:dev` keeps its own Mock API on 4010 and its data. Other `demo:` scripts share a Mock API already running on their port instead of starting another; it stops with the script that started it.
+- `pnpm test:e2e` runs the project's own specs in `e2e/`, skipping `e2e/demo/`, against `pnpm build` and `pnpm start` on port 3998 (`E2E_PORT`). That build serves no demos, so a spec that opens a `/demos` page belongs in `e2e/demo/`. `e2e/home.spec.ts` is the minimal example to start from.
+- `pnpm demo:test:e2e` runs the demos' specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999, with their own Mock API on port 4999 (`DEMO_E2E_PORT`, `DEMO_E2E_MOCK_API_PORT`; set them when another checkout on the machine runs the same specs). The specs reset it before each test, pause its clock, and inject faults; a running `demo:dev` keeps its own Mock API on 4010 and its data. Other `demo:` scripts share a Mock API already running on their port instead of starting another; it stops with the script that started it.
 
 Both sets build with the testing API that `instant()` from `@next/playwright` needs to hold back streamed content: their `webServer` sets `EXPOSE_TESTING_API=1`, which `next.config.ts` reads. Keep that variable out of deployment builds. Those builds go to `.next-e2e` and `.next-demo-e2e`, so a running `pnpm start` or `pnpm demo:start` keeps its own output. ESLint applies `eslint-plugin-playwright`'s recommended rules to `e2e/`.
 
@@ -47,17 +47,17 @@ Set `NEXT_PUBLIC_API_BASE_URL` to the backend's base URL, for example in `.env.l
 
 Features call the backend only through `fetchApi`, so fitting the template to a backend touches these files alone:
 
-- `lib/fetch.ts`: the base URL, the response format including paginated lists, and the error types. As shipped, a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or as the only field of a 2xx body; the schemas and doc comments in `lib/fetch.ts` define the details.
-- `lib/credentials-server.ts` and `lib/credentials-browser.ts`: the signed-in user's credential for requests from the server and from the browser. Both send none as shipped. `package.json` resolves `#credentials` to the right one per environment.
+- `lib/fetch/index.ts`: the base URL, the response format including paginated lists, and the error types. As shipped, a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or as the only field of a 2xx body; the schemas and doc comments in `lib/fetch/index.ts` define the details.
+- `lib/fetch/credentials-server.ts` and `lib/fetch/credentials-browser.ts`: the signed-in user's credential for requests from the server and from the browser. Both send none as shipped. `package.json` resolves `#credentials` to the right one per environment.
 - `app/providers.tsx`: what a signed-out response does in the browser.
 
 The `setup-data-access` skill (`/setup-data-access` in Claude Code) asks about the backend, makes these changes, keeps the Mock API's response format in step, and verifies the result in a production build.
 
 ## Internationalization
 
-Pages are translated with [next-intl](https://next-intl.dev) into the locales listed in `lib/i18n-routing.ts`: `zh`, the default locale and the one new text is written in, and `en`. URLs of the default locale have no prefix (`/demos`), the others carry one (`/en/demos`), and every locale is prerendered ([ADR 0002](docs/adr/0002-locale-routing-as-needed-prefix.md)). For a URL without a prefix, `proxy.ts` picks the locale from the `NEXT_LOCALE` cookie, then `Accept-Language`.
+Pages are translated with [next-intl](https://next-intl.dev) into the locales listed in `lib/i18n/routing.ts`: `zh`, the default locale and the one new text is written in, and `en`. URLs of the default locale have no prefix (`/demos`), the others carry one (`/en/demos`), and every locale is prerendered ([ADR 0002](docs/adr/0002-locale-routing-as-needed-prefix.md)). For a URL without a prefix, `proxy.ts` picks the locale from the `NEXT_LOCALE` cookie, then `Accept-Language`.
 
-Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates are formatted in the fixed `Asia/Shanghai` time zone (`lib/i18n-request.ts`), so server rendering and hydration produce the same text.
+Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates and times show in the computer's time zone: `<DateTime>` (`components/date-time.tsx`) renders them in the browser once the page has hydrated.
 
 ## Agent skills
 

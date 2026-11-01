@@ -8,12 +8,15 @@ export const TASK_STATUSES = taskStatusSchema.options;
 
 export const TASK_SORTS = taskSortSchema.options;
 
-/** 排序选项在 `demo-task` 文案 `taskSort` 下的 key；URL 里的取值是 snake_case，文案 key 是 camelCase。 */
+/**
+ * Each sort option's key under `taskSort` in the `demo-task` messages. URL
+ * values are snake_case; message keys are camelCase.
+ */
 export const TASK_SORT_MESSAGE_KEYS = {
   created_desc: "createdDesc",
   created_asc: "createdAsc",
   name_asc: "nameAsc",
 } as const satisfies Record<TaskSort, string>;
 
-/** 全部任务页每页的条数。 */
+/** Tasks per page on the All tasks page. */
 export const TASK_LIST_PAGE_SIZE = 8;

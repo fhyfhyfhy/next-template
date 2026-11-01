@@ -2,14 +2,16 @@ import { existsSync, globSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { describe, expect, test } from "vitest";
 
-// agent 读的文档靠相对链接互相引用，demos.md 还按场景列出代码和 spec 的路径；移动或改名文件时，
-// 这里会指出失效的引用。外部链接和 node_modules 里的安装文档不检查。
+// The docs agents read refer to each other by relative links, and demos.md also lists the code and
+// spec paths of each scenario; when a file moves or is renamed, this points out the broken
+// references. External links and the installed docs in node_modules are not checked.
 
 const projectRoot = join(import.meta.dirname, "..");
 const read = (file) =>
   readFileSync(join(projectRoot, file), "utf8").replace(/\r\n/g, "\n");
 
-// 第三方 skill 是上游原文，只随升级变化，不在检查范围内（skills-lock.json）。
+// Third-party skills are upstream's text, which changes only with upgrades, so they are not checked
+// (skills-lock.json).
 const thirdPartySkills = new Set(
   Object.keys(JSON.parse(read("skills-lock.json")).skills),
 );
@@ -24,12 +26,12 @@ const docs = [
   ),
 ].map((file) => file.split("\\").join("/"));
 
-/** 去掉代码块和行内代码：里面的方括号、井号不是链接和标题。 */
+/** Strips code blocks and inline code: the brackets and hashes in them are not links or headings. */
 function prose(text) {
   return text.replace(/^(```|````)[\s\S]*?^\1/gm, "").replace(/`[^`\n]*`/g, "");
 }
 
-/** GitHub 给标题生成的锚点：小写，去掉标点，空格换成连字符，重名的依次加 -1、-2。 */
+/** The anchors GitHub generates for headings: lowercase, punctuation removed, spaces turned into hyphens, and -1, -2 and so on added to repeats. */
 function anchors(file) {
   const seen = new Map();
   const result = new Set();
@@ -72,7 +74,7 @@ function brokenLinks(file, text = read(file)) {
   return broken;
 }
 
-describe("文档里的相对链接和锚点都能打开", () => {
+describe("every relative link and anchor in the docs resolves", () => {
   test.each(docs)("%s", (file) => {
     expect(brokenLinks(file)).toStrictEqual([]);
   });
@@ -81,7 +83,7 @@ describe("文档里的相对链接和锚点都能打开", () => {
 function missingDemoPaths(text) {
   const missing = [];
   for (const row of text.matchAll(/^\| \d+ \|.*$/gm)) {
-    // 列依次是 #、Scenario、Rules、Code、Spec。
+    // The columns are #, Scenario, Rules, Code and Spec.
     const [, , , code, spec] = row[0].split(" | ");
     for (const [, path] of `${code} ${spec}`.matchAll(/`([^`]+)`/g)) {
       if (!path.includes("/")) continue;
@@ -97,13 +99,13 @@ function missingDemoPaths(text) {
   return missing;
 }
 
-test("demos.md 场景表列出的代码和 spec 都存在", () => {
+test("the code and specs in the demos.md scenario table exist", () => {
   expect(
     missingDemoPaths(read(".agents/skills/next-data-flow/demos.md")),
   ).toStrictEqual([]);
 });
 
-test("检查本身能发现失效的链接、锚点和路径", () => {
+test("the check itself finds broken links, anchors and paths", () => {
   expect(
     brokenLinks(
       ".claude/rules/example.md",

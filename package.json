@@ -4,8 +4,8 @@
   "private": true,
   "imports": {
     "#credentials": {
-      "react-server": "./lib/credentials-server.ts",
-      "default": "./lib/credentials-browser.ts"
+      "react-server": "./lib/fetch/credentials-server.ts",
+      "default": "./lib/fetch/credentials-browser.ts"
     }
   },
   "scripts": {

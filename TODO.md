@@ -18,4 +18,3 @@
 
 - [ ] 制定文案风格规范：语气、标点、中英文混排。翻译流程、key 和 namespace 的约定已在 `.claude/rules/i18n.md`。
 - [ ] 详细制定错误与恢复规范：覆盖字段校验、局部错误状态与恢复操作，以及成功反馈的时机。
-- [ ] 按用户所在时区显示时间。现在全局固定为 `Asia/Shanghai`（`lib/i18n-request.ts`），服务端渲染和 hydration 才能得到一样的文本；服务端拿不到可靠的用户时区（`x-vercel-ip-timezone` 按 IP 推断且只在 Vercel 上有，读 cookie 会让页面变成 dynamic，见 next-intl#2136）。有需求时的做法：做一个 Client Component，hydration 之前按固定时区格式化，之后（`useHydrated`）换成浏览器的 `Intl.DateTimeFormat().resolvedOptions().timeZone`；代价是时区不同的用户整页加载时文本会跳一次。

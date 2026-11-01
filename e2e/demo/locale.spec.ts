@@ -1,9 +1,13 @@
-import { expect, test } from "./test";
+import { expect, test } from "./mock-api";
 
-// 路由规则见 docs/adr/0002-locale-routing-as-needed-prefix.md：默认 locale（zh）不带前缀，en 在 /en 下。
-// playwright.config.ts 把浏览器的语言设成 zh-CN，下面需要英文浏览器的用例单独设置。
+// The routing rules are in docs/adr/0002-locale-routing-as-needed-prefix.md:
+// the default locale (zh) has no prefix, and en lives under /en.
+// The Playwright configs set the browser's language to zh-CN; the tests below
+// that need an English browser set it themselves.
 
-test("en 的页面带 /en 前缀，整页渲染英文", async ({ page }) => {
+test("en pages live under /en and render wholly in English", async ({
+  page,
+}) => {
   await page.goto("/en/demos");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(
@@ -12,12 +16,13 @@ test("en 的页面带 /en 前缀，整页渲染英文", async ({ page }) => {
   await expect(page).toHaveTitle("Demo · Next Demo");
 });
 
-test("切换语言后停在同一页面，再打开不带前缀的地址时记得选择", async ({
+test("switching the language stays on the same page, and an unprefixed URL opened later remembers the pick", async ({
   page,
 }) => {
   await page.goto("/demos/ui?component=select");
   const switcher = page.getByRole("navigation", { name: "切换语言" });
-  // 切换器的链接只在浏览器里渲染（预渲染时是不可点的文字），找到链接说明已经 hydrate。
+  // The switcher's links render only in the browser (prerendering gives text
+  // that cannot be clicked), so finding a link means the page has hydrated.
   await expect(switcher.getByRole("link", { name: "English" })).toBeVisible();
   await switcher.getByRole("link", { name: "English" }).click();
 
@@ -42,15 +47,15 @@ test("切换语言后停在同一页面，再打开不带前缀的地址时记�
   await expect(page).toHaveURL("/demos");
 });
 
-test("不支持的 locale 前缀返回 404", async ({ request }) => {
+test("an unsupported locale prefix answers 404", async ({ request }) => {
   const response = await request.get("/fr/demos");
   expect(response.status()).toBe(404);
 });
 
-test.describe("浏览器语言是英文", () => {
+test.describe("with an English browser", () => {
   test.use({ locale: "en-US" });
 
-  test("第一次打开不带前缀的地址时跳到 /en", async ({ page }) => {
+  test("the first visit to an unprefixed URL goes to /en", async ({ page }) => {
     await page.goto("/demos");
     await expect(page).toHaveURL("/en/demos");
   });

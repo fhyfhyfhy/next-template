@@ -13,7 +13,10 @@ export interface TaskListParams {
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
-/** 全部任务页的 URL 是筛选、排序、分页的唯一来源；不认识的值按默认值处理。 */
+/**
+ * The All tasks page's URL is the only source of its filter, sort and page;
+ * unknown values fall back to the defaults.
+ */
 export function parseTaskListParams(
   searchParams: SearchParams,
 ): TaskListParams {
@@ -36,7 +39,10 @@ export function toTaskFilters({ status, sort, page }: TaskListParams) {
   };
 }
 
-/** 生成全部任务页的链接，默认值不写进 URL。换筛选或排序时调用方把 `page` 重置为 1。 */
+/**
+ * Builds a link to the All tasks page, leaving defaults out of the URL. When
+ * the filter or sort changes, the caller resets `page` to 1.
+ */
 export function taskListHref({ status, sort, page }: TaskListParams) {
   const query = new URLSearchParams();
   if (status) query.set("status", status);

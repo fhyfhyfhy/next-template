@@ -4,7 +4,10 @@ import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
 
 import { cn } from "@/lib/cn";
 
-/** 耗时操作的进度；`value` 为 null 时表示进度未知。调用方组合 Label、Value 和 Track。 */
+/**
+ * The progress of a long-running operation; a null `value` means the progress
+ * is unknown. The caller composes Label, Value and Track.
+ */
 export function ProgressRoot({
   className,
   ...props

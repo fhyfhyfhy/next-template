@@ -18,7 +18,10 @@ export interface DialogPopupProps
     DialogPrimitive.Popup.Props,
     VariantProps<typeof dialogPopupVariants> {}
 
-/** 弹层内容；调用方组合 Title、Description 和可访问的 Close。 */
+/**
+ * The popup's content; the caller composes Title, Description and an accessible
+ * Close.
+ */
 export function DialogPopup({
   size = "md",
   className,

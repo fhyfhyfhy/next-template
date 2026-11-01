@@ -30,10 +30,13 @@ export default function LabPage() {
       <div className="mb-6">
         <MockResetButton />
       </div>
-      {/* 下面的组件在客户端创建 query，读当前时间，放进 Suspense 才不会打断预渲染。 */}
+      {/* The components below create queries on the client, which reads the
+          current time; inside Suspense they don't interrupt prerendering. */}
       <Suspense fallback={null}>
         <div className="grid gap-6">
-          {/* 预渲染时 draftMode() 读到关闭，开关以关闭状态进静态 shell；开启后请求绕过静态 shell，在请求时读到开启。 */}
+          {/* During prerendering draftMode() reads off, so the switch goes
+              into the static shell off. Once it's on, requests bypass the
+              static shell and read it on at request time. */}
           {draftMode().then(({ isEnabled }) => (
             <LabDraftMode enabled={isEnabled} />
           ))}

@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-/** 任务详情的占位，布局和加载后的详情一致。 */
+/** Placeholder for the task detail, laid out like the loaded detail. */
 export function TaskDetailSkeleton() {
   return (
     <div

@@ -4,7 +4,7 @@ import { Switch as SwitchPrimitive } from "@base-ui/react/switch";
 
 import { cn } from "@/lib/cn";
 
-/** 开关滑块，默认尺寸跟随 Root 的 size。 */
+/** The switch's thumb; its size follows the Root's size by default. */
 export function SwitchThumb({
   className,
   ...props

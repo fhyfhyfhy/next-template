@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useHydrated } from "@/hooks/use-hydrated";
-import { Link } from "@/lib/i18n-navigation";
+import { Link } from "@/lib/i18n/navigation";
 
 const themes = [
   { value: "system", icon: IconDeviceDesktop },
@@ -34,11 +34,12 @@ const themes = [
   { value: "dark", icon: IconMoon },
 ] as const;
 
-/** 品牌导航和系统、浅色、深色主题选择。 */
+/** Brand navigation and the system, light and dark theme picker. */
 export function UiDemoHeader() {
   const t = useTranslations("demo-ui.header");
   const { theme, setTheme } = useTheme();
-  // 服务端无法读取 localStorage；hydration 完成前不显示已选主题。
+  // The server cannot read localStorage, so the selected theme shows only
+  // after hydration.
   const hydrated = useHydrated();
   return (
     <header className="border-b border-border bg-card text-card-foreground">

@@ -22,7 +22,7 @@ const sourceExtensions = new Set(
 const compare = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
 function fileVersion(stat) {
-  // ctime 和 inode 能识别恢复了 mtime 的写入，以及编辑器的原子替换。
+  // ctime and the inode catch a write that restored mtime, and an editor's atomic replace.
   return stat
     ? `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`
     : null;
@@ -146,8 +146,9 @@ function findPath(graph, start, end) {
 }
 
 /**
- * 创建当前文件的 feature 循环检查器。filename 使用绝对路径，sourceText 可为未保存内容。
- * 返回参与循环的引用及循环路径，行列从 1 开始；其他文件以磁盘内容为准。
+ * Creates the feature cycle checker for the current file. filename is absolute, and sourceText may
+ * be unsaved content. Returns the references in a cycle and the cycle's path, with lines and columns
+ * from 1; other files are read from disk.
  */
 export function createFeatureCycleChecker(projectRoot) {
   const root = resolve(projectRoot);
@@ -183,7 +184,8 @@ export function createFeatureCycleChecker(projectRoot) {
 
     resolveImport = undefined;
     resolverDependencies = new Map();
-    // 同时跟踪 extends、package.json 和解析时探测的缺失路径，新增目标也会失效缓存。
+    // Tracks extends, package.json and the missing paths probed while resolving too, so that a new
+    // target also invalidates the cache.
     resolveImport = createProjectResolver(root, {
       ...ts.sys,
       fileExists: (filename) => resolverStat(filename)?.isFile() ?? false,
@@ -270,8 +272,9 @@ export function createFeatureCycleChecker(projectRoot) {
       }
     }
 
-    // 回程搜索到达当前 feature 就停止，其旧出边不影响结果。
-    // 只对传入文本的引用查回程，未保存内容无需写入共享磁盘图。
+    // The search back stops at the current feature, so its old outgoing edges do not affect the result.
+    // Only the references in the text passed in are searched back from, so unsaved content need not
+    // go into the shared graph of what is on disk.
     const paths = new Map();
     return current.flatMap(({ from, to, ...reference }) => {
       if (!paths.has(to)) paths.set(to, findPath(graph, to, from));

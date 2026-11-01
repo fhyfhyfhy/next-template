@@ -2,8 +2,11 @@ import type { APIRequestContext, Page } from "@playwright/test";
 
 import { expect, test as base } from "../test";
 
-// e2e 只通过浏览器和 Mock API 的控制接口观察、准备条件，不引用应用代码。
-// 端口由 playwright.demo.config.ts 设置。没有它就报错，不回落到 demo:* 命令默认的端口：那是开着的 demo:dev 在用的 Mock API。
+// The e2e observes and sets up conditions only through the browser and the
+// Mock API's control endpoints; it imports no application code.
+// playwright.demo.config.ts sets the port. Without it this throws rather than
+// fall back to the demo:* commands' default port: that is the Mock API a
+// running demo:dev uses.
 const mockApiPort = process.env.MOCK_API_PORT;
 if (!mockApiPort) {
   throw new Error(
@@ -29,7 +32,11 @@ export class MockApi {
     this.request = request;
   }
 
-  /** 恢复种子数据和默认延迟、清除故障，并暂停自动推进：任务状态只在测试调用 `advance` 时变化。 */
+  /**
+   * Restores the seed data and the default latency, clears the faults, and
+   * pauses automatic progress: a task's status changes only when a test calls
+   * `advance`.
+   */
   async reset() {
     await this.control("POST", "/__mock/reset", { paused: true });
   }
@@ -38,14 +45,20 @@ export class MockApi {
     await this.control("PUT", "/__mock/faults", { faults });
   }
 
-  /** 把任务推进 `steps` 步：pending → running 0% → 每步 +25% → 终态。 */
+  /**
+   * Advances the task by `steps` steps: pending → running 0% → +25% per step
+   * → terminal status.
+   */
   async advance(taskId: string, steps = 1) {
     for (let step = 0; step < steps; step += 1) {
       await this.control("POST", `/__mock/tasks/${taskId}/advance`);
     }
   }
 
-  /** 重置以来 Mock API 收到的业务请求，`path` 是匹配的路由模式，比如 `/demo/tasks/:id`。 */
+  /**
+   * The requests to the Mock API's business endpoints since the last reset;
+   * `path` is the route pattern they matched, such as `/demo/tasks/:id`.
+   */
   async requests(path?: string): Promise<{ method: string; url: string }[]> {
     const { requests } = await this.control("GET", "/__mock/requests");
     return requests.filter(
@@ -54,12 +67,12 @@ export class MockApi {
     );
   }
 
-  /** 业务接口当前的默认延迟（毫秒）。 */
+  /** The business endpoints' current default latency, in milliseconds. */
   async latency(): Promise<number> {
     return (await this.control("GET", "/__mock/latency")).latency_ms;
   }
 
-  /** 直接调用业务接口准备数据，绕过页面。 */
+  /** Calls a business endpoint directly to set up data, bypassing the page. */
   async call(method: string, path: string, data?: unknown) {
     return this.control(method, path, data);
   }
@@ -70,13 +83,13 @@ export class MockApi {
       data,
     });
     expect(response.ok(), `${method} ${path}`).toBe(true);
-    // 204 没有响应体。
+    // A 204 has no body.
     const text = await response.text();
     return text ? JSON.parse(text) : null;
   }
 }
 
-/** 每个测试开始前重置 Mock API，不管测试有没有用到它。 */
+/** Resets the Mock API before every test, whether or not the test uses it. */
 export const test = base.extend<{ mockApi: MockApi }>({
   mockApi: [
     async ({ request }, use) => {
@@ -89,9 +102,14 @@ export const test = base.extend<{ mockApi: MockApi }>({
 });
 
 /**
- * 从当前的 Data demo 页面经导航栏客户端导航到 `url`。整页加载后，服务端渲染的控件要等 hydrate 才响应点击；
- * 客户端导航在浏览器里渲染整页，没有要等 hydrate 的部分，到达后就能操作。导航栏的进行中徽标只在浏览器里请求，
- * 它和导航链接在同一个 Suspense 边界里，徽标出现说明链接已经 hydrate，点击是客户端导航。
+ * Navigates client-side from the current Data demo page to `url` through the
+ * header's navigation. After a full page load, server-rendered controls
+ * respond to clicks only once they hydrate; a client-side navigation renders
+ * the whole page in the browser, with nothing left to hydrate, so the page can
+ * be used as soon as it arrives. The header's in-progress badge is requested
+ * only in the browser and sits in the same Suspense boundary as the navigation
+ * links: once the badge shows, the links have hydrated and the click is a
+ * client-side navigation.
  */
 export async function navigateThroughHeader(
   page: Page,
@@ -107,9 +125,12 @@ export async function navigateThroughHeader(
 }
 
 /**
- * 通过故障实验室的“重置”按钮重置：除了 Mock API，还让 Next 服务端的任务列表缓存失效。
- * 读服务端缓存的页面（全部任务、作品广场）在测试开始时用它，免得读到上一个测试留下的缓存。
- * 按钮在静态 shell 里，整页打开故障实验室后立即点击可能早于 hydration，所以经导航栏进入。
+ * Resets through the Fault lab's reset button, which besides the Mock API
+ * also expires the Next server's task list cache. Pages that read the server
+ * cache (All tasks, Gallery) use it when a test starts, so that they do not
+ * read the cache the previous test left. The button is in the static shell,
+ * and a click right after a full page load of the Fault lab can come before
+ * hydration, so this enters through the header's navigation.
  */
 export async function resetThroughLab(page: Page) {
   await page.goto("/demos/search");

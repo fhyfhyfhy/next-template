@@ -14,15 +14,17 @@ import {
   startMockApi,
 } from "./mock-api/server.mjs";
 
-// 用法：node scripts/run-next.mjs <dev|build|start> [--demo] [其余参数传给 next]
-// --demo（package.json 的 demo:* 命令）先启动 Mock API，并让 next 指向它，不管项目配置的后端地址是什么。
-// build 和 start 各自启动一次 Mock API，端口固定，所以 build 时内联进产物的地址在 start 时仍然可用。
-// 端口上已经有 Mock API（比如开着 demo:dev 时再运行 demo:build）就直接用它，退出时也不关它：它跟着启动它的命令退出。
-// 端口由 MOCK_API_PORT 指定；Data demo 的 e2e 用自己的端口（playwright.demo.config.ts），不和 demo:dev 共用。
+// Usage: node scripts/run-next.mjs <dev|build|start> [--demo] [other args, passed to next]
+// --demo (package.json's demo:* commands) starts the Mock API first and points next at it, whatever
+// backend address the project configures. build and start each start the Mock API once, on a fixed
+// port, so the address the build inlines still works at start. When a Mock API is already on the
+// port (such as running demo:build while demo:dev is up), it is used and not closed on exit: it
+// exits with the command that started it. MOCK_API_PORT sets the port; the Data demo's e2e uses
+// its own port (playwright.demo.config.ts) rather than sharing demo:dev's.
 
 const COMMANDS = new Set(["dev", "build", "start"]);
 const DEFAULT_PORT = 3000;
-// 和 next dev 的重试次数一致（next/dist/server/lib/start-server.js）。
+// As many retries as next dev makes (next/dist/server/lib/start-server.js).
 const PORT_RETRIES = 10;
 const projectRoot = resolve(import.meta.dirname, "..");
 const require = createRequire(import.meta.url);
@@ -36,14 +38,17 @@ if (!COMMANDS.has(command)) {
 }
 const demo = rest.includes("--demo");
 const nextArgs = rest.filter((arg) => arg !== "--demo");
-// next dev 在没指定端口时会自己往后找空闲端口，next start 端口被占直接退出，这里给 start 补上同样的行为。
+// Without a port, next dev looks for the next free one, while next start exits when its port is
+// taken; this gives start the same behavior as dev.
 if (command === "start" && !hasExplicitPort(nextArgs)) {
   nextArgs.push("--port", String(await findFreePort(DEFAULT_PORT)));
 }
-// demo 和 e2e 的 build 不写 .next（distDir 见 next.config.ts），tsconfig.json 又排除了它们自己的目录，
-// 类型检查读的是 .next/types；这份只有 .next 的 build 和 typegen 会写，先刷新它。
+// The demo and e2e builds do not write .next (distDir in next.config.ts), and tsconfig.json excludes
+// their own directories, so type checking reads .next/types, which only the .next build and typegen
+// write: refresh it first.
 if (command === "build" && (demo || process.env.EXPOSE_TESTING_API === "1")) {
-  // e2e 的 webServer.env 带着 EXPOSE_TESTING_API，原样继承的话 typegen 会写进 -e2e 目录。
+  // The e2e webServer.env carries EXPOSE_TESTING_API; inherited as is, it would make typegen write
+  // to the -e2e directory.
   const typegen = spawnSync(process.execPath, [nextBin, "typegen"], {
     cwd: projectRoot,
     stdio: "inherit",
@@ -53,8 +58,9 @@ if (command === "build" && (demo || process.env.EXPOSE_TESTING_API === "1")) {
 }
 
 const mockApi = demo ? await connectMockApi() : null;
-// 进程里已有的变量优先于 .env* 文件，所以项目在 .env.local 里配置的后端地址不会覆盖这里。
-// NEXT_PUBLIC_MOCK_API 同时让 next.config.ts 把产物放进 demo 的目录。
+// Variables already in the process take precedence over .env* files, so a backend address the
+// project sets in .env.local does not override this one. NEXT_PUBLIC_MOCK_API also makes
+// next.config.ts put the build in the demo directory.
 const childEnv = mockApi
   ? {
       ...process.env,
@@ -102,7 +108,7 @@ async function connectMockApi() {
   return mockApi;
 }
 
-/** 命令行参数或 PORT 已经指定了端口时，按指定的来，被占就让 next 报错。 */
+/** Whether the arguments or PORT already set the port: then it is used as given, and next fails when it is taken. */
 function hasExplicitPort(args) {
   return (
     process.env.PORT !== undefined ||
@@ -116,7 +122,7 @@ function hasExplicitPort(args) {
   );
 }
 
-/** 从 `from` 开始找第一个能监听的端口；和 next 一样不指定 host，监听所有地址。 */
+/** The first port from `from` that can be listened on; like next, it gives no host, so it listens on every address. */
 async function findFreePort(from) {
   for (let port = from; port <= from + PORT_RETRIES; port++) {
     if (await canListen(port)) {

@@ -2,7 +2,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* 颜色 token 遵循 https://ui.shadcn.com/docs/theming#theme-tokens，色值使用项目自己的配色。 */
+/* Color tokens follow https://ui.shadcn.com/docs/theming#theme-tokens, with
+   values from the project's own palette. */
 :root {
   color-scheme: light;
   --background: #f7f6f2;
@@ -24,10 +25,10 @@
   --input: #deded5;
   --ring: #c83d21;
 
-  /* 项目扩展 */
-  --primary-hover: #ad3018; /* 主要按钮悬停时的背景色 */
-  --switch-track: #c8c8bf; /* Switch 关闭时的轨道背景色 */
-  --overlay: rgb(0 0 0 / 35%); /* 模态弹层遮罩，明暗主题共用 */
+  /* Project extensions */
+  --primary-hover: #ad3018; /* Primary button background on hover */
+  --switch-track: #c8c8bf; /* Switch track background when off */
+  --overlay: rgb(0 0 0 / 35%); /* Modal scrim, shared by both themes */
 }
 
 .dark {

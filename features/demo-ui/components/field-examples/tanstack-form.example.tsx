@@ -10,25 +10,26 @@ import { Input } from "@/components/ui/input";
 import { useHydrated } from "@/hooks/use-hydrated";
 
 export const metadata = {
-  title: "配合 TanStack Form",
+  title: "With TanStack Form",
   description:
-    "TanStack Form 管理值和校验，Field 显示状态与错误；提交时校验，之后每次改动重新校验。",
+    "TanStack Form owns the values and validation, and Field shows the state and errors; it validates on submit, then again on every change.",
   order: 10,
 };
 
 const schema = z.object({
-  name: z.string().trim().min(1, "请输入名称"),
-  email: z.email("邮箱格式不正确"),
+  name: z.string().trim().min(1, "Enter a name"),
+  email: z.email("Enter a valid email address"),
 });
 
 const fields = [
-  { name: "name", label: "名称", placeholder: "比如：低多边形小鹿" },
-  { name: "email", label: "邮箱", placeholder: "you@example.com" },
+  { name: "name", label: "Name", placeholder: "e.g. Low-poly deer" },
+  { name: "email", label: "Email", placeholder: "you@example.com" },
 ] as const;
 
-/** 字段状态从 TanStack 的 field.state.meta 传给 FieldRoot。 */
+/** The field state goes from TanStack's field.state.meta to FieldRoot. */
 export function Example() {
-  // 服务端渲染的表单在 hydration 之前提交，会变成浏览器原生的 GET 提交、刷新整页，所以先不可用。
+  // A server-rendered form submitted before hydration falls back to the
+  // browser's native GET submit, which reloads the page, so it starts disabled.
   const hydrated = useHydrated();
   const [submitted, setSubmitted] = useState<string | null>(null);
   const form = useForm({
@@ -71,11 +72,11 @@ export function Example() {
         </form.Field>
       ))}
       <Button type="submit" disabled={!hydrated}>
-        提交
+        Submit
       </Button>
       {submitted && (
         <p role="status" className="text-sm text-muted-foreground">
-          已提交：{submitted}
+          Submitted: {submitted}
         </p>
       )}
     </form>

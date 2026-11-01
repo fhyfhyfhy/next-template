@@ -21,7 +21,10 @@ const updateMockFaults = (faults: MockFault[]) =>
     auth: false,
   });
 
-/** 整体替换 Mock API 的故障配置，配置对所有 Data demo 页面的请求生效。 */
+/**
+ * Replaces the Mock API's whole fault config, which applies to the requests of
+ * every Data demo page.
+ */
 export const updateMockFaultsMutationOptions = () =>
   mutationOptions({
     mutationFn: updateMockFaults,
