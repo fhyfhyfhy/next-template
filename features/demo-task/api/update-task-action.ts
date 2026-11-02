@@ -4,16 +4,16 @@ import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
+import type { ActionResult } from "@/lib/action-result";
+import { toActionResult } from "@/lib/action-result";
 import type { Locale } from "@/lib/i18n/routing";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
 import { assertDemoBackendEnabled } from "../server/connection";
 import { renameTask } from "../server/tasks";
-import type { ActionResult } from "../types/action-result";
 import type { Task } from "../types/task";
 import type { DemoTaskTranslator } from "../types/translator";
-import { toActionResult } from "../utils/action-result";
 import { createTaskNameSchema } from "./get-task";
 
 const createRenameInputSchema = (t: DemoTaskTranslator) =>

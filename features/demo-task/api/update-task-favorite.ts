@@ -1,10 +1,10 @@
+import { unwrapActionResult } from "@/lib/action-result";
 import {
   type InfiniteData,
   mutationOptions,
   type QueryClient,
 } from "@/lib/react-query";
 
-import { unwrapActionResult } from "../utils/task-action-error";
 import { getTaskQueryOptions, type Task } from "./get-task";
 import {
   favoriteTasksQueryOptions,

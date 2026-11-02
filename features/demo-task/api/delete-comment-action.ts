@@ -2,9 +2,10 @@
 
 import { z } from "zod";
 
+import type { ActionResult } from "@/lib/action-result";
+
 import { deleteComment } from "../server/comments";
 import { assertDemoBackendEnabled } from "../server/connection";
-import type { ActionResult } from "../types/action-result";
 
 const inputSchema = z.object({
   taskId: z.string().min(1),

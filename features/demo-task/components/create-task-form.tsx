@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useHydrated } from "@/hooks/use-hydrated";
+import { isActionError } from "@/lib/action-result";
 import { useMutation } from "@/lib/react-query";
 
 import { createTaskMutationOptions } from "../api/create-task";
@@ -16,7 +17,6 @@ import {
   createTaskInputSchema,
 } from "../api/create-task-request";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
-import { isTaskActionError } from "../utils/task-action-error";
 
 const defaultValues: CreateTaskInput = { name: "", prompt: "" };
 
@@ -54,7 +54,7 @@ export function CreateTaskForm() {
         await createTask.mutateAsync(value);
         formApi.reset();
       } catch (error) {
-        if (isTaskActionError(error, TASK_NAME_TAKEN)) {
+        if (isActionError(error, TASK_NAME_TAKEN)) {
           // 记在 onSubmit 下：改动后重新校验通过时，TanStack Form 会清掉它。
           formApi.setErrorMap({
             onSubmit: {

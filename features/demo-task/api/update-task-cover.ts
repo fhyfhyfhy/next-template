@@ -4,12 +4,9 @@ import {
   uploadFile,
 } from "@/features/demo-upload";
 import { createUploadAction } from "@/features/demo-upload/actions";
+import { isActionError, unwrapActionResult } from "@/lib/action-result";
 import { mutationOptions } from "@/lib/react-query";
 
-import {
-  isTaskActionError,
-  unwrapActionResult,
-} from "../utils/task-action-error";
 import { getTaskQueryOptions } from "./get-task";
 import { taskListKey } from "./get-tasks";
 import { updateTaskCoverAction } from "./update-task-cover-action";
@@ -51,7 +48,7 @@ export const updateTaskCoverMutationOptions = () =>
 /** 关联封面时数据层按业务规则拒绝：这次上传已被别的记录使用，或文件没有按声明传完。 */
 export function isCoverRejection(error: unknown) {
   return (
-    isTaskActionError(error, UPLOAD_ALREADY_USED) ||
-    isTaskActionError(error, UPLOAD_NOT_READY)
+    isActionError(error, UPLOAD_ALREADY_USED) ||
+    isActionError(error, UPLOAD_NOT_READY)
   );
 }

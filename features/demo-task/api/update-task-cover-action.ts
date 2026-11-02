@@ -4,13 +4,13 @@ import { updateTag } from "next/cache";
 import { z } from "zod";
 
 import { UPLOAD_ALREADY_USED, UPLOAD_NOT_READY } from "@/features/demo-upload";
+import type { ActionResult } from "@/lib/action-result";
+import { toActionResult } from "@/lib/action-result";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { assertDemoBackendEnabled } from "../server/connection";
 import { setTaskCover } from "../server/tasks";
-import type { ActionResult } from "../types/action-result";
 import type { Task } from "../types/task";
-import { toActionResult } from "../utils/action-result";
 
 const inputSchema = z.object({
   taskId: z.string().min(1),

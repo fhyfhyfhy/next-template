@@ -3,12 +3,12 @@
 import { updateTag } from "next/cache";
 import { z } from "zod";
 
+import type { ActionResult } from "@/lib/action-result";
 import { DomainError } from "@/lib/domain-error";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { assertDemoBackendEnabled } from "../server/connection";
 import { deleteTask } from "../server/tasks";
-import type { ActionResult } from "../types/action-result";
 
 const inputSchema = z.object({ taskId: z.string().min(1) });
 

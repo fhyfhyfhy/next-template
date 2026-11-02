@@ -3,10 +3,11 @@
 import { updateTag } from "next/cache";
 import { z } from "zod";
 
+import type { ActionResult } from "@/lib/action-result";
+
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { assertDemoBackendEnabled } from "../server/connection";
 import { setTaskFavorite } from "../server/tasks";
-import type { ActionResult } from "../types/action-result";
 import type { Task } from "../types/task";
 
 const inputSchema = z.object({

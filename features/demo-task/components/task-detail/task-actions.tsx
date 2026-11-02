@@ -6,13 +6,13 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
+import { isActionError } from "@/lib/action-result";
 import { useMutation } from "@/lib/react-query";
 
 import type { Task } from "../../api/get-task";
 import { getTaskModel } from "../../api/get-task-model";
 import { retryTaskMutationOptions } from "../../api/retry-task";
 import { TASK_NOT_RETRYABLE } from "../../constants/error-codes";
-import { isTaskActionError } from "../../utils/task-action-error";
 import { DeleteTaskDialog } from "../delete-task-dialog";
 
 export function TaskActions({ task }: { task: Task }) {
@@ -54,7 +54,7 @@ export function TaskActions({ task }: { task: Task }) {
         )}
         <DeleteTaskDialog taskId={task.id} taskName={task.name} />
       </div>
-      {isTaskActionError(retry.error, TASK_NOT_RETRYABLE) && (
+      {isActionError(retry.error, TASK_NOT_RETRYABLE) && (
         <p role="status" className="text-sm text-muted-foreground">
           {t("notRetryable")}
         </p>

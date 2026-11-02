@@ -8,12 +8,12 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { isActionError } from "@/lib/action-result";
 import { useMutation } from "@/lib/react-query";
 
 import { createTaskNameSchema, type Task } from "../../api/get-task";
 import { updateTaskMutationOptions } from "../../api/update-task";
 import { TASK_NAME_TAKEN } from "../../constants/error-codes";
-import { isTaskActionError } from "../../utils/task-action-error";
 
 interface RenameTaskFormProps {
   task: Task;
@@ -42,7 +42,7 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
         onDone();
       } catch (error) {
         // 只有撞名在字段上提示；其他失败已由全局错误处理提示。
-        if (isTaskActionError(error, TASK_NAME_TAKEN)) {
+        if (isActionError(error, TASK_NAME_TAKEN)) {
           formApi.setErrorMap({
             onSubmit: {
               fields: { name: [{ message: t("validation.nameTaken") }] },
