@@ -1,37 +1,57 @@
-import { fetchApi } from "@/lib/fetch";
+import {
+  UPLOAD_ALREADY_USED,
+  UPLOAD_NOT_READY,
+  uploadFile,
+} from "@/features/demo-upload";
+import { createUploadAction } from "@/features/demo-upload/actions";
 import { mutationOptions } from "@/lib/react-query";
 
-import { expireTaskListAction } from "./expire-task-list-action";
-import { getTaskQueryOptions, taskSchema } from "./get-task";
+import {
+  isTaskActionError,
+  unwrapActionResult,
+} from "../utils/task-action-error";
+import { getTaskQueryOptions } from "./get-task";
 import { taskListKey } from "./get-tasks";
+import { updateTaskCoverAction } from "./update-task-cover-action";
 
 interface UpdateTaskCoverVariables {
   taskId: string;
   file: File;
 }
 
-// The browser uploads the image straight to the backend rather than through the
-// Next server (a Server Action's request body is capped at 1MB by default).
-const updateTaskCover = ({ taskId, file }: UpdateTaskCoverVariables) => {
-  const data = new FormData();
-  data.append("file", file);
-  return fetchApi({
-    url: `/demo/tasks/${taskId}/cover`,
-    method: "PUT",
-    data,
-    schema: taskSchema,
-    auth: false,
+/**
+ * 更换封面分三步：签发上传（demo-upload 的 Server Action）、浏览器把文件直传对象存储、再由 Server Action 让任务
+ * 使用这次上传。文件不经过 Next 服务端，不受 Server Action 请求体的大小限制。
+ */
+const updateTaskCover = async ({ taskId, file }: UpdateTaskCoverVariables) => {
+  const { id, uploadUrl } = await createUploadAction({
+    purpose: "task-cover",
+    contentType: file.type,
+    size: file.size,
   });
+  await uploadFile(uploadUrl, file);
+  return unwrapActionResult(
+    await updateTaskCoverAction({ taskId, uploadId: id }),
+  );
 };
 
 export const updateTaskCoverMutationOptions = () =>
   mutationOptions({
     mutationFn: updateTaskCover,
-    onSuccess: async (task, _variables, _onMutateResult, { client }) => {
+    onSuccess: (task, _variables, _onMutateResult, { client }) => {
       client.setQueryData(getTaskQueryOptions(task.id).queryKey, task);
       void client.invalidateQueries({ queryKey: taskListKey });
-      // The write bypassed the Next server, so the list page's server cache has
-      // to be expired separately.
-      await expireTaskListAction();
+    },
+    meta: {
+      // 关联时的预期失败由封面面板就地提示（TaskCoverPanel），其他失败仍走全局提示。
+      suppressErrorToast: isCoverRejection,
     },
   });
+
+/** 关联封面时数据层按业务规则拒绝：这次上传已被别的记录使用，或文件没有按声明传完。 */
+export function isCoverRejection(error: unknown) {
+  return (
+    isTaskActionError(error, UPLOAD_ALREADY_USED) ||
+    isTaskActionError(error, UPLOAD_NOT_READY)
+  );
+}

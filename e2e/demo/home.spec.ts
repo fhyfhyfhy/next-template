@@ -1,8 +1,7 @@
-import { expect, test } from "./mock-api";
+import { expect, test } from "./demo-backend";
 
-// The demo builds serve the demos (lib/demos.ts), so the home page links to
-// them.
-test("the home page links to the demos", async ({ page }) => {
+// demo build 提供 Demo（lib/demos.ts），所以首页有指向它们的链接。
+test("首页有指向 Demo 的链接", async ({ page }) => {
   await page.goto("/");
   await expect(
     page.getByRole("heading", { level: 1, name: "Next.js 模板" }),

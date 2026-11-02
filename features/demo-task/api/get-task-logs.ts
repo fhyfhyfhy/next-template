@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ApiError, resolveApiUrl } from "@/lib/fetch";
+import { ApiError } from "@/lib/fetch";
 
 import { taskStatusSchema } from "../types/task-filters";
 
@@ -12,17 +12,15 @@ export type TaskLogEvent =
   | ({ type: "end" } & z.infer<typeof endEventSchema>);
 
 /**
- * Subscribes to a task's generation log. The SSE response is read with raw
- * `fetch` under the transport exception: first the existing log, then one event
- * per new line, and `end` when the task reaches a final state. The caller
- * aborts through `signal` on unmount.
+ * 订阅任务的生成日志。SSE 响应按传输例外用 raw `fetch` 读取：先收到已有日志，之后每条新日志一个事件，
+ * 任务到终态时收到 `end` 并结束。调用方通过 `signal` 在卸载时中止。
  */
 export async function* streamTaskLogs(
   taskId: string,
   signal: AbortSignal,
 ): AsyncGenerator<TaskLogEvent> {
-  const url = `/demo/tasks/${taskId}/logs` as const;
-  const response = await fetch(resolveApiUrl(url), { signal });
+  const url = `/api/demo/tasks/${taskId}/logs` as const;
+  const response = await fetch(url, { signal });
   if (!response.ok || !response.body) {
     throw new ApiError({
       url,
@@ -37,7 +35,7 @@ export async function* streamTaskLogs(
     if (done) return;
     buffer += value;
     let boundary;
-    // SSE events are separated by a blank line.
+    // SSE 的事件之间用空行分隔。
     while ((boundary = buffer.indexOf("\n\n")) !== -1) {
       const block = buffer.slice(0, boundary);
       buffer = buffer.slice(boundary + 2);

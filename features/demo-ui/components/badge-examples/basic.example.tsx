@@ -1,19 +1,19 @@
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
-  title: "Basic usage",
-  description: "Has every import and the structure it needs; copy it as is.",
+  title: "基本用法",
+  description: "包含完整 import 与必要结构，可直接复制。",
   order: 10,
 };
 
-/** variant sets how much weight a status carries. */
+/** 用 variant 区分状态的轻重。 */
 export function Example() {
   return (
     <div className="flex flex-wrap gap-2">
-      <Badge>Generating</Badge>
-      <Badge variant="muted">Completed</Badge>
-      <Badge variant="outline">Queued</Badge>
-      <Badge variant="danger">Failed</Badge>
+      <Badge>生成中</Badge>
+      <Badge variant="muted">已完成</Badge>
+      <Badge variant="outline">排队中</Badge>
+      <Badge variant="danger">失败</Badge>
     </div>
   );
 }

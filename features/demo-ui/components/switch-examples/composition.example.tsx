@@ -5,13 +5,12 @@ import { useState } from "react";
 import { SwitchRoot, SwitchThumb } from "@/components/ui/switch";
 
 export const metadata = {
-  title: "Controlled state and a custom thumb",
-  description:
-    "Thumb is restyled on its own; the text outside follows the switch's state.",
+  title: "受控状态与滑块定制",
+  description: "单独修改 Thumb 样式，外部说明跟随开关状态。",
   order: 20,
 };
 
-/** One state drives both the switch and the text outside it. */
+/** 同一状态同时驱动开关和外部说明。 */
 export function Example() {
   const [checked, setChecked] = useState(false);
   return (
@@ -20,12 +19,10 @@ export function Example() {
         <SwitchRoot checked={checked} onCheckedChange={setChecked}>
           <SwitchThumb className="rounded-control" />
         </SwitchRoot>
-        Focus mode
+        专注模式
       </label>
       <p aria-live="polite" className="text-xs text-muted-foreground">
-        {checked
-          ? "Non-essential notifications paused"
-          : "Receiving all notifications"}
+        {checked ? "已暂停非必要通知" : "接收所有通知"}
       </p>
     </div>
   );

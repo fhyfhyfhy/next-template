@@ -2,22 +2,18 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
-import { getFeedPage } from "./get-feed";
+import { listFeed } from "../server/tasks";
+import { FEED_PAGE_SIZE } from "./get-feed";
 
-// The server cache read lives in a server-only module: a `use cache` function
-// can't go into the client bundle, and the browser's query factories import
-// get-feed.ts too. The request is to a public endpoint (auth: false), so it can
-// be cached.
+// `use cache` 函数不能进客户端 bundle，所以放在 server-only 模块。
 
 /**
- * The Gallery's first page and the time it was read, for the static shell. The
- * data and the timestamp come from the same cache entry and expire and move
- * forward together, so as the hydration's `updatedAt` the timestamp correctly
- * overrides older queries in the browser.
+ * 作品广场第一页及其读取时刻，进入静态 shell。数据和时间戳来自同一次缓存，一起失效、一起前进，
+ * 作为 hydration 的 `updatedAt` 时才能正确覆盖浏览器里更旧的 query。
  */
 export async function getCachedFeedSnapshot() {
   "use cache";
   cacheLife("minutes");
   cacheTag(TASK_LIST_TAG);
-  return { page: await getFeedPage(1), fetchedAt: Date.now() };
+  return { page: await listFeed(null, FEED_PAGE_SIZE), fetchedAt: Date.now() };
 }

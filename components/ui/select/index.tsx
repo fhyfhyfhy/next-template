@@ -12,10 +12,7 @@ export interface SelectRootProps<
   size?: SelectSize;
 }
 
-/**
- * The select's root; size sets the size of both the trigger and the options in
- * the Portal.
- */
+/** 选择器根节点；size 统一控制触发器和 Portal 内选项的尺寸。 */
 export function SelectRoot<
   Value,
   Multiple extends boolean | undefined = false,

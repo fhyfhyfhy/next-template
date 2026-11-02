@@ -6,21 +6,18 @@ import { getRequestConfig } from "next-intl/server";
 import { loadMessages } from "./messages";
 import { routing } from "./routing";
 
-// Only completes next-intl's config: nothing on screen is formatted in it.
-// Dates and times show in the computer's time zone (components/date-time.tsx).
+// 只用来补全 next-intl 的配置，屏幕上的内容都不按它格式化：日期和时间按电脑所在时区显示（components/date-time.tsx）。
 const TIME_ZONE = "Asia/Shanghai";
 
 /**
- * Called when next-intl gets the locale, messages and formatting config on the server (next.config.ts's
- * createNextIntlPlugin points here). An explicitly passed locale (`getTranslations({ locale, namespace })`)
- * is used as it is, unchecked here: its type is already `Locale`, and a caller passing a value from the
- * client checks it with `hasLocale` first, as `createTaskAction` does. Without one, the `[locale]` root
- * param is read.
+ * next-intl 在服务端取 locale、文案和格式化配置时调用（next.config.ts 的 createNextIntlPlugin 指向这里）。
+ * 显式传入的 locale（`getTranslations({ locale, namespace })`）直接使用，这里不校验：它的类型已经是 `Locale`，
+ * 来自客户端的值由调用方先用 `hasLocale` 检查，如 `createTaskAction`。没有传入时读 `[locale]` root param。
  */
 export default getRequestConfig(async ({ locale }) => {
   if (!locale) {
     const paramValue = await rootParams.locale();
-    // `[locale]` also matches paths such as /unknown.txt; an unsupported value is a 404.
+    // `[locale]` 也会匹配 /unknown.txt 这类路径，不支持的值按 404 处理。
     if (hasLocale(routing.locales, paramValue)) {
       locale = paramValue;
     } else {

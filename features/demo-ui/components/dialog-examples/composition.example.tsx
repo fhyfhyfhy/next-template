@@ -13,32 +13,28 @@ import {
 } from "@/components/ui/dialog";
 
 export const metadata = {
-  title: "Customize each part",
-  description: "The caller sets Backdrop's blur and Popup's border separately.",
+  title: "单独定制部件",
+  description: "Backdrop 的模糊和 Popup 的边框，在调用方分别设置。",
   order: 20,
 };
 
-/**
- * The backdrop and panel styles go to their own parts, with no wrapper props in
- * between.
- */
+/** 背景和面板样式分别传入对应部件，不增加包装组件的间接参数。 */
 export function Example() {
   return (
     <DialogRoot>
       <DialogTrigger render={<Button variant="outline" />}>
-        Customize backdrop and panel
+        定制背景与面板
       </DialogTrigger>
       <DialogPortal>
         <DialogBackdrop className="bg-foreground/60 backdrop-blur-md" />
         <DialogPopup size="sm" className="border-t-4 border-primary">
-          <DialogTitle>Each part does its own job.</DialogTitle>
+          <DialogTitle>每个部件，各司其职。</DialogTitle>
           <DialogDescription>
-            The color and blur of Backdrop and the size and border of Popup can
-            all be customized directly.
+            Backdrop 的颜色与模糊、Popup 的尺寸与边框，都可以直接定制。
           </DialogDescription>
           <div className="mt-6">
             <DialogClose render={<Button className="w-full" />}>
-              Keep exploring
+              继续探索
             </DialogClose>
           </div>
         </DialogPopup>

@@ -17,10 +17,7 @@ const links = [
   { href: "/demos/lab", key: "lab" },
 ] as const;
 
-/**
- * The navigation shared by the Data demo's pages, with the polled count of
- * active tasks on the right.
- */
+/** Data demo 各页面共用的导航，右侧是轮询中的进行中任务数。 */
 export function DataDemoHeader() {
   const t = useTranslations("demo-task.nav");
   const pathname = usePathname();

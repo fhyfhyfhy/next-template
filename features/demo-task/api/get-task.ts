@@ -3,15 +3,19 @@ import { z } from "zod";
 import { ApiError, fetchApi } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
 
-import { type TaskStatus, taskStatusSchema } from "../types/task-filters";
+import {
+  TASK_NAME_MAX_LENGTH,
+  TASK_STEP_INTERVAL_MS,
+} from "../constants/task-rules";
+import { taskSchema } from "../types/task";
+import type { TaskStatus } from "../types/task-filters";
 import type { DemoTaskTranslator } from "../types/translator";
 
-const TASK_NAME_MAX_LENGTH = 40;
+export type { Task } from "../types/task";
 
 /**
- * The task name rule: 1 to 40 characters after trimming, matching the Mock
- * API's validation. The create and rename forms and actions share it; the `t`
- * the caller passes builds the messages in the current locale.
+ * 任务名称的规则：去掉首尾空白后 1 到 40 个字，和数据层的校验一致。创建、重命名的表单和 action 共用，
+ * 校验文案由调用方传入的 `t` 按当前 locale 生成。
  */
 export const createTaskNameSchema = (t: DemoTaskTranslator) =>
   z
@@ -23,32 +27,6 @@ export const createTaskNameSchema = (t: DemoTaskTranslator) =>
       t("validation.nameTooLong", { max: TASK_NAME_MAX_LENGTH }),
     );
 
-export const taskSchema = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    prompt: z.string(),
-    status: taskStatusSchema,
-    progress: z.number(),
-    favorite: z.boolean(),
-    cover_url: z.string().nullable(),
-    created_at: z.number(),
-    updated_at: z.number(),
-  })
-  .transform(({ cover_url, created_at, updated_at, ...task }) => ({
-    ...task,
-    coverUrl: cover_url,
-    createdAt: created_at,
-    updatedAt: updated_at,
-  }));
-export type Task = z.infer<typeof taskSchema>;
-
-/**
- * How often a running task is polled, the same interval at which the Mock API
- * advances it a step.
- */
-const POLL_INTERVAL_MS = 1500;
-
 export function isTaskActive(status: TaskStatus | undefined) {
   return status === "pending" || status === "running";
 }
@@ -57,24 +35,25 @@ export function isTaskNotFound(error: unknown) {
   return error instanceof ApiError && error.status === 404;
 }
 
-export const getTask = (id: string) =>
-  fetchApi({ url: `/demo/tasks/${id}`, schema: taskSchema, auth: false });
+const getTask = (id: string) =>
+  fetchApi({ url: `/api/demo/tasks/${id}`, schema: taskSchema });
 
+/**
+ * 任务详情。浏览器经 Route Handler 请求；服务端 prefetch 时展开这份 options、把 `queryFn` 换成数据层的
+ * `getTask`（features/demo-task/server.ts），两边得到同样结构的数据（types/task.ts）。
+ */
 export const getTaskQueryOptions = (id: string) =>
   queryOptions({
     queryKey: ["demo-task", "task", "detail", id],
     queryFn: () => getTask(id),
-    // A pending or running task advances on its own, and a user who stays on
-    // the page should see the progress. Polling stops at a final state or once
-    // the task is deleted.
+    // 任务在 pending、running 时会自己推进，用户停留在页面上也要看到进度；到终态或任务已被删除后停止轮询。
     refetchInterval: (query) =>
       isTaskActive(query.state.data?.status) &&
       !isTaskNotFound(query.state.error)
-        ? POLL_INTERVAL_MS
+        ? TASK_STEP_INTERVAL_MS
         : false,
     meta: {
-      // After the task is deleted elsewhere, a refetch gets a 404; the detail
-      // page shows it as deleted instead of a generic toast.
+      // 任务在别处被删除后 refetch 得到 404，详情页显示“已删除”，不再弹通用提示。
       suppressErrorToast: isTaskNotFound,
     },
   });

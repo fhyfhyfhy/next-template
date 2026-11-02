@@ -4,10 +4,7 @@ import { Select as SelectPrimitive } from "@base-ui/react/select";
 
 import { cn } from "@/lib/cn";
 
-/**
- * The selected value or placeholder, truncated to one line with room left for
- * the trigger icon.
- */
+/** 选中值或占位文案，单行截断并为触发图标保留空间。 */
 export function SelectValue({
   className,
   ...props

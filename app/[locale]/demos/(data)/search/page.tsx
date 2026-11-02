@@ -18,8 +18,7 @@ export default function SearchPage() {
         <p>{t("intro.typing")}</p>
         <p>{t("intro.tryIt")}</p>
       </PageIntro>
-      {/* useSearchParams has no value during prerendering; Suspense lets it
-          render at request time. */}
+      {/* useSearchParams 在预渲染时没有值，放进 Suspense 让它在请求时渲染。 */}
       <Suspense fallback={null}>
         <TaskSearch />
       </Suspense>

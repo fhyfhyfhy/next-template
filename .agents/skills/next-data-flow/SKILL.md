@@ -7,7 +7,7 @@ description: Choose RSC or React Query ownership and coordinate server data in t
 
 Each **read** (one request's result and everything derived from it: its fields, filtering, sorting, counts, and pagination) has one **owner** responsible for refreshing it: the Server Component render or the browser's React Query cache. This is the repo's design convention. Ownership is separate from where the first fetch runs, whether data is cached, and which component code reaches the browser.
 
-For a new flow, identify its consumers, inputs, available credentials, update triggers, freshness tolerance, and initial-display requirements. For an existing flow, trace the affected read through its consumers and refresh triggers; retain its owner unless the requirement calls for a change. A read's **consumers** are every display of its data and every value computed from it, on the server or in other components. The design is complete when every consumer has a refresh path for every [update trigger](refresh.md), and consumers shown together refresh from the same trigger. Diagnose a stale view by reproducing the reported steps and observing each consumer, then identifying the owner and cache that supplied the value.
+For a new flow, identify its consumers, inputs, update triggers, freshness tolerance, and initial-display requirements. For an existing flow, trace the affected read through its consumers and refresh triggers; retain its owner unless the requirement calls for a change. A read's **consumers** are every display of its data and every value computed from it, on the server or in other components. The design is complete when every consumer has a refresh path for every [update trigger](refresh.md), and consumers shown together refresh from the same trigger. Diagnose a stale view by reproducing the reported steps and observing each consumer, then identifying the owner and cache that supplied the value.
 
 ## Ownership
 
@@ -16,7 +16,6 @@ The Server Component render owns a read unless a React Query signal applies:
 | Signal | Owner |
 | --- | --- |
 | Changes on navigation or after this user's own write, including filters, sorting, or pagination changed in one click or selection | Server Component |
-| Needs the signed-in user, and the Next.js server cannot send their credential (`lib/fetch/credentials-server.ts`) | React Query |
 | Updates while the user stays: polling, progress, notifications, other users' edits | React Query |
 | Re-requested as the user types, where routing every change through RSC navigation would lag | React Query |
 | Infinite scroll appending pages | React Query |
@@ -30,8 +29,8 @@ A read can carry signals for both owners, such as URL filters and changes while 
 
 ## Project integration
 
-- Follow [data-fetching.md](../../../.claude/rules/data-fetching.md) for data consumption, error feedback, and session isolation; follow [data-fetching-api.md](../../../.claude/rules/data-fetching-api.md) for request configuration, credentials, options factories, and feature public entries. Adapt official examples to these contracts.
-- For browser credential readiness, server prefetch, hydration, or a Server Action called by a mutation, read [React Query integration](react-query-integration.md).
+- Follow [data-fetching.md](../../../.claude/rules/data-fetching.md) for data consumption, error feedback, and session isolation; follow [data-fetching-api.md](../../../.claude/rules/data-fetching-api.md) for browser requests, Server Actions, options factories, and feature public entries, and [data-layer.md](../../../.claude/rules/data-layer.md) for the server data layer they call. Adapt official examples to these contracts.
+- For browser-only inputs, server prefetch, hydration, or a Server Action called by a mutation, read [React Query integration](react-query-integration.md).
 - For URL changes, writes, changes made elsewhere, or session changes, read [Refresh coordination](refresh.md).
 - Before implementing one of these patterns, read its runnable reference in the [Data demo](demos.md): code and e2e spec per scenario.
 

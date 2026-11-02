@@ -2,7 +2,7 @@ import { type ReactNode, useId } from "react";
 
 interface LabSectionProps {
   title: string;
-  /** What this experiment demonstrates and which fault its buttons inject. */
+  /** 这个实验演示什么、按钮会注入什么故障。 */
   description: ReactNode;
   children: ReactNode;
 }

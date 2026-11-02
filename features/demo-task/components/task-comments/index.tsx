@@ -7,10 +7,7 @@ import { QueryErrorBoundary } from "../query-error-boundary";
 import { CommentForm } from "./comment-form";
 import { CommentList } from "./comment-list";
 
-/**
- * Comments show only on the detail page, and React Query owns them. The server
- * dehydrates them as pending, and they stream in when the data arrives.
- */
+/** 评论只在详情页显示，由 React Query 负责；服务端以 pending 状态 dehydrate，数据到了再流式出现。 */
 export function TaskComments({ taskId }: { taskId: string }) {
   const t = useTranslations("demo-task.comments");
   return (

@@ -5,13 +5,13 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import {
+  DemoResetButton,
   FaultPanel,
   LabConcurrentFailures,
   LabDraftMode,
   LabQueryStates,
   LabRetry,
   LabSuspenseReset,
-  MockResetButton,
   PageIntro,
 } from "@/features/demo-task";
 
@@ -28,15 +28,12 @@ export default function LabPage() {
         <p>{t("intro")}</p>
       </PageIntro>
       <div className="mb-6">
-        <MockResetButton />
+        <DemoResetButton />
       </div>
-      {/* The components below create queries on the client, which reads the
-          current time; inside Suspense they don't interrupt prerendering. */}
+      {/* 下面的组件在客户端创建 query，读当前时间，放进 Suspense 才不会打断预渲染。 */}
       <Suspense fallback={null}>
         <div className="grid gap-6">
-          {/* During prerendering draftMode() reads off, so the switch goes
-              into the static shell off. Once it's on, requests bypass the
-              static shell and read it on at request time. */}
+          {/* 预渲染时 draftMode() 读到关闭，开关以关闭状态进静态 shell；开启后请求绕过静态 shell，在请求时读到开启。 */}
           {draftMode().then(({ isEnabled }) => (
             <LabDraftMode enabled={isEnabled} />
           ))}

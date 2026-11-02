@@ -10,11 +10,7 @@ import { createTaskAction } from "./create-task-action";
 import type { CreateTaskInput } from "./create-task-request";
 import { taskListKey } from "./get-tasks";
 
-/**
- * Creating touches both owners: the action expires the list page's server
- * cache, and this refreshes the list queries in the browser. `locale` is passed
- * on to the action.
- */
+/** 创建同时影响两种负责方：action 让列表页的服务端缓存失效，这里刷新浏览器里的列表 query。`locale` 转交给 action。 */
 export const createTaskMutationOptions = (locale: Locale) =>
   mutationOptions({
     mutationFn: async (input: CreateTaskInput) =>
@@ -23,8 +19,7 @@ export const createTaskMutationOptions = (locale: Locale) =>
       void client.invalidateQueries({ queryKey: taskListKey });
     },
     meta: {
-      // The form shows a taken name on its field; other failures still get the
-      // global toast.
+      // 名称被占用由表单在字段上提示，其他失败仍走全局提示。
       suppressErrorToast: (error) => isTaskActionError(error, TASK_NAME_TAKEN),
     },
   });

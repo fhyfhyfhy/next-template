@@ -15,7 +15,7 @@ export const metadata = {
   icon: "IconClick",
 } satisfies ComponentMetadata;
 
-/** Button's adjustable preview and its controls. */
+/** Button 的可调预览与参数控制。 */
 export function Demo({ source }: { source: string }) {
   const [config, setConfig] = useState(initialConfig);
   const [resetKey, setResetKey] = useState(0);

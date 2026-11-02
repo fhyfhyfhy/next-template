@@ -1,15 +1,13 @@
-import { MOCK_API_URL } from "./mock-api";
+import type { FullConfig } from "@playwright/test";
 
 /**
- * When debugging with E2E_REUSE_SERVER=1 against a server you started, the
- * Mock API keeps running along with that server. After the run, restore the
- * seed data, clear the faults and restart the clock, so that it is not left in
- * the state the last test put it in. When the Mock API has already stopped
- * with the e2e's own demo:start, there is nothing to restore, and the failed
- * request does not affect the result.
+ * 用 E2E_REUSE_SERVER=1 复用自己开的服务调试时，那个服务的 Demo 后端会停在最后一个测试留下的状态上。
+ * 跑完后恢复种子数据、清掉故障、让时钟重新走。服务已经随 e2e 自己的 demo:start 关掉时，请求失败也不影响结果。
  */
-export default async function globalTeardown() {
-  await fetch(`${MOCK_API_URL}/__mock/reset`, {
+export default async function globalTeardown(config: FullConfig) {
+  const baseURL = config.projects[0]?.use.baseURL;
+  if (!baseURL) return;
+  await fetch(new URL("/api/demo/control/reset", baseURL), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ paused: false }),

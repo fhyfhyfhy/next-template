@@ -5,7 +5,6 @@ import { Suspense } from "react";
 
 import {
   CreateTaskForm,
-  MOCK_API_RUNNING,
   PageIntro,
   parseTaskListParams,
   TaskList,
@@ -14,7 +13,10 @@ import {
   TaskListToolbar,
   toTaskFilters,
 } from "@/features/demo-task";
-import { getCachedTaskPage } from "@/features/demo-task/server";
+import {
+  getCachedTaskPage,
+  isDemoBackendEnabled,
+} from "@/features/demo-task/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("app.demos.tasks");
@@ -32,9 +34,7 @@ export default function TasksPage({
         <p>{t("intro.tryIt")}</p>
       </PageIntro>
       <CreateTaskForm />
-      {/* The page stays synchronous and awaits searchParams only inside
-          Suspense, so everything but the toolbar and the list goes into the
-          static shell. */}
+      {/* page 保持同步，只在 Suspense 里等 searchParams：工具栏和列表以外的部分都能进静态 shell。 */}
       <TaskListNavigation>
         <Suspense fallback={<div className="mb-4 h-8" />}>
           {searchParams.then((query) => (
@@ -43,7 +43,7 @@ export default function TasksPage({
         </Suspense>
         <Suspense fallback={<TaskListSkeleton />}>
           {searchParams.then((query) => {
-            if (!MOCK_API_RUNNING) return null;
+            if (!isDemoBackendEnabled()) return null;
             const params = parseTaskListParams(query);
             return (
               <TaskList

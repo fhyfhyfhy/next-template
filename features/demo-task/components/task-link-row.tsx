@@ -8,10 +8,7 @@ interface TaskLinkRowProps {
   task: Pick<Task, "id" | "name" | "status">;
 }
 
-/**
- * A task's row in a compact list: the name links to the detail, with the status
- * on the right. The caller provides the enclosing `<li>`.
- */
+/** 紧凑列表里的一行任务：名称链接到详情，右侧是状态。调用方提供外层的 `<li>`。 */
 export function TaskLinkRow({ task }: TaskLinkRowProps) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">

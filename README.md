@@ -9,7 +9,7 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. To browse the [Demo](#demo) with its Mock API, run `pnpm demo:dev` instead and open `/demos`.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. To browse the [Demo](#demo) with its Demo backend, start Docker, run `pnpm demo:dev` instead, and open `/demos`.
 
 When port 3000 is taken, the `dev` and `start` scripts, including their `demo:` versions, move to the next free port and print the URL. Pass `--port` to pin one.
 
@@ -18,9 +18,11 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `demo:` 
 `/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it. They are served only under `pnpm dev` and the `pnpm demo:*` scripts: a plain production build (`pnpm build`, `pnpm start`) answers 404 for every `/demos` page, and its home page is a placeholder without a link to them (`lib/demos.ts`).
 
 - **UI demo** (`/demos/ui`): the design-system components; see [UI demo examples](#ui-demo-examples).
-- **Data demo** (the other `/demos` pages): a small task app that exercises the data-fetching rules against the Mock API. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.
+- **Data demo** (the other `/demos` pages): a small task app that exercises the data-fetching rules against the Demo backend. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.
 
-The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node process ([ADR 0001](docs/adr/0001-demos-use-standalone-mock-api.md)). The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo:start`: they start the Mock API on `127.0.0.1:4010` and point `NEXT_PUBLIC_API_BASE_URL` at it, overriding the project's backend URL, so during those runs every page, including the project's own features, talks to the Mock API. Their build output goes to `.next-demo`, leaving the project's `.next` alone. The Mock API answers its business endpoints (`/demo/*`) after 500 ms by default so loading states show; the fault lab's panel changes that delay until the next reset, and a fault's `latency_ms` adds to it. `pnpm dev` never starts the Mock API; under it the Data demo pages show a notice instead of sending requests. The demos' e2e specs are described under [Tests](#tests).
+The **Demo backend** is built into this app the way the template expects a project's own backend to be ([ADR 0003](docs/adr/0003-fullstack-demo-backend.md)): the `demo-task` and `demo-upload` features hold its data layer, Route Handlers under `app/api/demo/` serve the browser's reads, and Server Actions do the writes. Data lives in Postgres and files in S3-compatible object storage ([ADR 0004](docs/adr/0004-demo-uploads-presigned-object-storage.md)), both from `compose.demo.yaml`, so the Demo needs Docker.
+
+The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo:start`: they start the two services (Postgres on `127.0.0.1:54329`, Versity Gateway on `127.0.0.1:7070`), create and migrate the Demo database, prepare its bucket, and pass the `DEMO_*` variables that enable the Demo backend to Next. The data persists in Docker volumes across restarts; the first run writes the seed data, and the fault lab's reset restores it. `docker compose -f compose.demo.yaml down -v` deletes it. Their build output goes to `.next-demo`, leaving the project's `.next` alone. Inside the app, the Demo 生成器 advances tasks in the background, and every business operation waits 500 ms by default so loading states show; the fault lab's panel changes that delay until the next reset and injects faults into data-layer operations. `pnpm dev`, `pnpm build`, and `pnpm start` never set the `DEMO_*` variables, so `/api/demo` answers 404 under all three and a deployment never exposes the Demo backend; under `pnpm dev` the Data demo pages show a notice instead. The demos' e2e specs are described under [Tests](#tests).
 
 ## Checks
 
@@ -30,28 +32,26 @@ The **Mock API** (`scripts/mock-api/`) is a stand-in backend in a separate Node 
 
 ## Tests
 
-`pnpm test` runs the unit tests with Vitest: every `*.test.*` file, kept next to the code it tests. `vitest.config.mts` resolves `@/` like `tsconfig.json`.
+`pnpm test` runs the unit tests with Vitest: every `*.test.*` file, kept next to the code it tests, except `*.db.test.*`. `vitest.config.mts` resolves `@/` like `tsconfig.json`.
+
+`pnpm demo:test` runs the Demo backend's data-layer tests (`*.db.test.*`, `vitest.demo.config.mts`) against real Postgres and object storage on the `test` dataset, its own database and bucket. It starts the services, so it needs Docker, which keeps it out of `pnpm check`.
 
 End-to-end specs run with Playwright in two sets, each against its own production build and port, so they can run side by side and alongside `pnpm dev`. Install the browser once with `pnpm exec playwright install chromium`.
 
 - `pnpm test:e2e` runs the project's own specs in `e2e/`, skipping `e2e/demo/`, against `pnpm build` and `pnpm start` on port 3998 (`E2E_PORT`). That build serves no demos, so a spec that opens a `/demos` page belongs in `e2e/demo/`. `e2e/home.spec.ts` is the minimal example to start from.
-- `pnpm demo:test:e2e` runs the demos' specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999, with their own Mock API on port 4999 (`DEMO_E2E_PORT`, `DEMO_E2E_MOCK_API_PORT`; set them when another checkout on the machine runs the same specs). The specs reset it before each test, pause its clock, and inject faults; a running `demo:dev` keeps its own Mock API on 4010 and its data. Other `demo:` scripts share a Mock API already running on their port instead of starting another; it stops with the script that started it.
+- `pnpm demo:test:e2e` runs the demos' specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999 (`DEMO_E2E_PORT`), on the `e2e` dataset: its own database and bucket in the same services. The specs reset it through `/api/demo/control/*` before each test, pause the Demo 生成器, and inject faults; a running `demo:dev` keeps the `dev` dataset and its data. Two checkouts share the `e2e` dataset, so run the set from one at a time.
 
 Both sets build with the testing API that `instant()` from `@next/playwright` needs to hold back streamed content: their `webServer` sets `EXPOSE_TESTING_API=1`, which `next.config.ts` reads. Keep that variable out of deployment builds. Those builds go to `.next-e2e` and `.next-demo-e2e`, so a running `pnpm start` or `pnpm demo:start` keeps its own output. ESLint applies `eslint-plugin-playwright`'s recommended rules to `e2e/`.
 
-While debugging, `E2E_REUSE_SERVER=1` makes either set reuse a server you started on its port, such as `pnpm demo:dev --port 3999`; specs that depend on production behavior, such as prefetching, fail against a dev server, and a production server needs a build made with `EXPOSE_TESTING_API=1`.
+While debugging, `E2E_REUSE_SERVER=1` makes either set reuse a server you started on its port, such as `DEMO_DATASET=e2e pnpm demo:dev --port 3999`; specs that depend on production behavior, such as prefetching, fail against a dev server, and a production server needs a build made with `EXPOSE_TESTING_API=1`.
 
-## Backend API
+## Data access
 
-Set `NEXT_PUBLIC_API_BASE_URL` to the backend's base URL, for example in `.env.local`. The `demo:*` scripts override it with the Mock API (see [Demo](#demo)).
+The template is full-stack: a project's backend lives in this app ([ADR 0003](docs/adr/0003-fullstack-demo-backend.md)), and the Data demo is its runnable reference.
 
-Features call the backend only through `fetchApi`, so fitting the template to a backend touches these files alone:
-
-- `lib/fetch/index.ts`: the base URL, the response format including paginated lists, and the error types. As shipped, a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or as the only field of a 2xx body; the schemas and doc comments in `lib/fetch/index.ts` define the details.
-- `lib/fetch/credentials-server.ts` and `lib/fetch/credentials-browser.ts`: the signed-in user's credential for requests from the server and from the browser. Both send none as shipped. `package.json` resolves `#credentials` to the right one per environment.
-- `app/providers.tsx`: what a signed-out response does in the browser.
-
-The `setup-data-access` skill (`/setup-data-access` in Claude Code) asks about the backend, makes these changes, keeps the Mock API's response format in step, and verifies the result in a production build.
+- Each feature's `server/` holds its data layer: queries, writes, business rules, and migrations ([.claude/rules/data-layer.md](.claude/rules/data-layer.md)). `lib/db.ts` creates the Kysely + pg connection, `lib/object-storage.ts` wraps S3-compatible storage, and `lib/domain-error.ts` carries business-rule failures.
+- Server Components, `use cache` reads, Server Actions, and Route Handlers call the data layer directly. The browser reads through `fetchApi` (`lib/fetch.ts`) from Route Handlers under `/api` and writes through Server Actions ([.claude/rules/data-fetching.md](.claude/rules/data-fetching.md)).
+- `lib/fetch.ts` defines the response format: a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or as the only field of a 2xx body. `app/providers.tsx` decides what a failed browser request shows.
 
 ## Internationalization
 

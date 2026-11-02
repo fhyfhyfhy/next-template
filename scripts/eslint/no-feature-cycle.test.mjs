@@ -53,7 +53,7 @@ function eslintFor(root) {
   });
 }
 
-test("linting a single file reports its feature cycle too, located at the whole import string", async () => {
+test("仅 lint 一个文件也报告其 feature 循环，并定位到完整引用字符串", async () => {
   const root = fixture({
     "features/a/index.ts": "export const a = 1;",
     "features/a/consumer.ts": '\nexport * from "@/features/b";\n',
@@ -76,7 +76,7 @@ test("linting a single file reports its feature cycle too, located at the whole 
   }).toStrictEqual({ line: 2, column: 15, endLine: 2, endColumn: 29 });
 });
 
-test("lintText on the same ESLint instance uses unsaved text and supports files not yet on disk", async () => {
+test("同一 ESLint 实例的 lintText 使用未保存文本并支持尚未落盘的文件", async () => {
   const root = fixture({
     "features/a/index.ts": "export const a = 1;",
     "features/b/index.ts": 'export * from "@/features/a";',
@@ -106,7 +106,7 @@ test("lintText on the same ESLint instance uses unsaved text and supports files 
   expect(existsSync(filePath)).toBe(false);
 });
 
-test("once unsaved text removes the cross-feature reference, the cycle on disk is not reused", async () => {
+test("未保存文本删除跨 feature 引用后，不沿用磁盘中的循环", async () => {
   const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts": 'export * from "@/features/a";',
@@ -121,7 +121,7 @@ test("once unsaved text removes the cross-feature reference, the cycle on disk i
   expect(unsaved.errorCount).toBe(0);
 });
 
-test("a whole-project lint reuses what it read while files are unchanged, rather than rereading the project for each file", async () => {
+test("全项目 lint 在文件未变化时复用读取结果，不逐文件重读整个项目", async () => {
   const files = {};
   for (let index = 0; index < 40; index++) {
     const feature = Math.floor(index / 4);
@@ -165,10 +165,10 @@ test("a whole-project lint reuses what it read while files are unchanged, rather
   ).toStrictEqual([]);
   expect(
     reads,
-    `${Object.keys(files).length} unchanged files should not cause this many synchronous reads`,
+    `未变化的 ${Object.keys(files).length} 个文件不应触发这么多次同步读取`,
   ).toBeLessThanOrEqual(Object.keys(files).length * 2);
   expect(
     directoryReads,
-    "unchanged directories should not cause this many synchronous listings",
+    "目录未变化时不应触发这么多次同步枚举",
   ).toBeLessThanOrEqual(Object.keys(files).length * 2);
 });

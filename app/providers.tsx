@@ -16,13 +16,10 @@ function handleRequestError(
   error: unknown,
   { suppressErrorToast }: HandleRequestErrorOptions,
 ) {
-  // A schema mismatch means the frontend and backend contracts have diverged:
-  // log it even when the caller suppresses the toast.
+  // schema 不匹配说明前后端契约已经不一致，调用方不弹提示时也要留下记录。
   if (error instanceof SchemaValidationError) console.error(error);
-  // Queries also fail here while the server renders Client Components. sonner
-  // keeps toasts in a module-level singleton and removes only dismissed ones; a
-  // toast on the server is never dismissed, so they would pile up for the life
-  // of the process.
+  // 服务端渲染 Client Component 时 query 也会失败到这里。sonner 把 toast 存在模块级单例里，
+  // 只清理已关闭的，服务端的 toast 不会被关闭，会在进程里一直累积。
   if (environmentManager.isServer()) return;
   const suppressed =
     typeof suppressErrorToast === "function"
@@ -33,8 +30,7 @@ function handleRequestError(
   }
 }
 
-// The handler runs outside React and can't get translations; the toast's
-// content renders inside <Toaster />, where hooks work.
+// 这个 handler 在 React 之外调用，取不到翻译；toast 的内容在 <Toaster /> 里渲染，那里能用 hook。
 function RequestErrorMessage() {
   const t = useTranslations("app");
   return t("requestError");
@@ -44,8 +40,7 @@ function makeQueryClient() {
   return new QueryClient({
     onRequestError: handleRequestError,
     defaultOptions: {
-      // Data prefetched on the server isn't refetched for this long after
-      // hydration.
+      // 服务端预取的数据 hydrate 后在这段时间内不会被重新请求。
       queries: {
         staleTime: 60 * 1000,
         retry: environmentManager.isServer() ? false : shouldRetryRequest,
@@ -56,8 +51,7 @@ function makeQueryClient() {
 
 let browserQueryClient: QueryClient | undefined;
 
-// A new client for each server render, so requests share no cache. The browser
-// always reuses one, so the cache survives a suspended first render.
+// 服务端每次渲染新建，请求之间不共享缓存；浏览器始终复用同一个，首次渲染挂起时缓存也不会丢。
 function getQueryClient() {
   if (environmentManager.isServer()) return makeQueryClient();
   browserQueryClient ??= makeQueryClient();

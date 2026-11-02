@@ -2,12 +2,6 @@
   "name": "next-demo",
   "version": "0.1.0",
   "private": true,
-  "imports": {
-    "#credentials": {
-      "react-server": "./lib/fetch/credentials-server.ts",
-      "default": "./lib/fetch/credentials-browser.ts"
-    }
-  },
   "scripts": {
     "dev": "node scripts/run-next.mjs dev",
     "build": "node scripts/run-next.mjs build",
@@ -23,10 +17,13 @@
     "demo:dev": "node scripts/run-next.mjs dev --demo",
     "demo:build": "node scripts/run-next.mjs build --demo",
     "demo:start": "node scripts/run-next.mjs start --demo",
+    "demo:test": "vitest run --config vitest.demo.config.mts",
     "demo:test:e2e": "playwright test --config playwright.demo.config.ts",
     "demo:generate:examples": "node scripts/demo-ui/index-generator.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/s3-request-presigner": "^3.1161.0",
     "@base-ui/react": "^1.9.0",
     "@mantine/hooks": "^9.7.4",
     "@tabler/icons-react": "^3.49.0",
@@ -34,10 +31,12 @@
     "@tanstack/react-query": "^5.104.5",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
+    "kysely": "^0.29.7",
     "nanoid": "^6.0.2",
     "next": "16.4.3",
     "next-intl": "^4.14.9",
     "next-themes": "^0.4.6",
+    "pg": "^8.23.1",
     "query-string": "^10.0.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -53,6 +52,7 @@
     "@tailwindcss/postcss": "^4",
     "@tanstack/eslint-plugin-query": "^5.104.5",
     "@types/node": "^24.19.1",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "eslint": "^9",

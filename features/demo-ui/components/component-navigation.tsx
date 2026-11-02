@@ -7,10 +7,7 @@ import { Link } from "@/lib/i18n/navigation";
 import { catalog, type ComponentId } from "../constants/catalog";
 import { iconsByComponent } from "./component-registry.generated";
 
-/**
- * The current component goes in the URL, so sharing, reloading and browser
- * history work.
- */
+/** 当前组件写入 URL，支持分享、刷新与浏览器历史。 */
 export function ComponentNavigation({ selected }: { selected: ComponentId }) {
   const t = useTranslations("demo-ui.navigation");
   return (

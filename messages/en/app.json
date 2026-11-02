@@ -42,7 +42,7 @@
       },
       "lab": {
         "title": "Data demo · Fault lab",
-        "description": "Inject latency and failures into the API, then watch error messages, retries, and error boundaries."
+        "description": "Inject latency and failures into data-layer operations, then watch error messages, retries, and error boundaries."
       }
     },
     "dataError": {
@@ -60,7 +60,7 @@
     },
     "taskDetail": {
       "metadataTitle": "{name} · Data demo",
-      "mockApiOffTitle": "Data demo",
+      "demoBackendOffTitle": "Data demo",
       "note": {
         "ownership": "React Query owns the details: the task advances on its own while you stay, a queued or generating task is polled every 1.5 seconds until it reaches a final state, and then the in-progress count in the header refreshes. The server prefetches the first screen's data, and comments stream in afterwards.",
         "tryIt": "Try it: retry a failed task; rename it to a name that already exists; change the cover image and go back to the list; post and delete comments."
@@ -95,7 +95,7 @@
     "lab": {
       "metadataTitle": "Fault lab · Data demo",
       "title": "Fault lab",
-      "intro": "Inject latency and failures of all kinds into the Mock API's endpoints, then watch how pages react when requests fail. The fault settings apply to every Data demo page, including requests sent during server rendering."
+      "intro": "Inject latency and failures of all kinds into the Demo backend's data-layer operations, then watch how pages react when requests fail. The fault settings apply to every Data demo page, including reads during server rendering and writes in Server Actions."
     }
   }
 }

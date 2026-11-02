@@ -10,13 +10,12 @@ export interface ToasterConfig {
   closeButton: boolean;
 }
 
-// The parentheses keep the end marker inside the expression; the UI demo page
-// replaces only the initial JSON between the markers.
+// 括号将结束标记保留在表达式内；UI demo 页面只替换标记之间的 JSON 初始值。
 // prettier-ignore
 export const initialConfig: ToasterConfig = (/* @example-config */ {
   "type": "success",
-  "title": "Draft saved",
-  "description": "Your latest changes are synced to the cloud.",
+  "title": "草稿已保存",
+  "description": "最近一次修改已同步到云端。",
   "closeButton": false
 } /* @end-example-config */);
 
@@ -28,7 +27,7 @@ const showByType = {
   error: toast.error,
 };
 
-/** The root layout already renders Toaster, so this only calls toast(). */
+/** 根布局已渲染 Toaster，这里只调用 toast()。 */
 export function ToasterPlayground({
   config = initialConfig,
 }: {
@@ -44,7 +43,7 @@ export function ToasterPlayground({
         })
       }
     >
-      Show toast
+      显示提示
     </Button>
   );
 }

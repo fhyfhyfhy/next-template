@@ -1,9 +1,6 @@
 import type { ActionResult } from "../types/action-result";
 
-/**
- * An expected business failure returned by a Server Action; `code` is the Mock
- * API's business error code.
- */
+/** Server Action 返回的预期业务失败，`code` 是数据层拒绝时的业务错误码（constants/error-codes.ts）。 */
 export class TaskActionError extends Error {
   readonly code: number;
 
@@ -15,9 +12,8 @@ export class TaskActionError extends Error {
 }
 
 /**
- * For a `mutationFn` that calls a Server Action: returns the data on success
- * and throws `TaskActionError` on `ok: false`. React Query treats any resolved
- * value as success, so without this a failed write would reach `onSuccess` too.
+ * 给调用 Server Action 的 `mutationFn` 用：成功时返回数据，`ok: false` 时抛出 `TaskActionError`。
+ * React Query 把任何 resolve 的值都当成功，不转换的话失败的写入也会走 `onSuccess`。
  */
 export function unwrapActionResult<TData>(result: ActionResult<TData>): TData {
   if (!result.ok) throw new TaskActionError(result.code);

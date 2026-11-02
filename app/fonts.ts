@@ -10,8 +10,5 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-/**
- * The font variables for `<html>`. The root layout and global-not-found each
- * render their own `<html>` and share these.
- */
+/** 放在 `<html>` 上的字体变量；根 layout 和 global-not-found 各自渲染 `<html>`，共用这一份。 */
 export const fontVariables = `${geistSans.variable} ${geistMono.variable}`;

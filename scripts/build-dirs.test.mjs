@@ -11,26 +11,26 @@ const lines = (file) =>
     .replace(/\r\n/g, "\n")
     .split("\n");
 
-test("each of the four builds uses its own directory", () => {
+test("四种 build 各用自己的目录", () => {
   expect(BUILD_DIRS).toStrictEqual([
     ".next",
     ".next-e2e",
     ".next-demo",
     ".next-demo-e2e",
   ]);
-  expect(buildDir({ NEXT_PUBLIC_MOCK_API: "1", EXPOSE_TESTING_API: "1" })).toBe(
-    ".next-demo-e2e",
-  );
+  expect(
+    buildDir({ DEMO_DATABASE_URL: "postgres://demo", EXPOSE_TESTING_API: "1" }),
+  ).toBe(".next-demo-e2e");
 });
 
-test("every build directory is in .gitignore and .prettierignore", () => {
+test("每个 build 目录都在 .gitignore 和 .prettierignore 里", () => {
   for (const dir of BUILD_DIRS) {
     expect(lines(".gitignore")).toContain(`/${dir}/`);
     expect(lines(".prettierignore")).toContain(`${dir}/`);
   }
 });
 
-test("tsconfig.json excludes the build directories other than .next, and reads only .next/types", () => {
+test("tsconfig.json 排除 .next 以外的 build 目录，只读 .next/types", () => {
   const { config } = ts.readConfigFile(
     join(projectRoot, "tsconfig.json"),
     ts.sys.readFile,
@@ -43,10 +43,10 @@ test("tsconfig.json excludes the build directories other than .next, and reads o
   );
 });
 
-test("without the variables that decide the directory, typegen writes .next", () => {
+test("去掉决定目录的变量后，typegen 写的是 .next", () => {
   const env = withoutBuildDirVars({
     EXPOSE_TESTING_API: "1",
-    NEXT_PUBLIC_MOCK_API: "1",
+    DEMO_DATABASE_URL: "postgres://demo",
     PATH: "/usr/bin",
   });
   expect(buildDir(env)).toBe(".next");

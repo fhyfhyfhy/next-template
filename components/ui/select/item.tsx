@@ -8,9 +8,7 @@ import { cn } from "@/lib/cn";
 import { SelectSizeContext } from "./context";
 import { selectItemVariants } from "./variants";
 
-/**
- * An option of the select; its value matches the data in SelectRoot's items.
- */
+/** 选择器选项；value 与 SelectRoot 的 items 数据保持一致。 */
 export function SelectItem({
   className,
   ...props

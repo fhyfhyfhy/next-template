@@ -4,9 +4,8 @@ import ts from "typescript";
 
 import { createProjectResolver, SOURCE_EXTENSIONS } from "./imports.mjs";
 
-// Checks that the namespaces each ClientMessages sends match what the Client Components it encloses
-// actually use; the convention is "Reading messages" in .claude/rules/i18n.md. When unsure, it counts
-// more rather than less, and code it can't analyze is reported rather than quietly skipped.
+// 检查每个 ClientMessages 发的 namespace 和它包着的 Client Component 实际用到的是否一致，约定见
+// .claude/rules/i18n.md「Reading messages」。拿不准时多算不少算；分析不了的写法直接报错，不悄悄跳过。
 
 const ALL = "*";
 const CLIENT = "client";
@@ -15,11 +14,11 @@ const SOURCE_EXTENSION_SET = new Set(SOURCE_EXTENSIONS.map((ext) => `.${ext}`));
 const DECLARATION_FILE = /\.d\.([cm]?)ts$/;
 const MDX = /\.mdx?$/;
 const CLIENT_MESSAGES_MODULE = "lib/i18n/client-messages";
-// Client-side useTranslations comes from these entries: next-intl re-exports it from use-intl.
+// Client 端的 useTranslations 来自这些入口：next-intl 从 use-intl 重新导出。
 const INTL_MODULES = new Set(["next-intl", "use-intl", "use-intl/react"]);
 const IGNORED_DIRECTORIES = new Set(["node_modules", ".git"]);
-// Next nests layout > template > error > loading > not-found > page (Component hierarchy in the
-// project-structure docs); forbidden and unauthorized sit at the same level as not-found.
+// Next 的嵌套顺序是 layout > template > error > loading > not-found > page（文档 project-structure 的
+// Component hierarchy）；forbidden、unauthorized 和 not-found 同级。
 const BOUNDARY_FILES = [
   "error",
   "loading",
@@ -37,11 +36,10 @@ const ROUTE_FILE_NAMES = new Set([
   "global-not-found",
 ]);
 const SCOPE_HOSTS = new Set(["layout", "template", "page"]);
-// The files that render the routes below as children (and as the slots of parallel routes).
+// 把下面的 route 当作 children（和平行路由的 slot）渲染的文件。
 const WRAPPERS = new Set(["layout", "template"]);
-// The package.json conditions that each environment never selects; the bundler may select any other
-// branch (development included). Client Components render both in the browser and on the server, so
-// only react-server is excluded for them.
+// package.json 条件导出里，各环境不会选中的条件；其余分支都可能被 bundler 选中（包括 development）。
+// Client Component 既在浏览器、也在服务端渲染，所以只排除 react-server。
 const EXCLUDED_CONDITIONS = {
   [CLIENT]: new Set(["react-server"]),
   [SERVER]: new Set(["browser"]),
@@ -88,18 +86,16 @@ function bindingNames(name, names = []) {
   return names;
 }
 
-// The export names an import binding uses: a namespace import uses the whole module.
+// import 绑定对应的导出名集合：命名空间导入用到整个模块。
 const bindingSymbols = ({ imported }) =>
   imported === ALL ? ALL : new Set([imported]);
 
-// Type positions don't exist at runtime; an extends clause, though an ExpressionWithTypeArguments,
-// refers to a runtime value.
+// 类型位置在运行时不存在；extends 子句虽然是 ExpressionWithTypeArguments，引用的却是运行时的值。
 function isTypeOnlyNode(node) {
   return ts.isTypeNode(node) && !ts.isExpressionWithTypeArguments(node);
 }
 
-// Whether the identifier refers to a binding, rather than standing as a declared name, a property
-// name, a JSX attribute name, and the like.
+// 标识符引用了某个绑定，而不是声明名、属性名、JSX 属性名这类位置。
 function isReference(node) {
   const parent = node.parent;
   if (!parent) return false;
@@ -135,7 +131,7 @@ function isReference(node) {
   );
 }
 
-// Loaders that load a whole directory at once, such as require.context and import.meta.glob.
+// require.context、import.meta.glob 这类按目录批量加载的写法。
 function isContextLoader(callee) {
   if (!ts.isPropertyAccessExpression(callee)) return false;
   const { expression, name } = callee;
@@ -159,14 +155,14 @@ function readDirectives(mod) {
   }
 }
 
-// Top-level imports and exports: dependencies, export names and next-intl bindings.
+// 顶层的 import、export：依赖、导出名和 next-intl 绑定。
 function readTopLevel(context) {
   const { mod, range, problem, intl } = context;
   for (const statement of mod.sourceFile.statements) {
     if (ts.isImportDeclaration(statement)) {
       const specifier = stringValue(statement.moduleSpecifier);
       const isIntl = INTL_MODULES.has(specifier);
-      // The components rendered in MDX only show after MDX compilation, which this doesn't support yet.
+      // MDX 里渲染的组件要经过 MDX 编译才看得到，这里还不支持。
       if (MDX.test(specifier ?? "")) problem(statement, "mdx");
       const at = range(statement.moduleSpecifier);
       const clause = statement.importClause;
@@ -195,7 +191,7 @@ function readTopLevel(context) {
           mod.bindings.set(element.name.text, { specifier, imported });
           if (isIntl && imported === "useTranslations")
             intl.hooks.add(element.name.text);
-          // useExtracted takes its messages from the source code, so there is no namespace to check.
+          // useExtracted 的文案从源码抽取，没有 namespace 可查。
           if (isIntl && imported === "useExtracted")
             problem(element, "unsupported");
           if (
@@ -205,7 +201,7 @@ function readTopLevel(context) {
             mod.tags.set(element.name.text, { specifier, imported });
         }
       }
-      // An import of types only leaves no runtime dependency after compilation.
+      // 全是类型的 import 编译后不剩运行时依赖。
       if (all || symbols.size)
         mod.edges.push({
           kind: "static",
@@ -248,7 +244,7 @@ function readExport({ mod, problem, intl }, statement) {
   if (statement.isTypeOnly) return;
   const specifier = stringValue(statement.moduleSpecifier);
   const clause = statement.exportClause;
-  // Once next-intl is re-exported, its importers' useTranslations can't be recognized.
+  // 把 next-intl 转手导出以后，调用方的 useTranslations 就认不出来了。
   if (INTL_MODULES.has(specifier) && (!clause || ts.isNamespaceExport(clause)))
     problem(statement, "indirectUse");
   if (specifier && !clause) mod.stars.push(specifier);
@@ -273,7 +269,7 @@ function readExport({ mod, problem, intl }, statement) {
     }
 }
 
-// Usage in function bodies: dynamic imports, useTranslations calls and ClientMessages elements.
+// 函数体里的用法：动态 import、useTranslations 的调用、ClientMessages 元素。
 function readUsage({ mod, range, problem, intl }) {
   const isUseTranslations = (node) =>
     (ts.isIdentifier(node) && intl.hooks.has(node.text)) ||
@@ -290,8 +286,7 @@ function readUsage({ mod, range, problem, intl }) {
       if (INTL_MODULES.has(specifier)) problem(call, "indirectUse");
       edge = { kind: "dynamic", specifier, symbols: ALL, ...range(call) };
     } else if (!isRequire && argument && ts.isTemplateExpression(argument)) {
-      // A bundler takes a path with variables as a set of files under one directory, so the path
-      // must start with a directory.
+      // bundler 把带变量的路径当成一个目录下的一组文件，所以路径要从一个目录开始。
       const prefix = argument.head.text;
       if (/^(?:\.{1,2}\/|@\/)/.test(prefix))
         edge = {
@@ -365,8 +360,8 @@ function readUsage({ mod, range, problem, intl }) {
           });
       }
     }
-    // Only direct calls to useTranslations and property access on the next-intl module object count:
-    // once it is assigned, destructured or passed on, the namespace at the call can't be found.
+    // 只认直接调用 useTranslations，以及 next-intl 命名空间对象上的属性访问：赋值、解构、传参以后，
+    // 调用处的 namespace 就查不到了。
     if (ts.isIdentifier(node) && isReference(node)) {
       const { parent } = node;
       const isCallee = (target) =>
@@ -397,7 +392,7 @@ function readUsage({ mod, range, problem, intl }) {
   visit(mod.sourceFile);
 }
 
-/** Parses the facts in a module that the namespace check needs: syntax only, without resolving where imports point. */
+/** 解析一个模块里和 namespace 检查有关的事实：只看语法，不解析 import 指向哪里。 */
 export function parseModule(filename, text) {
   const sourceFile = ts.createSourceFile(
     filename,
@@ -409,11 +404,10 @@ export function parseModule(filename, text) {
   const mod = {
     sourceFile,
     directives: new Set(),
-    // The dependencies of the module's own code; kind is static, side-effect or dynamic (dynamic
-    // import and require).
+    // 模块自己的代码带来的依赖，kind 为 static、side-effect 或 dynamic（动态 import 和 require）。
     edges: [],
     dynamicEdges: new Map(),
-    // export … from is recorded per export name, so only the names in use are followed.
+    // export … from 按导出名记录，只有用到的名字才沿着走。
     reexports: new Map(),
     stars: [],
     localExports: new Set(),
@@ -488,10 +482,8 @@ function functionLike(node) {
 }
 
 /**
- * What a layout's or template's function calls its children and slot props: locals are the local
- * names destructured from them (renames and ...rest included), and object is the props parameter's
- * name when it isn't destructured. Returns null when that can't be told, such as when the default
- * export is wrapped in a HOC.
+ * layout、template 的 props 里 children 和 slot 在函数中叫什么：locals 是解构出来的局部名（含改名和
+ * ...rest），object 是不解构时的 props 参数名。看不出来（比如默认导出被 HOC 包着）时返回 null。
  */
 function propNames(root, props) {
   const fn = functionLike(root);
@@ -515,12 +507,9 @@ function propNames(root, props) {
 }
 
 /**
- * Splits the dependencies a route file renders with into those inside and outside its
- * ClientMessages element. It starts from the default export and follows the top-level declarations
- * of the same file; exports that render nothing, such as generateMetadata, don't count. props are
- * the props a layout or template renders the routes below with (children and slots): where they
- * appear outside the element, their positions are recorded, since the routes below would then miss
- * this level's messages.
+ * 把 route 文件渲染用到的依赖分到 ClientMessages 元素的里外两侧。从默认导出出发，经由同文件的顶层
+ * 声明继续找；generateMetadata 这类不渲染的导出不算。props 是 layout、template 渲染下面 route 用的
+ * props（children 和 slot）：它们出现在元素外面时记下位置，下面的 route 就收不到这一层的文案。
  */
 function routeReferences(mod, root, element, props) {
   const { sourceFile } = mod;
@@ -553,8 +542,7 @@ function routeReferences(mod, root, element, props) {
         if (names && !isInside) {
           const { parent } = child;
           if (names.locals.has(name)) propsOutside.push({ name, ...at });
-          // props not destructured: only an access such as props.children shows which prop is
-          // used; any other use counts as using them.
+          // 不解构的 props：只有 props.children 这类访问能看出用的是哪个 prop，别的用法都按用到了算。
           else if (name === names.object) {
             const accessed = ts.isPropertyAccessExpression(parent)
               ? parent.name.text
@@ -585,8 +573,7 @@ function routeReferences(mod, root, element, props) {
     visit(node);
   }
   collect(root, undefined);
-  // A side-effect import renders nothing but may register components in a registry, so it counts
-  // with the main content this file renders.
+  // 副作用 import 不渲染东西，但可能往注册表里登记组件，按这个文件渲染的主体算。
   (element ? inside : outside).push(
     ...mod.edges.filter((edge) => edge.kind === "side-effect"),
   );
@@ -599,9 +586,8 @@ function routeReferences(mod, root, element, props) {
 }
 
 /**
- * The module dependency graph: resolves where imports point, and collects the namespaces the client
- * side uses, starting from a set of start points. getModule returns a parsed module, depend records
- * the version of a file read, and report reports a problem in a file.
+ * 模块依赖图：解析 import 指向哪里，并从一组起点出发收集 Client 端用到的 namespace。
+ * getModule 返回解析过的模块，depend 记下读过的文件版本，report 报告某个文件里的问题。
  */
 function createModuleGraph({
   root,
@@ -615,10 +601,8 @@ function createModuleGraph({
   const manifests = new Map();
   const reported = new Set();
 
-  // TypeScript resolves package names to real paths; when the project root itself sits behind a
-  // symlink (such as /var on macOS), they are mapped back under the root, so the paths used for the
-  // cache and reports match the ones ESLint passes in. Third-party packages in node_modules don't use
-  // the project's namespaces.
+  // TypeScript 解析包名时返回真实路径；项目根目录本身经过软链接时（比如 macOS 的 /var），要换回根目录
+  // 下的写法，缓存和报告用的路径才和 ESLint 传进来的一致。node_modules 里的第三方包不用项目的 namespace。
   const inProject = (target) => {
     for (const base of [root, realRoot]) {
       const path = relative(base, target);
@@ -632,8 +616,7 @@ function createModuleGraph({
 
   const exists = (file) => depend(file)?.isFile() ?? false;
 
-  // Beside a workspace package's type declarations is the JS the bundler actually loads; without it
-  // there is nothing to analyze, so it is reported rather than skipped.
+  // workspace 包的类型声明旁边是 bundler 实际加载的 JS；找不到就没法分析，报错而不是跳过。
   const runtimeFile = (declaration) => {
     const [, kind] = declaration.match(DECLARATION_FILE);
     const base = declaration.replace(DECLARATION_FILE, "");
@@ -675,8 +658,7 @@ function createModuleGraph({
     }
   };
 
-  // package.json imports: keys match by Node's rules (with at most one *), and every conditional
-  // branch that may be selected is followed.
+  // package.json 的 imports：按 Node 的规则匹配 key（可以带一个 *），条件分支里可能被选中的都跟进去。
   const packageImport = (from, specifier, context) => {
     const manifest = nearestManifest(from);
     if (!manifest) return [];
@@ -770,8 +752,7 @@ function createModuleGraph({
       })),
     );
 
-  // The dependencies to follow next when a module is used for symbols; ownCode means the module's
-  // own code runs.
+  // 一个模块按 symbols 被用到时，接下来要走的依赖；ownCode 表示模块自己的代码会执行。
   const usedEdges = (mod, symbols) => {
     if (symbols === ALL)
       return {
@@ -781,8 +762,7 @@ function createModuleGraph({
           ...mod.stars.map((specifier) => ({ specifier, symbols: ALL })),
         ],
       };
-    // A module without ESM exports (such as CommonJS) doesn't show where a name comes from, so all
-    // of it counts.
+    // 没有 ESM 导出的模块（比如 CommonJS）看不出名字来自哪里，整个算上。
     const hasExports =
       mod.localExports.size > 0 ||
       mod.reexports.size > 0 ||
@@ -812,8 +792,7 @@ function createModuleGraph({
     return { ownCode, next };
   };
 
-  // Walks the dependencies from a set of start points and collects the namespaces client-side
-  // modules use, each with one file that uses it as an example.
+  // 从一组起点沿依赖走，收集 Client 端模块用到的 namespace，各记一个用到它的文件当例子。
   const namespacesFrom = (states) => {
     const found = new Map();
     const seen = new Set();
@@ -825,9 +804,8 @@ function createModuleGraph({
       seen.add(key);
       const mod = getModule(file);
       if (!mod) continue;
-      // A Server Action called from the client runs on the server: the messages it uses itself
-      // need not be sent, but the Client Components in the JSX it returns render under the caller,
-      // so the walk goes on as server.
+      // Client 端调用的 Server Action 在服务端执行：它自己用的文案不用下发，但它返回的 JSX 里的
+      // Client Component 渲染在调用方下面，所以按服务端接着走。
       const context = mod.directives.has("use server")
         ? SERVER
         : mod.directives.has("use client")
@@ -849,9 +827,8 @@ function createModuleGraph({
 }
 
 /**
- * Builds each ClientMessages' scope from the app directory's route structure, records the
- * namespaces the Client Components in each scope use (required), and reports misplaced
- * ClientMessages and Client Components rendered outside every scope.
+ * 按 app 目录的路由结构建出每个 ClientMessages 的范围（scope），记下每个范围里 Client Component 用到的
+ * namespace（required），并报告放错位置的 ClientMessages 和渲染在所有范围外面的 Client Component。
  */
 function collectScopes({
   appDirectory,
@@ -915,8 +892,8 @@ function collectScopes({
   }
 
   /**
-   * Analyzes a route file and returns the scope the routes below it are in: a layout's or
-   * template's own scope when it has a ClientMessages, otherwise the outer one.
+   * 分析一个 route 文件，返回它下面的 route 所在的范围：layout、template 有 ClientMessages 时是它
+   * 自己的范围，否则沿用外层的。
    */
   function routeFile(file, options) {
     const { kind, outer, slots = [] } = options;
@@ -935,7 +912,7 @@ function collectScopes({
     }
 
     if (mod.directives.has("use client")) {
-      // Client files such as error.tsx and global-error.tsx: the whole file renders on the client.
+      // error.tsx、global-error.tsx 这类 Client 文件：整个文件都在客户端渲染。
       addRequired(
         outer,
         file,
@@ -978,8 +955,7 @@ function collectScopes({
           at,
         );
       else
-        // Inside no ClientMessages: each reference is checked on its own, and a problem is
-        // reported where the reference is.
+        // 不在任何 ClientMessages 里：逐个引用查，问题报在引用的位置。
         for (const edge of outside)
           addRequired(
             null,
@@ -1003,7 +979,7 @@ function collectScopes({
     );
     for (const entry of entries) {
       if (entry.isDirectory()) {
-        // Directories starting with _ are private and take no part in routing.
+        // _ 开头的是私有目录，不参与路由。
         if (!entry.name.startsWith("_") && !IGNORED_DIRECTORIES.has(entry.name))
           children.push(entry.name);
       } else if (entry.isFile()) {
@@ -1016,7 +992,7 @@ function collectScopes({
       }
     }
     const layout = files.get("layout");
-    // An MDX route has no JS file to report on, so it is reported on the layout around it.
+    // MDX 写的 route 没有 JS 文件可报，报在包着它的 layout 上。
     for (const mdx of mdxRoutes)
       if (layout ?? layoutAbove)
         report(layout ?? layoutAbove, {
@@ -1036,8 +1012,8 @@ function collectScopes({
         })
       : outer;
     const template = files.get("template");
-    // The template wraps every parallel route at this level: create-component-tree.js passes this
-    // level's template to the LayoutRouter of children and of each slot.
+    // template 包着本层每个平行路由：create-component-tree.js 给 children 和每个 slot 的 LayoutRouter
+    // 传的都是本层的 template。
     const afterTemplate = template
       ? routeFile(template, { kind: "template", outer: afterLayout })
       : afterLayout;
@@ -1061,10 +1037,8 @@ function collectScopes({
 }
 
 /**
- * Checks each scope's list under merge semantics: a namespace a level sends holds for every level
- * below it, and one already sent further out doesn't count as provided by this level even when listed
- * again (it isn't in effective). Missing, repeated and unused namespaces are all reported, and the fix
- * rewrites the list to what it should be.
+ * 合并语义下逐个检查范围的列表：一层发的 namespace 对它下面每一层都有效，外层已经发过的这一层再写
+ * 也不算它提供的（effective 里没有）。缺的、重复的、没人用的都报告，fix 把列表改成该有的样子。
  */
 function checkScopes(scopes, report, display) {
   for (const scope of scopes) {
@@ -1076,8 +1050,7 @@ function checkScopes(scopes, report, display) {
       scope.list.filter((namespace) => !scope.above.has(namespace)),
     );
   }
-  // The namespaces that the levels below a scope (deeper scopes included) still need from it or
-  // from further out.
+  // 一层下面（含更深的范围）还需要从这一层或更外层拿的 namespace。
   const subtreeNeeds = new Map();
   const needsOf = (scope) => {
     if (!subtreeNeeds.has(scope)) {
@@ -1131,9 +1104,8 @@ function checkScopes(scopes, report, display) {
 }
 
 /**
- * Creates the checker. filename is absolute, and sourceText may be unsaved content; other files are
- * read from disk. Returns the current file's problems: start and end are offsets in sourceText, and
- * fix gives the range to replace and the text to put there.
+ * 创建检查器。filename 是绝对路径，sourceText 可以是未保存的内容，其余文件以磁盘为准。返回当前文件
+ * 的问题：start、end 是 sourceText 里的偏移；fix 给出要替换的范围和文本。
  */
 export function createClientNamespaceChecker(projectRoot) {
   const root = resolve(projectRoot);
@@ -1161,8 +1133,7 @@ export function createClientNamespaceChecker(projectRoot) {
     )
       return;
     resolverDependencies = new Map();
-    // Tracks tsconfig, package.json and the paths probed while resolving, so a new file also
-    // invalidates the resolutions.
+    // 跟踪 tsconfig、package.json 和解析时探测过的路径，新增的文件也会让解析结果失效。
     const track = (filename) => {
       const stat = readStat(filename);
       resolverDependencies.set(resolve(filename), fileVersion(stat));
@@ -1278,8 +1249,7 @@ export function createClientNamespaceChecker(projectRoot) {
         : { file, text: sourceText, mod: parseModule(file, sourceText) };
     const own = override?.mod ?? disk.mod;
     if (!isFresh(override)) analysis = analyze(override);
-    // A ClientMessages in a file outside the routes (a feature component and the like) is outside
-    // the analysis, so it is reported as misplaced.
+    // route 之外的文件（feature 组件等）里的 ClientMessages 不在分析的范围里，直接报位置不对。
     const misplaced = analysis.routeFiles.has(file)
       ? []
       : own.elements

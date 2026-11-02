@@ -1,7 +1,4 @@
-/**
- * How task and comment times display: the `format` of `<DateTime>`
- * (components/date-time.tsx), which shows them in the computer's time zone.
- */
+/** 任务和评论的时间显示格式：`<DateTime>`（components/date-time.tsx）的 `format`，按电脑所在时区显示。 */
 export const DATE_TIME_FORMAT = {
   dateStyle: "medium",
   timeStyle: "short",

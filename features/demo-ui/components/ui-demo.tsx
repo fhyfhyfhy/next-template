@@ -7,7 +7,7 @@ import { demosByComponent } from "./component-registry.generated";
 import { ExampleList } from "./example-list";
 import { UiDemoHeader } from "./ui-demo-header";
 
-/** Shows a validated component and its source files. */
+/** 展示已验证的组件与对应源文件。 */
 export function UiDemo({
   component,
   sources,

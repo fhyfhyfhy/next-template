@@ -14,7 +14,7 @@ export const metadata = {
   icon: "IconSquareDashed",
 } satisfies ComponentMetadata;
 
-/** Skeleton's adjustable preview and its controls. */
+/** Skeleton 的可调预览与参数控制。 */
 export function Demo({ source }: { source: string }) {
   const [config, setConfig] = useState(initialConfig);
   return (

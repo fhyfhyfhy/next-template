@@ -1,0 +1,131 @@
+import { spawnSync } from "node:child_process";
+import { join } from "node:path";
+import {
+  BucketAlreadyOwnedByYou,
+  CreateBucketCommand,
+  PutBucketCorsCommand,
+  PutBucketPolicyCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
+import pg from "pg";
+
+import {
+  databaseUrl,
+  DEMO_DATASETS,
+  demoEnv,
+  POSTGRES,
+  STORAGE,
+} from "./datasets.mjs";
+import { migrateDemoDatabase } from "./migrate.mjs";
+
+const projectRoot = join(import.meta.dirname, "..", "..");
+
+/** 浏览器直接读的前缀：用户上传的文件和种子文件。签发上传、下载模型仍要签名。 */
+const PUBLIC_PREFIXES = ["uploads/", "seed/"];
+
+/**
+ * 启动 compose.demo.yaml 里的 Postgres 和对象存储，等它们就绪；已经在运行时什么也不做。
+ * 需要 Docker，没装或没启动时报错说明原因。
+ */
+export function startDemoServices() {
+  const result = spawnSync(
+    "docker",
+    ["compose", "-f", "compose.demo.yaml", "up", "-d", "--wait"],
+    { cwd: projectRoot, stdio: "inherit" },
+  );
+  if (result.error || result.status !== 0) {
+    throw new Error(
+      "Could not start the Demo services with Docker Compose; the Demo backend needs Docker running",
+      { cause: result.error },
+    );
+  }
+}
+
+/**
+ * 准备一个数据集：库不存在就创建，执行 migration，初始化 bucket。可以重复执行。
+ * 种子数据由 Demo 后端在第一次访问数据库时写入（features/demo-task/server/seed.ts）。
+ * @returns {Record<string, string>} 这个数据集的 `DEMO_*` 环境变量
+ */
+export async function prepareDemoDataset(name) {
+  const { database, bucket } = DEMO_DATASETS[name];
+  await createDatabase(database);
+  await migrateDemoDatabase(databaseUrl(database));
+  await prepareBucket(bucket);
+  return demoEnv(name);
+}
+
+async function createDatabase(database) {
+  const client = new pg.Client({
+    connectionString: databaseUrl(POSTGRES.adminDatabase),
+  });
+  await client.connect();
+  try {
+    const { rowCount } = await client.query(
+      "select 1 from pg_database where datname = $1",
+      [database],
+    );
+    if (rowCount === 0) {
+      await client.query(`create database ${pg.escapeIdentifier(database)}`);
+    }
+  } catch (error) {
+    // 两个命令同时创建同一个库（比如 demo:build 和 demo:test 一起启动），后到的会撞上唯一约束。
+    if (error.code !== "42P04" && error.code !== "23505") throw error;
+  } finally {
+    await client.end();
+  }
+}
+
+async function prepareBucket(bucket) {
+  const client = new S3Client({
+    endpoint: STORAGE.endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: STORAGE.accessKeyId,
+      secretAccessKey: STORAGE.secretAccessKey,
+    },
+    forcePathStyle: true,
+    requestChecksumCalculation: "WHEN_REQUIRED",
+  });
+  try {
+    await client.send(new CreateBucketCommand({ Bucket: bucket }));
+  } catch (error) {
+    if (!(error instanceof BucketAlreadyOwnedByYou)) throw error;
+  }
+  // 浏览器从 app 的 origin 直传文件（presigned PUT）、跟随下载的跳转读取模型，都是跨域请求。
+  await client.send(
+    new PutBucketCorsCommand({
+      Bucket: bucket,
+      CORSConfiguration: {
+        CORSRules: [
+          {
+            AllowedOrigins: ["http://localhost:*", "http://127.0.0.1:*"],
+            AllowedMethods: ["GET", "HEAD", "PUT"],
+            AllowedHeaders: ["*"],
+            ExposeHeaders: ["ETag"],
+            MaxAgeSeconds: 600,
+          },
+        ],
+      },
+    }),
+  );
+  // 只在本地开发的存储上这样设置公开读：Cloudflare R2 没有 bucket policy，公开读靠它自己的公开域名。
+  await client.send(
+    new PutBucketPolicyCommand({
+      Bucket: bucket,
+      Policy: JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: "*",
+            Action: ["s3:GetObject"],
+            Resource: PUBLIC_PREFIXES.map(
+              (prefix) => `arn:aws:s3:::${bucket}/${prefix}*`,
+            ),
+          },
+        ],
+      }),
+    }),
+  );
+  client.destroy();
+}

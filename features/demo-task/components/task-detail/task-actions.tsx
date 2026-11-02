@@ -41,9 +41,7 @@ export function TaskActions({ task }: { task: Task }) {
               try {
                 saveFile(await getTaskModel(task.id), `${task.name}.glb`);
               } catch {
-                // The download doesn't go through React Query, so its failure
-                // toast is shown here, without the toast ID of global request
-                // errors.
+                // 下载不经过 React Query，失败提示由这里负责，不占用全局请求错误的 toast ID。
                 toast.error(t("downloadFailed"));
               } finally {
                 setDownloading(false);
@@ -65,9 +63,7 @@ export function TaskActions({ task }: { task: Task }) {
   );
 }
 
-/**
- * Makes the browser save `blob` as a file, through a temporary download link.
- */
+/** 让浏览器把 `blob` 存成文件：经一个临时的下载链接触发。 */
 function saveFile(blob: Blob, filename: string) {
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");

@@ -3,19 +3,19 @@
 import { SwitchRoot, SwitchThumb } from "@/components/ui/switch";
 
 export const metadata = {
-  title: "Basic usage",
-  description: "Has every import and the structure it needs; copy it as is.",
+  title: "基本用法",
+  description: "包含完整 import 与必要结构，可直接复制。",
   order: 10,
 };
 
-/** The caller composes Root and Thumb explicitly. */
+/** 调用方显式组合 Root 与 Thumb。 */
 export function Example() {
   return (
     <label className="flex items-center gap-3 text-sm">
       <SwitchRoot defaultChecked>
         <SwitchThumb />
       </SwitchRoot>
-      Turn on notifications
+      开启通知
     </label>
   );
 }

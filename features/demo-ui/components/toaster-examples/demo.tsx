@@ -15,7 +15,7 @@ export const metadata = {
   icon: "IconBell",
 } satisfies ComponentMetadata;
 
-/** Toaster's adjustable preview and its controls. */
+/** Toaster 的可调预览与参数控制。 */
 export function Demo({ source }: { source: string }) {
   const [config, setConfig] = useState(initialConfig);
   return (

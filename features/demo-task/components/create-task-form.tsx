@@ -20,7 +20,7 @@ import { isTaskActionError } from "../utils/task-action-error";
 
 const defaultValues: CreateTaskInput = { name: "", prompt: "" };
 
-// Both keys are under `createTask` in the `demo-task` messages.
+// 两个 key 都在 `demo-task` 文案的 `createTask` 下。
 const fields = [
   { name: "name", labelKey: "nameLabel", placeholderKey: "namePlaceholder" },
   {
@@ -35,15 +35,11 @@ const fields = [
 }[];
 
 /**
- * Creates a task: validates in the browser, then calls the Server Action
- * through a mutation; the list refreshes with the action's response, and the
- * form clears on success. A taken name shows under the name field; the global
- * error handling reports other failures.
+ * 创建任务：浏览器里校验，通过后经 mutation 调用 Server Action，列表随 action 的响应刷新，成功后清空表单。
+ * 名称被占用显示在名称字段下，其他失败由全局错误处理提示。
  */
 export function CreateTaskForm() {
-  // The form has no native submit target: submitting before hydration would
-  // fall back to a full-page GET, and hydration would clear what was typed, so
-  // it stays disabled until then.
+  // 表单没有原生提交的目标：hydration 之前提交会退化成 GET 整页刷新，输入的文字也会在 hydration 后被清空，所以先不可用。
   const hydrated = useHydrated();
   const t = useTranslations("demo-task");
   const locale = useLocale();
@@ -59,8 +55,7 @@ export function CreateTaskForm() {
         formApi.reset();
       } catch (error) {
         if (isTaskActionError(error, TASK_NAME_TAKEN)) {
-          // Set under onSubmit, so TanStack Form clears it once an edit passes
-          // validation again.
+          // 记在 onSubmit 下：改动后重新校验通过时，TanStack Form 会清掉它。
           formApi.setErrorMap({
             onSubmit: {
               fields: { name: [{ message: t("validation.nameTaken") }] },

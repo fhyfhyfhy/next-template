@@ -20,10 +20,7 @@ interface RenameTaskFormProps {
   onDone: () => void;
 }
 
-/**
- * The name being edited is a draft: it starts from the current data, is saved
- * through a write, and is discarded on cancel.
- */
+/** 编辑中的名称是一份草稿：从当前数据开始，保存时走写入，取消就丢弃。 */
 export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
   const t = useTranslations("demo-task");
   const locale = useLocale();
@@ -44,8 +41,7 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
         });
         onDone();
       } catch (error) {
-        // Only a name clash shows on the field; the global error handling has
-        // already reported other failures.
+        // 只有撞名在字段上提示；其他失败已由全局错误处理提示。
         if (isTaskActionError(error, TASK_NAME_TAKEN)) {
           formApi.setErrorMap({
             onSubmit: {

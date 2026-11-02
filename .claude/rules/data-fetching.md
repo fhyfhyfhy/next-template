@@ -12,12 +12,13 @@ paths:
 
 # Data fetching
 
-When choosing a data owner, integrating RSC with React Query, or changing URL/write refresh coordination, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md). Framework mechanisms come from the installed Next.js docs; shell and prefetch optimization use the official workflows linked there. Before adding or changing a backend request, query/mutation options factory, or feature public request entry, read [data-fetching-api.md](data-fetching-api.md) for request configuration, credential setup, and factory contracts. This applies wherever the request is implemented, including Route Handlers and Server Actions. Each rule here has a runnable reference listed in the [Data demo](../../.agents/skills/next-data-flow/demos.md).
+When choosing a data owner, integrating RSC with React Query, or changing URL/write refresh coordination, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md). Framework mechanisms come from the installed Next.js docs; shell and prefetch optimization use the official workflows linked there. Before adding or changing a browser request, Server Action, query/mutation options factory, or feature public request entry, read [data-fetching-api.md](data-fetching-api.md) for request configuration and factory contracts; for the server data layer they call, read [data-layer.md](data-layer.md). Each rule here has a runnable reference listed in the [Data demo](../../.agents/skills/next-data-flow/demos.md).
 
 ## Transport
 
-- Requests to the app's backend, from the server and from the browser, go through `fetchApi` from `@/lib/fetch`.
-- Raw `fetch` is for what `fetchApi` does not cover: third-party URLs, streaming or SSE responses, and binary downloads. Configure backend requests as [Requests](data-fetching-api.md#requests) describes.
+- Server code (Server Components, `generateMetadata`, `use cache` reads, Server Actions, Route Handlers) calls the feature's server data layer directly ([data-layer.md](data-layer.md)). It never requests the app's own Route Handlers.
+- The browser reads through `fetchApi` from `@/lib/fetch`, against the app's Route Handlers under `/api`, and writes through Server Actions. The client dispatches Server Actions one at a time (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, Sequential dispatch on the client), so reads that poll, stream, run in parallel, or are aborted as the user types stay on Route Handlers.
+- Raw `fetch` is for what `fetchApi` does not cover: streaming or SSE responses, binary downloads, and URLs outside the app, such as a presigned object-storage URL. Configure requests as [Requests](data-fetching-api.md#requests) describes.
 
 ## Copies
 
@@ -29,7 +30,7 @@ Render server data from its owner: props or a promise from a Server Component, o
 
 Concurrent failures share one generic toast. Keep its ID reserved for global request errors so feature-specific feedback remains separate.
 
-Render a query's states in this order, data first: a failed refresh keeps its data, and checking `error` first would replace data the user can still use. The error state shows the feature's own copy, chosen from `error.code` or `error.status` when it needs to vary; `ApiError.message` is written for developers and logs (`lib/fetch/index.ts`).
+Render a query's states in this order, data first: a failed refresh keeps its data, and checking `error` first would replace data the user can still use. The error state shows the feature's own copy, chosen from `error.code` or `error.status` when it needs to vary; `ApiError.message` is written for developers and logs (`lib/fetch.ts`).
 
 ```tsx
 const todos = useQuery(getTodosQueryOptions());

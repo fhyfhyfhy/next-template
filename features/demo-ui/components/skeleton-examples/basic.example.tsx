@@ -1,15 +1,12 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata = {
-  title: "Basic usage",
-  description: "Has every import and the structure it needs; copy it as is.",
+  title: "基本用法",
+  description: "包含完整 import 与必要结构，可直接复制。",
   order: 10,
 };
 
-/**
- * The caller sets the size and shape, as close to the loaded content as it can,
- * so the layout does not shift.
- */
+/** 尺寸和形状由调用方给出，尽量和加载完成后的内容一致，避免布局跳动。 */
 export function Example() {
   return (
     <div className="w-full max-w-sm overflow-hidden rounded-panel border border-border bg-card">

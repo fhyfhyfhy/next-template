@@ -1,8 +1,6 @@
 /**
- * The basePath the app is served under; empty serves it at the root. A
- * project that serves it under a path sets it here and nowhere else:
- * next.config.ts reads it, and so does every URL built outside Next's Link,
- * router and redirects, such as the locale switcher's full-page links, since
- * Next adds the basePath only to the URLs it makes itself.
+ * app 所在的 basePath，空字符串表示部署在根路径。要部署在某个路径下的项目只在这里设置：next.config.ts 读它，
+ * 不经过 Next 的 Link、router 和 redirect 拼出的 URL 也读它，比如语言切换器的整页链接，因为 Next 只给自己生成的
+ * URL 加 basePath。
  */
 export const BASE_PATH = "";

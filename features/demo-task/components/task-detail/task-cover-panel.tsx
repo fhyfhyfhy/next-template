@@ -2,13 +2,22 @@
 
 import { IconPhotoUp } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
+import {
+  checkUploadFile,
+  UPLOAD_PURPOSES,
+  type UploadFileProblem,
+} from "@/features/demo-upload";
 import { cn } from "@/lib/cn";
 import { useMutation } from "@/lib/react-query";
 
 import type { Task } from "../../api/get-task";
-import { updateTaskCoverMutationOptions } from "../../api/update-task-cover";
+import {
+  isCoverRejection,
+  updateTaskCoverMutationOptions,
+} from "../../api/update-task-cover";
 import { TaskCover } from "../task-cover";
 
 interface TaskCoverPanelProps {
@@ -16,14 +25,16 @@ interface TaskCoverPanelProps {
   editable: boolean;
 }
 
+const MAX_COVER_MB = UPLOAD_PURPOSES["task-cover"].maxSize / 1024 / 1024;
+
 /**
- * The browser uploads the cover straight to the backend. After a successful
- * upload the factory refreshes the detail and list queries and expires the list
- * page's server cache.
+ * 封面图由浏览器直接上传到对象存储，不经过 Next；不是图片或太大的文件在上传前就拦下。上传成功后工厂刷新详情、
+ * 列表 query，Server Action 让列表页的服务端缓存失效。
  */
 export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
   const t = useTranslations("demo-task.taskCover");
   const upload = useMutation(updateTaskCoverMutationOptions());
+  const [problem, setProblem] = useState<UploadFileProblem | null>(null);
   return (
     <div className="space-y-3">
       <TaskCover
@@ -48,10 +59,25 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
             onChange={(event) => {
               const file = event.target.files?.[0];
               event.target.value = "";
-              if (file) upload.mutate({ taskId: task.id, file });
+              if (!file) return;
+              const found = checkUploadFile("task-cover", file);
+              setProblem(found);
+              if (!found) upload.mutate({ taskId: task.id, file });
             }}
           />
         </label>
+      )}
+      {problem && (
+        <p role="alert" className="text-sm text-destructive">
+          {problem === "contentType"
+            ? t("notAnImage")
+            : t("tooLarge", { max: String(MAX_COVER_MB) })}
+        </p>
+      )}
+      {isCoverRejection(upload.error) && (
+        <p role="alert" className="text-sm text-destructive">
+          {t("rejected")}
+        </p>
       )}
     </div>
   );

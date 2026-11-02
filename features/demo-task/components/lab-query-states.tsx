@@ -6,34 +6,30 @@ import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@/lib/react-query";
 
 import { getTaskQueryOptions } from "../api/get-task";
-import { TASK_DETAIL_ROUTE } from "../constants/mock-faults";
-import { useInjectMockFault } from "../hooks/use-inject-mock-fault";
+import { TASK_DETAIL_OPERATION } from "../constants/demo-faults";
+import { useInjectDemoFault } from "../hooks/use-inject-demo-fault";
 import { LabSection } from "./lab-section";
 
 const TASK_ID = "task-01";
-// A 4xx isn't retried, so the result shows at once in the demo.
+// 4xx 不重试，演示时结果立即出现。
 const FAULT = {
-  method: "GET",
-  path: TASK_DETAIL_ROUTE,
+  operation: TASK_DETAIL_OPERATION,
+  kind: "httpStatus",
   status: 409,
   times: 1,
-};
+} as const;
 
-/**
- * A failed first load has no data to show, so the component renders the error.
- * A failed refresh keeps showing the data and leaves the news to the global
- * toast.
- */
+/** 首次加载失败时没有数据可显示，组件渲染错误；已有数据时刷新失败，组件继续显示数据，靠全局提示告知。 */
 export function LabQueryStates() {
   const t = useTranslations("demo-task");
   const queryClient = useQueryClient();
-  const injectFault = useInjectMockFault();
+  const injectFault = useInjectDemoFault();
   const options = getTaskQueryOptions(TASK_ID);
   const task = useQuery(options);
 
   const firstLoad = async (failing: boolean) => {
     if (failing) await injectFault(FAULT);
-    // Clear the cache so the next request is a first load again.
+    // 清掉缓存，让下一次请求回到“首次加载”的状态。
     await queryClient.resetQueries({ queryKey: options.queryKey });
   };
 

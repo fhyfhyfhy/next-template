@@ -28,8 +28,7 @@ export interface DialogConfig {
   closeLabel: string;
 }
 
-// The parentheses keep the end marker inside the expression; the UI demo page
-// replaces only the initial JSON between the markers.
+// 括号将结束标记保留在表达式内；UI demo 页面只替换标记之间的 JSON 初始值。
 // prettier-ignore
 export const initialConfig: DialogConfig = (/* @example-config */ {
   "size": "md",
@@ -37,16 +36,13 @@ export const initialConfig: DialogConfig = (/* @example-config */ {
   "modal": "true",
   "disablePointerDismissal": false,
   "backdrop": "default",
-  "title": "Make room for your next idea.",
-  "description": "This dialog is built from independent parts. The content, the backdrop and the actions are all up to you.",
-  "triggerLabel": "Open dialog",
-  "closeLabel": "Got it"
+  "title": "为下一个想法，留点空间。",
+  "description": "这是一个由独立部件组成的对话框。内容、背景和操作区域，都由你来决定。",
+  "triggerLabel": "打开对话框",
+  "closeLabel": "知道了"
 } /* @end-example-config */);
 
-/**
- * Popup and Backdrop are customized separately; the caller holds the open
- * state.
- */
+/** Popup 和 Backdrop 独立定制；调用方持有开关状态。 */
 export function DialogPlayground({
   config,
   onConfigChange,
@@ -84,7 +80,7 @@ export function DialogPlayground({
             <div className="flex items-start justify-between gap-4">
               <DialogTitle>{state.title}</DialogTitle>
               <DialogClose
-                aria-label="Close dialog"
+                aria-label="关闭对话框"
                 render={
                   <Button
                     variant="ghost"

@@ -1,27 +1,18 @@
-import { z } from "zod";
-
-import { fetchApi } from "@/lib/fetch";
 import { mutationOptions } from "@/lib/react-query";
 
+import { unwrapActionResult } from "../utils/task-action-error";
+import { deleteCommentAction } from "./delete-comment-action";
 import { getCommentsQueryOptions } from "./get-comments";
 
 interface DeleteCommentVariables {
   commentId: string;
 }
 
-const deleteComment = (taskId: string, { commentId }: DeleteCommentVariables) =>
-  fetchApi({
-    url: `/demo/tasks/${taskId}/comments/${commentId}`,
-    method: "DELETE",
-    schema: z.null(),
-    auth: false,
-  });
-
 export const deleteCommentMutationOptions = (taskId: string) => {
   const { queryKey } = getCommentsQueryOptions(taskId);
   return mutationOptions({
-    mutationFn: (variables: DeleteCommentVariables) =>
-      deleteComment(taskId, variables),
+    mutationFn: async ({ commentId }: DeleteCommentVariables) =>
+      unwrapActionResult(await deleteCommentAction({ taskId, commentId })),
     onMutate: async ({ commentId }, { client }) => {
       await client.cancelQueries({ queryKey });
       const previous = client.getQueryData(queryKey);

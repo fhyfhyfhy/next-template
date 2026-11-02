@@ -15,10 +15,8 @@ import {
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useMutation } from "@/lib/react-query";
 
-import {
-  COMMENT_MAX_LENGTH,
-  createCommentMutationOptions,
-} from "../../api/create-comment";
+import { createCommentMutationOptions } from "../../api/create-comment";
+import { COMMENT_MAX_LENGTH } from "../../constants/task-rules";
 import type { DemoTaskTranslator } from "../../types/translator";
 
 const createCommentSchema = (t: DemoTaskTranslator) =>
@@ -33,13 +31,9 @@ const createCommentSchema = (t: DemoTaskTranslator) =>
       ),
   });
 
-/**
- * Clears the input on submit (the factory has already inserted the comment
- * optimistically) and puts the text back on failure, so the user's writing
- * isn't lost.
- */
+/** 提交时立即清空输入框（工厂已经乐观插入了评论），失败时把内容放回去，不丢用户写的字。 */
 export function CommentForm({ taskId }: { taskId: string }) {
-  // Disabled before hydration, for the same reason as `CreateTaskForm`.
+  // hydration 之前不可用，原因同 `CreateTaskForm`。
   const hydrated = useHydrated();
   const t = useTranslations("demo-task");
   const commentSchema = useMemo(() => createCommentSchema(t), [t]);

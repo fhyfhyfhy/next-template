@@ -5,10 +5,9 @@ import {
   navigateThroughHeader,
   resetThroughLab,
   test,
-} from "./mock-api";
+} from "./demo-backend";
 
-// The Gallery: infinite scroll owned by React Query, with its first page from
-// a snapshot in the server cache.
+// 作品广场：React Query 负责的无限滚动，第一页来自服务端缓存的快照。
 
 test.beforeEach(async ({ page }) => {
   await resetThroughLab(page);
@@ -20,11 +19,8 @@ const favorites = (page: Page) =>
   page.getByRole("list", { name: "我的收藏" }).getByRole("listitem");
 
 /**
- * Enters the Gallery through the header's navigation and waits for the first
- * page. The first page's cards are in the static shell, so a favorite clicked
- * right after a full page load can come before hydration; a client-side
- * navigation (`navigateThroughHeader`) renders the whole page in the browser,
- * ready to use once it arrives.
+ * 经导航栏进入作品广场，等第一页出现。第一页的卡片在静态 shell 里，整页打开后立即点收藏可能早于 hydration；
+ * 客户端导航（`navigateThroughHeader`）在浏览器里渲染整页，到达后就能操作。
  */
 async function openFeed(page: Page) {
   await page.goto("/demos/search");
@@ -35,17 +31,16 @@ async function openFeed(page: Page) {
 function feedRequests(page: Page) {
   const requests: Request[] = [];
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/demo/feed")
+    if (new URL(request.url()).pathname === "/api/demo/feed")
       requests.push(request);
   });
   return requests;
 }
 
-test("the first page's cards are in the server's HTML, and the browser does not request the first page again", async ({
+test("第一页的卡片在服务端返回的 HTML 里，浏览器不再请求第一页", async ({
   page,
 }) => {
-  // With the app's JS aborted, React never runs: if the cards waited for the
-  // browser to render them, there would be only the skeleton here.
+  // 拦住应用的 JS 包，React 不会运行：卡片要是等浏览器渲染，这里只有骨架屏。
   const htmlPage = await page.context().newPage();
   await htmlPage.route("**/_next/static/**", (route) =>
     route.request().resourceType() === "script"
@@ -60,17 +55,30 @@ test("the first page's cards are in the server's HTML, and the browser does not 
   const requests = feedRequests(page);
   await page.goto("/demos/feed");
   await expect(cards(page)).toHaveCount(6);
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- asserts that the first page is not requested for a while; the wait is part of the assertion
+  // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言一段时间内没有请求第一页，等待是断言的一部分。
   await page.waitForTimeout(500);
 
+  // 第一页的请求不带游标。
   expect(
-    requests.map((item) => new URL(item.url()).searchParams.get("page")),
-  ).not.toContain("1");
+    requests.filter((item) => !new URL(item.url()).searchParams.has("cursor")),
+  ).toStrictEqual([]);
 });
 
-test("scrolling to the bottom loads the next page, until there are no more", async ({
+test("翻页期间有任务完成、排进第一页的范围，下一页也不重复已显示的作品", async ({
   page,
+  demoBackend,
 }) => {
+  await openFeed(page);
+  // 复古跑车 v3 排在第一页的作品之间；它完成后，按页码翻页的话下一页会重复第一页最后一个作品。
+  await demoBackend.advance("task-16", 3);
+
+  await page.getByTestId("feed-end").scrollIntoViewIfNeeded();
+  await expect(cards(page)).toHaveCount(12);
+  const names = await cards(page).allTextContents();
+  expect(new Set(names).size).toBe(names.length);
+});
+
+test("滚动到底部时加载下一页，直到没有更多", async ({ page }) => {
   await openFeed(page);
 
   await page.getByTestId("feed-end").scrollIntoViewIfNeeded();
@@ -80,12 +88,9 @@ test("scrolling to the bottom loads the next page, until there are no more", asy
   await expect(page.getByText("没有更多作品了")).toBeVisible();
 });
 
-test('favoriting updates the card and "My favorites" together, at once', async ({
-  page,
-  mockApi,
-}) => {
-  await mockApi.setFaults([
-    { method: "PUT", path: "/demo/tasks/:id/favorite", latency_ms: 1500 },
+test("收藏时卡片和“我的收藏”同时立即更新", async ({ page, demoBackend }) => {
+  await demoBackend.setFaults([
+    { operation: "task.setFavorite", kind: "latency", latencyMs: 1500 },
   ]);
   await openFeed(page);
   await expect(favorites(page)).toHaveCount(4);
@@ -101,17 +106,16 @@ test('favoriting updates the card and "My favorites" together, at once', async (
   await expect(favorites(page).first()).toContainText("多肉高模");
 });
 
-test('a failed favorite rolls back the card and "My favorites" together, with a single global toast', async ({
+test("收藏失败时卡片和“我的收藏”一起回滚，只弹一个全局提示", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
-  await mockApi.setFaults([
-    { method: "PUT", path: "/demo/tasks/:id/favorite", status: 500 },
+  await demoBackend.setFaults([
+    { operation: "task.setFavorite", kind: "unexpected" },
   ]);
   await openFeed(page);
   await expect(favorites(page)).toHaveCount(4);
-  // A work on the first page that is already a favorite: after a failed
-  // unfavorite it must still be one.
+  // 第一页里已收藏的作品：取消收藏失败后应当仍是已收藏。
   const card = cards(page).filter({ hasText: "薄荷绿跑车" });
 
   await card.getByRole("button", { name: "收藏" }).click();
@@ -124,9 +128,7 @@ test('a failed favorite rolls back the card and "My favorites" together, with a 
   await expect(favorites(page)).toHaveCount(4);
 });
 
-test("a favorite made in the Gallery shows on the list page at once", async ({
-  page,
-}) => {
+test("在作品广场收藏后，列表页立即显示已收藏", async ({ page }) => {
   await openFeed(page);
   const card = cards(page).filter({ hasText: "多肉高模" });
   await card.getByRole("button", { name: "收藏" }).click();
@@ -140,11 +142,10 @@ test("a favorite made in the Gallery shows on the list page at once", async ({
   );
 });
 
-test('after favoriting on All tasks, back in the Gallery the card and "My favorites" are both updated', async ({
+test("在全部任务页收藏后回到作品广场，卡片和“我的收藏”都已更新", async ({
   page,
 }) => {
-  // Client-side navigation throughout: the browser's React Query cache stays,
-  // which is exactly when it could show stale favorites.
+  // 全程客户端导航：浏览器里的 React Query 缓存一直保留，这正是它可能显示旧收藏的情形。
   await page.goto("/demos/search");
   await navigateThroughHeader(page, "作品广场", "/demos/feed");
   await expect(favorites(page)).toHaveCount(4);
@@ -169,7 +170,7 @@ test('after favoriting on All tasks, back in the Gallery the card and "My favori
   await expect(favorites(page).first()).toContainText("多肉高模");
 });
 
-test("favoriting a first-page work after the second page loads does not replace the loaded pages", async ({
+test("加载到第二页后收藏第一页的作品，已加载的页不会被换掉", async ({
   page,
 }) => {
   await openFeed(page);
@@ -185,27 +186,24 @@ test("favoriting a first-page work after the second page loads does not replace 
     .click();
   await saved;
 
-  // Were the loaded pages replaced by the first page alone, the second would
-  // soon load again, and the final card count would not show it: read the
-  // count throughout the 2 s after the Server Action brings the page back, and
-  // keep the minimum.
+  // 已加载的页被换回第一页之后，第二页很快又会加载回来，只看最后的卡片数看不出来：
+  // Server Action 带回页面之后的 2 秒里一直读卡片数，记下最小值。
   let fewest = await cards(page).count();
   const until = Date.now() + 2000;
   while (Date.now() < until) {
     fewest = Math.min(fewest, await cards(page).count());
   }
-  // eslint-disable-next-line playwright/prefer-to-have-count -- fewest is the minimum over a period, and toHaveCount can only assert the current count
+  // eslint-disable-next-line playwright/prefer-to-have-count -- fewest 是一段时间里的最小值，toHaveCount 只能断言当前的数量。
   expect(fewest).toBe(12);
 });
 
-test('favoriting an older work puts it straight into its place by creation time in "My favorites"', async ({
+test("收藏一个较早的作品，“我的收藏”里它直接出现在按创建时间排好的位置", async ({
   page,
-  mockApi,
+  demoBackend,
 }) => {
-  // The favorite request is slowed down: the assertion is on the optimistic
-  // order, before the request returns.
-  await mockApi.setFaults([
-    { method: "PUT", path: "/demo/tasks/:id/favorite", latency_ms: 3000 },
+  // 拖慢收藏请求：断言的是请求返回之前，乐观更新时的顺序。
+  await demoBackend.setFaults([
+    { operation: "task.setFavorite", kind: "latency", latencyMs: 3000 },
   ]);
   await openFeed(page);
   await expect(favorites(page)).toHaveCount(4);

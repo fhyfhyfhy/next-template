@@ -16,7 +16,7 @@ function read(): string {
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
-  // Also update when another tab writes.
+  // 其他标签页写入时也更新。
   window.addEventListener("storage", listener);
   return () => {
     listeners.delete(listener);
@@ -36,12 +36,9 @@ function parse(raw: string): string[] {
 }
 
 /**
- * The ids of recently viewed tasks, stored in localStorage, newest first. The
- * server and the first hydration pass can't read localStorage and get `null`,
- * which tells callers to defer the requests that depend on it. Not
- * `useHydrated`: this also has to follow this page's writes and other tabs'
- * `storage` events, and `useSyncExternalStore`'s server snapshot of `null`
- * doubles as the before-hydration check.
+ * 最近查看过的任务 id，存在 localStorage，最新的在前。服务端和 hydration 首轮拿不到 localStorage，
+ * 这时返回 `null`，调用方据此推迟依赖它的请求。没用 `useHydrated`：这里还要跟着本页的记录和其他标签页的
+ * `storage` 事件更新，`useSyncExternalStore` 的服务端快照 `null` 同时承担了 hydration 前的判断。
  */
 export function useRecentTaskIds() {
   const raw = useSyncExternalStore(subscribe, read, () => null);

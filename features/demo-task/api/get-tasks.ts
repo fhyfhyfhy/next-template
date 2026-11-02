@@ -1,42 +1,19 @@
-import type { z } from "zod";
-
-import { fetchApi, pageSchema } from "@/lib/fetch";
+import { fetchApi } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
 
+import { taskPageSchema } from "../types/task";
 import type { TaskFilters } from "../types/task-filters";
-import { taskSchema } from "./get-task";
 
-/**
- * The query key prefix of every task-list query; invalidating it refreshes the
- * plain lists, the Gallery and search results.
- */
+export type { TaskPage } from "../types/task";
+
+/** 所有任务列表形态的 query key 前缀，invalidate 它会刷新普通列表、作品广场和搜索结果。 */
 export const taskListKey = ["demo-task", "task", "list"] as const;
 
-export const taskPageSchema = pageSchema(taskSchema);
-export type TaskPage = z.infer<typeof taskPageSchema>;
-
-export const getTasks = ({
-  status,
-  favorite,
-  prompt,
-  excludeId,
-  sort,
-  page,
-  pageSize,
-}: TaskFilters) =>
+const getTasks = (filters: TaskFilters) =>
   fetchApi({
-    url: "/demo/tasks",
-    params: {
-      status,
-      favorite,
-      prompt,
-      exclude_id: excludeId,
-      sort,
-      page,
-      page_size: pageSize,
-    },
+    url: "/api/demo/tasks",
+    params: { ...filters },
     schema: taskPageSchema,
-    auth: false,
   });
 
 export const getTasksQueryOptions = (filters: TaskFilters) =>
@@ -45,21 +22,14 @@ export const getTasksQueryOptions = (filters: TaskFilters) =>
     queryFn: () => getTasks(filters),
   });
 
-/**
- * The "My favorites" sidebar's list, newest first by creation time; an
- * optimistic favorite inserts tasks in the same order
- * (update-task-favorite.ts).
- */
+/** “我的收藏”侧栏的列表，按创建时间从新到旧；收藏的乐观更新按同样的顺序加入任务（update-task-favorite.ts）。 */
 export const favoriteTasksQueryOptions = () =>
   getTasksQueryOptions({ favorite: true, sort: "created_desc", pageSize: 50 });
 
 /**
- * The active tasks: the header badge shows their total, and the All tasks page
- * compares their ids and statuses and reads the list again on a change. Tasks
- * advance on their own and must refresh as soon as the tab regains focus, so
- * this doesn't use the global 60-second staleTime. One page fetches up to the
- * Mock API's limit of 50; beyond that `hasMore` is true and the rest show only
- * in `total`.
+ * 进行中的任务：header 徽标显示总数，全部任务页比较其中的 id 和状态，有变化就重新读取列表。
+ * 任务会自己推进，标签页重新获得焦点时要立即刷新，所以不沿用全局 60 秒的 staleTime。
+ * 一页取到上限 50 条；超过时 `hasMore` 为 true，之后的任务只体现在 `total` 里。
  */
 export const activeTasksQueryOptions = () =>
   queryOptions({

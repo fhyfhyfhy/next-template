@@ -1,69 +1,87 @@
-import type { MockFault } from "../../api/get-mock-faults";
-import { INJECTED_FAILURE_CODE } from "../../constants/mock-faults";
-import type { MockFaultInput } from "../../hooks/use-inject-mock-fault";
+import { INJECTED_FAILURE_CODE } from "../../constants/demo-faults";
+import type { DemoFaultInput } from "../../hooks/use-inject-demo-fault";
+import type { DemoFault, DemoOperation } from "../../types/demo-fault";
 import type { DemoTaskTranslator } from "../../types/translator";
 
 /**
- * The fault kinds the fault form can add, and the fields each writes into the
- * Mock API's fault config. To add a kind, add a row here, its name under
- * `faultForm.kinds` in the `demo-task` messages, and its description in
- * `describeFault` below.
+ * 故障表单能添加的故障类型，以及它们写进故障配置的字段（各类型的效果见 types/demo-fault.ts）。加一种类型时在这里
+ * 加一行，在 `demo-task` 文案的 `faultForm.kinds` 下加它的名称，并在下面的 `describeFault` 里描述它。
  */
 export const FAULT_KINDS = [
-  { value: "latency", labelKey: "latency", fault: { latencyMs: 2000 } },
-  { value: "4xx", labelKey: "clientError", fault: { status: 409 } },
-  { value: "5xx", labelKey: "serverError", fault: { status: 503 } },
   {
-    value: "code",
-    labelKey: "errorBody",
-    fault: { code: INJECTED_FAILURE_CODE },
+    value: "latency",
+    labelKey: "latency",
+    fault: { kind: "latency", latencyMs: 2000 },
   },
-  { value: "malformed", labelKey: "malformed", fault: { malformed: true } },
+  {
+    value: "unexpected",
+    labelKey: "unexpected",
+    fault: { kind: "unexpected" },
+  },
+  {
+    value: "4xx",
+    labelKey: "clientError",
+    fault: { kind: "httpStatus", status: 409 },
+  },
+  {
+    value: "5xx",
+    labelKey: "serverError",
+    fault: { kind: "httpStatus", status: 503 },
+  },
+  {
+    value: "errorOnSuccess",
+    labelKey: "errorBody",
+    fault: { kind: "errorOnSuccess", code: INJECTED_FAILURE_CODE },
+  },
+  { value: "malformed", labelKey: "malformed", fault: { kind: "malformed" } },
 ] as const satisfies readonly {
   value: string;
-  /** The key under `faultForm.kinds` in the `demo-task` messages. */
+  /** `demo-task` 文案 `faultForm.kinds` 下的 key。 */
   labelKey: string;
-  fault: Omit<MockFaultInput, "method" | "path" | "times">;
+  fault: Omit<DemoFaultInput, "operation" | "times">;
 }[];
-export type FaultKind = (typeof FAULT_KINDS)[number]["value"];
+export type FaultKindOption = (typeof FAULT_KINDS)[number]["value"];
 
-/**
- * The fault config for one choice in the form; `useInjectMockFault` fills the
- * fields left out with values that have no effect.
- */
+/** 表单的一次选择对应的故障配置；没写的字段由 `useInjectDemoFault` 补成“不生效”。 */
 export function toFault(
-  endpoint: string,
-  kind: FaultKind,
+  operation: DemoOperation,
+  kind: FaultKindOption,
   times: number | null,
-): MockFaultInput {
-  const [method, path] = endpoint.split(" ");
-  const fault = FAULT_KINDS.find((item) => item.value === kind)?.fault;
-  return { method, path, ...fault, times };
+): DemoFaultInput {
+  const option =
+    FAULT_KINDS.find((item) => item.value === kind) ?? FAULT_KINDS[0];
+  return { operation, ...option.fault, times };
 }
 
 /**
- * One line describing a fault in the fault list. A config can also come from
- * elsewhere, such as e2e, so this goes by its fields, not by the form's kinds.
- * Status codes, error codes and milliseconds go to `t()` as strings: as numbers
- * they would be formatted with thousands separators.
+ * 故障列表里的一行说明。配置也可能来自 e2e 等其他来源，所以按字段判断，不按表单的类型。
+ * 状态码、错误码和毫秒数按字符串传给 `t()`：按数字传会被格式化成带千分位的写法。
  */
-export function describeFault(fault: MockFault, t: DemoTaskTranslator) {
-  const effect = fault.status
-    ? t("faultPanel.effects.status", { status: String(fault.status) })
-    : fault.code
-      ? t("faultPanel.effects.errorBody", { code: String(fault.code) })
-      : fault.malformed
-        ? t("faultPanel.effects.malformed")
-        : t("faultPanel.effects.latency", {
-            latencyMs: String(fault.latencyMs),
-          });
+export function describeFault(fault: DemoFault, t: DemoTaskTranslator) {
+  const effect =
+    fault.kind === "httpStatus"
+      ? t("faultPanel.effects.status", { status: String(fault.status) })
+      : fault.kind === "errorOnSuccess"
+        ? t("faultPanel.effects.errorBody", {
+            code: String(fault.code ?? INJECTED_FAILURE_CODE),
+          })
+        : fault.kind === "malformed"
+          ? t("faultPanel.effects.malformed")
+          : fault.kind === "unexpected"
+            ? t("faultPanel.effects.unexpected")
+            : fault.kind === "businessError"
+              ? t("faultPanel.effects.businessError", {
+                  code: String(fault.code),
+                })
+              : t("faultPanel.effects.latency", {
+                  latencyMs: String(fault.latencyMs),
+                });
   const times =
     fault.times === null
       ? t("faultForm.always")
       : t("faultPanel.timesLeft", { count: fault.times });
   return t("faultPanel.faultRow", {
-    method: fault.method,
-    path: fault.path,
+    operation: fault.operation,
     effect,
     times,
   });

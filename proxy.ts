@@ -5,18 +5,15 @@ import { DEMOS_SERVED } from "@/lib/demos";
 import { routing } from "@/lib/i18n/routing";
 
 /**
- * Takes the locale from the URL's prefix, then the `NEXT_LOCALE` cookie, then
- * `Accept-Language`: a default-locale request is rewritten to `/{locale}/...`,
- * and one for another locale without its prefix is redirected to add it
- * (docs/adr/0002-locale-routing-as-needed-prefix.md).
+ * 按 URL 前缀、`NEXT_LOCALE` cookie、`Accept-Language` 的顺序决定 locale：默认 locale 的请求 rewrite 到
+ * `/{locale}/...`，其他 locale 缺前缀时重定向补上（docs/adr/0002-locale-routing-as-needed-prefix.md）。
  */
 const localeProxy = createMiddleware(routing);
 
-// /demos and the paths under it, with or without a locale prefix. Matched
-// against nextUrl.pathname, which has the basePath taken off.
+// /demos 及其下的路径，带不带 locale 前缀都算。匹配的是 nextUrl.pathname，它已经去掉了 basePath。
 const DEMO_PATH = new RegExp(`^(/(${routing.locales.join("|")}))?/demos(/|$)`);
 
-/** A build that serves no demos (lib/demos.ts) answers 404 for them. */
+/** 不提供 Demo 的 build（lib/demos.ts）对它们返回 404。 */
 export default function proxy(request: NextRequest) {
   if (!DEMOS_SERVED && DEMO_PATH.test(request.nextUrl.pathname))
     return new NextResponse("Not found\n", {
@@ -27,6 +24,6 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skips Next's internal paths and static files with an extension.
+  // 跳过 Next 内部路径和带扩展名的静态文件。
   matcher: "/((?!api|_next|_vercel|.*\\..*).*)",
 };

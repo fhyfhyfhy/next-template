@@ -13,28 +13,27 @@ import {
 } from "@/components/ui/dialog";
 
 export const metadata = {
-  title: "Basic usage",
-  description: "Has every import and the structure it needs; copy it as is.",
+  title: "基本用法",
+  description: "包含完整 import 与必要结构，可直接复制。",
   order: 10,
 };
 
-/** The caller composes every Base UI part explicitly. */
+/** 每个 Base UI 部件都在调用方显式组合。 */
 export function Example() {
   return (
     <DialogRoot>
       <DialogTrigger render={<Button variant="outline" />}>
-        View details
+        查看详情
       </DialogTrigger>
       <DialogPortal>
         <DialogBackdrop />
         <DialogPopup>
-          <DialogTitle>A component system of your own</DialogTitle>
+          <DialogTitle>属于你的组件系统</DialogTitle>
           <DialogDescription>
-            Each part keeps its own API, so you compose the interaction the page
-            needs.
+            保留各部件的独立 API，组合出适合当前页面的交互。
           </DialogDescription>
           <div className="mt-6 flex justify-end">
-            <DialogClose render={<Button />}>Close</DialogClose>
+            <DialogClose render={<Button />}>关闭</DialogClose>
           </div>
         </DialogPopup>
       </DialogPortal>
