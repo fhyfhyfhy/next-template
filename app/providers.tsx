@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 
 import { toast, Toaster } from "@/components/ui/toaster";
@@ -62,11 +63,22 @@ interface ProvidersProps {
   children: ReactNode;
 }
 
+/**
+ * 浏览器端的 context provider 都放在这里。要在服务端读数据的 `RootClientMessages` 留在根 layout、包在外面：
+ * 这是 Client Component，渲染不了 Server Component，而这里的 `RequestErrorMessage` 要用它下发的文案。
+ */
 export function Providers({ children }: ProvidersProps) {
   return (
-    <QueryClientProvider client={getQueryClient()}>
-      {children}
-      <Toaster />
-    </QueryClientProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <QueryClientProvider client={getQueryClient()}>
+        {children}
+        <Toaster />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
