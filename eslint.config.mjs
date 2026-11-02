@@ -299,7 +299,7 @@ const eslintConfig = defineConfig([
     plugins: { i18n: createI18nPlugin(PROJECT_ROOT) },
     rules: {
       // 每个 ClientMessages 发的 namespace 和它下面 Client Component 用到的一致，--fix 改写列表。
-      // 分析整个项目，lint 不能加 --cache（.claude/rules/i18n.md）。
+      // 分析整个项目，一个文件的结果取决于别的文件，lint 不能加 --cache。
       "i18n/client-namespaces": "error",
     },
   },
