@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import { DatabaseError } from "pg";
 
 import { badRequest, conflict, notFound } from "@/lib/domain-error";
+import { requireEnv } from "@/lib/env";
 
 import {
   UPLOAD_ALREADY_USED,
@@ -292,7 +293,7 @@ export async function restoreSeedUploads(
   uploads: readonly SeedUpload[],
   executor?: Executor,
 ) {
-  const bucket = process.env.DEMO_STORAGE_BUCKET ?? "";
+  const bucket = requireEnv("DEMO_STORAGE_BUCKET");
   if (!writtenSeedBuckets.has(bucket)) {
     const storage = getUploadStorage();
     await Promise.all(

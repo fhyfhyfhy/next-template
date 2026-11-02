@@ -15,7 +15,7 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `demo:` 
 
 ## Demo
 
-`/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it. They are served only under `pnpm dev` and the `pnpm demo:*` scripts: a plain production build (`pnpm build`, `pnpm start`) answers 404 for every `/demos` page, and its home page is a placeholder without a link to them (`lib/demos.ts`).
+`/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it. They are served only under `pnpm dev` and the `pnpm demo:*` scripts: a plain production build (`pnpm build`, `pnpm start`) answers 404 for every `/demos` page, and its home page is a placeholder without a link to them (`app/demos.ts`).
 
 - **UI demo** (`/demos/ui`): the design-system components; see [UI demo examples](#ui-demo-examples).
 - **Data demo** (the other `/demos` pages): a small task app that exercises the data-fetching rules against the Demo backend. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.

@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// 项目自己的 e2e（pnpm test:e2e），对着生产构建运行，生产构建不提供 Demo（lib/demos.ts）；e2e/demo/ 下 Demo 的 e2e
+// 项目自己的 e2e（pnpm test:e2e），对着生产构建运行，生产构建不提供 Demo（app/demos.ts）；e2e/demo/ 下 Demo 的 e2e
 // 是另一套（playwright.demo.config.ts）。
 // 端口避开 3000 起 dev/start 自动顺延的那几个端口，也和 Data demo e2e 的 3999 错开，两套可以同时跑。
 // 同一台机器上另一份 checkout 也在跑 e2e 时，用 E2E_PORT 换一个端口。

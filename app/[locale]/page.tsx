@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
-import { DEMOS_SERVED } from "@/lib/demos";
+import { DEMOS_SERVED } from "@/app/demos";
 import { Link } from "@/lib/i18n/navigation";
 
 export default async function Home() {

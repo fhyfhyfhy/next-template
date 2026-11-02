@@ -123,10 +123,24 @@ const DATE_TIME_FORMATTING = [
   },
 ];
 
+// 应用的部署设置的环境变量只通过 lib/env.ts 读。Node 和 Next 定义的变量直接读，只放行 `process.env.名字`
+// 这种写法：打包器只替换这种写法（.claude/rules/architecture.md「Environment variables」）。
+const FRAMEWORK_ENV = "/^(NODE_ENV|(__)?NEXT_(?!PUBLIC_)\\w+)$/";
+const ENV_ACCESS = [
+  {
+    selector: `MemberExpression[object.name='process'][property.name='env']:not(MemberExpression[computed=false][property.name=${FRAMEWORK_ENV}] > .object)`,
+    message:
+      "Read environment variables with readEnv or requireEnv from @/lib/env, which declares and validates them. See .claude/rules/architecture.md.",
+  },
+];
+
 // 所有应用代码都受的 no-restricted-syntax 限制。
-const RESTRICTED_SYNTAX = [...DATE_TIME_FORMATTING];
+const RESTRICTED_SYNTAX = [...DATE_TIME_FORMATTING, ...ENV_ACCESS];
 const DATE_TIME_EXEMPT = RESTRICTED_SYNTAX.filter(
   (restriction) => !DATE_TIME_FORMATTING.includes(restriction),
+);
+const ENV_EXEMPT = RESTRICTED_SYNTAX.filter(
+  (restriction) => !ENV_ACCESS.includes(restriction),
 );
 
 // 会进页面的代码，包括 monorepo 里 workspace 包的源码；scripts/、e2e/、测试和根目录的配置文件不进页面。
@@ -291,6 +305,11 @@ const eslintConfig = defineConfig([
     rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
   },
   {
+    // Next 在应用进程里加载的根目录文件也是应用代码；APPLICATION_CODE 排除根目录，是为了跳过各种工具的配置文件。
+    files: [`{proxy,instrumentation}.${extensionGlob}`],
+    rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
+  },
+  {
     ...APPLICATION_CODE,
     plugins: { i18n: createI18nPlugin(PROJECT_ROOT) },
     rules: {
@@ -345,6 +364,15 @@ const eslintConfig = defineConfig([
     rules: {
       "no-restricted-syntax": DATE_TIME_EXEMPT.length
         ? ["error", ...DATE_TIME_EXEMPT]
+        : "off",
+    },
+  },
+  {
+    // 唯一读应用环境变量的地方，其他限制照旧。
+    files: ["lib/env.ts"],
+    rules: {
+      "no-restricted-syntax": ENV_EXEMPT.length
+        ? ["error", ...ENV_EXEMPT]
         : "off",
     },
   },

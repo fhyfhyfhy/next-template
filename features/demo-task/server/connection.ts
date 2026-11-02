@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createDb } from "@/lib/db";
+import { readEnv, requireEnv } from "@/lib/env";
 
 import type { TaskTables } from "./tables";
 
@@ -11,7 +12,7 @@ import type { TaskTables } from "./tables";
  * layout 只显示说明时 page 里的读取照样执行；Server Action 和 Route Handler 也能被直接请求。
  */
 export function isDemoBackendEnabled() {
-  return Boolean(process.env.DEMO_DATABASE_URL);
+  return readEnv("DEMO_DATABASE_URL") !== undefined;
 }
 
 /** Server Action 和控制入口先调用它，Demo 后端没有启用时拒绝执行。 */
@@ -25,5 +26,5 @@ export function assertDemoBackendEnabled() {
 
 export function getTaskDb() {
   assertDemoBackendEnabled();
-  return createDb<TaskTables>(process.env.DEMO_DATABASE_URL ?? "");
+  return createDb<TaskTables>(requireEnv("DEMO_DATABASE_URL"));
 }

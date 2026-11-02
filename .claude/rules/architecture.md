@@ -92,17 +92,27 @@ Root shared code provides domain-neutral behavior with stable, reusable interfac
 | `utils/` | `clamp`, `formatBytes` | `calculateOrderTotal`, `canDeleteTask` |
 | `constants/` | Keyboard keys, design tokens | Subscription tiers, task status values |
 | `types/` | Generic pagination contracts | `User`, `Task`, `Order` |
-| `lib/` | Transport and framework adapters | Pricing, permission, and workflow policies |
+| `lib/` | Transport and framework adapters, reading environment variables | Pricing, permission, and workflow policies |
 
 `components/ui/` may use generic hooks for focus, measurement, keyboard handling, or controlled state, and declared providers for theme or locale. Feature components supply business data and actions. The same ownership rule applies transitively: a shared helper or adapter must not hide a dependency on a business policy.
 
-When a module mixes general behavior with business rules, keep the business part in its feature and extract only the stable general part. If multiple features need composition, their caller can assemble them without moving their business implementations into root directories.
+When a module mixes general behavior with business rules, keep the business part in its feature and extract only the stable general part. If multiple features need composition, their caller can assemble them without moving their business implementations into root directories. Composition and policies that belong to the whole app rather than one feature, such as which builds serve the Demo (`app/demos.ts`), live in `app/` beside the routes, as `app/providers.tsx` does; Next routes only its special file names, so these modules add no routes.
 
 Architecture checks are configured in [eslint.config.mjs](../../eslint.config.mjs). Feature cycles include type-only dependencies and may exist without file cycles. Run without ESLint's per-file `--cache`, since other files can change a feature's cycle status. Domain ownership and provider requirements are checked during review; directory placement alone does not prove that code is domain-neutral.
 
 ### Package imports
 
 The project has no conditional `#` package imports. The `architecture/package-imports` rule rejects them: their resolution depends on the runtime condition, which the layer and cycle checks do not follow. Import project modules through `@/` or relative paths; extend the architecture checks before introducing one.
+
+### Environment variables
+
+Application code, `proxy.ts`, and `instrumentation.ts` read the variables the app's deployment sets through `readEnv` and `requireEnv` from `lib/env.ts`, which lists each one with its schema; add a variable there before reading it. `lib/env.ts` only reads and validates. What a value means belongs to the owner that acts on it, such as `isDemoBackendEnabled` in `features/demo-task/server/connection.ts` and `DEMOS_SERVED` in `app/demos.ts`.
+
+Variables that Node and Next define, `NODE_ENV` and those starting with `NEXT_` except `NEXT_PUBLIC_`, are read as `process.env.NAME`: the bundler replaces some of them, such as `NODE_ENV` and `NEXT_RUNTIME`, with constants and drops the branches they rule out.
+
+`lib/env.ts` is server-only. A `NEXT_PUBLIC_` variable for the browser goes in a module of its own that reads it as `process.env.NAME`, the only form Next inlines, with its own exemption in the ESLint rule.
+
+`no-restricted-syntax` in [eslint.config.mjs](../../eslint.config.mjs) enforces this. Config files and `scripts/` run outside the app and read `process.env` directly.
 
 ### Component directories
 
