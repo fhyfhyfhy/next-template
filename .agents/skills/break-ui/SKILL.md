@@ -104,7 +104,7 @@ Each of these appears in the screenshot. The cause in the right column is almost
 | Long word breaks mid-word in a heading | `word-break: break-all` | `overflow-wrap: anywhere` breaks only when it has to |
 | Wrong initials (`"J"` for "Jo", `"CI"` for "… Montgomery III", `"�"` for an emoji-first name) | `.split(' ')[0][0]` style code | Initials from grapheme clusters (`Intl.Segmenter`), first + last word, fallback icon |
 | Orphaned `—` or empty line where the role was | Placeholder rendered for a missing optional field | Omit the line, or reserve its height intentionally |
-| "1 members", "0 member" | Hardcoded plural | `Intl.PluralRules`, or separate strings per count |
+| "1 members", "0 member" | Hardcoded plural | An ICU plural in the message, such as `{count, plural, one {# member} other {# members}}`, rendered with `t()` (`.claude/rules/i18n.md`) |
 | Numbers jitter when they update, columns misalign | Proportional figures | `font-variant-numeric: tabular-nums` |
 | `1284`, `1,284.000000001`, `NaN`, `undefined` | Raw number rendered | next-intl's `useFormatter` or `getFormatter` (`.claude/rules/i18n.md`); guard null |
 | Long translated button label overflows | Fixed-width button | Width from content with `min-width`, never a fixed `width` |
@@ -146,7 +146,7 @@ One row per break, worst first. Severity: **Broken** (content unreadable, action
 | --- | --- | --- | --- | --- | --- |
 | 1 | Broken | `email` | `bartholomew.fitzgerald@northwind-industries-holdings.example.com` | Pushes the ••• menu off the row; menu unreachable at 400px | `min-width: 0` on text column, `overflow-wrap: anywhere` on email, `flex-shrink: 0` on menu |
 | 2 | Ugly | avatar | name with long email | Avatar squishes to a 28×56 pill | `flex-shrink: 0` on avatar |
-| 3 | Ugly | `count` | 1 | "1 members" | `Intl.PluralRules` |
+| 3 | Ugly | `count` | 1 | "1 members" | ICU plural in the message |
 | 4 | Fragile | `name` | — | No max length in schema or form | Add a limit in both, matching |
 
 Every row has `file:line` for the fix location in the Fix cell or directly below the table.
