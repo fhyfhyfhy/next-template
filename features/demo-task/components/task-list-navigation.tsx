@@ -8,7 +8,7 @@ import {
   useOptimistic,
 } from "react";
 
-import { useRouter } from "@/lib/i18n-navigation";
+import { useRouter } from "@/lib/i18n/navigation";
 
 import { taskListHref, type TaskListParams } from "../utils/task-urls";
 

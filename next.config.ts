@@ -1,14 +1,16 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
+import { BASE_PATH } from "./lib/base-path";
 import { buildDir } from "./scripts/build-dirs.mjs";
 
-const withNextIntl = createNextIntlPlugin("./lib/i18n-request.ts");
+const withNextIntl = createNextIntlPlugin("./lib/i18n/request.ts");
 
 // 每种产物各放一个目录，规则和要同步排除它们的文件见 scripts/build-dirs.mjs。
 const distDir = buildDir(process.env);
 
 const nextConfig: NextConfig = {
+  basePath: BASE_PATH,
   distDir,
   cacheComponents: true,
   // 内置的内存 handler 在生产环境过了 cacheLife 的 revalidate 就丢弃条目，请求只能同步等新数据；

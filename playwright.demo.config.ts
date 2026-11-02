@@ -1,14 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // 默认用不常用的端口：避开 3000 起 dev/start 自动顺延的那几个端口，也和项目 e2e 的 3998（playwright.config.ts）错开。
-// 同一台机器上另一份 checkout 也在跑 Data demo e2e 时，用 DEMO_E2E_PORT 换端口；两份 checkout 共用 compose 里的
+// 同一台机器上另一份 checkout 也在跑 Demo 的 e2e 时，用 DEMO_E2E_PORT 换端口；两份 checkout 共用 compose 里的
 // demo_e2e 库，不能同时跑。
 const PORT = Number(process.env.DEMO_E2E_PORT ?? 3999);
 const BASE_URL = `http://localhost:${PORT}`;
 
-// Data demo 的 e2e（pnpm demo:test:e2e）：对着启用了 Demo 后端的生产构建运行，缓存新鲜度和 prefetch 只有在 next start 下才可信。
-// 默认总是自己 build 并启动；调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务（比如设 DEMO_DATASET=e2e
-// 后运行 pnpm demo:dev --port 3999，让它用 e2e 的数据集），这时依赖生产行为的用例（如预取）会失败。
+// Demo 的 e2e（pnpm demo:test:e2e）：对着启用了 Demo 后端的 demo 生产构建运行，缓存新鲜度和 prefetch 只有在
+// next start 下才可信。默认总是自己 build 并启动；调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务（比如设
+// DEMO_DATASET=e2e 后运行 pnpm demo:dev --port 3999，让它用 e2e 的数据集），这时依赖生产行为的用例（如预取）会失败。
 export default defineConfig({
   testDir: "./e2e/demo",
   // 和项目 e2e（playwright.config.ts）分开输出目录，同时跑时互不清空。

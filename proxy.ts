@@ -1,12 +1,27 @@
+import { type NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 
-import { routing } from "@/lib/i18n-routing";
+import { DEMOS_SERVED } from "@/lib/demos";
+import { routing } from "@/lib/i18n/routing";
 
 /**
  * 按 URL 前缀、`NEXT_LOCALE` cookie、`Accept-Language` 的顺序决定 locale：默认 locale 的请求 rewrite 到
  * `/{locale}/...`，其他 locale 缺前缀时重定向补上（docs/adr/0002-locale-routing-as-needed-prefix.md）。
  */
-export default createMiddleware(routing);
+const localeProxy = createMiddleware(routing);
+
+// /demos 及其下的路径，带不带 locale 前缀都算。匹配的是 nextUrl.pathname，它已经去掉了 basePath。
+const DEMO_PATH = new RegExp(`^(/(${routing.locales.join("|")}))?/demos(/|$)`);
+
+/** 不提供 Demo 的 build（lib/demos.ts）对它们返回 404。 */
+export default function proxy(request: NextRequest) {
+  if (!DEMOS_SERVED && DEMO_PATH.test(request.nextUrl.pathname))
+    return new NextResponse("Not found\n", {
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  return localeProxy(request);
+}
 
 export const config = {
   // 跳过 Next 内部路径和带扩展名的静态文件。

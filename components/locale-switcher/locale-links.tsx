@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 
-import { usePathname } from "@/lib/i18n-navigation";
+import { usePathname } from "@/lib/i18n/navigation";
 
 import { LocaleItems } from "./locale-items";
 

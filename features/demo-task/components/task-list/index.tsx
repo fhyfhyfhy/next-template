@@ -1,9 +1,10 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { use } from "react";
 
-import { Link } from "@/lib/i18n-navigation";
+import { DateTime } from "@/components/date-time";
+import { Link } from "@/lib/i18n/navigation";
 
 import type { TaskPage } from "../../api/get-tasks";
 import { DATE_TIME_FORMAT } from "../../constants/date-time";
@@ -26,7 +27,6 @@ interface TaskListProps {
 
 export function TaskList({ tasksPromise, params }: TaskListProps) {
   const t = useTranslations("demo-task.taskList");
-  const format = useFormatter();
   const { items, total, hasMore } = use(tasksPromise);
   const { pending, navigate } = useTaskListNavigation(params);
   useRefreshTaskListWhenActiveChanges(items);
@@ -61,7 +61,7 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
                   {task.name}
                 </Link>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {format.dateTime(task.createdAt, DATE_TIME_FORMAT)}
+                  <DateTime value={task.createdAt} format={DATE_TIME_FORMAT} />
                 </p>
               </div>
               <TaskStatusBadge status={task.status} />

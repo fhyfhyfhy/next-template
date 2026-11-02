@@ -2,9 +2,10 @@
 
 import { useLocale } from "next-intl";
 
+import { BASE_PATH } from "@/lib/base-path";
 import { cn } from "@/lib/cn";
-import { getPathname } from "@/lib/i18n-navigation";
-import { type Locale, routing } from "@/lib/i18n-routing";
+import { getPathname } from "@/lib/i18n/navigation";
+import { type Locale, routing } from "@/lib/i18n/routing";
 
 // 每种语言用它自己的写法显示，不随当前 locale 翻译，用户才认得出自己的语言；加 locale 时类型检查会要求补上。
 const LOCALE_NAMES: Record<Locale, string> = {
@@ -53,7 +54,8 @@ export function LocaleItems({ href }: LocaleItemsProps) {
     return (
       <a
         key={locale}
-        href={getPathname({ href, locale, forcePrefix: true })}
+        // 普通的 <a>：Next 只给自己的链接加 basePath，这里要自己加。
+        href={BASE_PATH + getPathname({ href, locale, forcePrefix: true })}
         lang={locale}
         hrefLang={locale}
         className={itemClassName}

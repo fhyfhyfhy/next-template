@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Link } from "@/lib/i18n-navigation";
+import { Link } from "@/lib/i18n/navigation";
 
 export const metadata = {
   title: "操作层级与链接",

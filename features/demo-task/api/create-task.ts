@@ -1,4 +1,4 @@
-import type { Locale } from "@/lib/i18n-routing";
+import type { Locale } from "@/lib/i18n/routing";
 import { mutationOptions } from "@/lib/react-query";
 
 import { TASK_NAME_TAKEN } from "../constants/error-codes";

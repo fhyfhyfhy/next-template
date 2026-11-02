@@ -1,7 +1,7 @@
-import { expect, test } from "./test";
+import { expect, test } from "./demo-backend";
 
 // 路由规则见 docs/adr/0002-locale-routing-as-needed-prefix.md：默认 locale（zh）不带前缀，en 在 /en 下。
-// playwright.config.ts 把浏览器的语言设成 zh-CN，下面需要英文浏览器的用例单独设置。
+// Playwright 配置把浏览器的语言设成 zh-CN，下面需要英文浏览器的用例单独设置。
 
 test("en 的页面带 /en 前缀，整页渲染英文", async ({ page }) => {
   await page.goto("/en/demos");

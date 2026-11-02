@@ -69,9 +69,11 @@ Same ordering rule: each layer may import from the same layer and any layer belo
 ### Where files go
 
 - Use only the directories in the two tables above. To add a new kind of directory, update this document first.
-- Browser end-to-end specs live in top-level `e2e/`, outside the layers. They observe the app through the browser and import no application code; ESLint enforces this. The Data demo's specs live in `e2e/demo/` and also drive the Demo backend's control endpoints (`/api/demo/control/*`); `pnpm demo:test:e2e` runs them, and `pnpm test:e2e` runs the rest.
-- Translated text lives in top-level `messages/{locale}/{namespace}.json`, outside the layers: it is data that `lib/i18n-messages.ts` loads, owned per namespace as [i18n.md](i18n.md) describes.
-- Layer directories (`hooks/`, `utils/`, `features/{name}/api/`, etc.) contain only files. The one exception is component directories: any `components/` may contain one level of component directories (see "Component directories"), and so may the reserved `components/ui/`.
+- Browser end-to-end specs live in top-level `e2e/`, outside the layers. They observe the app through the browser and import no application code; ESLint enforces this. The demos' specs live in `e2e/demo/`, and the Data demo's among them also drive the Demo backend's control endpoints (`/api/demo/control/*`); `pnpm demo:test:e2e` runs them, and `pnpm test:e2e` runs the rest.
+- Translated text lives in top-level `messages/{locale}/{namespace}.json`, outside the layers: it is data that `lib/i18n/messages.ts` loads, owned per namespace as [i18n.md](i18n.md) describes.
+- Layer directories (`hooks/`, `utils/`, `features/{name}/api/`, etc.) contain only files, with two exceptions:
+  - Any `components/` may contain one level of component directories (see "Component directories"), and so may the reserved `components/ui/`.
+  - `lib/` may group an adapter that spans several files into one level of directory; a single-file adapter stays a file, such as `lib/fetch.ts`. Files inside import each other by relative path. When outside code uses one module and the other files only serve it, that module is the directory's `index`, imported by the directory's path (`@/lib/{adapter}`). When outside code uses several modules, it imports each by its path (`@/lib/i18n/navigation`), with no `index` re-exporting them: such an entry would put modules that run only on the server, such as `lib/i18n/request.ts`, into the import graph of Client Components.
 - Independent hooks go in `hooks/` and utility functions in `utils/`. Component-specific private contexts, hooks, helpers, and types may stay in the component directory (see "Component directories").
 - Keep types with the module or schema that owns them. Extract a shared contract into that owner's `types/` when needed to preserve dependency direction or give the contract an independent role.
 - Choose feature or root placement by "Shared code ownership" below.

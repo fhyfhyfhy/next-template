@@ -3,7 +3,7 @@
 import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 
-import { Link } from "@/lib/i18n-navigation";
+import { Link } from "@/lib/i18n/navigation";
 import { useMutation } from "@/lib/react-query";
 
 import type { Task } from "../../api/get-task";

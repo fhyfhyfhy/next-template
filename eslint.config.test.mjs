@@ -1146,7 +1146,7 @@ describe("架构依赖和 feature、组件导入约定", () => {
       }
     }
 
-    // Import resolvers also consult process.cwd(); all files must exist before graph traversal.
+    // import 解析器也会看 process.cwd()；遍历依赖图之前所有文件都要已经存在。
     process.chdir(fixture);
     // 架构用例只验证依赖边界；import 排序由下方独立用例验证。
     // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
@@ -1551,4 +1551,94 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
       ),
     ).toStrictEqual([]);
   });
+});
+
+describe("日期和时间只在 components/date-time.tsx 里格式化", () => {
+  const eslint = new ESLint({ cwd: project });
+  const clientDateTime = `"use client";
+
+import { useFormatter } from "next-intl";
+
+export function Probe({ at }: { at: number }) {
+  const format = useFormatter();
+  return <p>{format.dateTime(at)}</p>;
+}
+`;
+  // 每条 no-restricted-syntax 报告，按它来自哪条限制命名。
+  const restricted = async (file, source) => {
+    const [result] = await eslint.lintText(source, {
+      filePath: join(project, file),
+    });
+    expect(result.fatalErrorCount).toBe(0);
+    return result.messages
+      .filter(({ ruleId }) => ruleId === "no-restricted-syntax")
+      .map(({ message }) =>
+        message.startsWith("Show a date or time")
+          ? "date-time"
+          : message.startsWith("List public API")
+            ? "component-entry"
+            : message,
+      );
+  };
+  // 用真实存在的文件路径：import/no-cycle 定位不了不在磁盘上的文件。
+  for (const { name, file, source, reported } of [
+    {
+      name: "format.dateTime in a Client Component is reported",
+      file: "features/demo-task/components/task-list/index.tsx",
+      source: clientDateTime,
+      reported: ["date-time"],
+    },
+    {
+      name: "a component entry is under the date restriction and its own",
+      file: "components/locale-switcher/index.tsx",
+      source: `${clientDateTime}export * from "./locale-items";\n`,
+      reported: ["date-time", "component-entry"],
+    },
+    {
+      name: "getFormatter().dateTimeRange in a Server Component is reported",
+      file: "app/[locale]/page.tsx",
+      source: `import { getFormatter } from "next-intl/server";
+
+export default async function Probe() {
+  const format = await getFormatter();
+  return <p>{format.dateTimeRange(0, 1)}</p>;
+}
+`,
+      reported: ["date-time"],
+    },
+    {
+      name: "Intl.DateTimeFormat is reported",
+      file: "lib/cn.ts",
+      source: `export const probe = (at: number) => new Intl.DateTimeFormat("en").format(at);\n`,
+      reported: ["date-time"],
+    },
+    {
+      name: "relative times and numbers still format anywhere",
+      file: "features/demo-task/components/task-list/index.tsx",
+      source: `"use client";
+
+import { useFormatter } from "next-intl";
+
+export function Probe({ at, count }: { at: number; count: number }) {
+  const format = useFormatter();
+  return (
+    <p>
+      {format.relativeTime(at)} {format.number(count)}
+    </p>
+  );
+}
+`,
+      reported: [],
+    },
+    {
+      name: "components/date-time.tsx formats them",
+      file: "components/date-time.tsx",
+      source: clientDateTime,
+      reported: [],
+    },
+  ]) {
+    test(name, async () => {
+      expect(await restricted(file, source)).toStrictEqual(reported);
+    });
+  }
 });

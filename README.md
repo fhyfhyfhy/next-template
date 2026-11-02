@@ -15,14 +15,14 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `demo:` 
 
 ## Demo
 
-`/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it:
+`/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it. They are served only under `pnpm dev` and the `pnpm demo:*` scripts: a plain production build (`pnpm build`, `pnpm start`) answers 404 for every `/demos` page, and its home page is a placeholder without a link to them (`lib/demos.ts`).
 
 - **UI demo** (`/demos/ui`): the design-system components; see [UI demo examples](#ui-demo-examples).
 - **Data demo** (the other `/demos` pages): a small task app that exercises the data-fetching rules against the Demo backend. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.
 
 The **Demo backend** is built into this app the way the template expects a project's own backend to be ([ADR 0003](docs/adr/0003-fullstack-demo-backend.md)): the `demo-task` and `demo-upload` features hold its data layer, Route Handlers under `app/api/demo/` serve the browser's reads, and Server Actions do the writes. Data lives in Postgres and files in S3-compatible object storage ([ADR 0004](docs/adr/0004-demo-uploads-presigned-object-storage.md)), both from `compose.demo.yaml`, so the Demo needs Docker.
 
-The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo:start`: they start the two services (Postgres on `127.0.0.1:54329`, Versity Gateway on `127.0.0.1:7070`), create and migrate the Demo database, prepare its bucket, and pass the `DEMO_*` variables that enable the Demo backend to Next. The data persists in Docker volumes across restarts; the first run writes the seed data, and the fault lab's reset restores it. `docker compose -f compose.demo.yaml down -v` deletes it. Their build output goes to `.next-demo`, leaving the project's `.next` alone. Inside the app, the Demo 生成器 advances tasks in the background, and every business operation waits 500 ms by default so loading states show; the fault lab's panel changes that delay until the next reset and injects faults into data-layer operations. `pnpm dev`, `pnpm build`, and `pnpm start` never set the `DEMO_*` variables; under them the Data demo pages show a notice and `/api/demo` answers 404, so a deployment never exposes the Demo backend. The Data demo's tests are described under [Tests](#tests).
+The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo:start`: they start the two services (Postgres on `127.0.0.1:54329`, Versity Gateway on `127.0.0.1:7070`), create and migrate the Demo database, prepare its bucket, and pass the `DEMO_*` variables that enable the Demo backend to Next. The data persists in Docker volumes across restarts; the first run writes the seed data, and the fault lab's reset restores it. `docker compose -f compose.demo.yaml down -v` deletes it. Their build output goes to `.next-demo`, leaving the project's `.next` alone. Inside the app, the Demo 生成器 advances tasks in the background, and every business operation waits 500 ms by default so loading states show; the fault lab's panel changes that delay until the next reset and injects faults into data-layer operations. `pnpm dev`, `pnpm build`, and `pnpm start` never set the `DEMO_*` variables, so `/api/demo` answers 404 under all three and a deployment never exposes the Demo backend; under `pnpm dev` the Data demo pages show a notice instead. The demos' e2e specs are described under [Tests](#tests).
 
 ## Checks
 
@@ -38,8 +38,8 @@ The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo
 
 End-to-end specs run with Playwright in two sets, each against its own production build and port, so they can run side by side and alongside `pnpm dev`. Install the browser once with `pnpm exec playwright install chromium`.
 
-- `pnpm test:e2e` runs the project's own specs in `e2e/`, skipping `e2e/demo/`, against `pnpm build` and `pnpm start` on port 3998 (`E2E_PORT`). `e2e/home.spec.ts` is the minimal example to start from.
-- `pnpm demo:test:e2e` runs the Data demo's specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999 (`DEMO_E2E_PORT`), on the `e2e` dataset: its own database and bucket in the same services. The specs reset it through `/api/demo/control/*` before each test, pause the Demo 生成器, and inject faults; a running `demo:dev` keeps the `dev` dataset and its data. Two checkouts share the `e2e` dataset, so run the set from one at a time.
+- `pnpm test:e2e` runs the project's own specs in `e2e/`, skipping `e2e/demo/`, against `pnpm build` and `pnpm start` on port 3998 (`E2E_PORT`). That build serves no demos, so a spec that opens a `/demos` page belongs in `e2e/demo/`. `e2e/home.spec.ts` is the minimal example to start from.
+- `pnpm demo:test:e2e` runs the demos' specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999 (`DEMO_E2E_PORT`), on the `e2e` dataset: its own database and bucket in the same services. The specs reset it through `/api/demo/control/*` before each test, pause the Demo 生成器, and inject faults; a running `demo:dev` keeps the `dev` dataset and its data. Two checkouts share the `e2e` dataset, so run the set from one at a time.
 
 Both sets build with the testing API that `instant()` from `@next/playwright` needs to hold back streamed content: their `webServer` sets `EXPOSE_TESTING_API=1`, which `next.config.ts` reads. Keep that variable out of deployment builds. Those builds go to `.next-e2e` and `.next-demo-e2e`, so a running `pnpm start` or `pnpm demo:start` keeps its own output. ESLint applies `eslint-plugin-playwright`'s recommended rules to `e2e/`.
 
@@ -55,9 +55,9 @@ The template is full-stack: a project's backend lives in this app ([ADR 0003](do
 
 ## Internationalization
 
-Pages are translated with [next-intl](https://next-intl.dev) into the locales listed in `lib/i18n-routing.ts`: `zh`, the default locale and the one new text is written in, and `en`. URLs of the default locale have no prefix (`/demos`), the others carry one (`/en/demos`), and every locale is prerendered ([ADR 0002](docs/adr/0002-locale-routing-as-needed-prefix.md)). For a URL without a prefix, `proxy.ts` picks the locale from the `NEXT_LOCALE` cookie, then `Accept-Language`.
+Pages are translated with [next-intl](https://next-intl.dev) into the locales listed in `lib/i18n/routing.ts`: `zh`, the default locale and the one new text is written in, and `en`. URLs of the default locale have no prefix (`/demos`), the others carry one (`/en/demos`), and every locale is prerendered ([ADR 0002](docs/adr/0002-locale-routing-as-needed-prefix.md)). For a URL without a prefix, `proxy.ts` picks the locale from the `NEXT_LOCALE` cookie, then `Accept-Language`.
 
-Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates are formatted in the fixed `Asia/Shanghai` time zone (`lib/i18n-request.ts`), so server rendering and hydration produce the same text.
+Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates and times show in the computer's time zone: `<DateTime>` (`components/date-time.tsx`) renders them in the browser once the page has hydrated.
 
 ## Agent skills
 

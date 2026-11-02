@@ -14,6 +14,7 @@ import createArchitecturePlugin, {
   layerZones,
 } from "./scripts/eslint/architecture-plugin.mjs";
 import e2ePlugin from "./scripts/eslint/e2e-plugin.mjs";
+import createI18nPlugin from "./scripts/eslint/i18n-plugin.mjs";
 import { SOURCE_EXTENSIONS, SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
 import createNamingPlugin from "./scripts/eslint/naming-plugin.mjs";
 import withWrapperImports, {
@@ -70,7 +71,15 @@ const QUERY_LIBRARY_MESSAGE =
   "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-fetching.md.";
 
 const LOCALE_NAVIGATION_MESSAGE =
-  "Import Link, redirect, useRouter, and usePathname from @/lib/i18n-navigation: the next/* versions drop the locale prefix of non-default locales. See .claude/rules/i18n.md.";
+  "Import Link, redirect, useRouter, and usePathname from @/lib/i18n/navigation: the next/* versions drop the locale prefix of non-default locales. See .claude/rules/i18n.md.";
+
+// lib/i18n/ 以外直接用 next-intl 的 provider 和 useMessages 下发文案，i18n/client-namespaces 就查不到。
+const INTL_PROVIDER_RESTRICTION = {
+  name: "next-intl",
+  importNames: ["NextIntlClientProvider", "useMessages"],
+  message:
+    "Send messages to Client Components with ClientMessages from @/lib/i18n/client-messages, so i18n/client-namespaces can check them. See .claude/rules/i18n.md.",
+};
 
 // 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query；
 // 站内导航走 next-intl 生成的 API，非默认 locale 的 URL 前缀才不会丢。
@@ -91,12 +100,45 @@ const RESTRICTED_IMPORTS = {
       ],
       message: LOCALE_NAVIGATION_MESSAGE,
     },
+    INTL_PROVIDER_RESTRICTION,
   ],
   patterns: [{ group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE }],
 };
 
 const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
+
+// 日期和时间按电脑所在时区显示，只有浏览器知道这个时区，所以只由 components/date-time.tsx 格式化（.claude/rules/i18n.md）。
+const DATE_TIME_MESSAGE =
+  "Show a date or time with <DateTime> from @/components/date-time, which renders it in the browser in the computer's time zone. See .claude/rules/i18n.md.";
+const DATE_TIME_FORMATTING = [
+  {
+    selector: "CallExpression[callee.property.name=/^dateTime(Range)?$/]",
+    message: DATE_TIME_MESSAGE,
+  },
+  {
+    selector:
+      "MemberExpression[object.name='Intl'][property.name='DateTimeFormat']",
+    message: DATE_TIME_MESSAGE,
+  },
+];
+
+// 所有应用代码都受的 no-restricted-syntax 限制。
+const RESTRICTED_SYNTAX = [...DATE_TIME_FORMATTING];
+const DATE_TIME_EXEMPT = RESTRICTED_SYNTAX.filter(
+  (restriction) => !DATE_TIME_FORMATTING.includes(restriction),
+);
+
+// 会进页面的代码，包括 monorepo 里 workspace 包的源码；scripts/、e2e/、测试和根目录的配置文件不进页面。
+const APPLICATION_CODE = {
+  files: [SOURCE_GLOB],
+  ignores: [
+    `**/*.{test,spec}.${extensionGlob}`,
+    "scripts/**",
+    "e2e/**",
+    `*.${extensionGlob}`,
+  ],
+};
 
 // 颜色只用 app/globals.css 的语义 token 和 black、white，圆角只用内置或 --radius-* token。
 const RESTRICTED_TAILWIND_CLASSES = [
@@ -121,6 +163,9 @@ const RESTRICTED_TAILWIND_CLASSES = [
   },
 ];
 
+// ESLint 不会跨配置对象合并同一条规则的选项：后面的对象给某个文件设置 no-restricted-imports 或
+// no-restricted-syntax，会整个替换前面的选项。所以下面设置其中一条的对象都列出它的文件受的全部限制，
+// 把 RESTRICTED_IMPORTS 和 RESTRICTED_SYNTAX 展开进去；eslint.config.test.mjs 检查它们都成立。
 const eslintConfig = defineConfig([
   // 使用 Next.js 的 React、Hooks、可访问性和性能规则，随框架版本维护默认检查。
   ...nextVitals.map((config) =>
@@ -220,7 +265,7 @@ const eslintConfig = defineConfig([
               target: ["e2e/**"],
               from: ROOT_LAYERS.flatMap((layer) => layer.files),
               message:
-                "e2e/ observes the app only through the browser and the Demo backend control endpoints, so it imports no application code. See 'Where files go' in .claude/rules/architecture.md.",
+                'e2e/ observes the app only through the browser and the Demo backend\'s control endpoints, so it imports no application code. See "Where files go" in .claude/rules/architecture.md.',
             },
           ],
         },
@@ -242,6 +287,35 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    ...APPLICATION_CODE,
+    rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
+  },
+  {
+    ...APPLICATION_CODE,
+    plugins: { i18n: createI18nPlugin(PROJECT_ROOT) },
+    rules: {
+      // 每个 ClientMessages 发的 namespace 和它下面 Client Component 用到的一致，--fix 改写列表。
+      // 分析整个项目，lint 不能加 --cache（.claude/rules/i18n.md）。
+      "i18n/client-namespaces": "error",
+    },
+  },
+  {
+    // ClientMessages 自己要用 next-intl 的 provider 和 useMessages，在路由之外渲染组件的单元测试也要用；
+    // 同一条规则后面的配置会整个替换前面的选项。
+    files: ["lib/i18n/**", `**/*.test.${extensionGlob}`],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          ...RESTRICTED_IMPORTS,
+          paths: RESTRICTED_IMPORTS.paths.filter(
+            (path) => path !== INTL_PROVIDER_RESTRICTION,
+          ),
+        },
+      ],
+    },
+  },
+  {
     files: [
       `**/components/!(ui)/index.${extensionGlob}`,
       `**/components/ui/*/index.${extensionGlob}`,
@@ -252,6 +326,7 @@ const eslintConfig = defineConfig([
       // 禁止入口直接使用 export * 和 export * as，要求显式列出公开成员。
       "no-restricted-syntax": [
         "error",
+        ...RESTRICTED_SYNTAX,
         {
           selector: "ExportAllDeclaration",
           message: COMPONENT_INDEX_EXPORT_MESSAGE,
@@ -261,6 +336,16 @@ const eslintConfig = defineConfig([
           message: COMPONENT_INDEX_EXPORT_MESSAGE,
         },
       ],
+    },
+  },
+  {
+    // 唯一格式化日期和时间的地方，其他限制照旧。只给规则设置级别的对象会沿用前面的选项，
+    // 所以没有剩下的限制时直接关掉这条规则。
+    files: ["components/date-time.tsx"],
+    rules: {
+      "no-restricted-syntax": DATE_TIME_EXEMPT.length
+        ? ["error", ...DATE_TIME_EXEMPT]
+        : "off",
     },
   },
   {
