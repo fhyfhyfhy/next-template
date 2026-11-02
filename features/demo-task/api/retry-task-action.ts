@@ -13,7 +13,10 @@ import { type Task, taskSchema } from "./get-task";
 
 const inputSchema = z.object({ taskId: z.string().min(1) });
 
-/** 重试失败的任务。任务已不是 failed（比如在别的标签页重试过）是预期失败。 */
+/**
+ * Retries a failed task. A task that is no longer failed (retried in another
+ * tab, say) is an expected failure.
+ */
 export async function retryTaskAction(
   input: z.input<typeof inputSchema>,
 ): Promise<ActionResult<Task>> {

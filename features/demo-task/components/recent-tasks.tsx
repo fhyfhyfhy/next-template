@@ -10,8 +10,10 @@ import { useRecentTaskIds } from "../hooks/use-recent-task-ids";
 import { TaskLinkRow } from "./task-link-row";
 
 /**
- * 请求的输入来自 localStorage，只有浏览器能读：服务端和 hydration 首轮 `ids` 为 null，这时不发请求，
- * 读到 id 之后每个任务一个 query，复用详情页的工厂和缓存。
+ * The requests' input comes from localStorage, which only the browser can read.
+ * On the server and in the first hydration pass `ids` is null and nothing is
+ * requested; once the ids are read, each task gets a query that reuses the
+ * detail page's factory and cache.
  */
 export function RecentTasks() {
   const t = useTranslations("demo-task.recentTasks");

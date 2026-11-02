@@ -2,19 +2,20 @@ import type { Page } from "@playwright/test";
 
 import { expect, test } from "./mock-api";
 
-// 搜索：边输入边请求，数据由 React Query 负责；关键词只做 shallow URL 更新。
+// Search: requests as the user types, React Query owns the data, and the
+// keyword only updates the URL shallowly.
 
 const results = (page: Page) =>
   page.getByRole("list", { name: "搜索结果" }).getByRole("listitem");
 
-test("输入停顿后把关键词写进 URL 并显示结果，不新增历史记录", async ({
+test("a pause in typing puts the keyword in the URL and shows results, without a new history entry", async ({
   page,
 }) => {
   await page.goto("/demos/tasks");
   await page.goto("/demos/search");
   const historyLength = await page.evaluate(() => history.length);
 
-  // eslint-disable-next-line e2e/act-after-ready -- 搜索框读 useSearchParams，只在浏览器里渲染，找得到它时页面已经 hydrate。
+  // eslint-disable-next-line e2e/act-after-ready -- the search box reads useSearchParams and renders only in the browser, so finding it means the page has hydrated
   await page.getByLabel("搜索任务").pressSequentially("狐狸", { delay: 50 });
 
   await expect(page).toHaveURL(`/demos/search?q=${encodeURIComponent("狐狸")}`);
@@ -25,14 +26,19 @@ test("输入停顿后把关键词写进 URL 并显示结果，不新增历史记
   await expect(page).toHaveURL("/demos/tasks");
 });
 
-test("带关键词的链接打开时还原输入框和结果", async ({ page }) => {
+test("opening a link with a keyword restores the input and the results", async ({
+  page,
+}) => {
   await page.goto(`/demos/search?q=${encodeURIComponent("机甲")}`);
 
   await expect(page.getByLabel("搜索任务")).toHaveValue("机甲");
   await expect(results(page)).toHaveCount(3);
 });
 
-test("换关键词时中止还没返回的旧请求", async ({ page, mockApi }) => {
+test("changing the keyword aborts the old request that has not returned", async ({
+  page,
+  mockApi,
+}) => {
   await mockApi.setFaults([
     { method: "GET", path: "/demo/tasks/search", latency_ms: 1500 },
   ]);
@@ -46,7 +52,7 @@ test("换关键词时中止还没返回的旧请求", async ({ page, mockApi }) 
   await page.goto("/demos/search");
   const input = page.getByLabel("搜索任务");
 
-  // eslint-disable-next-line e2e/act-after-ready -- 搜索框读 useSearchParams，只在浏览器里渲染，找得到它时页面已经 hydrate。
+  // eslint-disable-next-line e2e/act-after-ready -- the search box reads useSearchParams and renders only in the browser, so finding it means the page has hydrated
   await input.fill("狐");
   await expect(page).toHaveURL(`/demos/search?q=${encodeURIComponent("狐")}`);
   await input.fill("狐狸");
@@ -55,7 +61,10 @@ test("换关键词时中止还没返回的旧请求", async ({ page, mockApi }) 
   expect(aborted).toEqual(["狐"]);
 });
 
-test("新结果返回前继续显示上一次的结果", async ({ page, mockApi }) => {
+test("the previous results stay until the new ones return", async ({
+  page,
+  mockApi,
+}) => {
   await page.goto(`/demos/search?q=${encodeURIComponent("狐狸")}`);
   await expect(results(page)).toHaveCount(3);
   await mockApi.setFaults([
@@ -69,7 +78,9 @@ test("新结果返回前继续显示上一次的结果", async ({ page, mockApi 
   await expect(results(page).first()).toContainText("跑车");
 });
 
-test("清空关键词后不再显示结果和状态", async ({ page }) => {
+test("clearing the keyword hides the results and the status", async ({
+  page,
+}) => {
   await page.goto(`/demos/search?q=${encodeURIComponent("狐狸")}`);
   await expect(results(page)).toHaveCount(3);
 

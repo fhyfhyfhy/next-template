@@ -14,9 +14,12 @@ interface SeedHydrationBoundaryProps {
 }
 
 /**
- * 只把浏览器里还没有数据的 query 交给 `HydrationBoundary`，已有的由 React Query 自己刷新。
- * 服务端的 state 只带无限列表的第一页，时间戳又比浏览器里的新，原样 hydrate 会把已加载的几页换回一页：
- * 这一页上的 Server Action 让列表 tag 失效后，响应带回的页面正好送来这样一份 state。
+ * Hands `HydrationBoundary` only the queries the browser has no data for yet;
+ * React Query refreshes the rest itself. The server's state carries only an
+ * infinite list's first page, with a newer timestamp than the browser's, so
+ * hydrating it as is would replace the loaded pages with one. That is exactly
+ * the state that arrives with the page sent back after a Server Action on this
+ * page expires the list tag.
  */
 export function SeedHydrationBoundary({
   state,

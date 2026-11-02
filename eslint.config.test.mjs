@@ -37,9 +37,9 @@ const statements = {
     `import type { Item } from "${source}"; export type Result = Item;`,
   tsImportType: (source) => `export type Result = import("${source}").Item;`,
   require: (source) =>
-    `/* eslint-disable @typescript-eslint/no-require-imports -- 用例检查 require 写法的依赖 */\nexport const result = require("${source}");`,
+    `/* eslint-disable @typescript-eslint/no-require-imports -- the case checks a dependency written with require */\nexport const result = require("${source}");`,
   importEquals: (source) =>
-    `/* eslint-disable @typescript-eslint/no-require-imports -- 用例检查 require 写法的依赖 */\nimport result = require("${source}"); export { result };`,
+    `/* eslint-disable @typescript-eslint/no-require-imports -- the case checks a dependency written with require */\nimport result = require("${source}"); export { result };`,
 };
 
 function addCase(
@@ -72,60 +72,63 @@ function addCase(
   });
 }
 
-addCase("同一 feature 的别名导入被拒绝", {
+addCase("an alias import within the same feature is refused", {
   to: "features/CASE/hooks/value.ts",
   source: "@/features/CASE/hooks/value",
   rule: featureRule,
 });
-addCase("内部实现不能通过别名引用自身 feature 根入口", {
-  to: "features/CASE/index.ts",
-  source: "@/features/CASE",
-  rule: featureRule,
-  messageId: "selfEntry",
-});
-addCase("别名中的 .. 不能绕过同 feature 检查", {
+addCase(
+  "an implementation file cannot import its own feature's root entry through the alias",
+  {
+    to: "features/CASE/index.ts",
+    source: "@/features/CASE",
+    rule: featureRule,
+    messageId: "selfEntry",
+  },
+);
+addCase(".. in an alias cannot bypass the same-feature check", {
   to: "features/CASE/hooks/value.ts",
   source: "@/features/CASE/../CASE/hooks/value",
   rule: featureRule,
 });
-addCase("同一 feature 内可以相对导入下层", {
+addCase("a feature can import its own lower layer by relative path", {
   to: "features/CASE/hooks/value.ts",
   source: "../hooks/value",
 });
-addCase("同一 feature 内可以相对导入同层", {
+addCase("a feature can import its own same layer by relative path", {
   from: "features/CASE/hooks/main.ts",
   to: "features/CASE/hooks/value.ts",
   source: "./value",
 });
-addCase("不能用相对路径导入另一个 feature", {
+addCase("another feature cannot be imported by relative path", {
   to: "features/CASE-other/index.ts",
   source: "../../CASE-other",
   rule: featureRule,
 });
-addCase("feature 导入根目录 lib 必须使用别名", {
+addCase("a feature must import root lib through the alias", {
   to: "lib/CASE.ts",
   source: "../../../lib/CASE",
   rule: featureRule,
 });
-addCase("app 导入 feature 必须使用别名", {
+addCase("app must import a feature through the alias", {
   from: "app/CASE.ts",
   to: "features/CASE/index.ts",
   source: "../features/CASE",
   rule: featureRule,
 });
-addCase("feature 可以通过别名导入根目录 lib", {
+addCase("a feature can import root lib through the alias", {
   to: "lib/CASE.ts",
   source: "@/lib/CASE",
 });
-addCase("feature 可以通过别名导入另一个 feature 的主入口", {
+addCase("a feature can import another feature's main entry through the alias", {
   to: "features/CASE-other/index.ts",
   source: "@/features/CASE-other",
 });
-addCase("feature 可以通过别名导入另一个 feature 的子入口", {
+addCase("a feature can import another feature's sub-entry through the alias", {
   to: "features/CASE-other/canvas.ts",
   source: "@/features/CASE-other/canvas",
 });
-addCase("第三方包名不受 feature 路径规则限制", {
+addCase("third-party package names are not limited by the feature path rules", {
   source: "react",
   syntax: "exportAll",
 });
@@ -137,18 +140,18 @@ for (const syntax of [
   "importType",
   "tsImportType",
 ]) {
-  addCase(`${syntax} 拒绝同 feature 别名`, {
+  addCase(`${syntax} refuses a same-feature alias`, {
     to: "features/CASE/hooks/value.ts",
     source: "@/features/CASE/hooks/value",
     syntax,
     rule: featureRule,
   });
-  addCase(`${syntax} 允许同 feature 相对路径`, {
+  addCase(`${syntax} allows a same-feature relative path`, {
     to: "features/CASE/hooks/value.ts",
     source: "../hooks/value",
     syntax,
   });
-  addCase(`${syntax} 拒绝跨 feature 相对路径`, {
+  addCase(`${syntax} refuses a cross-feature relative path`, {
     to: "features/CASE-other/index.ts",
     source: "../../CASE-other",
     syntax,
@@ -157,22 +160,25 @@ for (const syntax of [
 }
 
 for (const syntax of ["import", "dynamic"]) {
-  addCase(`${syntax} 不能访问另一个 feature 的私有文件`, {
+  addCase(`${syntax} cannot reach another feature's private file`, {
     to: "features/CASE-other/hooks/private.ts",
     source: "@/features/CASE-other/hooks/private",
     syntax,
     rule: featureRule,
   });
-  addCase(`${syntax} 不能把内部目录 barrel 当成公开子入口`, {
-    to: "features/CASE-other/hooks/index.ts",
-    source: "@/features/CASE-other/hooks",
-    syntax,
-    rule: featureRule,
-  });
+  addCase(
+    `${syntax} cannot use an internal directory's barrel as a public sub-entry`,
+    {
+      to: "features/CASE-other/hooks/index.ts",
+      source: "@/features/CASE-other/hooks",
+      syntax,
+      rule: featureRule,
+    },
+  );
 }
 
 cases.push({
-  name: "根子入口文件优先于同名内部目录",
+  name: "a root sub-entry file takes precedence over an internal directory of the same name",
   from: "app/sub-entry-with-directory.ts",
   files: {
     "features/sub-entry-with-directory/canvas.ts": "export const value = 1;",
@@ -185,52 +191,52 @@ cases.push({
   rules: [],
 });
 
-addCase("根目录同层依赖允许", {
+addCase("a root dependency on the same layer is allowed", {
   from: "lib/CASE-main.ts",
   to: "lib/CASE-value.ts",
   source: "./CASE-value",
 });
-addCase("根目录下层依赖允许", {
+addCase("a root dependency on a lower layer is allowed", {
   from: "hooks/CASE.ts",
   to: "lib/CASE.ts",
   source: "@/lib/CASE",
 });
-addCase("components/ui 可以依赖下层 hooks", {
+addCase("components/ui can depend on the lower hooks layer", {
   from: "components/ui/CASE.ts",
   to: "hooks/CASE.ts",
   source: "@/hooks/CASE",
 });
-addCase("根目录反向依赖仍然禁止", {
+addCase("an upward dependency between root layers is still forbidden", {
   from: "utils/CASE.ts",
   to: "lib/CASE.ts",
   source: "@/lib/CASE",
   rule: "import/no-restricted-paths",
 });
-addCase("e2e 不能相对导入应用代码", {
+addCase("e2e cannot import app code by relative path", {
   from: "e2e/CASE.spec.ts",
   to: "lib/CASE.ts",
   source: "../lib/CASE",
   rule: "import/no-restricted-paths",
 });
-addCase("e2e 不能通过别名导入 feature 入口", {
+addCase("e2e cannot import a feature entry through the alias", {
   from: "e2e/CASE.spec.ts",
   to: "features/CASE/index.ts",
   source: "@/features/CASE",
   rule: "import/no-restricted-paths",
 });
-addCase("e2e 内部可以相对导入辅助模块", {
+addCase("e2e can import its own helper modules by relative path", {
   from: "e2e/CASE.spec.ts",
   to: "e2e/CASE-helper.ts",
   source: "./CASE-helper",
 });
-addCase("feature 内部反向依赖仍然禁止", {
+addCase("an upward dependency within a feature is still forbidden", {
   from: "features/CASE/hooks/main.ts",
   to: "features/CASE/components/value.ts",
   source: "../components/value",
   rule: "import/no-restricted-paths",
 });
 cases.push({
-  name: "同层文件之间的值导入循环仍然禁止",
+  name: "a value import cycle between files of the same layer is still forbidden",
   from: "lib/cycle/main.ts",
   files: {
     "lib/cycle/main.ts":
@@ -246,7 +252,7 @@ for (const syntax of ["import", "importType"]) {
   const second = `feature-cycle-${syntax.toLowerCase()}-b`;
   const entry = "export const value = 1; export type Item = { value: number };";
   cases.push({
-    name: `${syntax} 文件图无环时仍拒绝 feature 循环`,
+    name: `${syntax} refuses a feature cycle even when the file graph has none`,
     from: `features/${first}/components/consumer.ts`,
     files: {
       [`features/${first}/index.ts`]: entry,
@@ -263,26 +269,29 @@ for (const syntax of ["import", "importType"]) {
   });
 }
 
-addCase("根组件目录的私有文件不能通过别名直接访问", {
-  from: "app/CASE.ts",
-  to: "components/CASE/private.ts",
-  source: "@/components/CASE/private",
-  rule: componentRule,
-});
-addCase("相对路径不能绕过组件私有边界", {
+addCase(
+  "a private file of a root component directory cannot be reached directly through the alias",
+  {
+    from: "app/CASE.ts",
+    to: "components/CASE/private.ts",
+    source: "@/components/CASE/private",
+    rule: componentRule,
+  },
+);
+addCase("a relative path cannot bypass a component's private boundary", {
   from: "features/CASE/components/other/index.ts",
   to: "features/CASE/components/panel/private.ts",
   source: "../panel/private",
   rule: componentRule,
 });
-addCase("动态导入不能访问 UI 组件私有文件", {
+addCase("a dynamic import cannot reach a UI component's private file", {
   from: "app/CASE.ts",
   to: "components/ui/CASE/private.ts",
   source: "@/components/ui/CASE/private",
   syntax: "dynamic",
   rule: componentRule,
 });
-addCase("转导出不能访问组件私有文件", {
+addCase("a re-export cannot reach a component's private file", {
   from: "app/CASE.ts",
   to: "components/CASE/private.ts",
   source: "@/components/CASE/private",
@@ -290,22 +299,28 @@ addCase("转导出不能访问组件私有文件", {
   rule: componentRule,
 });
 for (const syntax of ["importType", "tsImportType"]) {
-  addCase(`${syntax} 不能访问同 feature 其他组件的私有类型`, {
-    from: "features/CASE/components/consumer/main.ts",
-    to: "features/CASE/components/widget/private.ts",
-    source: "../widget/private",
-    syntax,
-    rule: componentRule,
-  });
+  addCase(
+    `${syntax} cannot reach a private type of another component in the same feature`,
+    {
+      from: "features/CASE/components/consumer/main.ts",
+      to: "features/CASE/components/widget/private.ts",
+      source: "../widget/private",
+      syntax,
+      rule: componentRule,
+    },
+  );
 }
-addCase("feature 根入口不能直接转导出组件私有文件", {
-  from: "features/CASE/index.ts",
-  to: "features/CASE/components/widget/private.ts",
-  source: "./components/widget/private",
-  syntax: "reexport",
-  rule: componentRule,
-});
-addCase("app 内组件目录同样具有私有边界", {
+addCase(
+  "a feature root entry cannot re-export a component's private file directly",
+  {
+    from: "features/CASE/index.ts",
+    to: "features/CASE/components/widget/private.ts",
+    source: "./components/widget/private",
+    syntax: "reexport",
+    rule: componentRule,
+  },
+);
+addCase("component directories in app have private boundaries too", {
   from: "app/CASE/page.tsx",
   to: "app/CASE/components/widget/private.ts",
   source: "./components/widget/private",
@@ -317,34 +332,37 @@ for (const directory of [
   "components/ui/CASE",
   "features/CASE/components/widget",
 ]) {
-  addCase(`${directory} 内部可以相对导入自己的私有文件`, {
+  addCase(`${directory} can import its own private files by relative path`, {
     from: `${directory}/main.ts`,
     to: `${directory}/internal/value.ts`,
     source: "./internal/value",
   });
 }
-addCase("组件目录隐式 index.ts 是公开入口", {
+addCase("a component directory's implicit index.ts is its public entry", {
   from: "app/CASE.ts",
   to: "components/CASE/index.ts",
   source: "@/components/CASE",
 });
-addCase("组件目录显式 index.tsx 是公开入口", {
+addCase("a component directory's explicit index.tsx is its public entry", {
   from: "app/CASE.ts",
   to: "components/CASE/index.tsx",
   source: "@/components/CASE/index.tsx",
 });
-addCase("UI 组件目录隐式 index.tsx 是公开入口", {
+addCase("a UI component directory's implicit index.tsx is its public entry", {
   from: "app/CASE.ts",
   to: "components/ui/CASE/index.tsx",
   source: "@/components/ui/CASE",
 });
-addCase("feature 根入口可以转导出复合组件的公开入口", {
-  from: "features/CASE/index.ts",
-  to: "features/CASE/components/widget/index.tsx",
-  source: "./components/widget",
-  syntax: "reexport",
-});
-addCase("单文件组件不被误当成私有文件", {
+addCase(
+  "a feature root entry can re-export a compound component's public entry",
+  {
+    from: "features/CASE/index.ts",
+    to: "features/CASE/components/widget/index.tsx",
+    source: "./components/widget",
+    syntax: "reexport",
+  },
+);
+addCase("a single-file component is not mistaken for a private file", {
   from: "app/CASE.ts",
   to: "components/CASE.tsx",
   source: "@/components/CASE",
@@ -353,7 +371,7 @@ addCase("单文件组件不被误当成私有文件", {
 for (const extension of ["ts", "tsx"]) {
   const component = `components/compound-${extension}`;
   cases.push({
-    name: `复合组件 index.${extension} 允许多个具名导出及类型导出`,
+    name: `compound component index.${extension} allows several named exports and type exports`,
     from: `${component}/index.${extension}`,
     files: {
       [`${component}/parts.ts`]:
@@ -369,7 +387,7 @@ for (const extension of ["ts", "tsx"]) {
   ]) {
     const component = `components/compound-${extension}-${syntax}`;
     cases.push({
-      name: `复合组件 index.${extension} 禁止 ${syntax} 转导出`,
+      name: `compound component index.${extension} forbids ${syntax} re-exports`,
       from: `${component}/index.${extension}`,
       files: {
         [`${component}/parts.ts`]: "export const Root = 1;",
@@ -391,25 +409,31 @@ for (const syntax of [
   "require",
   "importEquals",
 ]) {
-  addCase(`${syntax} 不能从内部实现引用自身 feature 主入口`, {
-    from: "features/CASE/utils/main.ts",
-    to: "features/CASE/index.ts",
-    source: "../index",
-    syntax,
-    rule: featureRule,
-    messageId: "selfEntry",
-  });
-  addCase(`${syntax} 不能从内部实现引用自身 feature 子入口`, {
-    from: "features/CASE/utils/main.ts",
-    to: "features/CASE/canvas.ts",
-    source: "../canvas",
-    syntax,
-    rule: featureRule,
-    messageId: "selfEntry",
-  });
+  addCase(
+    `${syntax} cannot import its own feature's main entry from an implementation file`,
+    {
+      from: "features/CASE/utils/main.ts",
+      to: "features/CASE/index.ts",
+      source: "../index",
+      syntax,
+      rule: featureRule,
+      messageId: "selfEntry",
+    },
+  );
+  addCase(
+    `${syntax} cannot import its own feature's sub-entry from an implementation file`,
+    {
+      from: "features/CASE/utils/main.ts",
+      to: "features/CASE/canvas.ts",
+      source: "../canvas",
+      syntax,
+      rule: featureRule,
+      messageId: "selfEntry",
+    },
+  );
 }
 cases.push({
-  name: "不能经自身 feature 入口间接绕过层次限制",
+  name: "a feature's own entry cannot be used to bypass the layer rules indirectly",
   from: "features/self-entry-bypass/utils/read.ts",
   files: {
     "features/self-entry-bypass/utils/read.ts":
@@ -421,24 +445,33 @@ cases.push({
   rules: [featureRule],
   messageIds: ["selfEntry"],
 });
-addCase("feature 根入口可以相对聚合自身子入口", {
-  from: "features/CASE/index.ts",
-  to: "features/CASE/canvas.ts",
-  source: "./canvas",
-  syntax: "reexport",
-});
-addCase("自身 feature 子入口使用别名也只报告入口反向引用", {
-  from: "features/CASE/utils/main.ts",
-  to: "features/CASE/canvas.ts",
-  source: "@/features/CASE/canvas",
-  rule: featureRule,
-  messageId: "selfEntry",
-});
-addCase("feature 内部仍通过组件入口访问同层其他组件", {
-  from: "features/CASE/components/consumer.ts",
-  to: "features/CASE/components/dialog/index.ts",
-  source: "./dialog",
-});
+addCase(
+  "a feature root entry can aggregate its own sub-entries by relative path",
+  {
+    from: "features/CASE/index.ts",
+    to: "features/CASE/canvas.ts",
+    source: "./canvas",
+    syntax: "reexport",
+  },
+);
+addCase(
+  "an alias to the feature's own sub-entry reports only the self-entry import",
+  {
+    from: "features/CASE/utils/main.ts",
+    to: "features/CASE/canvas.ts",
+    source: "@/features/CASE/canvas",
+    rule: featureRule,
+    messageId: "selfEntry",
+  },
+);
+addCase(
+  "within a feature, another component of the same layer is still reached through its entry",
+  {
+    from: "features/CASE/components/consumer.ts",
+    to: "features/CASE/components/dialog/index.ts",
+    source: "./dialog",
+  },
+);
 
 for (const extension of [
   "js",
@@ -453,7 +486,7 @@ for (const extension of [
   const commonjs = extension === "cjs";
   const importStatement = (source) =>
     commonjs
-      ? `/* eslint-disable @typescript-eslint/no-require-imports -- 用例检查 require 写法的依赖 */\nmodule.exports = require("${source}");`
+      ? `/* eslint-disable @typescript-eslint/no-require-imports -- the case checks a dependency written with require */\nmodule.exports = require("${source}");`
       : statements.import(source);
   const value = commonjs
     ? "module.exports = { value: 1 };"
@@ -461,7 +494,7 @@ for (const extension of [
   const component = `components/extension-${extension}.${extension}`;
   const feature = `features/extension-${extension}/index.ts`;
   cases.push({
-    name: `.${extension} 直属组件不能反向依赖 feature`,
+    name: `.${extension} component directly under components/ cannot depend upward on a feature`,
     from: component,
     files: {
       [component]: importStatement(`@/features/extension-${extension}`),
@@ -472,7 +505,7 @@ for (const extension of [
   const target = `components/extension-target-${extension}.${extension}`;
   const consumer = `lib/extension-${extension}.${extension}`;
   cases.push({
-    name: `.${extension} lib 不能反向依赖直属组件`,
+    name: `.${extension} lib cannot depend upward on a component directly under components/`,
     from: consumer,
     files: {
       [target]: value,
@@ -484,7 +517,7 @@ for (const extension of [
   });
   const allowed = `components/extension-allowed-${extension}.${extension}`;
   cases.push({
-    name: `.${extension} 直属组件可以依赖下层 lib 且配置能正常加载`,
+    name: `.${extension} component directly under components/ can depend on the lower lib layer, and the config loads`,
     from: allowed,
     files: {
       [allowed]: importStatement(
@@ -497,7 +530,7 @@ for (const extension of [
   const entry = `components/entry-${extension}/index.${extension}`;
   const entryConsumer = `app/entry-${extension}.${extension}`;
   cases.push({
-    name: `.${extension} 组件具名入口允许外部访问`,
+    name: `.${extension} component entry named explicitly is open to outside code`,
     from: entryConsumer,
     files: {
       [entry]: value,
@@ -510,7 +543,7 @@ for (const extension of [
   const privateFile = `components/private-${extension}/context.${extension}`;
   const privateConsumer = `app/private-${extension}.${extension}`;
   cases.push({
-    name: `.${extension} 组件私有实现不能直接被外部引用`,
+    name: `.${extension} component's private implementation cannot be imported directly from outside`,
     from: privateConsumer,
     files: {
       [privateFile]: value,
@@ -524,7 +557,7 @@ for (const extension of [
     const parts = `components/star-${extension}/parts.${extension}`;
     const starEntry = `components/star-${extension}/index.${extension}`;
     cases.push({
-      name: `.${extension} 组件入口禁止星号转导出`,
+      name: `.${extension} component entry forbids star re-exports`,
       from: starEntry,
       files: {
         [parts]: value,
@@ -535,7 +568,7 @@ for (const extension of [
     const main = `lib/cycle-${extension}/main.${extension}`;
     const peer = `lib/cycle-${extension}/peer.${extension}`;
     cases.push({
-      name: `.${extension} 同层模块循环被拒绝`,
+      name: `.${extension} module cycle within one layer is refused`,
       from: main,
       files: {
         [main]: `import { peer } from "./peer.${extension}"; export const value = () => peer;`,
@@ -557,73 +590,109 @@ for (const syntax of [
   "require",
   "importEquals",
 ]) {
-  addCase(`${syntax} 不能在 fetchApi 之外使用条件凭证入口`, {
-    from: "lib/CASE.ts",
+  addCase(
+    `${syntax} cannot use the conditional credentials entry outside fetchApi`,
+    {
+      from: "lib/CASE.ts",
+      source: "#credentials",
+      syntax,
+      rule: packageImportsRule,
+      messageId: "owner",
+    },
+  );
+  addCase(
+    `${syntax} cannot bypass the architecture checks through an unsupported package import`,
+    {
+      from: "app/CASE.ts",
+      source: "#other",
+      syntax,
+      rule: packageImportsRule,
+      messageId: "unsupported",
+    },
+  );
+  addCase(
+    `${syntax} forbids app code from importing the React Query package directly`,
+    {
+      from: "app/CASE.ts",
+      source: "@tanstack/react-query",
+      syntax,
+      rule: wrapperRule,
+    },
+  );
+  addCase(
+    `${syntax} allows importing through the public React Query wrapper entry`,
+    {
+      from: "app/CASE.ts",
+      source: "@/lib/react-query",
+      syntax,
+    },
+  );
+}
+addCase(
+  "fetchApi can choose its credentials implementation through the conditional entry",
+  {
+    from: "lib/fetch/index.ts",
+    to: "lib/fetch/credentials-browser.ts",
     source: "#credentials",
-    syntax,
+  },
+);
+addCase(
+  "the index of another lib directory cannot use the conditional credentials entry",
+  {
+    from: "lib/CASE/index.ts",
+    source: "#credentials",
     rule: packageImportsRule,
     messageId: "owner",
-  });
-  addCase(`${syntax} 不能通过未支持的 package import 绕过架构检查`, {
-    from: "app/CASE.ts",
-    source: "#other",
-    syntax,
+  },
+);
+addCase(
+  "a file in the fetch directory other than index cannot use the conditional credentials entry",
+  {
+    from: "lib/fetch/CASE.ts",
+    source: "#credentials",
     rule: packageImportsRule,
-    messageId: "unsupported",
-  });
-  addCase(`${syntax} 禁止业务代码直接引用 React Query 原包`, {
+    messageId: "owner",
+  },
+);
+addCase("index.tsx cannot use the conditional credentials entry", {
+  from: "lib/fetch/index.tsx",
+  source: "#credentials",
+  rule: packageImportsRule,
+  messageId: "owner",
+});
+addCase(
+  "subpaths of the React Query package too can be imported only by the wrapper",
+  {
     from: "app/CASE.ts",
-    source: "@tanstack/react-query",
-    syntax,
+    source: "@tanstack/react-query/build/modern/index.js",
     rule: wrapperRule,
-  });
-  addCase(`${syntax} 允许通过公开 React Query 封装入口引用`, {
-    from: "app/CASE.ts",
-    source: "@/lib/react-query",
-    syntax,
-  });
-}
-addCase("fetchApi 可以通过条件入口选择凭证实现", {
-  from: "lib/fetch.ts",
-  to: "lib/credentials-browser.ts",
-  source: "#credentials",
-});
-addCase("fetch 子目录中的同名文件不能使用条件凭证入口", {
-  from: "lib/CASE/fetch.ts",
-  source: "#credentials",
-  rule: packageImportsRule,
-  messageId: "owner",
-});
-addCase("fetch.tsx 不能使用条件凭证入口", {
-  from: "lib/fetch.tsx",
-  source: "#credentials",
-  rule: packageImportsRule,
-  messageId: "owner",
-});
-addCase("React Query 原包的子路径也只能由封装引用", {
-  from: "app/CASE.ts",
-  source: "@tanstack/react-query/build/modern/index.js",
-  rule: wrapperRule,
-});
-addCase("相似包名不被误认为 React Query 原包", {
+  },
+);
+addCase("a similar package name is not mistaken for the React Query package", {
   from: "app/CASE.ts",
   source: "@tanstack/react-query-devtools",
 });
-addCase("其他 lib 文件不能享有 React Query 原包豁免", {
+addCase("other lib files do not get the React Query package exemption", {
   from: "lib/CASE.ts",
   source: "@tanstack/react-query",
   rule: wrapperRule,
 });
-addCase("与封装同名前缀的文件不能享有豁免", {
-  from: "lib/react-query.CASE.ts",
-  source: "@tanstack/react-query",
-  rule: wrapperRule,
-});
-addCase("lib 子目录中的同名文件不能享有封装豁免", {
-  from: "lib/CASE/react-query.ts",
-  source: "@tanstack/react-query",
-  rule: wrapperRule,
-});
+addCase(
+  "a file whose name starts with the wrapper's does not get the exemption",
+  {
+    from: "lib/react-query.CASE.ts",
+    source: "@tanstack/react-query",
+    rule: wrapperRule,
+  },
+);
+addCase(
+  "a file of the wrapper's name in a lib subdirectory does not get its exemption",
+  {
+    from: "lib/CASE/react-query.ts",
+    source: "@tanstack/react-query",
+    rule: wrapperRule,
+  },
+);
 
 for (const extension of [
   "js",
@@ -637,12 +706,12 @@ for (const extension of [
 ]) {
   const file = `lib/react-query.${extension}`;
   cases.push({
-    name: `react-query.${extension} 封装文件可以引用原包`,
+    name: `the react-query.${extension} wrapper can import the package`,
     from: file,
     files: {
       [file]:
         extension === "cjs"
-          ? '/* eslint-disable @typescript-eslint/no-require-imports -- 用例检查 require 写法的依赖 */\nmodule.exports = require("@tanstack/react-query");'
+          ? '/* eslint-disable @typescript-eslint/no-require-imports -- the case checks a dependency written with require */\nmodule.exports = require("@tanstack/react-query");'
           : `import { value as packageValue } from "@tanstack/react-query"; export const value = packageValue;${["ts", "tsx", "mts", "cts"].includes(extension) ? " export type Item = { value: number };" : ""}`,
     },
     rules: [],
@@ -654,11 +723,14 @@ for (const privateFile of [
   "use-dialog-context.ts",
   "helpers.ts",
 ]) {
-  addCase(`组件内部可以相对引用私有 ${privateFile}`, {
-    from: "components/ui/CASE/root.ts",
-    to: `components/ui/CASE/${privateFile}`,
-    source: `./${privateFile}`,
-  });
+  addCase(
+    `a component can import its private ${privateFile} by relative path`,
+    {
+      from: "components/ui/CASE/root.ts",
+      to: `components/ui/CASE/${privateFile}`,
+      source: `./${privateFile}`,
+    },
+  );
   for (const syntax of [
     "import",
     "dynamicTemplate",
@@ -667,17 +739,20 @@ for (const privateFile of [
     "require",
     "importEquals",
   ]) {
-    addCase(`${syntax} 禁止组件外部访问私有 ${privateFile}`, {
-      from: "app/CASE.ts",
-      to: `components/ui/CASE/${privateFile}`,
-      source: `@/components/ui/CASE/${privateFile}`,
-      syntax,
-      rule: componentRule,
-    });
+    addCase(
+      `${syntax} forbids code outside the component from reaching its private ${privateFile}`,
+      {
+        from: "app/CASE.ts",
+        to: `components/ui/CASE/${privateFile}`,
+        source: `@/components/ui/CASE/${privateFile}`,
+        syntax,
+        rule: componentRule,
+      },
+    );
   }
 }
 cases.push({
-  name: "复合组件可以共享私有 Context 并经入口显式导出各部件",
+  name: "a compound component can share a private Context and export each part explicitly through its entry",
   from: "components/ui/dialog-with-context/index.ts",
   files: {
     "components/ui/dialog-with-context/context.ts":
@@ -712,36 +787,48 @@ for (const directory of [
     "require",
     "importEquals",
   ]) {
-    addCase(`${directory} 内部 ${syntax} 别名引用只报告一次路径错误`, {
-      from: `${directory}/main.ts`,
-      to: `${directory}/private.ts`,
-      source: `@/${directory}/private`,
-      syntax,
-      rule: feature ? featureRule : componentRule,
-      messageId: "relative",
-    });
+    addCase(
+      `${syntax} through the alias inside ${directory} reports the path error only once`,
+      {
+        from: `${directory}/main.ts`,
+        to: `${directory}/private.ts`,
+        source: `@/${directory}/private`,
+        syntax,
+        rule: feature ? featureRule : componentRule,
+        messageId: "relative",
+      },
+    );
   }
-  addCase(`${directory} 内部相对路径仍然允许`, {
+  addCase(`a relative path inside ${directory} is still allowed`, {
     from: `${directory}/main.ts`,
     to: `${directory}/private.ts`,
     source: "./private",
   });
 }
-addCase("全局组件可以通过别名引用其他组件入口", {
-  from: "components/CASE-consumer/main.ts",
-  to: "components/CASE-provider/index.ts",
-  source: "@/components/CASE-provider",
-});
-addCase("UI 组件可以通过别名引用其他 UI 组件入口", {
-  from: "components/ui/CASE-consumer/main.ts",
-  to: "components/ui/CASE-provider/index.ts",
-  source: "@/components/ui/CASE-provider",
-});
-addCase("app 局部组件可以通过别名引用全局组件入口", {
-  from: "app/CASE/components/dialog/main.ts",
-  to: "components/CASE/index.ts",
-  source: "@/components/CASE",
-});
+addCase(
+  "a shared component can import another component's entry through the alias",
+  {
+    from: "components/CASE-consumer/main.ts",
+    to: "components/CASE-provider/index.ts",
+    source: "@/components/CASE-provider",
+  },
+);
+addCase(
+  "a UI component can import another UI component's entry through the alias",
+  {
+    from: "components/ui/CASE-consumer/main.ts",
+    to: "components/ui/CASE-provider/index.ts",
+    source: "@/components/ui/CASE-provider",
+  },
+);
+addCase(
+  "a component local to app can import a shared component's entry through the alias",
+  {
+    from: "app/CASE/components/dialog/main.ts",
+    to: "components/CASE/index.ts",
+    source: "@/components/CASE",
+  },
+);
 
 for (const extension of [
   "js",
@@ -756,7 +843,7 @@ for (const extension of [
   const directory = `components/duplicate-entry-${extension}`;
   const otherExtension = extension === "ts" ? "tsx" : "ts";
   cases.push({
-    name: `index.${extension} 与其他源码入口并存时单文件 lint 也会报错`,
+    name: `index.${extension} beside another source entry is reported even when linting that one file`,
     from: `${directory}/index.${extension}`,
     files: {
       [`${directory}/index.${extension}`]:
@@ -775,7 +862,7 @@ for (const directory of [
   "features/duplicate-entry/components/dialog",
 ]) {
   cases.push({
-    name: `${directory} 同时存在 index.ts 与 index.tsx 被拒绝`,
+    name: `${directory} with both index.ts and index.tsx is refused`,
     from: `${directory}/index.ts`,
     files: {
       [`${directory}/index.ts`]: "export const value = 1;",
@@ -798,7 +885,7 @@ for (const [implementation, declaration] of [
   };
   for (const extension of [implementation, declaration]) {
     cases.push({
-      name: `${extension} 类型声明入口与实现入口并存时不误报`,
+      name: `${extension}: a declaration entry beside the implementation entry is not flagged`,
       from: `${directory}/index.${extension}`,
       files,
       rules: [],
@@ -811,7 +898,7 @@ for (const directory of [
   "features/non-component-entry",
 ]) {
   cases.push({
-    name: `${directory} 集合或 feature 根目录不按组件目录检查唯一入口`,
+    name: `${directory}: a collection or feature root is not checked for a single entry as a component directory is`,
     from: `${directory}/index.ts`,
     files: {
       [`${directory}/index.ts`]: "export const value = 1;",
@@ -822,96 +909,120 @@ for (const directory of [
 }
 
 const namespaceExports = [
-  ["直接具名导出 namespace", "export { Parts };", true],
-  ["重命名导出 namespace", "export { Parts as Dialog };", true],
-  ["默认导出 namespace", "export default Parts;", true],
-  ["具名导出 namespace 为 default", "export { Parts as default };", true],
-  ["导出初始化为 namespace 的变量", "export const Dialog = Parts;", true],
+  ["exporting the namespace by name", "export { Parts };", true],
   [
-    "经 const 别名导出 namespace",
+    "exporting the namespace under another name",
+    "export { Parts as Dialog };",
+    true,
+  ],
+  ["exporting the namespace as default", "export default Parts;", true],
+  [
+    "exporting the namespace by name as default",
+    "export { Parts as default };",
+    true,
+  ],
+  [
+    "exporting a variable initialized to the namespace",
+    "export const Dialog = Parts;",
+    true,
+  ],
+  [
+    "exporting the namespace through a const alias",
     "const Dialog = Parts; export { Dialog };",
     true,
   ],
   [
-    "经多层 const 别名默认导出 namespace",
+    "exporting the namespace as default through several const aliases",
     "const First = Parts; const Dialog = First; export default Dialog;",
     true,
   ],
   [
-    "经 const 别名初始化公开变量",
+    "initializing a public variable from a const alias",
     "const Alias = Parts; export const Dialog = Alias;",
     true,
   ],
   [
-    "类型断言不隐藏 namespace 导出",
+    "a type assertion does not hide a namespace export",
     "export const Dialog = Parts as typeof Parts;",
     true,
   ],
   [
-    "satisfies 不隐藏 namespace 导出",
+    "satisfies does not hide a namespace export",
     "export const Dialog = Parts satisfies typeof Parts;",
     true,
   ],
   [
-    "对象展开不能整体暴露 namespace",
+    "an object spread cannot expose the whole namespace",
     "export const Dialog = { ...Parts };",
     true,
   ],
-  ["对象属性不能整体携带 namespace", "export const Dialog = { Parts };", true],
   [
-    "嵌套对象不能整体携带 namespace",
+    "an object property cannot carry the whole namespace",
+    "export const Dialog = { Parts };",
+    true,
+  ],
+  [
+    "a nested object cannot carry the whole namespace",
     "export const Dialog = { nested: { Parts } };",
     true,
   ],
-  ["数组不能整体携带 namespace", "export const Dialog = [Parts];", true],
   [
-    "对象 const 别名不能隐藏 namespace",
+    "an array cannot carry the whole namespace",
+    "export const Dialog = [Parts];",
+    true,
+  ],
+  [
+    "a const alias of an object cannot hide the namespace",
     "const Alias = { ...Parts }; export const Dialog = Alias;",
     true,
   ],
   [
-    "先导出后声明别名也不能暴露 namespace",
+    "an alias declared after its export cannot expose the namespace either",
     "export { Dialog }; const Dialog = Parts;",
     true,
   ],
   [
-    "对象剩余属性不能整体暴露 namespace",
+    "object rest properties cannot expose the whole namespace",
     "const { ...Dialog } = Parts; export { Dialog };",
     true,
   ],
   [
-    "排除个别成员后仍不能导出 namespace 剩余属性",
+    "the namespace's rest properties cannot be exported even with some members taken out",
     "const { Root, ...Dialog } = Parts; export { Root, Dialog };",
     true,
   ],
   [
-    "直接导出解构变量不能暴露 namespace 剩余属性",
+    "an exported destructured variable cannot expose the namespace's rest properties",
     "export const { ...Dialog } = Parts;",
     true,
   ],
-  ["选择 namespace 的单个成员", "export const Root = Parts.Root;", false],
   [
-    "显式选择 namespace 多个成员组成复合组件",
+    "selecting one member of the namespace",
+    "export const Root = Parts.Root;",
+    false,
+  ],
+  [
+    "selecting several namespace members explicitly into a compound component",
     "export const Dialog = { Root: Parts.Root, Trigger: Parts.Trigger };",
     false,
   ],
   [
-    "内部 namespace 别名仅用于选取成员",
+    "an internal namespace alias used only to select members",
     "const Alias = Parts; export const Root = Alias.Root;",
     false,
   ],
   [
-    "解构选取 namespace 成员",
+    "selecting namespace members by destructuring",
     "const { Root, Trigger } = Parts; export { Root, Trigger };",
     false,
   ],
   [
-    "显式成员对象的剩余属性可以导出",
+    "the rest properties of an object of explicit members can be exported",
     "const Explicit = { Root: Parts.Root }; const { ...Dialog } = Explicit; export { Dialog };",
     false,
   ],
   [
-    "namespace 内部使用与局部同名变量不会误报",
+    "a local variable named like the namespace is not mistaken for it",
     "export const Root = Parts.Root; function createDialog() { const Parts = { open: false }; return Parts; } export const Dialog = createDialog();",
     false,
   ],
@@ -919,7 +1030,7 @@ const namespaceExports = [
 for (const [name, statement, rejected] of namespaceExports) {
   const directory = `components/namespace-export-${cases.length}`;
   cases.push({
-    name: `组件入口${name}`,
+    name: `component entry: ${name}`,
     from: `${directory}/index.ts`,
     files: {
       [`${directory}/parts.ts`]:
@@ -931,12 +1042,16 @@ for (const [name, statement, rejected] of namespaceExports) {
   });
 }
 for (const [name, statement, rejected] of [
-  ["不能通过 export = 整体暴露 namespace", "export = Parts;", true],
-  ["可以通过 export = 显式导出 namespace 成员", "export = Parts.Root;", false],
+  ["export = cannot expose the whole namespace", "export = Parts;", true],
+  [
+    "export = can export a namespace member explicitly",
+    "export = Parts.Root;",
+    false,
+  ],
 ]) {
   const directory = `components/export-assignment-${cases.length}`;
   cases.push({
-    name: `.cts 组件入口${name}`,
+    name: `.cts component entry: ${name}`,
     from: `${directory}/index.cts`,
     files: {
       [`${directory}/parts.ts`]:
@@ -948,7 +1063,7 @@ for (const [name, statement, rejected] of [
   });
 }
 cases.push({
-  name: "组件入口不能整体转出类型 namespace",
+  name: "a component entry cannot export a whole type namespace",
   from: "components/type-namespace-export/index.ts",
   files: {
     "components/type-namespace-export/parts.ts":
@@ -960,7 +1075,7 @@ cases.push({
   messageIds: ["namespace"],
 });
 cases.push({
-  name: "组件入口内部使用 React namespace 并选取成员仍然允许",
+  name: "a component entry may still use the React namespace internally and select its members",
   from: "components/react-namespace-internal/index.tsx",
   files: {
     "components/react-namespace-internal/index.tsx":
@@ -969,7 +1084,7 @@ cases.push({
   rules: [],
 });
 cases.push({
-  name: "组件入口可以导出具名导入的组件与类型别名",
+  name: "a component entry can export components and type aliases imported by name",
   from: "components/explicit-import-exports/index.ts",
   files: {
     "components/explicit-import-exports/parts.ts":
@@ -980,7 +1095,7 @@ cases.push({
   rules: [],
 });
 cases.push({
-  name: "组件实现文件的内部 namespace 导出不被入口规则误报",
+  name: "a namespace export in a component's implementation file is not flagged by the entry rule",
   from: "components/private-namespace-export/internal.ts",
   files: {
     "components/private-namespace-export/parts.ts": "export const Root = 1;",
@@ -990,7 +1105,7 @@ cases.push({
   rules: [],
 });
 cases.push({
-  name: "feature 根入口不被组件 namespace 导出规则误报",
+  name: "a feature root entry is not flagged by the component namespace export rule",
   from: "features/feature-namespace-export/index.ts",
   files: {
     "features/feature-namespace-export/utils/parts.ts":
@@ -1001,80 +1116,88 @@ cases.push({
   rules: [],
 });
 
-addCase("根目录代码跨目录用相对路径被拒绝", {
+addCase("root code importing across directories by relative path is refused", {
   from: "lib/CASE.ts",
   to: "utils/CASE.ts",
   source: "../utils/CASE",
   rule: rootRule,
   messageId: "alias",
 });
-addCase("根目录代码同目录用 @/ 被拒绝", {
+addCase("root code importing within its directory through @/ is refused", {
   from: "utils/CASE-a.ts",
   to: "utils/CASE-b.ts",
   source: "@/utils/CASE-b",
   rule: rootRule,
   messageId: "relative",
 });
-addCase("app 引用子目录用 @/ 被拒绝", {
+addCase("app importing its subdirectory through @/ is refused", {
   from: "app/CASE/page.tsx",
   to: "app/CASE/parts/value.ts",
   source: "@/app/CASE/parts/value",
   rule: rootRule,
   messageId: "relative",
 });
-addCase("根目录代码跨目录用 @/ 允许", {
+addCase("root code importing across directories through @/ is allowed", {
   from: "lib/CASE.ts",
   to: "utils/CASE.ts",
   source: "@/utils/CASE",
 });
-addCase("app 引用子目录用相对路径允许", {
+addCase("app importing its subdirectory by relative path is allowed", {
   from: "app/CASE/page.tsx",
   to: "app/CASE/parts/value.ts",
   source: "./parts/value",
 });
-addCase("scripts/ 跨目录可以用相对路径", {
+addCase("scripts/ can import across directories by relative path", {
   from: "scripts/CASE/main.mjs",
   to: "scripts/other-CASE/value.mjs",
   source: "../other-CASE/value.mjs",
 });
-addCase("相对路径引用 npm 包被拒绝", {
+addCase("importing an npm package by relative path is refused", {
   from: "lib/CASE.ts",
   source: "../node_modules/react",
   rule: "import/no-relative-packages",
 });
 
 for (const [name, from, rules] of [
-  ["camelCase 文件名被拒绝", "utils/formatBytes.ts", [namingRule]],
+  ["a camelCase file name is refused", "utils/formatBytes.ts", [namingRule]],
   [
-    "PascalCase 目录名被拒绝",
+    "a PascalCase directory name is refused",
     "features/TaskBoard/utils/value.ts",
     [namingRule],
   ],
-  ["点分段文件名和点开头的目录允许", ".config/naming.example.ts", []],
   [
-    "app/ 下的路由组、并行路由、拦截路由和动态段允许",
+    "dotted file names and directories starting with a dot are allowed",
+    ".config/naming.example.ts",
+    [],
+  ],
+  [
+    "route groups, parallel routes, intercepting routes and dynamic segments are allowed under app/",
     "app/(shop)/@modal/(..)items/[itemId]/page.tsx",
     [],
   ],
   [
-    "app/ 下的私有目录和 catch-all 段允许",
+    "private folders and catch-all segments are allowed under app/",
     "app/_internal/[...catchAll]/[[...rest]]/page.tsx",
     [],
   ],
   [
-    "Next.js 路由写法只在 app/ 下允许",
+    "Next.js route syntax is allowed only under app/",
     "components/_private/value.ts",
     [namingRule],
   ],
   [
-    "app/ 下的文件名仍然要 kebab-case",
+    "file names under app/ must still be kebab-case",
     "app/[id]/PageContent.tsx",
     [namingRule],
   ],
-  ["动态段名用 snake_case 被拒绝", "app/[task_id]/page.tsx", [namingRule]],
+  [
+    "a snake_case dynamic segment name is refused",
+    "app/[task_id]/page.tsx",
+    [namingRule],
+  ],
 ]) {
   cases.push({
-    name: `文件命名：${name}`,
+    name: `file naming: ${name}`,
     from,
     files: { [from]: "export const value = 1;" },
     rules,
@@ -1083,27 +1206,27 @@ for (const [name, from, rules] of [
 
 for (const [name, from, directive, rules] of [
   [
-    "eslint-disable 不写原因被拒绝",
+    "eslint-disable without a reason is refused",
     "utils/disable-without-reason.ts",
     "// eslint-disable-next-line @typescript-eslint/no-explicit-any",
     ["@eslint-community/eslint-comments/require-description"],
   ],
   [
-    "eslint-disable 在 -- 后写明原因允许",
+    "eslint-disable with a reason after -- is allowed",
     "utils/disable-with-reason.ts",
-    "// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 第三方回调的参数没有类型",
+    "// eslint-disable-next-line @typescript-eslint/no-explicit-any -- the third-party callback's parameter is untyped",
     [],
   ],
 ]) {
   cases.push({
-    name: `禁用注释：${name}`,
+    name: `disable comments: ${name}`,
     from,
     files: { [from]: `${directive}\nexport const value: any = 1;` },
     rules,
   });
 }
 
-describe("架构依赖和 feature、组件导入约定", () => {
+describe("architecture dependencies and the feature and component import conventions", () => {
   let previousCwd;
   let fixture;
   let eslint;
@@ -1118,7 +1241,7 @@ describe("架构依赖和 feature、组件导入约定", () => {
     cpSync(join(project, "scripts/eslint"), join(fixture, "scripts/eslint"), {
       recursive: true,
     });
-    // eslint.config.mjs 从这里取 build 目录的忽略项。
+    // eslint.config.mjs takes the ignores for the build directories from here.
     copyFileSync(
       join(project, "scripts/build-dirs.mjs"),
       join(fixture, "scripts/build-dirs.mjs"),
@@ -1127,9 +1250,11 @@ describe("架构依赖和 feature、组件导入约定", () => {
       join(project, "tsconfig.json"),
       join(fixture, "tsconfig.json"),
     );
-    // import/no-relative-packages 要找被 lint 文件所属的 package.json，找不到会直接抛错。
+    // import/no-relative-packages looks for the package.json the linted file belongs to, and
+    // throws when there is none.
     copyFileSync(join(project, "package.json"), join(fixture, "package.json"));
-    // Windows 上建目录 symlink 要管理员权限或开发者模式，junction 不用；其他系统忽略这个参数。
+    // On Windows a directory symlink needs admin rights or Developer Mode and a junction does not;
+    // other systems ignore this argument.
     symlinkSync(
       join(project, "node_modules"),
       join(fixture, "node_modules"),
@@ -1145,8 +1270,9 @@ describe("架构依赖和 feature、组件导入约定", () => {
 
     // Import resolvers also consult process.cwd(); all files must exist before graph traversal.
     process.chdir(fixture);
-    // 架构用例只验证依赖边界；import 排序由下方独立用例验证。
-    // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
+    // The architecture cases check only dependency boundaries; import order has its own tests below.
+    // The fixtures build their cases with type aliases and type assertions, so the TypeScript style
+    // rules are off here.
     eslint = new ESLint({
       cwd: fixture,
       overrideConfig: {
@@ -1180,14 +1306,15 @@ describe("架构依赖和 feature、组件导入约定", () => {
     });
   }
 
-  describe("条件凭证入口只接受受支持的映射", () => {
-    // fixture 里的 package.json 复制自项目，映射用例在收集阶段就要确定，所以直接读项目的。
+  describe("the conditional credentials entry accepts only the supported mapping", () => {
+    // The fixture's package.json is a copy of the project's, and the mapping cases must be known
+    // when tests are collected, so they read the project's directly.
     const manifest = JSON.parse(
       readFileSync(join(project, "package.json"), "utf8"),
     );
     const credentialImports = manifest.imports["#credentials"];
     const manifestPath = () => join(fixture, "package.json");
-    const filePath = () => join(fixture, "lib/fetch.ts");
+    const filePath = () => join(fixture, "lib/fetch/index.ts");
     let originalManifest;
     const restoreManifest = () =>
       writeFileSync(manifestPath(), originalManifest, "utf8");
@@ -1198,28 +1325,31 @@ describe("架构依赖和 feature、组件导入约定", () => {
     afterAll(restoreManifest);
 
     for (const [name, mapping] of [
-      ["映射缺失", undefined],
-      ["直接映射丢失环境隔离", credentialImports.default],
+      ["a missing mapping", undefined],
       [
-        "server 分支不能指向其他层",
+        "a direct mapping loses the split between environments",
+        credentialImports.default,
+      ],
+      [
+        "the server branch cannot point to another layer",
         {
           ...credentialImports,
           "react-server": "./features/account/api/credentials.ts",
         },
       ],
       [
-        "default 分支不能换成其他 lib 文件",
-        { ...credentialImports, default: "./lib/fetch.ts" },
+        "the default branch cannot be another lib file",
+        { ...credentialImports, default: "./lib/fetch/index.ts" },
       ],
       [
-        "default 不能排在 server 分支之前",
+        "default cannot come before the server branch",
         {
           default: credentialImports.default,
           "react-server": credentialImports["react-server"],
         },
       ],
       [
-        "额外 condition 不能绕过目标限制",
+        "an extra condition cannot bypass the target restriction",
         {
           browser: "./features/account/api/credentials.ts",
           ...credentialImports,
@@ -1249,7 +1379,7 @@ describe("架构依赖和 feature、组件导入约定", () => {
       });
     }
 
-    test("恢复受支持的映射后不再报错，其他 # 入口仍被拒绝", async () => {
+    test("with the supported mapping restored nothing is reported, and other # entries are still refused", async () => {
       restoreManifest();
       const [restored] = await eslint.lintText(
         statements.import("#credentials"),
@@ -1271,7 +1401,7 @@ describe("架构依赖和 feature、组件导入约定", () => {
   });
 });
 
-describe("import 按四组自动修复，保留客户端指令和副作用导入的相对顺序", () => {
+describe("imports are fixed into four groups, keeping the client directive and the relative order of side-effect imports", () => {
   const source = `"use client";
 
 import "./z-reset.css";
@@ -1312,8 +1442,9 @@ export const values = [local, helper, join, upstream, useState, scoped, styles];
   const eslint = new ESLint({ cwd: project });
   const fixer = new ESLint({ cwd: project, fix: true });
   for (const extension of ["js", "jsx", "mjs", "ts", "tsx", "mts", "cts"]) {
-    test(`.${extension} 应用同一套分组并支持自动修复`, async () => {
-      // 应用代码目录跨目录必须用 @/，../ 分组放在不受 root-imports 约束的 scripts/ 下演示。
+    test(`.${extension} gets the same groups and the autofix`, async () => {
+      // App code must import across directories through @/, so the ../ group is shown under scripts/,
+      // which root-imports does not constrain.
       const options = {
         filePath: join(project, `scripts/import-groups.${extension}`),
       };
@@ -1331,8 +1462,9 @@ export const values = [local, helper, join, upstream, useState, scoped, styles];
   }
 });
 
-describe("数据访问规则覆盖 React Query 封装、mutation 回调和请求库", () => {
-  // import/no-cycle 遍历依赖图时要求被检查的文件真实存在，lintText 的虚拟文件会让它崩溃。
+describe("the data access rules cover the React Query wrapper, mutation callbacks and request libraries", () => {
+  // import/no-cycle needs the linted file to exist when it walks the dependency graph; lintText's
+  // virtual file crashes it.
   const eslint = new ESLint({
     cwd: project,
     overrideConfig: { rules: { "import/no-cycle": "off" } },
@@ -1351,14 +1483,14 @@ const options = queryOptions({ queryKey: ["a"], queryFn: () => 1 });
 `;
   const examples = [
     {
-      name: "内联 queryKey 和 queryFn 要求改用 queryOptions",
+      name: "an inline queryKey and queryFn must use queryOptions instead",
       body: `export function Example() {
   return useQuery({ queryKey: ["a"], queryFn: () => 1 }).data;
 }`,
       rules: ["@tanstack/query/prefer-query-options"],
     },
     {
-      name: "对 query 结果做 rest 解构会订阅全部字段",
+      name: "rest destructuring of a query result subscribes to every field",
       body: `export function Example() {
   const { data, ...rest } = useQuery(options);
   return [data, rest];
@@ -1366,7 +1498,7 @@ const options = queryOptions({ queryKey: ["a"], queryFn: () => 1 });
       rules: ["@tanstack/query/no-rest-destructuring"],
     },
     {
-      name: "mutation 结果对象不能作为依赖",
+      name: "a mutation result object cannot be a dependency",
       body: `export function Example() {
   const mutation = useMutation({ mutationFn: () => Promise.resolve(1) });
   return useCallback(() => mutation.mutate(), [mutation]);
@@ -1374,7 +1506,7 @@ const options = queryOptions({ queryKey: ["a"], queryFn: () => 1 });
       rules: ["@tanstack/query/no-unstable-deps"],
     },
     {
-      name: "客户端组件每次渲染新建 QueryClient",
+      name: "a client component creates a QueryClient on every render",
       body: `export function Example() {
   const client = new QueryClient();
   return client;
@@ -1382,7 +1514,7 @@ const options = queryOptions({ queryKey: ["a"], queryFn: () => 1 });
       rules: ["@tanstack/query/stable-query-client"],
     },
     {
-      name: "async Server Component 可以按渲染新建 QueryClient",
+      name: "an async Server Component can create a QueryClient per render",
       body: `export async function Example() {
   const client = new QueryClient();
   await client.query(options);
@@ -1397,7 +1529,7 @@ const options = queryOptions({ queryKey: ["a"], queryFn: () => 1 });
         filePath,
       });
       expect(result.fatalErrorCount).toBe(0);
-      // 各示例共用 header 的 import，未使用的 import 不在这组用例的检查范围内。
+      // The examples share the header's imports; unused imports are outside what these cases check.
       expect(
         result.messages
           .map(({ ruleId }) => ruleId)
@@ -1409,7 +1541,7 @@ const options = queryOptions({ queryKey: ["a"], queryFn: () => 1 });
   }
   for (const { name, body, reported } of [
     {
-      name: "useMutation 里的回调会替换工厂的回调",
+      name: "callbacks in useMutation replace the factory's callbacks",
       body: `export function Example() {
   return useMutation({
     ...mutationOptions({ mutationFn: () => Promise.resolve(1) }),
@@ -1422,7 +1554,7 @@ const options = queryOptions({ queryKey: ["a"], queryFn: () => 1 });
       reported: ["onMutate", "onSuccess", "onError", "onSettled"],
     },
     {
-      name: "回调写在 mutationOptions 工厂和 mutate 里不报错",
+      name: "callbacks in the mutationOptions factory and in mutate are not reported",
       body: `const factory = () =>
   mutationOptions({
     mutationFn: () => Promise.resolve(1),
@@ -1457,50 +1589,50 @@ export function Example() {
     reported,
   } of [
     {
-      name: "update- 文件里的 queryOptions 要放回 get- 文件",
+      name: "queryOptions in an update- file belongs in a get- file",
       file: "features/example/api/update-task-favorite.ts",
       body: "export const favorites = queryOptions({ queryKey: ['a'], queryFn: () => 1 });",
       reported: ["queryOptions"],
     },
     {
-      name: "create- 文件里的 infiniteQueryOptions 要放回 get- 文件",
+      name: "infiniteQueryOptions in a create- file belongs in a get- file",
       file: "features/example/api/create-task.ts",
       body: "export const feed = infiniteQueryOptions({ queryKey: ['a'], queryFn: () => 1, initialPageParam: 1, getNextPageParam: () => 2 });",
       reported: ["infiniteQueryOptions"],
     },
     {
-      name: "delete- 文件里改名引入的 queryOptions 也要放回 get- 文件",
+      name: "queryOptions imported under another name in a delete- file belongs in a get- file too",
       file: "features/example/api/delete-task.ts",
       imports: "queryOptions as listOptions",
       body: "export const list = listOptions({ queryKey: ['a'], queryFn: () => 1 });",
       reported: ["queryOptions"],
     },
     {
-      name: "get- 文件里的 mutationOptions 要放进写入请求的文件",
+      name: "mutationOptions in a get- file belongs in the file of the write request",
       file: "features/example/api/get-tasks.ts",
       body: "export const save = mutationOptions({ mutationFn: () => Promise.resolve(1) });",
       reported: ["mutationOptions"],
     },
     {
-      name: "get- 文件放 query 工厂不报错",
+      name: "a query factory in a get- file is not reported",
       file: "features/example/api/get-tasks.ts",
       body: "export const list = queryOptions({ queryKey: ['a'], queryFn: () => 1 });",
       reported: [],
     },
     {
-      name: "update- 文件放 mutationOptions 不报错",
+      name: "mutationOptions in an update- file is not reported",
       file: "features/example/api/update-task.ts",
       body: "export const save = mutationOptions({ mutationFn: () => Promise.resolve(1) });",
       reported: [],
     },
     {
-      name: "领域动词的文件不对应固定的 HTTP 方法，不检查",
+      name: "a file named with a domain verb maps to no fixed HTTP method, so it is not checked",
       file: "features/example/api/search-tasks.ts",
       body: "export const search = queryOptions({ queryKey: ['a'], queryFn: () => 1 });",
       reported: [],
     },
     {
-      name: "api/ 以外的文件不检查",
+      name: "files outside api/ are not checked",
       file: "features/example/utils/update-task.ts",
       body: "export const list = queryOptions({ queryKey: ['a'], queryFn: () => 1 });",
       reported: [],
@@ -1520,7 +1652,7 @@ export function Example() {
     });
   }
   for (const source of ["axios", "swr", "swr/mutation"]) {
-    test(`禁止引入 ${source}`, async () => {
+    test(`importing ${source} is forbidden`, async () => {
       const [result] = await eslint.lintText(
         `import value from "${source}";\n\nexport const result = value;\n`,
         { filePath },
@@ -1532,12 +1664,12 @@ export function Example() {
   }
 });
 
-describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", () => {
+describe("Tailwind classes are checked for canonical form, colors and radii against the project's theme", () => {
   const eslint = new ESLint({ cwd: project });
   const filePath = join(project, "components/tailwind-classes.tsx");
 
-  test("按项目主题和 16px 根字号改成规范写法", async () => {
-    // h-control-sm 只在 app/globals.css 里定义，用来确认插件读到了项目主题。
+  test("fixes classes to their canonical form by the project's theme and the 16px root font size", async () => {
+    // h-control-sm is defined only in app/globals.css, so it confirms the plugin read the project's theme.
     const source = `export const panel = <div className="h-control-sm lg:max-h-[520px]" />;\n`;
     const [before] = await eslint.lintText(source, { filePath });
     expect(
@@ -1556,11 +1688,11 @@ describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", (
     );
   });
 
-  test("颜色只能用语义 token 和黑白，圆角只能用内置或项目 token", async () => {
+  test("colors may only be semantic tokens, black and white, and radii only built-in or project tokens", async () => {
     const restricted = [
       "bg-red-500",
       "hover:text-zinc-400/50",
-      // Tailwind 4.2 新增的调色板，确认调色板名是从 tailwindcss 读出来的。
+      // A palette new in Tailwind 4.2, which confirms the palette names are read from tailwindcss.
       "border-t-mauve-200",
       "bg-[#c83d21]",
       "shadow-[0_0_0_1px_#000_inset]",
@@ -1591,7 +1723,7 @@ describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", (
   });
 });
 
-describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => {
+describe("e2e confirms the page has hydrated after a full page load before acting on it", () => {
   const eslint = new ESLint({ cwd: project });
   const filePath = join(project, "e2e/act-after-ready.spec.ts");
   const lint = async (body) => {
@@ -1600,12 +1732,12 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
     return (
       result.messages
         .filter(({ ruleId }) => ruleId === "e2e/act-after-ready")
-        // 正文从源码第 6 行开始，换算成正文里的行号。
+        // The body starts on line 6 of the source; convert to line numbers within the body.
         .map(({ line }) => line - 5)
     );
   };
 
-  test("goto 或 reload 之后直接操作被拒绝", async () => {
+  test("acting right after goto or reload is refused", async () => {
     expect(
       await lint(
         `  await page.goto("/a");\n  const button = page.getByRole("button");\n  await button.click();`,
@@ -1613,15 +1745,15 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
     ).toStrictEqual([3]);
     expect(
       await lint(
-        `  await page.reload();\n  await page.getByLabel("名称").fill("x");`,
+        `  await page.reload();\n  await page.getByLabel("Name").fill("x");`,
       ),
     ).toStrictEqual([2]);
   });
 
-  test("先用 expect 或 helper 确认之后可以操作", async () => {
+  test("acting after an expect or a helper confirms the page is allowed", async () => {
     expect(
       await lint(
-        `  await page.goto("/a");\n  await expect(page.getByText("已加载")).toBeVisible();\n  await page.getByRole("button").click();`,
+        `  await page.goto("/a");\n  await expect(page.getByText("Loaded")).toBeVisible();\n  await page.getByRole("button").click();`,
       ),
     ).toStrictEqual([]);
     expect(
@@ -1631,11 +1763,101 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
     ).toStrictEqual([]);
   });
 
-  test("回调里的操作不算在 goto 之后立即执行", async () => {
+  test("an action in a callback does not count as acting right after goto", async () => {
     expect(
       await lint(
-        `  await page.goto("/a");\n  page.on("load", () => void page.getByRole("button").click());\n  await expect(page.getByText("已加载")).toBeVisible();`,
+        `  await page.goto("/a");\n  page.on("load", () => void page.getByRole("button").click());\n  await expect(page.getByText("Loaded")).toBeVisible();`,
       ),
     ).toStrictEqual([]);
   });
+});
+
+describe("dates and times are formatted only in components/date-time.tsx", () => {
+  const eslint = new ESLint({ cwd: project });
+  const clientDateTime = `"use client";
+
+import { useFormatter } from "next-intl";
+
+export function Probe({ at }: { at: number }) {
+  const format = useFormatter();
+  return <p>{format.dateTime(at)}</p>;
+}
+`;
+  // Each no-restricted-syntax report, named by the restriction it comes from.
+  const restricted = async (file, source) => {
+    const [result] = await eslint.lintText(source, {
+      filePath: join(project, file),
+    });
+    expect(result.fatalErrorCount).toBe(0);
+    return result.messages
+      .filter(({ ruleId }) => ruleId === "no-restricted-syntax")
+      .map(({ message }) =>
+        message.startsWith("Show a date or time")
+          ? "date-time"
+          : message.startsWith("List public API")
+            ? "component-entry"
+            : message,
+      );
+  };
+  // Paths of files that exist: import/no-cycle cannot place a file that is not on disk.
+  for (const { name, file, source, reported } of [
+    {
+      name: "format.dateTime in a Client Component is reported",
+      file: "features/demo-task/components/task-list/index.tsx",
+      source: clientDateTime,
+      reported: ["date-time"],
+    },
+    {
+      name: "a component entry is under the date restriction and its own",
+      file: "components/locale-switcher/index.tsx",
+      source: `${clientDateTime}export * from "./locale-items";\n`,
+      reported: ["date-time", "component-entry"],
+    },
+    {
+      name: "getFormatter().dateTimeRange in a Server Component is reported",
+      file: "app/[locale]/page.tsx",
+      source: `import { getFormatter } from "next-intl/server";
+
+export default async function Probe() {
+  const format = await getFormatter();
+  return <p>{format.dateTimeRange(0, 1)}</p>;
+}
+`,
+      reported: ["date-time"],
+    },
+    {
+      name: "Intl.DateTimeFormat is reported",
+      file: "lib/cn.ts",
+      source: `export const probe = (at: number) => new Intl.DateTimeFormat("en").format(at);\n`,
+      reported: ["date-time"],
+    },
+    {
+      name: "relative times and numbers still format anywhere",
+      file: "features/demo-task/components/task-list/index.tsx",
+      source: `"use client";
+
+import { useFormatter } from "next-intl";
+
+export function Probe({ at, count }: { at: number; count: number }) {
+  const format = useFormatter();
+  return (
+    <p>
+      {format.relativeTime(at)} {format.number(count)}
+    </p>
+  );
+}
+`,
+      reported: [],
+    },
+    {
+      name: "components/date-time.tsx formats them",
+      file: "components/date-time.tsx",
+      source: clientDateTime,
+      reported: [],
+    },
+  ]) {
+    test(name, async () => {
+      expect(await restricted(file, source)).toStrictEqual(reported);
+    });
+  }
 });

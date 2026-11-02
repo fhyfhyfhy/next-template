@@ -14,15 +14,19 @@ export interface ProgressConfig {
   indeterminate: boolean;
 }
 
-// 括号将结束标记保留在表达式内；UI demo 页面只替换标记之间的 JSON 初始值。
+// The parentheses keep the end marker inside the expression; the UI demo page
+// replaces only the initial JSON between the markers.
 // prettier-ignore
 export const initialConfig: ProgressConfig = (/* @example-config */ {
-  "label": "生成进度",
+  "label": "Generation progress",
   "value": 40,
   "indeterminate": false
 } /* @end-example-config */);
 
-/** 不传参数时使用初始配置；UI demo 页面传入面板里的配置。 */
+/**
+ * Without a config it uses initialConfig; the UI demo page passes the panel's
+ * config.
+ */
 export function ProgressPlayground({
   config = initialConfig,
 }: { config?: ProgressConfig } = {}) {

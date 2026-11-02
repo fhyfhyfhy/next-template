@@ -10,13 +10,14 @@ export interface FieldConfig {
   error: string;
 }
 
-// 括号将结束标记保留在表达式内；UI demo 页面只替换标记之间的 JSON 初始值。
+// The parentheses keep the end marker inside the expression; the UI demo page
+// replaces only the initial JSON between the markers.
 // prettier-ignore
 export const initialConfig: FieldConfig = (/* @example-config */ {
-  "label": "项目名称",
-  "placeholder": "例如：我的设计系统",
+  "label": "Project name",
+  "placeholder": "e.g. My design system",
   "invalid": true,
-  "error": "名称已被其他项目占用"
+  "error": "Another project already uses this name"
 } /* @end-example-config */);
 
 export function FieldPlayground({

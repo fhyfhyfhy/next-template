@@ -1,16 +1,23 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// 项目自己的 e2e（pnpm test:e2e），不含 e2e/demo/ 下 Data demo 的 e2e（playwright.demo.config.ts）。
-// 端口避开 3000 起 dev/start 自动顺延的那几个端口，也和 Data demo e2e 的 3999 错开，两套可以同时跑。
-// 同一台机器上另一份 checkout 也在跑 e2e 时，用 E2E_PORT 换一个端口。
+// The app's own e2e (pnpm test:e2e), against a production build, which serves
+// no demos (lib/demos.ts); the demos' specs under e2e/demo/ are the other set
+// (playwright.demo.config.ts).
+// The port stays clear of 3000 and the ports after it, which dev and start try
+// in turn, and of the Data demo e2e's 3999, so the two sets can run at once.
+// When another checkout on the same machine is running e2e too, choose another
+// port with E2E_PORT.
 const PORT = Number(process.env.E2E_PORT ?? 3998);
 const BASE_URL = `http://localhost:${PORT}`;
 
-// 对着生产构建运行；调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务（比如 pnpm dev --port 3998）。
+// Runs against a production build; while debugging, set E2E_REUSE_SERVER=1 to
+// reuse a server already on this port (for example pnpm dev --port 3998).
 export default defineConfig({
   testDir: "./e2e",
   testIgnore: "demo/**",
-  // 两套 e2e 各用自己的输出目录：Playwright 开始时会清空 outputDir，共用时同时跑会删掉对方的 trace。
+  // Each e2e set has its own output directory: Playwright empties outputDir
+  // when it starts, so with a shared one, two sets running at once would
+  // delete each other's traces.
   outputDir: "test-results/e2e",
   forbidOnly: true,
   reporter: "list",
@@ -18,7 +25,9 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: "retain-on-failure",
   },
-  // 设备预设的 locale 是 en-US，proxy 会按 Accept-Language 把不带前缀的 URL 跳到 /en；用例默认看默认 locale 的页面。
+  // The device preset's locale is en-US, for which the proxy would redirect an
+  // unprefixed URL to /en by Accept-Language; by default the specs see the
+  // default locale's pages.
   projects: [
     {
       name: "chromium",
@@ -26,9 +35,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // 即 pnpm build 和 start。直接用 node 调用：只装了 corepack 的环境里 PATH 上没有 pnpm。
+    // That is, pnpm build and start. Called through node: where only corepack
+    // is installed, pnpm is not on PATH.
     command: `node scripts/run-next.mjs build && node scripts/run-next.mjs start --port ${PORT}`,
-    // 打开 instant() 依赖的测试 API，产物也因此放进单独的目录，不覆盖正在运行的 start（next.config.ts）。
+    // Turns on the testing API that instant() relies on, which also puts the
+    // build in a directory of its own, so it does not overwrite a running
+    // start (next.config.ts).
     env: { EXPOSE_TESTING_API: "1" },
     url: BASE_URL,
     reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",

@@ -49,13 +49,13 @@ function check(root, filename, checker = createFeatureCycleChecker(root)) {
   return checker(path, readFileSync(path, "utf8"));
 }
 
-test("没有 features 目录或当前文件不属于 feature 时不报告", () => {
+test("reports nothing without a features directory or when the current file is in no feature", () => {
   const root = fixture();
   const checkFile = createFeatureCycleChecker(root);
   expect(checkFile(join(root, "app/page.ts"), "export {};")).toStrictEqual([]);
 });
 
-test("同 feature 导入和单向跨 feature 依赖允许", () => {
+test("imports within a feature and one-way dependencies across features are allowed", () => {
   const root = fixture({
     "features/a/index.ts": 'export { value } from "./hooks/value";',
     "features/a/hooks/value.ts":
@@ -68,7 +68,7 @@ test("同 feature 导入和单向跨 feature 依赖允许", () => {
   expect(check(root, "features/a/hooks/value.ts", checkFile)).toStrictEqual([]);
 });
 
-test("文件图无环时仍能发现两个 feature 互相依赖", () => {
+test("finds two features depending on each other even when the file graph has no cycle", () => {
   const root = fixture({
     "features/a/index.ts": "export const a = 1;",
     "features/a/components/consumer.ts":
@@ -89,7 +89,7 @@ test("文件图无环时仍能发现两个 feature 互相依赖", () => {
   ]);
 });
 
-test("发现三个 feature 的间接循环，只报告当前文件参与的循环", () => {
+test("finds an indirect cycle of three features, and reports only the cycles the current file is in", () => {
   const root = fixture({
     "features/c/index.ts": 'export * from "@/features/a";',
     "features/b/index.ts": 'export * from "@/features/c";',
@@ -123,7 +123,7 @@ const references = {
     'import peer = require("@/features/b"); export = peer;',
 };
 for (const [name, source] of Object.entries(references)) {
-  test(`${name} 纳入 feature 图`, () => {
+  test(`${name} is part of the feature graph`, () => {
     const root = fixture({
       "features/a/index.ts": source,
       "features/b/index.ts":
@@ -136,7 +136,7 @@ for (const [name, source] of Object.entries(references)) {
 }
 
 for (const extension of SOURCE_EXTENSIONS) {
-  test(`扫描 .${extension} 文件`, () => {
+  test(`scans .${extension} files`, () => {
     const root = fixture({
       [`features/a/index.${extension}`]: `export * from "@/features/b/index.${extension}";`,
       [`features/b/index.${extension}`]: `export * from "@/features/a/index.${extension}";`,
@@ -147,7 +147,7 @@ for (const extension of SOURCE_EXTENSIONS) {
   });
 }
 
-test("相对路径跨 feature 依赖仍纳入循环检查", () => {
+test("a dependency across features by relative path is still part of the cycle check", () => {
   const root = fixture({
     "features/a/index.ts": 'export * from "../b";',
     "features/b/index.ts": 'export * from "../a";',
@@ -157,7 +157,7 @@ test("相对路径跨 feature 依赖仍纳入循环检查", () => {
   ).toStrictEqual([["a", "b", "a"]]);
 });
 
-test("声明文件的类型依赖纳入 feature 图", () => {
+test("type dependencies in declaration files are part of the feature graph", () => {
   const root = fixture({
     "features/a/index.d.ts": 'export type Item = import("@/features/b").Item;',
     "features/b/index.d.ts": 'export type Item = import("@/features/a").Item;',
@@ -167,7 +167,7 @@ test("声明文件的类型依赖纳入 feature 图", () => {
   ).toStrictEqual([["a", "b", "a"]]);
 });
 
-test("忽略生成目录、第三方模块和无法静态判断的动态导入", () => {
+test("ignores generated directories, third-party modules and dynamic imports that cannot be resolved statically", () => {
   const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts":
@@ -178,7 +178,7 @@ test("忽略生成目录、第三方模块和无法静态判断的动态导入",
   expect(check(root, "features/a/index.ts")).toStrictEqual([]);
 });
 
-test("按 tsconfig 的实际别名解析依赖", () => {
+test("resolves dependencies by tsconfig's actual aliases", () => {
   const root = fixture(
     {
       "features/a/index.ts": 'export * from "@/public/b";',
@@ -191,7 +191,7 @@ test("按 tsconfig 的实际别名解析依赖", () => {
   ).toStrictEqual([["a", "b", "a"]]);
 });
 
-test("共享 resolver 读取 extends 和 moduleSuffixes", () => {
+test("the shared resolver reads extends and moduleSuffixes", () => {
   const root = fixture({
     "tsconfig.base.json": JSON.stringify({
       compilerOptions: {
@@ -213,7 +213,7 @@ test("共享 resolver 读取 extends 和 moduleSuffixes", () => {
   expect(imported.isAlias).toBe(true);
 });
 
-test("共享 resolver 对未解析路径规范化，第三方包不参与项目路径检查", () => {
+test("the shared resolver normalizes unresolved paths, and third-party packages are left out of the project path checks", () => {
   const root = fixture();
   const resolveImport = createProjectResolver(root);
   expect(
@@ -226,7 +226,7 @@ test("共享 resolver 对未解析路径规范化，第三方包不参与项目�
   expect(resolveImport(join(root, "app/page.ts"), "react")).toBe(null);
 });
 
-test("同一 checker 读取磁盘内容变化，不以时间戳或文件大小复用旧依赖", () => {
+test("the same checker reads changes on disk, and does not reuse old dependencies by timestamp or file size", () => {
   const source = 'export * from "@/features/b";';
   const root = fixture({
     "features/a/index.ts": source,
@@ -253,7 +253,7 @@ test("同一 checker 读取磁盘内容变化，不以时间戳或文件大小�
   expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual([]);
 });
 
-test("同一 checker 跟踪依赖文件新增、删除及跨目录重命名", () => {
+test("the same checker follows dependency files being added, deleted and renamed across directories", () => {
   const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts": "export const value = 1;",
@@ -278,7 +278,7 @@ test("同一 checker 跟踪依赖文件新增、删除及跨目录重命名", ()
   expect(current()).toStrictEqual([]);
 });
 
-test("同一 checker 跟踪整个 feature 目录新增、重命名和删除", () => {
+test("the same checker follows a whole feature directory being added, renamed and deleted", () => {
   const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
   });
@@ -295,7 +295,7 @@ test("同一 checker 跟踪整个 feature 目录新增、重命名和删除", ()
   expect(current()).toStrictEqual([]);
 });
 
-test("同一 checker 重新读取 tsconfig 及 extends 中的别名", () => {
+test("the same checker rereads the aliases in tsconfig and its extends", () => {
   const root = fixture({
     "tsconfig.base.json": JSON.stringify({
       compilerOptions: {
@@ -333,7 +333,7 @@ test("同一 checker 重新读取 tsconfig 及 extends 中的别名", () => {
   expect(current()).toStrictEqual([]);
 });
 
-test("配置变化让当前文件退出 feature 图后，其他文件也使用新的解析结果", () => {
+test("once a config change takes the current file out of the feature graph, other files use the new resolution too", () => {
   const root = fixture(
     {
       "features/a/index.ts": 'export * from "@/peer";',
@@ -358,7 +358,7 @@ test("配置变化让当前文件退出 feature 图后，其他文件也使用�
   expect(check(root, "features/b/index.ts", checkFile)).toStrictEqual([]);
 });
 
-test("原子替换文件后即使大小和 mtime 相同也更新依赖", () => {
+test("updates dependencies after an atomic file replace even when the size and mtime are the same", () => {
   const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts": 'export * from "@/features/c";',
@@ -376,7 +376,7 @@ test("原子替换文件后即使大小和 mtime 相同也更新依赖", () => {
   expect(check(root, "features/a/index.ts", checkFile).length).toBe(1);
 });
 
-test("新增或删除优先解析目标会使已有文件的依赖失效", () => {
+test("adding or deleting a preferred resolution target invalidates existing files' dependencies", () => {
   const root = fixture(
     {
       "features/a/index.ts": 'export * from "@/peer";',
@@ -399,7 +399,7 @@ test("新增或删除优先解析目标会使已有文件的依赖失效", () =>
   expect(current()).toStrictEqual([]);
 });
 
-test("无效配置不会回退到旧 resolver，修正后同一 checker 可以恢复", () => {
+test("an invalid config does not fall back to the old resolver, and the same checker recovers once it is fixed", () => {
   const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts": 'export * from "@/features/a";',
@@ -415,7 +415,7 @@ test("无效配置不会回退到旧 resolver，修正后同一 checker 可以�
   expect(current().length).toBe(1);
 });
 
-test("未保存的当前文本覆盖磁盘版本，后续调用不会保留旧的覆盖内容", () => {
+test("unsaved current text overrides the version on disk, and later calls do not keep the old override", () => {
   const root = fixture({
     "features/a/index.ts": "export const value = 1;",
     "features/b/index.ts": 'export * from "@/features/a";',
@@ -435,7 +435,7 @@ test("未保存的当前文本覆盖磁盘版本，后续调用不会保留旧�
   expect(check(root, "features/a/index.ts", checkFile).length).toBe(1);
 });
 
-test("尚未落盘的新文件也按传入文本参与 feature 图", () => {
+test("a new file not yet on disk is part of the feature graph by the text passed in", () => {
   const root = fixture({
     "features/b/index.ts": 'export * from "@/features/a/new-file";',
   });
@@ -448,7 +448,7 @@ test("尚未落盘的新文件也按传入文本参与 feature 图", () => {
   ).toStrictEqual([["a", "b", "a"]]);
 });
 
-test("同一 feature 边的每个当前引用都报告，不局限于代表文件", () => {
+test("every current reference along the same feature edge is reported, not only a representative file's", () => {
   const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/a/consumer.ts":
@@ -465,7 +465,7 @@ test("同一 feature 边的每个当前引用都报告，不局限于代表文�
   ]);
 });
 
-test("其他 feature 的独立循环不会影响当前单向引用", () => {
+test("a separate cycle among other features does not affect the current one-way reference", () => {
   const root = fixture({
     "features/a/index.ts": 'export * from "@/features/b";',
     "features/b/index.ts": "export const value = 1;",

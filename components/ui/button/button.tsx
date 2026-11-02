@@ -3,7 +3,10 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/cn";
 
-/** 供 Server/Client 组件复用按钮外观；链接可应用这些样式并保留原生语义。 */
+/**
+ * The button's look, for reuse in Server and Client Components; a link can
+ * apply these styles and keep its native semantics.
+ */
 export const buttonVariants = cva(
   "inline-flex shrink-0 items-center justify-center gap-2 rounded-control border font-medium whitespace-nowrap transition-[background-color,color,border-color,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card data-disabled:cursor-not-allowed data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
@@ -33,7 +36,10 @@ export const buttonVariants = cva(
 export interface ButtonProps
   extends ButtonPrimitive.Props, VariantProps<typeof buttonVariants> {}
 
-/** 带项目视觉变体的按钮，保留 Base UI 的 render、ref 和事件接口。 */
+/**
+ * A button with the project's visual variants, keeping Base UI's render, ref
+ * and event props.
+ */
 export function Button({
   variant = "primary",
   size = "md",

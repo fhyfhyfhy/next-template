@@ -4,8 +4,10 @@ import type { MockFaultInput } from "../../hooks/use-inject-mock-fault";
 import type { DemoTaskTranslator } from "../../types/translator";
 
 /**
- * 故障表单能添加的故障类型，以及它们写进 Mock API 故障配置的字段。加一种类型时在这里加一行，
- * 在 `demo-task` 文案的 `faultForm.kinds` 下加它的名称，并在下面的 `describeFault` 里描述它。
+ * The fault kinds the fault form can add, and the fields each writes into the
+ * Mock API's fault config. To add a kind, add a row here, its name under
+ * `faultForm.kinds` in the `demo-task` messages, and its description in
+ * `describeFault` below.
  */
 export const FAULT_KINDS = [
   { value: "latency", labelKey: "latency", fault: { latencyMs: 2000 } },
@@ -19,13 +21,16 @@ export const FAULT_KINDS = [
   { value: "malformed", labelKey: "malformed", fault: { malformed: true } },
 ] as const satisfies readonly {
   value: string;
-  /** `demo-task` 文案 `faultForm.kinds` 下的 key。 */
+  /** The key under `faultForm.kinds` in the `demo-task` messages. */
   labelKey: string;
   fault: Omit<MockFaultInput, "method" | "path" | "times">;
 }[];
 export type FaultKind = (typeof FAULT_KINDS)[number]["value"];
 
-/** 表单的一次选择对应的故障配置；没写的字段由 `useInjectMockFault` 补成“不生效”。 */
+/**
+ * The fault config for one choice in the form; `useInjectMockFault` fills the
+ * fields left out with values that have no effect.
+ */
 export function toFault(
   endpoint: string,
   kind: FaultKind,
@@ -37,8 +42,10 @@ export function toFault(
 }
 
 /**
- * 故障列表里的一行说明。配置也可能来自 e2e 等其他来源，所以按字段判断，不按表单的类型。
- * 状态码、错误码和毫秒数按字符串传给 `t()`：按数字传会被格式化成带千分位的写法。
+ * One line describing a fault in the fault list. A config can also come from
+ * elsewhere, such as e2e, so this goes by its fields, not by the form's kinds.
+ * Status codes, error codes and milliseconds go to `t()` as strings: as numbers
+ * they would be formatted with thousands separators.
  */
 export function describeFault(fault: MockFault, t: DemoTaskTranslator) {
   const effect = fault.status

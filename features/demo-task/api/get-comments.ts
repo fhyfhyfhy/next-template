@@ -17,7 +17,10 @@ export const taskCommentSchema = z
   }));
 export type TaskComment = z.infer<typeof taskCommentSchema>;
 
-/** 评论区的一项：发表评论时先乐观插入一条 `sending` 的临时评论，请求结束后由 refetch 的结果替换。 */
+/**
+ * An item in the comments: posting first inserts a temporary `sending` comment
+ * optimistically, which the refetch replaces once the request settles.
+ */
 export interface CommentListItem extends TaskComment {
   sending?: boolean;
 }

@@ -37,13 +37,14 @@ export interface SelectConfig {
   alignItemWithTrigger: boolean;
 }
 
-// 括号将结束标记保留在表达式内；UI demo 页面只替换标记之间的 JSON 初始值。
+// The parentheses keep the end marker inside the expression; the UI demo page
+// replaces only the initial JSON between the markers.
 // prettier-ignore
 export const initialConfig: SelectConfig = (/* @example-config */ {
   "size": "md",
-  "label": "你的角色",
-  "placeholder": "选择一个角色",
-  "firstOption": "设计师",
+  "label": "Your role",
+  "placeholder": "Pick a role",
+  "firstOption": "Designer",
   "values": [
     "design"
   ],
@@ -60,7 +61,9 @@ export const initialConfig: SelectConfig = (/* @example-config */ {
   "alignItemWithTrigger": false
 } /* @end-example-config */);
 
-/** 保留 Root、Trigger、定位层和选项的独立组合边界。 */
+/**
+ * Root, Trigger, the positioner and the options stay separate parts to compose.
+ */
 export function SelectPlayground({
   config,
   onConfigChange,
@@ -74,8 +77,8 @@ export function SelectPlayground({
   const id = useId();
   const items = [
     { value: "design", label: state.firstOption },
-    { value: "engineering", label: "开发者" },
-    { value: "product", label: "产品经理" },
+    { value: "engineering", label: "Engineer" },
+    { value: "product", label: "Product manager" },
   ];
   return (
     <div className="space-y-2">

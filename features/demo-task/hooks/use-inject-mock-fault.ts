@@ -11,7 +11,10 @@ import { updateMockFaultsMutationOptions } from "../api/update-mock-faults";
 export type MockFaultInput = Pick<MockFault, "method" | "path"> &
   Partial<Omit<MockFault, "method" | "path">>;
 
-/** 在 Mock API 现有的故障配置后面追加一条故障，不覆盖故障面板里已有的配置。 */
+/**
+ * Appends a fault to the Mock API's current fault config, keeping what the
+ * fault panel already has.
+ */
 export function useInjectMockFault() {
   const queryClient = useQueryClient();
   const update = useMutation(updateMockFaultsMutationOptions());

@@ -2,7 +2,11 @@ import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/cn";
 
-/** 内容加载前的占位块；尺寸由调用方通过 className 设置，尽量和加载后的内容一致，避免布局跳动。 */
+/**
+ * A placeholder block shown before content loads. The caller sets its size
+ * through className, as close to the loaded content as it can, to avoid layout
+ * shift.
+ */
 export function Skeleton({ className, ...props }: ComponentProps<"div">) {
   return (
     <div

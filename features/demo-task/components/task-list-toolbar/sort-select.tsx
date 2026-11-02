@@ -24,7 +24,7 @@ interface SortSelectProps {
   onNavigate: (params: TaskListParams) => void;
 }
 
-/** 换排序时回到第一页。 */
+/** Changing the sort goes back to the first page. */
 export function SortSelect({ selected, onNavigate }: SortSelectProps) {
   const t = useTranslations("demo-task");
   const items = TASK_SORTS.map((value) => ({

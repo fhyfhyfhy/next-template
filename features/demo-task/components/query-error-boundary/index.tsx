@@ -5,8 +5,10 @@ import { catchError, type ErrorInfo } from "next/error";
 import { ErrorMessage, type QueryErrorBoundaryProps } from "./error-message";
 
 /**
- * `useSuspenseQuery` 首次加载失败时的局部错误边界，免得错误冒到路由的 error.tsx 把整页换掉。
- * 已经有数据的 query 后台刷新失败不会到这里，按全局 toast 的规则提示。
+ * A local error boundary for a `useSuspenseQuery` whose first load fails, so
+ * the error doesn't bubble up to the route's error.tsx and replace the whole
+ * page. A failed background refresh of a query that has data never gets here;
+ * the global toast rules cover it.
  */
 export const QueryErrorBoundary = catchError(function QueryErrorFallback(
   { message }: QueryErrorBoundaryProps,

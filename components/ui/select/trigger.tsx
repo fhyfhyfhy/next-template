@@ -10,7 +10,7 @@ import { selectTriggerVariants } from "./variants";
 
 export type SelectTriggerProps = SelectPrimitive.Trigger.Props;
 
-/** 选择器触发器，放在 SelectRoot 中并提供 label。 */
+/** The select's trigger. Place it in SelectRoot and give it a label. */
 export function SelectTrigger({ className, ...props }: SelectTriggerProps) {
   const size = use(SelectSizeContext);
   return (

@@ -1,8 +1,10 @@
 import { MOCK_API_RUNNING } from "../constants/mock-api";
 
 /**
- * Data demo 的每个 Server Action 先调用它。action 是可以直接 POST 调用的服务端入口，页面只显示说明也挡不住，
- * 不检查的话，用普通命令运行时 Demo 的写入会发到项目的真实后端。
+ * Every Data demo Server Action calls this first. An action is a server entry
+ * point anyone can POST to directly, which a page showing only a notice doesn't
+ * stop; without the check, the Demo's writes under a plain command would go to
+ * the project's real backend.
  */
 export function assertMockApiRunning() {
   if (!MOCK_API_RUNNING) {

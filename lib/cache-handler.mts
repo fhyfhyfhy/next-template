@@ -1,21 +1,26 @@
 /**
- * `use cache` 的默认 handler，由 next.config.ts 的 cacheHandlers.default 加载。
+ * The default `use cache` handler, loaded by cacheHandlers.default in next.config.ts.
  *
- * 这是 Next.js v16.4.3 内置内存 handler 的副本，只改了一处：生产环境把条目保留到 `expire`，而不是 `revalidate`。
- * 上游在生产环境过了 `revalidate` 就当作没有，请求只能同步等新数据；保留到 `expire` 后，`use cache` wrapper
- * 会先返回旧条目、再在后台重新生成，和 `next dev` 的行为一致（stale-while-revalidate）。改动处标了「改动」。
+ * A copy of Next.js v16.4.3's built-in memory handler with one change: in production it keeps an
+ * entry until `expire` rather than `revalidate`. Upstream, in production, treats an entry past
+ * `revalidate` as missing, so the request waits for fresh data; kept until `expire`, the entry is
+ * returned first by the `use cache` wrapper, which regenerates it in the background, as `next dev`
+ * does (stale-while-revalidate). The change is marked "CHANGED".
  *
- * 缓存在每个进程的内存里，实例之间不共享：updateTag / revalidateTag 只让处理那次请求的实例失效。
- * 其他实例照常返回自己的旧条目，过了 `revalidate` 后的第一次读取仍拿到旧数据并触发后台刷新，之后才是新数据。
+ * The cache lives in each process's memory and is not shared between instances: updateTag /
+ * revalidateTag invalidate entries only on the instance that handled that request. Other instances
+ * go on returning their own old entries: the first read past `revalidate` still gets the old data
+ * and starts a background refresh, and only the reads after it get the new data.
  *
- * 来源（除改动处外保持上游原样，升级 Next.js 时对照这几个文件同步）：
+ * Sources (kept as upstream wrote them apart from the change; sync against these files when
+ * upgrading Next.js):
  * - packages/next/src/server/lib/cache-handlers/default.ts
  * - packages/next/src/server/lib/lru-cache.ts
  * - packages/next/src/server/lib/incremental-cache/tags-manifest.external.ts
- * - packages/next/src/server/stream-utils/node-web-streams-helper.ts（streamFromBuffer、streamToBuffer）
+ * - packages/next/src/server/stream-utils/node-web-streams-helper.ts (streamFromBuffer, streamToBuffer)
  * https://github.com/vercel/next.js/tree/v16.4.3/packages/next/src/server
  *
- * Next.js 以 MIT 许可发布：
+ * Next.js is released under the MIT License:
  * The MIT License (MIT)
  * Copyright (c) 2025 Vercel, Inc.
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -31,13 +36,14 @@
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* eslint-disable @typescript-eslint/consistent-type-definitions, @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-unused-vars -- 上游代码保持原样，升级 Next.js 时才能逐行对照 */
+/* eslint-disable @typescript-eslint/consistent-type-definitions, @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-unused-vars -- upstream code is kept as it is, so that it can be compared line by line when upgrading Next.js */
 
-// Next 在运行时用 Node 原生 import 直接执行这个文件，不经过打包：只能写可擦除的 TypeScript 语法，
-// 也不能 import 项目里的模块（运行时没有 `@/` 别名），所以上游的几个依赖都合在这一个文件里。
+// Next runs this file at runtime with Node's native import, unbundled: it may use only erasable
+// TypeScript syntax and cannot import the project's modules (there is no `@/` alias at runtime), so
+// the upstream files it depends on are merged into this one.
 import type { CacheEntry, CacheHandler } from "next/cache";
 
-/** 上游默认的 `cacheMaxMemorySize`；next.config 的这个配置只作用于 Next 内置的 handler，管不到这里。 */
+/** Upstream's default `cacheMaxMemorySize`; that next.config option sizes only Next's built-in handler, not this one. */
 const MAX_SIZE_BYTES = 50 * 1024 * 1024;
 
 // packages/next/src/server/use-cache/constants.ts
@@ -82,8 +88,9 @@ async function streamToBuffer(
 
 // ---------------------------------------------------------------------------
 // packages/next/src/server/lib/incremental-cache/tags-manifest.external.ts
-// 上游这份 manifest 由内置 handler 和文件系统缓存共享；这里是本 handler 自己的一份。
-// Next 会把 updateTags 发给每个 handler，文件系统缓存也自己更新共享的那份，所以不需要共享。
+// Upstream, the built-in handler and the file system cache share this manifest; here the handler
+// has its own. Next sends updateTags to every handler, and the file system cache updates the shared
+// one itself, so there is no need to share it.
 // ---------------------------------------------------------------------------
 
 interface TagManifestEntry {
@@ -449,9 +456,11 @@ export function createDefaultCacheHandler(maxSize: number): CacheHandler {
         return undefined;
       }
 
-      // 改动：上游生产环境用 `entry.revalidate`，过了 revalidate 就丢弃。这里生产环境也保留到 `expire`，
-      // 过了 revalidate 的条目照常返回，由 use cache wrapper 先用它响应、再在后台重新生成。
-      // dev 分支保持上游原样：至少保留 `MIN_PRERENDERABLE_EXPIRE`，让 `expire` 很短的条目在刷新时也能命中。
+      // CHANGED: upstream, in production, uses `entry.revalidate` and drops an entry past revalidate.
+      // Here production also keeps it until `expire`: an entry past revalidate is returned, and the
+      // use cache wrapper answers with it first and then regenerates it in the background.
+      // The dev branch is as upstream wrote it: it keeps an entry at least `MIN_PRERENDERABLE_EXPIRE`,
+      // so that one with a very short `expire` still hits on a reload.
       const maxAgeSeconds = process.env.__NEXT_DEV_SERVER
         ? Math.max(entry.expire, MIN_PRERENDERABLE_EXPIRE)
         : entry.expire;

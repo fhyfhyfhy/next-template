@@ -11,7 +11,7 @@ import { useInjectMockFault } from "../hooks/use-inject-mock-fault";
 import { LabSection } from "./lab-section";
 
 const TASK_ID = "task-01";
-// 4xx 不重试，演示时结果立即出现。
+// A 4xx isn't retried, so the result shows at once in the demo.
 const FAULT = {
   method: "GET",
   path: TASK_DETAIL_ROUTE,
@@ -19,7 +19,11 @@ const FAULT = {
   times: 1,
 };
 
-/** 首次加载失败时没有数据可显示，组件渲染错误；已有数据时刷新失败，组件继续显示数据，靠全局提示告知。 */
+/**
+ * A failed first load has no data to show, so the component renders the error.
+ * A failed refresh keeps showing the data and leaves the news to the global
+ * toast.
+ */
 export function LabQueryStates() {
   const t = useTranslations("demo-task");
   const queryClient = useQueryClient();
@@ -29,7 +33,7 @@ export function LabQueryStates() {
 
   const firstLoad = async (failing: boolean) => {
     if (failing) await injectFault(FAULT);
-    // 清掉缓存，让下一次请求回到“首次加载”的状态。
+    // Clear the cache so the next request is a first load again.
     await queryClient.resetQueries({ queryKey: options.queryKey });
   };
 

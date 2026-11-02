@@ -1,4 +1,4 @@
-import { Link } from "@/lib/i18n-navigation";
+import { Link } from "@/lib/i18n/navigation";
 
 import type { Task } from "../api/get-task";
 import { taskDetailHref } from "../utils/task-urls";
@@ -8,7 +8,10 @@ interface TaskLinkRowProps {
   task: Pick<Task, "id" | "name" | "status">;
 }
 
-/** 紧凑列表里的一行任务：名称链接到详情，右侧是状态。调用方提供外层的 `<li>`。 */
+/**
+ * A task's row in a compact list: the name links to the detail, with the status
+ * on the right. The caller provides the enclosing `<li>`.
+ */
 export function TaskLinkRow({ task }: TaskLinkRowProps) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">

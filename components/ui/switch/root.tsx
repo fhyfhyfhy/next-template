@@ -22,7 +22,10 @@ const switchVariants = cva(
 export interface SwitchRootProps
   extends SwitchPrimitive.Root.Props, VariantProps<typeof switchVariants> {}
 
-/** 即时切换开关，调用方提供 label 和需要持久化的状态。 */
+/**
+ * A switch that takes effect at once; the caller provides the label and any
+ * state that needs persisting.
+ */
 export function SwitchRoot({
   size = "md",
   className,

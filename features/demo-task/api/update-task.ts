@@ -1,4 +1,4 @@
-import type { Locale } from "@/lib/i18n-routing";
+import type { Locale } from "@/lib/i18n/routing";
 import { mutationOptions } from "@/lib/react-query";
 
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
@@ -10,7 +10,11 @@ import { getTaskQueryOptions } from "./get-task";
 import { taskListKey } from "./get-tasks";
 import { updateTaskAction } from "./update-task-action";
 
-/** 重命名同时影响详情（React Query）和列表页（服务端缓存）：action 让列表缓存失效，这里更新 query。`locale` 转交给 action。 */
+/**
+ * Renaming touches both the detail (React Query) and the list page (server
+ * cache): the action expires the list cache, and this updates the query.
+ * `locale` is passed on to the action.
+ */
 export const updateTaskMutationOptions = (locale: Locale) =>
   mutationOptions({
     mutationFn: async (variables: { taskId: string; name: string }) =>
@@ -20,7 +24,8 @@ export const updateTaskMutationOptions = (locale: Locale) =>
       void client.invalidateQueries({ queryKey: taskListKey });
     },
     meta: {
-      // 名称被占用由表单在字段上提示，其他失败仍走全局提示。
+      // The form shows a taken name on its field; other failures still get the
+      // global toast.
       suppressErrorToast: (error) => isTaskActionError(error, TASK_NAME_TAKEN),
     },
   });

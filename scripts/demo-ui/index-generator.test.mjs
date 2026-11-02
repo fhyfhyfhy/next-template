@@ -112,7 +112,7 @@ async function eventually(check) {
   }
 }
 
-test("自动发现零个、一个和三个示例，忽略辅助文件与嵌套目录", async () => {
+test("discovers zero, one and three examples, ignoring helper files and nested directories", async () => {
   const root = fixture();
   for (const id of ["empty", "button", "checkbox"]) component(root, id);
   write(root, "button", "basic.example.tsx");
@@ -148,7 +148,7 @@ test("自动发现零个、一个和三个示例，忽略辅助文件与嵌套�
   expect(registrySource(root)).not.toMatch(/examples\.generated/);
 });
 
-test("没有组件目录时明确报错，不生成无法使用的空目录", async () => {
+test("throws a clear error when there is no component directory, instead of generating an unusable empty catalog", async () => {
   const root = fixture();
   await expect(generateExampleIndexes(root)).rejects.toThrow(
     /Expected at least one UI demo component directory/,
@@ -156,7 +156,7 @@ test("没有组件目录时明确报错，不生成无法使用的空目录", as
   expect(existsSync(sourceIndexPath(root))).toBe(false);
 });
 
-test("组件目录按 order 和 id 排序，Demo 与去重的图标使用静态公开导入", async () => {
+test("component directories sort by order and id, and Demo and the deduplicated icons use static public imports", async () => {
   const root = fixture();
   component(root, "zebra", {
     title: "Last",
@@ -193,7 +193,7 @@ test("组件目录按 order 和 id 排序，Demo 与去重的图标使用静态�
   expect(registry).not.toMatch(/use client|\/demo"/);
 });
 
-test("静态读取带注释和类型包装的字面量，不执行 TSX 或加载其依赖", async () => {
+test("reads literals with comments and type wrappers statically, without running the TSX or loading its dependencies", async () => {
   const root = fixture();
   component(root, "wrapped");
   component(root, "plain");
@@ -205,7 +205,7 @@ test("静态读取带注释和类型包装的字面量，不执行 TSX 或加载
 import "missing-runtime-package-that-must-not-load";
 throw new Error("This module must never execute");
 export const metadata = (({
-  // metadata 始终来自本文件的字面量。
+  // metadata always comes from this file's literals.
   "title": ("Wrapped" as const),
   description: \`Template description\`,
   icon: "IconCheck",
@@ -234,7 +234,7 @@ export function Demo() { return <div>{unknownRuntimeValue}</div>; }
   ]);
 });
 
-test("metadata 无效或缺少必需文件时保留所有旧生成物", async () => {
+test("invalid metadata or a missing required file keeps every old generated file", async () => {
   const root = fixture();
   component(root, "button");
   component(root, "checkbox");
@@ -334,7 +334,7 @@ test("metadata 无效或缺少必需文件时保留所有旧生成物", async ()
   }
 });
 
-test("删除、重命名示例和目录后不保留过期的引用", async () => {
+test("deleting or renaming examples and directories leaves no stale references", async () => {
   const root = fixture();
   component(root, "checkbox");
   component(root, "button");
@@ -366,7 +366,7 @@ test("删除、重命名示例和目录后不保留过期的引用", async () =>
   ]);
 });
 
-test("相同输入不重写文件，源码变化只更新源码索引的内容摘要", async () => {
+test("the same input rewrites no file, and a source change updates only the source index's content digest", async () => {
   const root = fixture();
   component(root, "checkbox");
   write(root, "checkbox", "basic.example.tsx", "export const value = 1;");
@@ -393,7 +393,7 @@ test("相同输入不重写文件，源码变化只更新源码索引的内容�
   }
 });
 
-test("非法示例名称在写入索引前报错", async () => {
+test("an invalid example name throws before the indexes are written", async () => {
   const root = fixture();
   component(root, "checkbox");
   write(root, "checkbox", "Bad_name.example.tsx");
@@ -402,7 +402,7 @@ test("非法示例名称在写入索引前报错", async () => {
   );
 });
 
-test("LF 和 CRLF 源码生成相同摘要", async () => {
+test("LF and CRLF sources produce the same digest", async () => {
   const root = fixture();
   component(root, "checkbox");
   const content = "export const value = 1;\nexport const label = 'Example';\n";
@@ -420,7 +420,7 @@ test("LF 和 CRLF 源码生成相同摘要", async () => {
   }
 });
 
-test("watch 自动处理文件和目录增删、重命名及源码内容修改", async () => {
+test("watch handles files and directories being added, removed and renamed, and source content changes", async () => {
   const root = fixture();
   component(root, "anchor");
   const errors = [];
@@ -486,7 +486,7 @@ test("watch 自动处理文件和目录增删、重命名及源码内容修改",
   expect(errors).toStrictEqual([]);
 });
 
-test("watch 校验 demo metadata 与必需文件，并在修正后恢复生成", async () => {
+test("watch validates demo metadata and required files, and resumes generating once they are fixed", async () => {
   const root = fixture();
   component(root, "checkbox");
   const errors = [];

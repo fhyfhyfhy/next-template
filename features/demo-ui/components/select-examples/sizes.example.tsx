@@ -19,12 +19,16 @@ import {
 } from "@/components/ui/select";
 
 export const metadata = {
-  title: "尺寸",
-  description: "在 Root 设置尺寸，触发器与下拉选项保持一致，各实例独立选择。",
+  title: "Sizes",
+  description:
+    "Set the size on Root; the trigger and the options match it, and each instance keeps its own selection.",
   order: 15,
 };
 
-/** 每个 Root 管理自己的选择值，尺寸同时作用于触发器和 Portal 内的选项。 */
+/**
+ * Each Root holds its own value; its size applies to both the trigger and the
+ * options in the Portal.
+ */
 export function Example() {
   const id = useId();
   const sizes: readonly SelectSize[] = ["sm", "md", "lg"];

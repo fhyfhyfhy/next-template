@@ -19,13 +19,15 @@ const inputVariants = cva(
   },
 );
 
-/** size 指视觉高度；宽度由调用方通过 className 设置。 */
+/** size is the visual height; the caller sets the width through className. */
 export interface InputProps
   extends
     Omit<InputPrimitive.Props, "size">,
     VariantProps<typeof inputVariants> {}
 
-/** 文本输入框；调用方提供关联 label 和错误描述。 */
+/**
+ * A text input; the caller provides its associated label and error description.
+ */
 export function Input({ size = "md", className, ...props }: InputProps) {
   return (
     <InputPrimitive

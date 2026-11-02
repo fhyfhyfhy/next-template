@@ -15,17 +15,19 @@ import {
 } from "./responses.mjs";
 import { createStore, DomainError } from "./store.mjs";
 
-/** 固定端口：build 时内联进产物的 `NEXT_PUBLIC_API_BASE_URL` 在 start 时必须仍然可用。 */
+/** A fixed port: the `NEXT_PUBLIC_API_BASE_URL` a build inlines must still work at start. */
 export const DEFAULT_MOCK_API_PORT = 4010;
-// 一个任务从 pending 到终态要走 6 步，约 9 秒，停在详情页能看到进度推进。
+// A task takes 6 steps, about 9 seconds, from pending to a final status, so its detail page shows
+// the progress moving.
 const DEFAULT_STEP_INTERVAL_MS = 1500;
-// 业务接口的响应延迟，模拟网络和后端耗时，让 Demo 里的加载态看得见。控制接口不加。
+// The business endpoints' response latency, standing in for network and backend time so the
+// demos' loading states are visible. The control endpoints get none.
 const DEFAULT_LATENCY_MS = 500;
 
 /**
- * 启动 Mock API。`port: 0` 时由系统分配端口，测试用。
- * `latencyMs` 是业务接口的默认延迟，故障实验室可以经 `/__mock/latency` 修改，重置时恢复成这个值；
- * 故障的 `latency_ms` 在它之上叠加。
+ * Starts the Mock API. With `port: 0` the OS picks the port, for tests.
+ * `latencyMs` is the business endpoints' default latency: the Fault lab can change it through
+ * `/__mock/latency`, and a reset restores this value. A fault's `latency_ms` adds to it.
  * @returns {Promise<{ url: string, close: () => Promise<void> }>}
  */
 export async function startMockApi({
@@ -39,14 +41,14 @@ export async function startMockApi({
     if (!clock.paused) store.advanceAll();
   }, stepIntervalMs);
   timer.unref();
-  // routes 在 listen 之后才创建：端口确定后才能拼出封面图的绝对地址。
+  // `routes` is built after listen: the cover images' absolute URLs need the port.
   const context = {
     routes: [],
     faults: createFaults(),
     requestLog: [],
     latencyMs,
     initialLatencyMs: latencyMs,
-    // `/__mock/reset` 的次数，用来认出延迟期间赶上重置的请求。
+    // How many times `/__mock/reset` has run, to spot requests a reset caught during their delay.
     resets: 0,
   };
   const server = createServer((req, res) => {
@@ -70,8 +72,9 @@ export async function startMockApi({
 }
 
 /**
- * 找 `port` 上已经在运行的 Mock API，比如开着 demo:dev 时再运行 demo:build，两边就共用它。
- * 端口上没有服务时返回 null；被别的程序占着时报错，免得把 Demo 的请求发给不认识的服务。
+ * Finds a Mock API already running on `port`, so that, say, demo:build run while demo:dev is up
+ * shares it. Returns null when nothing listens on the port; throws when another program holds it,
+ * so the demos' requests never go to an unknown service.
  * @returns {Promise<string | null>}
  */
 export async function findRunningMockApi(port) {
@@ -115,7 +118,7 @@ function createRoutes(store, clock, context, publicUrl) {
     route("POST", "/demo/tasks", ({ body }) =>
       created(wireTask(store.createTask(body ?? {}))),
     ),
-    // 放在 /demo/tasks/:id 之前，否则 search 会被当成任务 id。
+    // Before /demo/tasks/:id, which would otherwise take search for a task id.
     route("GET", "/demo/tasks/search", ({ query }) =>
       list(store.searchTasks(query.get("term") ?? "").map(wireTask)),
     ),
@@ -182,7 +185,8 @@ function createRoutes(store, clock, context, publicUrl) {
         wireTask,
       ),
     ),
-    // 不传 paused 时保持当前的暂停状态：e2e 暂停后再从故障实验室重置，时钟仍然停着。
+    // Without paused, the clock keeps its current state: when e2e pauses it and then resets from
+    // the Fault lab, the clock stays paused.
     route("POST", "/__mock/reset", ({ body }) => {
       store.reset();
       faults.clear();
@@ -192,7 +196,8 @@ function createRoutes(store, clock, context, publicUrl) {
       if (typeof body?.paused === "boolean") clock.paused = body.paused;
       return noContent();
     }),
-    // e2e 用它确认请求次数，比如服务端渲染时同一个接口只请求一次、hydration 后浏览器没有重复请求。
+    // e2e checks request counts with it, such as one request per endpoint during server rendering
+    // and no repeated request from the browser after hydration.
     route("GET", "/__mock/requests", () => success({ requests: requestLog })),
     route("GET", "/__mock/faults", () => success({ faults: faults.list() })),
     route("PUT", "/__mock/faults", ({ body }) => {
@@ -231,7 +236,7 @@ function createRoutes(store, clock, context, publicUrl) {
   ];
 }
 
-/** 路径里的 `:name` 段匹配任意一段，取值放进 `params`。 */
+/** A `:name` segment in the path matches any one segment, and its value goes into `params`. */
 function route(method, pattern, handler) {
   const names = [];
   const source = pattern.replace(/:(\w+)/g, (_, name) => {
@@ -282,9 +287,11 @@ async function handle(context, req, res) {
     const resets = context.resets;
     if (delay > 0) {
       await new Promise((resolveDelay) => setTimeout(resolveDelay, delay));
-      // 延迟期间请求还算在路上。客户端已经断开（中止请求、关闭页面）就不再处理：这时读请求体会抛错，
-      // 让进程退出。延迟期间 Mock API 被重置过的写请求要拒绝：上一个 e2e 用例没完成的写入（比如经
-      // Server Action 发出、不随页面关闭而中止的请求）不能改动下一个用例重置后的数据。读请求照常处理。
+      // During the delay the request is still in flight. Once the client has disconnected (an
+      // aborted request, a closed page) it is dropped: reading the body would throw and exit the
+      // process. A write during whose delay the Mock API was reset is refused: an unfinished write
+      // from the previous e2e test (such as one sent by a Server Action, which closing the page
+      // does not abort) must not change the next test's reset data. Reads are handled as usual.
       if (req.socket.destroyed) return;
     }
     response = !matched
@@ -303,7 +310,8 @@ async function handle(context, req, res) {
     if (!(error instanceof DomainError)) throw error;
     response = error.response;
   }
-  // 返回 undefined 的 handler 自己写完了响应，比如二进制下载和 SSE。
+  // A handler that returns undefined has written the response itself, such as a binary download
+  // or SSE.
   if (response) sendResponse(res, response);
 }
 
@@ -316,7 +324,8 @@ function findRoute(routes, method, pathname) {
   return null;
 }
 
-// 只给本机页面跨域许可：开着 pnpm demo:dev 时，浏览器里其他网站读不到响应，带 JSON 请求体的写入也过不了预检。
+// CORS is granted to local pages only: while pnpm demo:dev runs, other sites in the browser cannot
+// read the responses, and their writes with a JSON body fail the preflight.
 const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 function setCorsHeaders(req, res) {
@@ -345,7 +354,7 @@ async function readJson(req) {
   }
 }
 
-/** multipart 请求体交给 Node 自带的 `Request.formData()` 解析，不引入依赖。 */
+/** Node's built-in `Request.formData()` parses the multipart body, so no dependency is needed. */
 async function readForm(req) {
   if (!req.headers["content-type"]?.includes("multipart/form-data")) {
     return null;
@@ -359,7 +368,10 @@ async function readForm(req) {
   return request.formData();
 }
 
-/** 先推送已有日志，之后每条新日志一个 `log` 事件，到终态时发送 `end` 事件并关闭连接。 */
+/**
+ * Pushes the existing logs first, then one `log` event per new log line; at a final status it
+ * sends an `end` event and closes the connection.
+ */
 function streamLogs(store, task, req, res) {
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -383,7 +395,7 @@ function streamLogs(store, task, req, res) {
   };
   if (flush(task)) return;
   const unsubscribe = store.subscribe(task.id, (current) => {
-    // 重试会清空日志，从头推送。
+    // A retry clears the logs, so pushing starts over.
     if (current.logs.length < sent) sent = 0;
     if (flush(current)) unsubscribe();
   });
@@ -413,7 +425,8 @@ function toWireTask(task, publicUrl) {
     status: task.status,
     progress: task.progress,
     favorite: task.favorite,
-    // 带上版本号，换图后地址变化，浏览器不会继续用缓存里的旧图。
+    // The version changes the URL when the image is replaced, so the browser does not keep the
+    // cached old one.
     cover_url: task.cover
       ? `${publicUrl}/demo/tasks/${task.id}/cover?v=${task.cover.version}`
       : null,

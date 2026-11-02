@@ -1,6 +1,8 @@
 /**
- * Server Action 返回给浏览器的结果。预期的业务失败只返回错误码，提示文案由调用方按码生成；
- * 意外错误照常抛出，跨过 Flight 后只剩通用错误。
+ * What a Server Action returns to the browser. An expected business failure
+ * returns only its error code, and the caller picks the message by code. An
+ * unexpected error is thrown as usual and arrives across Flight as a generic
+ * error.
  */
 export type ActionResult<TData> =
   { ok: true; data: TData } | { ok: false; code: number };

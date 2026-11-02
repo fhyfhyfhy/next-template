@@ -33,9 +33,13 @@ const createCommentSchema = (t: DemoTaskTranslator) =>
       ),
   });
 
-/** 提交时立即清空输入框（工厂已经乐观插入了评论），失败时把内容放回去，不丢用户写的字。 */
+/**
+ * Clears the input on submit (the factory has already inserted the comment
+ * optimistically) and puts the text back on failure, so the user's writing
+ * isn't lost.
+ */
 export function CommentForm({ taskId }: { taskId: string }) {
-  // hydration 之前不可用，原因同 `CreateTaskForm`。
+  // Disabled before hydration, for the same reason as `CreateTaskForm`.
   const hydrated = useHydrated();
   const t = useTranslations("demo-task");
   const commentSchema = useMemo(() => createCommentSchema(t), [t]);

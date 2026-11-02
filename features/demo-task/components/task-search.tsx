@@ -16,8 +16,10 @@ import { TaskLinkRow } from "./task-link-row";
 const DEBOUNCE_MS = 300;
 
 /**
- * 边输入边搜索：输入停顿后把关键词 shallow 写进 URL（replaceState，不触发服务端渲染，也不留历史记录），
- * query key 只来自 URL 里已提交的关键词。换关键词时旧请求被中止，新结果到达前继续显示旧结果。
+ * Search as you type: when typing pauses, the term goes into the URL shallowly
+ * (replaceState, with no server render and no history entry), and the query key
+ * comes only from the committed term in the URL. A new term aborts the old
+ * request, and the old results stay until the new ones arrive.
  */
 export function TaskSearch() {
   const t = useTranslations("demo-task.taskSearch");
@@ -35,7 +37,9 @@ export function TaskSearch() {
     );
   }, [debounced, committed]);
 
-  // 关键词为空时 query 关着，keepPreviousData 却仍把上一次的结果当占位数据，所以状态和结果都按它判断。
+  // With an empty term the query is disabled, yet keepPreviousData still serves
+  // the last results as placeholder data, so both the status and the results go
+  // by this.
   const searching = committed !== "";
   const search = useQuery({
     ...searchTasksQueryOptions(committed),

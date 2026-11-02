@@ -1,6 +1,10 @@
-// Data demo 需要识别的 Mock API 业务错误码，值与 scripts/mock-api/responses.mjs 的 ErrorCode 一致。
+// The Mock API business error codes the Data demo needs to recognize; the
+// values match ErrorCode in scripts/mock-api/responses.mjs.
 
-/** 创建或重命名时名称已被其他任务占用。 */
+/** On create or rename, another task already uses the name. */
 export const TASK_NAME_TAKEN = 40901;
-/** 只有 failed 的任务能重试；任务可能已经在别处被重试过。 */
+/**
+ * Only a failed task can be retried; it may already have been retried
+ * elsewhere.
+ */
 export const TASK_NOT_RETRYABLE = 40902;

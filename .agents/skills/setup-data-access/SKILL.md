@@ -1,12 +1,12 @@
 ---
 name: setup-data-access
-description: Fit this template's backend requests to the project (where requests go, the response format, and how requests carry the signed-in user's credential) by changing lib/fetch.ts, lib/credentials-*.ts, and app/providers.tsx. Run once per project, and again when the backend or the auth library changes.
+description: Fit this template's backend requests to the project (where requests go, the response format, and how requests carry the signed-in user's credential) by changing the files in lib/fetch/ and app/providers.tsx. Run once per project, and again when the backend or the auth library changes.
 disable-model-invocation: true
 ---
 
 # Set up data access
 
-The template's `fetchApi` (`lib/fetch.ts`) calls one backend at `NEXT_PUBLIC_API_BASE_URL`, parses the response format that its schemas and `ApiError` define, and attaches the credential that `lib/credentials-server.ts` and `lib/credentials-browser.ts` return, which is none while they carry the template's `TODO`. This skill asks how the backend and sign-in work and changes the code to match.
+The template's `fetchApi` (`lib/fetch/index.ts`) calls one backend at `NEXT_PUBLIC_API_BASE_URL`, parses the response format that its schemas and `ApiError` define, and attaches the credential that `lib/fetch/credentials-server.ts` and `lib/fetch/credentials-browser.ts` return, which is none while they carry the template's `TODO`. This skill asks how the backend and sign-in work and changes the code to match.
 
 The code is the only record of the result. Other skills and rules read these files to learn, for example, whether the Next.js server can request data for the signed-in user, so each changed file's doc comments must describe what it does for this project.
 
@@ -18,7 +18,7 @@ It covers requests and the credential they carry. Sign-in UI, sign-up, and route
 
 Read what exists before asking:
 
-- `lib/fetch.ts`, `lib/credentials-server.ts`, `lib/credentials-browser.ts`, and `app/providers.tsx`. When the credentials files no longer carry the template's `TODO`, or `resolveApiUrl` and `fetchApi` differ from the template's, this is a re-run: ask only about what the user wants to change.
+- `lib/fetch/index.ts`, `lib/fetch/credentials-server.ts`, `lib/fetch/credentials-browser.ts`, and `app/providers.tsx`. When the credentials files no longer carry the template's `TODO`, or `resolveApiUrl` and `fetchApi` differ from the template's, this is a re-run: ask only about what the user wants to change.
 - `package.json`: an auth library and its version, such as `@supabase/ssr`, `next-auth`, `@clerk/nextjs`, `@auth0/nextjs-auth0`, `better-auth`, `firebase`, or `iron-session`.
 - Env files (`.env*`): use a value such as the backend's base URL to probe it, but never print a value.
 - `next.config.ts` (`rewrites`), `app/api/` (Route Handlers), `proxy.ts`, and the callers of `fetchApi` and `resolveApiUrl`. The callers in `features/demo-task/` belong to the Data demo, and `scripts/mock-api/` is its stand-in backend, started at `127.0.0.1:4010` only by the `demo:*` scripts: neither describes the project's backend.
@@ -38,7 +38,7 @@ Take the sections in order, one per message. Lead with the recommended answer, c
 
 Settle the env var holding each base URL, its local value, and where each deployed environment sets it.
 
-**B. Response format.** The template expects the wire format that `lib/fetch.ts` parses: a success returns the resource itself, a list wraps its array in `items` with `total`, `hasMore`, `page`, and `pageSize` when paginated, and a failure has an `{ error: { code, message, param?, params? } }` body with a numeric `code` on a 4xx or 5xx status, or as the body's only field on a 2xx.
+**B. Response format.** The template expects the wire format that `lib/fetch/index.ts` parses: a success returns the resource itself, a list wraps its array in `items` with `total`, `hasMore`, `page`, and `pageSize` when paginated, and a failure has an `{ error: { code, message, param?, params? } }` body with a numeric `code` on a 4xx or 5xx status, or as the body's only field on a 2xx.
 
 - **The template's format**: nothing to change.
 - **An envelope**, such as `{ code, data, message }` with `code` 0 for success. Confirm the field names, the success value and its type, whether a failure can arrive with a 2xx status, and whether `message` is written for users.

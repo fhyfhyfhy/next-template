@@ -9,7 +9,9 @@ interface TaskCoverProps {
   "data-testid"?: string;
 }
 
-/** 任务的封面图，装饰性图片；没有封面图时显示占位图。 */
+/**
+ * The task's cover image, decorative; a placeholder shows when there is none.
+ */
 export function TaskCover({ coverUrl, className, ...props }: TaskCoverProps) {
   if (!coverUrl) {
     return (
@@ -25,7 +27,8 @@ export function TaskCover({ coverUrl, className, ...props }: TaskCoverProps) {
     );
   }
   return (
-    // 封面图来自 Mock API 的地址，端口随配置变化，不经过 next/image 的优化服务。
+    // Covers come from the Mock API's address, whose port depends on
+    // configuration, so they skip next/image's optimizer.
     <Image
       src={coverUrl}
       alt=""

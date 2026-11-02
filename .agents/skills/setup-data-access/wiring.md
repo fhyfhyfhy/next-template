@@ -25,7 +25,7 @@ async rewrites() {
 ```
 
 ```ts
-// lib/fetch.ts
+// lib/fetch/index.ts
 export function resolveApiUrl(path: ApiPath): string {
   // 浏览器走同源的 rewrite（next.config.ts），服务端直连后端。
   const base =
@@ -36,17 +36,17 @@ export function resolveApiUrl(path: ApiPath): string {
 
 - `API_BASE_URL` takes no `NEXT_PUBLIC_` prefix, since the browser never reads it. Measured: `next start` keeps the destination the build wrote even when `API_BASE_URL` changes, so a deployment sets it at build time, not only at runtime.
 - The browser's request carries its whole `Cookie` header through the rewrite to the backend (measured), unlike the server path in [Credentials](#credentials), which forwards one cookie.
-- Replace `NEXT_PUBLIC_API_BASE_URL` in the project's code, tests, and README, including `resolveApiUrl`'s doc comment and `scripts/run-next.mjs`: the `demo:*` scripts set the base URL variable to the Mock API there, and a stale name leaves `fetchApi` and the rewrite on the real backend while the Data demo believes the Mock API is running. `lib/fetch.test.mjs` runs with no `window`, so it takes the server branch and sets `API_BASE_URL`.
+- Replace `NEXT_PUBLIC_API_BASE_URL` in the project's code, tests, and README, including `resolveApiUrl`'s doc comment and `scripts/run-next.mjs`: the `demo:*` scripts set the base URL variable to the Mock API there, and a stale name leaves `fetchApi` and the rewrite on the real backend while the Data demo believes the Mock API is running. `lib/fetch/index.test.mjs` runs with no `window`, so it takes the server branch and sets `API_BASE_URL`.
 
-**This app itself**: leave `NEXT_PUBLIC_API_BASE_URL` unset and `lib/fetch.ts` unchanged. `resolveApiUrl` then returns same-origin paths, which reach the Route Handlers from the browser but cannot be fetched on the server, so server code calls the data functions the Route Handlers call instead of `fetchApi`. Those functions check the session through a Data Access Layer (`node_modules/next/dist/docs/01-app/02-guides/authentication.md`), so [Credentials](#credentials) below does not apply.
+**This app itself**: leave `NEXT_PUBLIC_API_BASE_URL` unset and `lib/fetch/index.ts` unchanged. `resolveApiUrl` then returns same-origin paths, which reach the Route Handlers from the browser but cannot be fetched on the server, so server code calls the data functions the Route Handlers call instead of `fetchApi`. Those functions check the session through a Data Access Layer (`node_modules/next/dist/docs/01-app/02-guides/authentication.md`), so [Credentials](#credentials) below does not apply.
 
 ## Response format
 
-`lib/fetch.ts` defines the wire format the template parses; its schemas and doc comments are the reference. `fetchApi` validates the whole body against the caller's schema, `null` for an empty one. It throws `ApiError` for a non-2xx status, and for a 2xx whose only field is an `error` object matching `errorSchema`: a resource that carries its own `error` field alongside others stays a success. `ApiError` reads `code`, `param`, and `params` from the `{ error: { code, message, param?, params? } }` body, described by `errorSchema`. `pageSchema` in the same file validates a paginated list's `{ items, total, hasMore, page, pageSize }`.
+`lib/fetch/index.ts` defines the wire format the template parses; its schemas and doc comments are the reference. `fetchApi` validates the whole body against the caller's schema, `null` for an empty one. It throws `ApiError` for a non-2xx status, and for a 2xx whose only field is an `error` object matching `errorSchema`: a resource that carries its own `error` field alongside others stays a success. `ApiError` reads `code`, `param`, and `params` from the `{ error: { code, message, param?, params? } }` body, described by `errorSchema`. `pageSchema` in the same file validates a paginated list's `{ items, total, hasMore, page, pageSize }`.
 
 Whatever the backend sends, callers keep receiving the same results: the caller's schema output from `fetchApi`, `pageSchema`'s fields for a paginated list, and `ApiError` or `SchemaValidationError` for a failure. Features then need no change. Adapt in `lib/`:
 
-**An envelope**: add a schema for it in `lib/fetch.ts`. `fetchApi` validates the caller's schema against the envelope's data field, and throws `ApiError` when the envelope's code is not the success value, even on a 2xx. `ApiError` reads `code` and the message from the envelope in place of `errorSchema`.
+**An envelope**: add a schema for it in `lib/fetch/index.ts`. `fetchApi` validates the caller's schema against the envelope's data field, and throws `ApiError` when the envelope's code is not the success value, even on a 2xx. `ApiError` reads `code` and the message from the envelope in place of `errorSchema`.
 
 **Another error body**: change `errorSchema` and the body schemas built on it to that shape, and map its fields onto `code`, `param`, and `params`, leaving those it lacks `undefined`.
 
@@ -54,14 +54,14 @@ Whatever the backend sends, callers keep receiving the same results: the caller'
 
 **Other list fields**: change `pageSchema` for paginated lists and each endpoint's schema for unpaginated ones; resource field names stay in each endpoint's own schema.
 
-- Rewrite every comment in `lib/fetch.ts` that describes the format: those above `errorSchema` and `errorOnlyBodySchema`, and those on `ApiError`, `SchemaValidationError`, `shouldRetryRequest`, `fetchApi`, `FetchApiConfig.schema`, and `pageSchema`.
-- Change the bodies `lib/fetch.test.mjs`'s test server returns to the new format, keeping a case for each failure: a non-2xx with and without an error body, a failure on a 2xx (an error body alone, or an envelope's failure code), and a body in the wrong shape. Keep the case where a 2xx resource carries its own `error` field and still succeeds.
+- Rewrite every comment in `lib/fetch/index.ts` that describes the format: those above `errorSchema` and `errorOnlyBodySchema`, and those on `ApiError`, `SchemaValidationError`, `shouldRetryRequest`, `fetchApi`, `FetchApiConfig.schema`, and `pageSchema`.
+- Change the bodies `lib/fetch/index.test.mjs`'s test server returns to the new format, keeping a case for each failure: a non-2xx with and without an error body, a failure on a 2xx (an error body alone, or an envelope's failure code), and a body in the wrong shape. Keep the case where a 2xx resource carries its own `error` field and still succeeds.
 - `shouldRetryRequest` never retries an `ApiError` below status 500, so a failure code on a 2xx is not retried.
 - When `message` is written for users, `handleRequestError` in `app/providers.tsx` can toast it, read from `error.body`, in place of the generic text.
 
 ## Credentials
 
-The template ships the split. `fetchApi` imports `credentialHeaders` from `#credentials`, which the `imports` field of `package.json` resolves per environment to `lib/credentials-server.ts` or `lib/credentials-browser.ts`; both return `{}` until filled in below. `fetchApi` attaches what they return unless a call passes `auth: false`, and a header the caller sets wins.
+The template ships the split. `fetchApi` imports `credentialHeaders` from `#credentials`, which the `imports` field of `package.json` resolves per environment to `lib/fetch/credentials-server.ts` or `lib/fetch/credentials-browser.ts`; both return `{}` until filled in below. `fetchApi` attaches what they return unless a call passes `auth: false`, and a header the caller sets wins.
 
 Measured resolution:
 
@@ -76,7 +76,7 @@ Server-only imports (`next/headers`, `server-only`, the auth library's server he
 
 A credentialed call inside `use cache` throws `next-request-in-use-cache`, naming the file and line. When the route prerenders, the build fails; on a dynamically rendered route it passes the build and fails at request time (`node_modules/next/dist/docs/01-app/03-api-reference/01-directives/use-cache.md`, Request-time APIs). Search the project for `fetchApi` calls inside `use cache` that lack `auth: false` before filling in `credentials-server.ts`.
 
-### `lib/credentials-server.ts`
+### `lib/fetch/credentials-server.ts`
 
 A bearer token from the auth library:
 
@@ -102,7 +102,7 @@ export async function credentialHeaders(): Promise<Record<string, string>> {
 
 Keep `import "server-only";` first, with no blank line before the next import: `simple-import-sort` puts them in one group. When the library's server helper makes a network call each time, such as verifying the token with the auth server, wrap `credentialHeaders` in React's `cache()` so one render makes it once. When only the browser holds the credential, leave the file as shipped.
 
-### `lib/credentials-browser.ts`
+### `lib/fetch/credentials-browser.ts`
 
 ```ts
 export async function credentialHeaders(): Promise<Record<string, string>> {
@@ -137,7 +137,7 @@ export async function credentialHeaders(): Promise<Record<string, string>> {
   Match the condition to how the backend signals it, such as `error.code === SIGNED_OUT_CODE` for a code on a 2xx.
 
 - **Server**: a check in the Data Access Layer, such as `requireUser()`, redirects with `redirect()` before the page requests user data. It reads the session, so under Cache Components its caller belongs beneath `<Suspense>`, including when the session helper uses `use cache: private` (`node_modules/next/dist/docs/01-app/02-guides/authentication-with-cache-components.md`).
-- **Refresh by this app**: keep one in-flight refresh promise that concurrent requests share, and retry a 401 once after it settles. Cover both in `lib/fetch.test.mjs`.
+- **Refresh by this app**: keep one in-flight refresh promise that concurrent requests share, and retry a 401 once after it settles. Cover both in `lib/fetch/index.test.mjs`.
 
 ## Verify
 

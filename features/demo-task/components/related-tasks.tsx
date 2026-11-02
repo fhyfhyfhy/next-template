@@ -9,8 +9,9 @@ import { getTasksQueryOptions } from "../api/get-tasks";
 import { TaskLinkRow } from "./task-link-row";
 
 /**
- * 依赖查询：先从详情 query 里取 prompt，再用它查其他任务；prompt 还没拿到时第二个请求不发。
- * 只在浏览器里请求，不在服务端预取。
+ * A dependent query: take the prompt from the detail query, then find other
+ * tasks with it; the second request waits until the prompt arrives. Requested
+ * only in the browser, not prefetched on the server.
  */
 export function RelatedTasks({ taskId }: { taskId: string }) {
   const t = useTranslations("demo-task");

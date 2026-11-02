@@ -14,7 +14,7 @@ const mergeClasses = createCn({
 
 type StateClassName<State> = (state: State) => string | undefined;
 
-/** 按项目主题合并样式；函数式 className 在收到组件 state 后求值。 */
+/** Merges classes by the project's theme; a function className is evaluated once it gets the component's state. */
 export function cn(base: ClassValue, className?: string): string;
 export function cn<State>(
   base: ClassValue,

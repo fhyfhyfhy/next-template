@@ -32,7 +32,9 @@ export default function TasksPage({
         <p>{t("intro.tryIt")}</p>
       </PageIntro>
       <CreateTaskForm />
-      {/* page 保持同步，只在 Suspense 里等 searchParams：工具栏和列表以外的部分都能进静态 shell。 */}
+      {/* The page stays synchronous and awaits searchParams only inside
+          Suspense, so everything but the toolbar and the list goes into the
+          static shell. */}
       <TaskListNavigation>
         <Suspense fallback={<div className="mb-4 h-8" />}>
           {searchParams.then((query) => (

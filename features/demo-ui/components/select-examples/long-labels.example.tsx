@@ -18,21 +18,28 @@ import {
 } from "@/components/ui/select";
 
 export const metadata = {
-  title: "长选项与多选文案",
-  description: "选中值在有限宽度内省略，下拉选项在窄屏中换行显示完整文案。",
+  title: "Long options and multiple-selection text",
+  description:
+    "The selected value is truncated to the width available; on narrow screens the options wrap to show their full text.",
   order: 30,
 };
 
-/** 单选和多选都由 Value 约束文案宽度，无需调用方处理截断。 */
+/**
+ * Value constrains the text width for single and multiple selection alike, so
+ * the caller does not truncate.
+ */
 export function Example() {
   const id = useId();
   const items = [
-    { value: "design", label: "设计系统与跨平台组件规范维护" },
+    {
+      value: "design",
+      label: "Design system and cross-platform component guidelines",
+    },
     {
       value: "engineering",
       label: "ComponentLibraryAccessibilityAndInteractionReview",
     },
-    { value: "product", label: "产品规划" },
+    { value: "product", label: "Product planning" },
   ];
   return (
     <div className="flex w-full flex-wrap gap-6">
@@ -41,7 +48,7 @@ export function Example() {
         return (
           <div key={labelId} className="w-40 space-y-2">
             <span id={labelId} className="text-sm font-medium">
-              {multiple ? "多个领域" : "所属领域"}
+              {multiple ? "Areas" : "Area"}
             </span>
             <SelectRoot<string, boolean>
               items={items}

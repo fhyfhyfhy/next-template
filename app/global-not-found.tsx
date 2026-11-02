@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
-// 这个页面在 [locale] 之外，读不到 locale，用不了 @/lib/i18n-navigation 的 Link；`/` 由 proxy 按用户的语言处理。
-// eslint-disable-next-line no-restricted-imports -- 理由见上一行
+// This page is outside [locale] and can't read the locale, so it can't use the
+// Link from @/lib/i18n/navigation. The proxy resolves `/` to the user's
+// language.
+// eslint-disable-next-line no-restricted-imports -- reason in the comment above
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import { routing } from "@/lib/i18n-routing";
+import { routing } from "@/lib/i18n/routing";
 
 import { fontVariables } from "./fonts";
 
 import "./globals.css";
 
-// 没有匹配任何路由（包括不支持的 locale 前缀）时渲染，它在根 layout 之外，读不到 locale，只能用默认 locale。
+// Rendered when no route matches, an unsupported locale prefix included. It is
+// outside the root layout and can't read the locale, so it uses the default.
 const locale = routing.defaultLocale;
 
 export async function generateMetadata(): Promise<Metadata> {

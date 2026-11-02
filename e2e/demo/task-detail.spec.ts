@@ -3,7 +3,8 @@ import type { Page } from "@playwright/test";
 import { returnToTab } from "../browser";
 import { expect, resetThroughLab, test } from "./mock-api";
 
-// 任务详情：数据由 React Query 负责（任务会在用户停留时自己推进），首屏由服务端 prefetch。
+// Task detail: React Query owns the data (the task advances on its own while
+// the user stays), and the server prefetches it for the first render.
 
 const GLOBAL_ERROR_TOAST = "请求失败，请稍后重试";
 
@@ -11,8 +12,10 @@ const comments = (page: Page) =>
   page.getByRole("list", { name: "评论" }).getByRole("listitem");
 
 /**
- * 打开详情并等 hydration 完成：首屏 HTML 先到，hydration 之前的点击和文件选择没有事件处理。
- * “同 prompt 的其他任务”只在浏览器里请求，它出现说明页面已经 hydrate。
+ * Opens a task's detail and waits for hydration: the first HTML arrives
+ * first, and before hydration nothing handles a click or a file choice. The
+ * other tasks with the same prompt are requested only in the browser, so once
+ * they show, the page has hydrated.
  */
 async function openTask(page: Page, taskId: string) {
   await page.goto(`/demos/tasks/${taskId}`);
@@ -24,24 +27,30 @@ async function openTask(page: Page, taskId: string) {
 }
 
 async function expectTaskNotFound(page: Page) {
-  // 静态 shell 先以 200 发出，状态码改不了；notFound() 流式送达提示页，并加上 noindex 防止被索引。
+  // The static shell goes out first with a 200, which cannot change; notFound()
+  // streams the not-found page and adds noindex to keep it out of search
+  // indexes.
   await expect(page.getByRole("heading", { name: "任务不存在" })).toBeVisible();
   await expect(
     page.locator('meta[name="robots"][content*="noindex"]'),
   ).not.toHaveCount(0);
 }
 
-test.describe("首屏和 404", () => {
-  test("不存在的任务显示提示页，并标记 noindex", async ({ page }) => {
+test.describe("first render and 404", () => {
+  test("a missing task shows the not-found page, marked noindex", async ({
+    page,
+  }) => {
     await page.goto("/demos/tasks/task-404");
 
     await expectTaskNotFound(page);
   });
 
-  test("不存在的任务按 200 返回：静态 shell 在读到 params 之前就发出了", async ({
+  test("a missing task answers 200: the static shell goes out before params are read", async ({
     request,
   }) => {
-    // 这是 framework-notes.md 的 Response status 记录的 Next.js 行为；升级后它变成真正的 404，就更新那条记录和这里。
+    // Next.js behavior recorded under Response status in framework-notes.md;
+    // when an upgrade turns this into a real 404, update that record and this
+    // test.
     const response = await request.get("/demos/tasks/task-404");
 
     expect(response.status()).toBe(200);
@@ -51,7 +60,7 @@ test.describe("首屏和 404", () => {
     );
   });
 
-  test("标题进 metadata，服务端渲染时详情接口只请求一次", async ({
+  test("the title goes into metadata, and server rendering requests the detail endpoint once", async ({
     page,
     mockApi,
   }) => {
@@ -64,7 +73,7 @@ test.describe("首屏和 404", () => {
     expect(await mockApi.requests("/demo/tasks/:id")).toHaveLength(1);
   });
 
-  test("首屏 HTML 已经包含详情，hydration 后浏览器不再请求详情", async ({
+  test("the first HTML already holds the detail, and the browser does not request it again after hydration", async ({
     page,
     request,
     mockApi,
@@ -75,12 +84,12 @@ test.describe("首屏和 404", () => {
     await mockApi.reset();
     await page.goto("/demos/tasks/task-01");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言 hydration 后一段时间内没有再请求详情，等待是断言的一部分。
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- asserts that no detail request follows hydration for a while; the wait is part of the assertion
     await page.waitForTimeout(1000);
     expect(await mockApi.requests("/demo/tasks/:id")).toHaveLength(1);
   });
 
-  test("评论在详情之后流式出现", async ({ page, mockApi }) => {
+  test("comments stream in after the detail", async ({ page, mockApi }) => {
     await mockApi.setFaults([
       { method: "GET", path: "/demo/tasks/:id/comments", latency_ms: 1500 },
     ]);
@@ -91,7 +100,9 @@ test.describe("首屏和 404", () => {
     await expect(comments(page)).toHaveCount(2);
   });
 
-  test("同 prompt 的其他任务在详情之后加载", async ({ page }) => {
+  test("other tasks with the same prompt load after the detail", async ({
+    page,
+  }) => {
     await page.goto("/demos/tasks/task-01");
 
     const related = page.getByRole("list", { name: "同 prompt 的其他任务" });
@@ -102,8 +113,8 @@ test.describe("首屏和 404", () => {
   });
 });
 
-test.describe("任务推进", () => {
-  test("运行中的任务停留在页面上也会更新进度，到终态后徽标数量减少", async ({
+test.describe("task progress", () => {
+  test("an in-progress task updates its progress while the user stays on the page, and the badge count drops at its terminal status", async ({
     page,
     mockApi,
   }) => {
@@ -123,7 +134,10 @@ test.describe("任务推进", () => {
     await expect(page.getByText("进行中 3")).toBeVisible();
   });
 
-  test("回到标签页时徽标立即刷新", async ({ page, mockApi }) => {
+  test("returning to the tab refreshes the badge at once", async ({
+    page,
+    mockApi,
+  }) => {
     await openTask(page, "task-01");
     await expect(page.getByText("进行中 4")).toBeVisible();
 
@@ -133,7 +147,10 @@ test.describe("任务推进", () => {
     await expect(page.getByText("进行中 3")).toBeVisible({ timeout: 3000 });
   });
 
-  test("生成日志用 SSE 推送，到终态后结束", async ({ page, mockApi }) => {
+  test("the generation log is pushed over SSE and ends at the terminal status", async ({
+    page,
+    mockApi,
+  }) => {
     await openTask(page, "task-11");
     const logs = page.getByRole("log", { name: "生成日志" });
 
@@ -146,7 +163,7 @@ test.describe("任务推进", () => {
     await expect(page.getByText("日志已结束")).toBeVisible();
   });
 
-  test("任务在别处被删除后显示已删除，不弹通用提示", async ({
+  test("a task deleted elsewhere shows as deleted, with no generic toast", async ({
     page,
     mockApi,
   }) => {
@@ -160,12 +177,12 @@ test.describe("任务推进", () => {
   });
 });
 
-test.describe("写入", () => {
+test.describe("writes", () => {
   test.beforeEach(async ({ page }) => {
     await resetThroughLab(page);
   });
 
-  test("重试失败的任务后重新开始推进，列表立即反映新状态", async ({
+  test("a retried failed task starts advancing again, and the list reflects its new status at once", async ({
     page,
     mockApi,
   }) => {
@@ -182,7 +199,10 @@ test.describe("写入", () => {
     ).toHaveCount(0);
   });
 
-  test("任务已在别处重试过时就地提示并刷新详情", async ({ page, mockApi }) => {
+  test("a task already retried elsewhere says so in place and refreshes the detail", async ({
+    page,
+    mockApi,
+  }) => {
     await openTask(page, "task-05");
     await mockApi.call("POST", "/demo/tasks/task-05/retry");
 
@@ -193,7 +213,9 @@ test.describe("写入", () => {
     await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(0);
   });
 
-  test("删除任务后回到列表，任务不再出现，详情显示不存在", async ({ page }) => {
+  test("deleting a task returns to the list, where it no longer appears, and its detail shows not found", async ({
+    page,
+  }) => {
     await openTask(page, "task-02");
     await page.getByRole("button", { name: "删除任务" }).click();
     await page
@@ -209,7 +231,9 @@ test.describe("写入", () => {
     await expectTaskNotFound(page);
   });
 
-  test("重命名表单从当前数据开始编辑，撞名时在字段上提示", async ({ page }) => {
+  test("the rename form starts from the current data and shows a name clash on the field", async ({
+    page,
+  }) => {
     await openTask(page, "task-01");
     await page.getByRole("button", { name: "重命名" }).click();
     const input = page.getByLabel("新名称");
@@ -226,14 +250,17 @@ test.describe("写入", () => {
       "改名后的狐狸",
     );
 
-    // task-01 是最早创建的任务，按创建时间正序时在第一页。
+    // task-01 is the earliest task, so it is on the first page in ascending
+    // creation order.
     await page.goto("/demos/tasks?sort=created_asc");
     await expect(
       page.getByRole("link", { name: "改名后的狐狸" }),
     ).toBeVisible();
   });
 
-  test("取消重命名后恢复显示原名称", async ({ page }) => {
+  test("cancelling a rename shows the original name again", async ({
+    page,
+  }) => {
     await openTask(page, "task-01");
     await page.getByRole("button", { name: "重命名" }).click();
     await page.getByLabel("新名称").fill("不保存的名称");
@@ -246,7 +273,9 @@ test.describe("写入", () => {
     await expect(page.getByLabel("新名称")).toHaveValue("低多边形狐狸");
   });
 
-  test("浏览器直接上传封面图后，详情和列表的缩略图都更新", async ({ page }) => {
+  test("after the browser uploads a cover image directly, the detail and the list thumbnail both update", async ({
+    page,
+  }) => {
     await openTask(page, "task-03");
     const cover = page.getByTestId("task-cover");
     await expect(cover).not.toHaveAttribute("src", /.+/);
@@ -263,7 +292,8 @@ test.describe("写入", () => {
 
     await page.goto("/demos/tasks?status=running");
     const row = page.getByRole("listitem").filter({ hasText: "橙色狐狸草稿" });
-    // 封面图是装饰性图片（alt 为空），没有 img 角色，按标签定位。
+    // The cover is a decorative image (empty alt) with no img role, so it is
+    // located by tag name.
     await expect(row.locator("img")).toHaveAttribute(
       "src",
       /\/demo\/tasks\/task-03\/cover\?v=1/,
@@ -271,8 +301,10 @@ test.describe("写入", () => {
   });
 });
 
-test.describe("下载", () => {
-  test("done 的任务可以下载 .glb 模型文件", async ({ page }) => {
+test.describe("download", () => {
+  test("a done task can be downloaded as a .glb model file", async ({
+    page,
+  }) => {
     await openTask(page, "task-01");
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: "下载模型" }).click();
@@ -280,7 +312,7 @@ test.describe("下载", () => {
     expect((await download).suggestedFilename()).toBe("低多边形狐狸.glb");
   });
 
-  test("下载失败时提示", async ({ page, mockApi }) => {
+  test("a failed download shows a message", async ({ page, mockApi }) => {
     await mockApi.setFaults([
       { method: "GET", path: "/demo/tasks/:id/model", status: 500 },
     ]);
@@ -290,14 +322,14 @@ test.describe("下载", () => {
     await expect(page.getByText("下载失败，请稍后重试")).toBeVisible();
   });
 
-  test("没有完成的任务不能下载", async ({ page }) => {
+  test("a task that is not done cannot be downloaded", async ({ page }) => {
     await page.goto("/demos/tasks/task-03");
     await expect(page.getByRole("button", { name: "下载模型" })).toHaveCount(0);
   });
 });
 
-test.describe("评论", () => {
-  test("发表评论立即显示为发送中，成功后标记消失", async ({
+test.describe("comments", () => {
+  test("a posted comment shows as sending at once, and the mark goes away on success", async ({
     page,
     mockApi,
   }) => {
@@ -315,7 +347,7 @@ test.describe("评论", () => {
     await expect(comments(page)).toHaveCount(3);
   });
 
-  test("发表失败时评论消失，输入框恢复内容，只弹一个全局提示", async ({
+  test("a failed post removes the comment, restores the input, and shows a single global toast", async ({
     page,
     mockApi,
   }) => {
@@ -331,7 +363,10 @@ test.describe("评论", () => {
     await expect(page.getByLabel("写评论")).toHaveValue("发不出去的评论");
   });
 
-  test("删除评论立即消失，失败时恢复原位", async ({ page, mockApi }) => {
+  test("a deleted comment disappears at once and comes back in place on failure", async ({
+    page,
+    mockApi,
+  }) => {
     await openTask(page, "task-01");
     await comments(page)
       .first()
@@ -354,7 +389,10 @@ test.describe("评论", () => {
     await expect(comments(page)).toHaveCount(1);
   });
 
-  test("空评论和超过 500 字的评论不能提交", async ({ page, mockApi }) => {
+  test("an empty comment or one over 500 characters cannot be submitted", async ({
+    page,
+    mockApi,
+  }) => {
     await openTask(page, "task-01");
     await page.getByRole("button", { name: "发表" }).click();
     await expect(page.getByText("请输入评论")).toBeVisible();
@@ -365,8 +403,8 @@ test.describe("评论", () => {
     expect(await mockApi.requests("/demo/tasks/:id/comments")).toHaveLength(1);
   });
 
-  test("hydration 之前评论表单不可用", async ({ page }) => {
-    // 拦掉 JS bundle，页面停在 hydration 之前。
+  test("the comment form is disabled before hydration", async ({ page }) => {
+    // With the JS bundles aborted, the page stays unhydrated.
     await page.route(/\/_next\/static\/chunks\/.+\.js/, (route) =>
       route.abort(),
     );

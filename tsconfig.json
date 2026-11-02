@@ -37,9 +37,10 @@
     ".next-demo-e2e/types/**/*.ts",
     ".next-demo-e2e/dev/types/**/*.ts"
   ],
-  // 上面 .next/dev 和其他 .next-* 目录的 include 是 Next 自动加的，删了下次运行还会加回来。这几份路由类型只在生成它的命令
-  // 运行时更新，删改路由后会过期，tsc 读到就在它的 validator.ts 里报找不到页面。所以只读 .next/types：
-  // typecheck 和 build 会刷新它，demo 和 e2e 的 build 也先刷新它（scripts/run-next.mjs）。
+  // Next adds the includes above for .next/dev and the other .next-* directories itself, and adds them back on the next run
+  // when they are deleted. Those route types are updated only while the command that generates them runs, so they go stale
+  // once a route is deleted or changed, and tsc then reports missing pages in their validator.ts. So only .next/types is
+  // read: typecheck and build refresh it, and the demo and e2e builds refresh it first too (scripts/run-next.mjs).
   "exclude": [
     "node_modules",
     ".next/dev",

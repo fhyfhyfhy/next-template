@@ -2,7 +2,7 @@ import { useId } from "react";
 
 import { Input } from "@/components/ui/input";
 
-/** 参数面板的文字输入。 */
+/** A text input for the controls panel. */
 export function TextControl({
   label,
   value,

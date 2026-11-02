@@ -63,7 +63,8 @@ const componentExportsRule = {
           definition.node.type === "ImportNamespaceSpecifier"
         )
           return true;
-        // 只追踪不可变别名；可变赋值和函数返回值需要控制流分析，不能按同名标识符猜测。
+        // Only immutable aliases are followed: mutable assignments and function return values need
+        // control flow analysis, which an identifier's name cannot stand in for.
         return (
           definition.type === "Variable" &&
           definition.parent.kind === "const" &&

@@ -14,7 +14,7 @@ export const metadata = {
   icon: "IconTag",
 } satisfies ComponentMetadata;
 
-/** Badge 的可调预览与参数控制。 */
+/** Badge's adjustable preview and its controls. */
 export function Demo({ source }: { source: string }) {
   const [config, setConfig] = useState(initialConfig);
   return (

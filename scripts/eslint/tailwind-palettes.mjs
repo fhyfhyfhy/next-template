@@ -2,8 +2,9 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 /**
- * Tailwind 默认主题里带色阶的调色板名（red、zinc 等），从安装的 tailwindcss 读取，
- * 升级新增调色板时不用手动同步。black、white 没有色阶，不在其中。
+ * The names of the palettes with shades in Tailwind's default theme (red, zinc and so on), read from
+ * the installed tailwindcss so that palettes added by an upgrade need no manual sync. black and white
+ * have no shades and are not among them.
  */
 export const TAILWIND_PALETTES = [
   ...new Set(

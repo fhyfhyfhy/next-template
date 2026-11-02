@@ -3,6 +3,11 @@
     "title": "Next Demo",
     "description": "一套可交互、可定制、可复用的 Next.js 模板。"
   },
+  "home": {
+    "title": "Next.js 模板",
+    "description": "从这里开始写你的页面：首页在 app/[locale]/page.tsx。",
+    "demos": "查看 Demo"
+  },
   "requestError": "请求失败，请稍后重试",
   "globalNotFound": {
     "title": "页面不存在",

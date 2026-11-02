@@ -5,7 +5,7 @@ paths:
 
 # API modules
 
-Define backend requests and reusable React Query options for server and browser consumers. Request configuration applies wherever a backend request is implemented; the file conventions below apply to a feature's `api/` modules. Next.js Route Handlers under `app/api/` follow the framework's `route.ts` convention. The `next-data-flow` skill chooses the data owner; [data-fetching.md](data-fetching.md) covers data consumers and error presentation. Read `lib/fetch.ts` and `lib/react-query.ts` for their available options and exports. `features/demo-task/api/` follows these conventions end to end; the [Data demo](../../.agents/skills/next-data-flow/demos.md) maps each one to its code.
+Define backend requests and reusable React Query options for server and browser consumers. Request configuration applies wherever a backend request is implemented; the file conventions below apply to a feature's `api/` modules. Next.js Route Handlers under `app/api/` follow the framework's `route.ts` convention. The `next-data-flow` skill chooses the data owner; [data-fetching.md](data-fetching.md) covers data consumers and error presentation. Read `lib/fetch/index.ts` and `lib/react-query.ts` for their available options and exports. `features/demo-task/api/` follows these conventions end to end; the [Data demo](../../.agents/skills/next-data-flow/demos.md) maps each one to its code.
 
 ## Files
 
@@ -17,10 +17,10 @@ Define backend requests and reusable React Query options for server and browser 
 
 ## Requests
 
-- A request to a public endpoint passes `auth: false`, even while the project sends no credential. Once `lib/credentials-server.ts` reads the request's cookies, a credentialed call makes its caller per request and throws inside `use cache`.
-- The credential each environment sends is in `lib/credentials-server.ts` and `lib/credentials-browser.ts`. While they carry the template's `TODO`, credentials are not configured: before adding a request that needs the signed-in user, ask the user to run the `setup-data-access` skill.
+- A request to a public endpoint passes `auth: false`, even while the project sends no credential. Once `lib/fetch/credentials-server.ts` reads the request's cookies, a credentialed call makes its caller per request and throws inside `use cache`.
+- The credential each environment sends is in `lib/fetch/credentials-server.ts` and `lib/fetch/credentials-browser.ts`. While they carry the template's `TODO`, credentials are not configured: before adding a request that needs the signed-in user, ask the user to run the `setup-data-access` skill.
 - When a backend response needs raw `fetch` under the [transport exceptions](data-fetching.md#transport), build its URL with `resolveApiUrl` so the base URL stays configured in one place.
-- Query parameters go in `params` rather than into the `url` string; `FetchApiConfig` in `lib/fetch.ts` documents each option.
+- Query parameters go in `params` rather than into the `url` string; `FetchApiConfig` in `lib/fetch/index.ts` documents each option.
 - Types come from `z.infer` of the request's `schema`, never a parallel hand-written interface.
 - Wire names stop in this layer. When the backend uses snake_case, write the schema in the wire shape and `.transform()` it to camelCase, and take camelCase arguments that the function maps to wire names in `params` or `data`.
 

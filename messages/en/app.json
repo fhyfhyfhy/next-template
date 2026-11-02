@@ -3,6 +3,11 @@
     "title": "Next Demo",
     "description": "An interactive, customizable, and reusable Next.js template."
   },
+  "home": {
+    "title": "Next.js template",
+    "description": "Start writing your pages here: the home page is app/[locale]/page.tsx.",
+    "demos": "See the Demo"
+  },
   "requestError": "Request failed. Please try again later.",
   "globalNotFound": {
     "title": "Page not found",

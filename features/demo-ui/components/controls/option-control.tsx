@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-/** 只允许从给定选项中选择，保留调用方的字符串联合类型。 */
+/** Allows only the given options, keeping the caller's string union type. */
 export function OptionControl<Value extends string>({
   label,
   value,

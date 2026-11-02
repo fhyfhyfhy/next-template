@@ -15,9 +15,12 @@ const resetMock = () =>
   });
 
 /**
- * 把 Mock API 恢复成种子数据并清除故障。重置不经过 Next 服务端，列表页的服务端缓存要单独失效；
- * 浏览器里所有 query 也都可能过期，统一 invalidate，并等它们重新请求完才算重置成功：
- * 故障按路由模式匹配，e2e 在重置成功后立即注入的故障会被还在路上的请求用掉次数。
+ * Restores the Mock API's seed data and clears its faults. The reset bypasses
+ * the Next server, so the list page's server cache has to be expired
+ * separately. Every query in the browser may be stale too, so all are
+ * invalidated, and the reset succeeds only once they have refetched: faults
+ * match by route pattern, so requests still in flight would use up the counts
+ * of a fault that e2e injects right after the reset.
  */
 export const resetMockMutationOptions = () =>
   mutationOptions({

@@ -9,16 +9,16 @@ import {
 } from "@/components/ui/progress";
 
 export const metadata = {
-  title: "基本用法",
-  description: "包含完整 import 与必要结构，可直接复制。",
+  title: "Basic usage",
+  description: "Has every import and the structure it needs; copy it as is.",
   order: 10,
 };
 
-/** Root 持有进度值，Label、Value、Track 由调用方组合。 */
+/** Root holds the value; the caller composes Label, Value and Track. */
 export function Example() {
   return (
     <ProgressRoot value={64} className="w-full max-w-sm">
-      <ProgressLabel>上传中</ProgressLabel>
+      <ProgressLabel>Uploading</ProgressLabel>
       <ProgressValue />
       <ProgressTrack>
         <ProgressIndicator />

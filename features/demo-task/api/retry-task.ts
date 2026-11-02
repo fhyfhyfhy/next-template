@@ -14,12 +14,14 @@ export const retryTaskMutationOptions = () =>
     mutationFn: async (variables: { taskId: string }) =>
       unwrapActionResult(await retryTaskAction(variables)),
     onSuccess: (task, _variables, _onMutateResult, { client }) => {
-      // 写回 pending 状态后，详情 query 的 refetchInterval 重新开始轮询。
+      // With pending written back, the detail query's refetchInterval starts
+      // polling again.
       client.setQueryData(getTaskQueryOptions(task.id).queryKey, task);
       void client.invalidateQueries({ queryKey: taskListKey });
     },
     onError: (error, { taskId }, _onMutateResult, { client }) => {
-      // 任务状态已在别处变化，刷新详情让页面显示最新状态。
+      // The task's status changed elsewhere; refresh the detail so the page
+      // shows the latest.
       if (isTaskActionError(error, TASK_NOT_RETRYABLE)) {
         void client.invalidateQueries({
           queryKey: getTaskQueryOptions(taskId).queryKey,

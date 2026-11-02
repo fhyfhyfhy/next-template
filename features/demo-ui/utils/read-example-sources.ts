@@ -7,12 +7,16 @@ import { catalog, type ComponentId } from "../constants/catalog";
 import { exampleFiles } from "../constants/example-files.generated";
 import type { ExampleSources } from "../types/examples";
 
-/** 按生成索引读取预览对应的源码；生产部署需包含这些源文件。 */
+/**
+ * Reads the source behind each preview, by the generated index. A production
+ * deployment must include these source files.
+ */
 export async function readExampleSources(
   component: ComponentId,
 ): Promise<ExampleSources> {
   "use cache";
-  // 源文件只随部署变化，而缓存 key 含 build id，每次部署自动失效。
+  // The source files change only with a deployment, and the cache key includes
+  // the build ID, so every deployment invalidates it.
   cacheLife("max");
   if (!catalog.some((item) => item.id === component))
     throw new Error("Unknown UI demo component");

@@ -10,7 +10,9 @@ import {
   ProgressValue,
 } from "@/components/ui/progress";
 
-/** `progress` 为 null 表示还在排队、进度未知。 */
+/**
+ * A null `progress` means the task is still queued and its progress is unknown.
+ */
 export function TaskProgress({ progress }: { progress: number | null }) {
   const t = useTranslations("demo-task.taskProgress");
   return (

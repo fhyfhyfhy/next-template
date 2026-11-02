@@ -14,18 +14,22 @@ export interface ButtonConfig {
   icon: "none" | "arrow" | "plus";
 }
 
-// 括号将结束标记保留在表达式内；UI demo 页面只替换标记之间的 JSON 初始值。
+// The parentheses keep the end marker inside the expression; the UI demo page
+// replaces only the initial JSON between the markers.
 // prettier-ignore
 export const initialConfig: ButtonConfig = (/* @example-config */ {
   "variant": "primary",
   "size": "md",
   "disabled": false,
   "focusableWhenDisabled": false,
-  "label": "开始创建",
+  "label": "Start creating",
   "icon": "arrow"
 } /* @end-example-config */);
 
-/** 不传参数时使用本地状态；UI demo 页面传入同一份配置供面板与预览共享。 */
+/**
+ * Without a config it uses initialConfig; the UI demo page passes one config
+ * that the panel and the preview share.
+ */
 export function ButtonPlayground({ config }: { config?: ButtonConfig } = {}) {
   const state = config ?? initialConfig;
   const [clicks, setClicks] = useState(0);
@@ -43,7 +47,7 @@ export function ButtonPlayground({ config }: { config?: ButtonConfig } = {}) {
         {state.icon === "arrow" && <IconArrowRight aria-hidden />}
       </Button>
       <span aria-live="polite" className="text-xs text-muted-foreground">
-        已触发 {clicks} 次
+        Clicked {clicks} times
       </span>
     </div>
   );
