@@ -4,10 +4,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 
 import { cn } from "@/lib/cn";
 
-/**
- * The popup's description, associated automatically with the content in the
- * same Root.
- */
+/** 弹层说明，与同一 Root 中的内容自动关联。 */
 export function DialogDescription({
   className,
   ...props

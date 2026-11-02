@@ -8,11 +8,8 @@ import { streamTaskLogs } from "../../api/get-task-logs";
 type StreamState = "streaming" | "ended" | "failed";
 
 /**
- * The generation log is an append-only SSE stream that belongs to no query: it
- * is read with raw `fetch` under the transport exception and accumulated in the
- * component's own state. Unmounting aborts the connection. The caller changes
- * the key when the task enters or leaves an active state: it remounts to read
- * the full log when the task ends, and subscribes again after a retry.
+ * 生成日志是 SSE 推送的追加流，不属于任何 query：按传输例外用 raw `fetch` 读取，累积在组件自己的 state 里。
+ * 卸载时中止连接。调用方在任务进入或离开进行中状态时换 key：结束时重新挂载读完整日志，重试后重新订阅。
  */
 export function TaskLogs({ taskId }: { taskId: string }) {
   const t = useTranslations("demo-task.taskLogs");
@@ -47,8 +44,7 @@ export function TaskLogs({ taskId }: { taskId: string }) {
           <p className="opacity-60">{t("waiting")}</p>
         )}
         {lines.map((line, index) => (
-          // The log only appends and never reorders, so the index is a stable
-          // key.
+          // 日志只追加不重排，下标就是稳定的 key。
           <p key={index}>{line}</p>
         ))}
       </div>

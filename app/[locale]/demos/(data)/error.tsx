@@ -6,14 +6,11 @@ import { Button } from "@/components/ui/button";
 
 interface DataDemoErrorProps {
   error: unknown;
-  /** Refetches and re-renders the route segment that failed. */
+  /** 重新请求并渲染出错的路由段。 */
   retry: () => void;
 }
 
-/**
- * An unexpected error while rendering a Data demo page, such as a 5xx from the
- * backend during a server read.
- */
+/** Data demo 页面渲染时遇到的意外错误，比如服务端读取时后端返回 5xx。 */
 export default function DataDemoError({ retry }: DataDemoErrorProps) {
   const t = useTranslations("app.demos.dataError");
   return (

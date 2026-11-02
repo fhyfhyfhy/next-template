@@ -7,18 +7,13 @@ import {
 } from "@/features/demo-task";
 import { ClientMessages } from "@/lib/i18n/client-messages";
 
-/**
- * The shell of the Data demo's pages. When the Mock API isn't running it shows
- * only a notice, and the pages neither render nor send requests.
- */
+/** Data demo 各页面的外壳。Mock API 没有运行时只显示说明，页面本身不渲染、不发请求。 */
 export default function DataDemoLayout({ children }: { children: ReactNode }) {
   return (
     <ClientMessages namespaces={["demo-task"]}>
       {MOCK_API_RUNNING ? (
         <>
-          {/* The nav reads the current path and the badge reads the current
-              time when it creates its query; inside Suspense they don't hold
-              back prerendering the static shell. */}
+          {/* 导航读当前路径、徽标创建 query 时读当前时间，放进 Suspense 才不影响静态 shell 的预渲染。 */}
           <Suspense
             fallback={
               <div className="h-16.25 border-b border-border bg-card" />

@@ -18,7 +18,7 @@ export function featurePath(projectRoot, filename) {
   return parts[0] === "features" && parts[1] ? parts.slice(1) : null;
 }
 
-/** Resolves the project's imports; host can track the config and resolved paths, so the caller can tell when its cache is stale. */
+/** 解析项目依赖；host 可跟踪配置和解析路径，供调用方判断缓存是否失效。 */
 export function createProjectResolver(projectRoot, host = ts.sys) {
   const root = resolve(projectRoot);
   const configPath = ts.findConfigFile(root, host.fileExists, "tsconfig.json");
@@ -36,12 +36,11 @@ export function createProjectResolver(projectRoot, host = ts.sys) {
       );
     const parsed = ts.parseJsonConfigFileContent(
       config.config,
-      // Only the options and extends are needed here; listing include's source files would scan the
-      // whole project again.
+      // 这里只需要解析选项和 extends；枚举 include 的源文件会重复扫描整个项目。
       { ...host, readDirectory: () => [] },
       dirname(configPath),
     );
-    // Parsing only the options lists no input files, so the no-inputs diagnostic is ignored.
+    // 仅解析选项时不枚举输入文件，因此忽略空输入诊断。
     const errors = parsed.errors.filter((error) => error.code !== 18003);
     if (errors.length) {
       throw new Error(
@@ -55,8 +54,7 @@ export function createProjectResolver(projectRoot, host = ts.sys) {
     compilerOptions = parsed.options;
   }
 
-  // With packages true it resolves package names too, returning the real path TypeScript resolves
-  // them to (a workspace package resolves to its source in the repo).
+  // packages 为 true 时也解析包名，返回 TypeScript 解析到的真实路径（workspace 包会解析到仓库内的源码）。
   return (filename, specifier, { packages = false } = {}) => {
     if (typeof specifier !== "string") return null;
     const isRelative = /^(?:\.{1,2})(?:\/|$)/.test(specifier);

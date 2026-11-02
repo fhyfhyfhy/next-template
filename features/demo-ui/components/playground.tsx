@@ -12,10 +12,7 @@ import { Button } from "@/components/ui/button";
 
 import { SourceCode } from "./source-code";
 
-/**
- * One caller holds the state of the preview and the controls, so the source
- * updates with the config.
- */
+/** 预览和参数由同一调用方持有状态，源码随参数一起更新。 */
 export function Playground({
   children,
   controls,

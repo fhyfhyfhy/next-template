@@ -28,8 +28,7 @@ export async function generateMetadata({
   const t = await getTranslations("app.demos.taskDetail");
   if (!MOCK_API_RUNNING) return { title: t("mockApiOffTitle") };
   const { id } = await params;
-  // The same GET as the page's prefetch, so one render requests it once
-  // (fetchApi dedupes when no signal is passed).
+  // 和页面里的 prefetch 是同一个 GET，一次渲染内只请求一次（fetchApi 不传 signal 时参与去重）。
   const task = await getTask(id).catch((error: unknown) => {
     if (isTaskNotFound(error)) return null;
     throw error;
@@ -39,10 +38,8 @@ export async function generateMetadata({
   };
 }
 
-// The page stays synchronous and reads params only inside Suspense, so the
-// skeleton goes into the static shell and shows at once on navigation. The
-// cost: a missing task gets no 404 status. The shell has already gone out with
-// 200, and notFound() then streams the not-found page and adds noindex.
+// page 保持同步，只在 Suspense 里读 params：骨架屏进静态 shell，导航时立即显示。代价是不存在的任务
+// 拿不到 404 状态码：shell 先以 200 发出，notFound() 之后流式送达 not-found 页面并加上 noindex。
 export default function TaskDetailPage({
   params,
 }: PageProps<"/[locale]/demos/tasks/[id]">) {
@@ -71,8 +68,7 @@ async function TaskDetailHydration({ id }: { id: string }) {
     if (isTaskNotFound(error)) notFound();
     throw error;
   }
-  // Comments don't hold up the first paint: not awaited, dehydrated as pending,
-  // and streamed to the browser when the data arrives.
+  // 评论不阻塞首屏：不 await，以 pending 状态 dehydrate，数据到了再流式送到浏览器。
   void queryClient.query(getCommentsQueryOptions(id)).catch(noop);
   const state = dehydrate(queryClient, {
     shouldDehydrateQuery: (query) =>

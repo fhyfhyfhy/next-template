@@ -22,10 +22,7 @@ const checkboxVariants = cva(
 export interface CheckboxRootProps
   extends CheckboxPrimitive.Root.Props, VariantProps<typeof checkboxVariants> {}
 
-/**
- * Supports checked and indeterminate states. Name it with a wrapping label or
- * aria-label.
- */
+/** 支持选中和混合状态；使用包裹式 label 或 aria-label 提供名称。 */
 export function CheckboxRoot({
   size = "md",
   className,

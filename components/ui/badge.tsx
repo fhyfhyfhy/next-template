@@ -8,8 +8,7 @@ const badgeVariants = cva(
   "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3",
   {
     variants: {
-      // Names follow Button's variants; muted is a low-emphasis style only
-      // Badge needs.
+      // 名称沿用 Button 的 variant；muted 是 Badge 自己需要的低强调样式。
       variant: {
         primary: "border-transparent bg-primary text-primary-foreground",
         muted: "border-transparent bg-muted text-foreground",
@@ -26,10 +25,7 @@ export interface BadgeProps
     useRender.ComponentProps<"span">,
     VariantProps<typeof badgeVariants> {}
 
-/**
- * A small label for a status or category. Renders a span by default; `render`
- * swaps in another element, such as a link.
- */
+/** 状态或分类的小标签，默认渲染 span，可以用 `render` 换成链接等元素。 */
 export function Badge({
   variant = "primary",
   className,

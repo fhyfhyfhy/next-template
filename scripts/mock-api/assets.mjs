@@ -1,11 +1,10 @@
-// Binary content the Mock API returns: the seed tasks' cover images and the 3D model files of
-// done tasks, generated on demand rather than kept in the repo.
+// Mock API 返回的二进制内容：种子任务的封面图和 done 任务的 3D 模型文件，都按需生成，不放进仓库。
 
 const GLB_MAGIC = 0x46546c67; // "glTF"
 const CHUNK_JSON = 0x4e4f534a;
 const CHUNK_BIN = 0x004e4942;
 
-/** A seed task's cover image: the task id sets the hue, so a task always gets the same image. */
+/** 种子任务的封面图：色相由任务 id 决定，同一个任务每次生成的图片相同。 */
 export function generatedCoverSvg(taskId) {
   let hash = 0;
   for (const char of taskId) hash = (hash * 31 + char.charCodeAt(0)) % 360;
@@ -19,7 +18,7 @@ export function generatedCoverSvg(taskId) {
 </g></svg>`;
 }
 
-/** A unit cube, packed as the smallest valid glTF 2.0 binary (.glb). */
+/** 一个边长为 1 的立方体，打包成最小的合法 glTF 2.0 二进制（.glb）。 */
 export function cubeGlb() {
   // prettier-ignore
   const positions = new Float32Array([
@@ -68,7 +67,7 @@ export function cubeGlb() {
       { bufferView: 1, componentType: 5123, count: 36, type: "SCALAR" },
     ],
   };
-  // Every glb chunk must be 4-byte aligned: JSON is padded with spaces, binary with zeros.
+  // glb 的每个 chunk 都要 4 字节对齐：JSON 用空格补齐，二进制用 0 补齐。
   const jsonChunk = pad(Buffer.from(JSON.stringify(json)), 0x20);
   const binChunk = pad(binary, 0);
   const total = 12 + 8 + jsonChunk.length + 8 + binChunk.length;

@@ -29,7 +29,7 @@ const scenarios = [
     key: "serverErrorRecovers",
     fault: detailFault({ status: 503, times: 2 }),
   },
-  // The first request plus 3 retries; it gives up only after all 4 fail.
+  // 首次请求加 3 次重试，4 次都失败才放弃。
   {
     key: "serverErrorPersists",
     fault: detailFault({ status: 503, times: 4 }),
@@ -43,11 +43,7 @@ const scenarios = [
 ] as const satisfies readonly { key: string; fault: MockFaultInput }[];
 type ScenarioKey = (typeof scenarios)[number]["key"];
 
-/**
- * `shouldRetryRequest`: 5xx and network errors are retried up to 3 times. A
- * 4xx, an error on a 2xx or a schema mismatch wouldn't succeed on retry, so
- * they fail at once.
- */
+/** `shouldRetryRequest`：5xx 和网络错误最多重试 3 次；4xx、2xx 上的 error、schema 不匹配重试也不会成功，直接失败。 */
 export function LabRetry() {
   const t = useTranslations("demo-task.labRetry");
   const queryClient = useQueryClient();
@@ -55,8 +51,7 @@ export function LabRetry() {
   const options = getTaskQueryOptions(TASK_ID);
   const task = useQuery(options);
   const [scenario, setScenario] = useState<ScenarioKey | null>(null);
-  // failureCount resets on success, so record during render the highest failure
-  // count this round of requests has reached.
+  // 成功后 failureCount 会清零，这里在渲染时记下这一轮请求出现过的最大失败次数。
   const [failures, setFailures] = useState(0);
   if (task.failureCount > failures) setFailures(task.failureCount);
 

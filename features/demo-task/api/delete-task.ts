@@ -6,10 +6,7 @@ import { getCommentsQueryOptions } from "./get-comments";
 import { getTaskQueryOptions } from "./get-task";
 import { taskListKey } from "./get-tasks";
 
-/**
- * Deleting touches both owners: the action expires the list page's server
- * cache, and this clears the detail, comments and list queries in the browser.
- */
+/** 删除同时影响两种负责方：action 让列表页的服务端缓存失效，这里清理浏览器里的详情、评论和列表 query。 */
 export const deleteTaskMutationOptions = () =>
   mutationOptions({
     mutationFn: async (variables: { taskId: string }) =>

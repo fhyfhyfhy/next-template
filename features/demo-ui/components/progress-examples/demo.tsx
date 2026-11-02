@@ -14,7 +14,7 @@ export const metadata = {
   icon: "IconProgress",
 } satisfies ComponentMetadata;
 
-/** Progress's adjustable preview and its controls. */
+/** Progress 的可调预览与参数控制。 */
 export function Demo({ source }: { source: string }) {
   const [config, setConfig] = useState(initialConfig);
   return (

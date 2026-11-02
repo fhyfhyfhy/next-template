@@ -8,12 +8,10 @@ import { useQuery } from "@/lib/react-query";
 
 import { activeTasksQueryOptions } from "../../api/get-tasks";
 
-// Refresh periodically while tasks are active. The interval is longer than the
-// detail page's polling; refetch on focus updates it as soon as the user
-// returns to the tab.
+// 有进行中的任务时定期刷新；间隔比详情页的轮询长，回到标签页时靠 focus refetch 立即更新。
 const POLL_INTERVAL_MS = 10_000;
 
-/** The number of active tasks, queued and generating. */
+/** 进行中（排队中和生成中）的任务数。 */
 export function RunningTasksBadge() {
   const t = useTranslations("demo-task.runningTasksBadge");
   const { data } = useQuery({

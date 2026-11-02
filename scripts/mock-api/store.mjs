@@ -11,7 +11,7 @@ const SEARCH_LIMIT = 20;
 const PROGRESS_STEP = 25;
 const RUNNING_LOGS = ["解析 prompt", "生成网格", "生成贴图", "优化拓扑"];
 
-/** Thrown when a business rule refuses a request; server.mjs turns it into its response. */
+/** 业务规则拒绝请求时抛出，由 server.mjs 转成对应的响应。 */
 export class DomainError extends Error {
   constructor(response) {
     super(response.body.error.message);
@@ -19,7 +19,7 @@ export class DomainError extends Error {
   }
 }
 
-/** The Mock API's in-memory state and the Demo task's business rules. */
+/** Mock API 的内存状态和 Demo task 的业务规则。 */
 export function createStore() {
   let state = createSeed();
   const subscribers = new Map();
@@ -125,10 +125,7 @@ export function createStore() {
       return task;
     },
 
-    /**
-     * Advances one step: pending → running 0% → +25% per step → a final status after 100%; a task
-     * already in a final status stays as it is.
-     */
+    /** 推进一步：pending → running 0% → 每步 +25% → 100% 之后进入终态；已在终态的任务不变。 */
     advanceTask(id) {
       const task = getTask(id);
       advance(task);
@@ -139,7 +136,7 @@ export function createStore() {
       for (const task of state.tasks) advance(task);
     },
 
-    /** Calls `listener` whenever the task changes; returns a function that unsubscribes. */
+    /** 任务每次变化时调用 `listener`，返回取消订阅的函数。 */
     subscribe(taskId, listener) {
       const listeners = subscribers.get(taskId) ?? new Set();
       listeners.add(listener);
@@ -210,7 +207,7 @@ export function createStore() {
       };
     },
 
-    /** A done task's 3D model file; the business rules refuse it in any other status. */
+    /** done 任务的 3D 模型文件，其他状态按业务规则拒绝。 */
     getModel(id) {
       const task = getTask(id);
       if (task.status !== "done") {
@@ -271,10 +268,7 @@ export function createStore() {
   };
 }
 
-/**
- * Requires 1 to `maxLength` characters after trimming, otherwise refuses it as a parameter error
- * with the business code `code`, or the generic BAD_REQUEST when none is passed.
- */
+/** 去掉首尾空白后长度在 1 到 `maxLength` 之间，否则按参数错误拒绝；业务码为 `code`，不传时是通用的 BAD_REQUEST。 */
 function requireText(value, field, maxLength, code) {
   const text = typeof value === "string" ? value.trim() : "";
   if (text.length === 0 || text.length > maxLength) {
@@ -300,7 +294,7 @@ function compareBy(sort) {
   }
 }
 
-/** Pages start at 1; a page out of range returns an empty list. */
+/** 页码从 1 开始，超出范围时返回空列表。 */
 export function paginate(items, page = 1, pageSize = DEFAULT_PAGE_SIZE) {
   const size = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
   const start = (Math.max(page, 1) - 1) * size;

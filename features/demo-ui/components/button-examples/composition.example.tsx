@@ -4,23 +4,22 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Link } from "@/lib/i18n/navigation";
 
 export const metadata = {
-  title: "Action hierarchy and links",
-  description:
-    "Buttons use variant; a link reuses their look through buttonVariants.",
+  title: "操作层级与链接",
+  description: "按钮使用 variant；链接通过 buttonVariants 复用外观。",
   order: 20,
 };
 
-/** The link uses buttonVariants directly, keeping native link semantics. */
+/** 链接直接使用 buttonVariants，保留原生链接语义。 */
 export function Example() {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Button variant="secondary">Primary action</Button>
-      <Button variant="outline">Secondary action</Button>
+      <Button variant="secondary">主要操作</Button>
+      <Button variant="outline">次要操作</Button>
       <Link
         href="/demos/ui?component=dialog"
         className={buttonVariants({ variant: "ghost" })}
       >
-        View Dialog
+        查看 Dialog
       </Link>
     </div>
   );

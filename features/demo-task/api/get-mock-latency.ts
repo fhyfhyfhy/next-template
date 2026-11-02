@@ -3,10 +3,9 @@ import { z } from "zod";
 import { fetchApi } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
 
-// A Mock API control endpoint, used only by the Fault lab; a real backend
-// doesn't have it.
+// Mock API 的控制接口，只给故障实验室使用；真实后端没有这个接口。
 
-/** The default latency of the business endpoints, in milliseconds. */
+/** 业务接口的默认延迟（毫秒）。 */
 export const mockLatencySchema = z
   .object({ latency_ms: z.number() })
   .transform(({ latency_ms }) => latency_ms);

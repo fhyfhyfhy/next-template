@@ -6,20 +6,17 @@ import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/cn";
 
 interface DateTimeProps {
-  /** The moment to show, as a Date or milliseconds since the epoch. */
+  /** 要显示的时刻，Date 或 epoch 毫秒。 */
   value: Date | number;
-  /** next-intl's `format.dateTime` options; the time zone is the computer's. */
+  /** next-intl 的 `format.dateTime` 选项；时区固定用电脑所在的时区。 */
   format?: Omit<DateTimeFormatOptions, "timeZone">;
   className?: string;
 }
 
 /**
- * A moment in time, in the current locale and the computer's time zone. Only
- * the browser knows that time zone, so the server, and the browser while it
- * hydrates the page, render the `<time>` element empty, a line high; the text
- * appears once the page has hydrated. A client-side navigation renders it at
- * once. Every date and time on screen goes through here
- * (.claude/rules/i18n.md).
+ * 按当前 locale 和电脑所在时区显示一个时刻。只有浏览器知道这个时区，所以服务端、以及浏览器 hydrate 页面时，
+ * 都把 `<time>` 渲染成空的、占一行高；页面 hydrate 之后文字才出现。客户端导航时直接渲染出来。屏幕上的日期和时间
+ * 都经过这里（.claude/rules/i18n.md）。
  */
 export function DateTime({ value, format: options, className }: DateTimeProps) {
   const format = useFormatter();
@@ -34,7 +31,7 @@ export function DateTime({ value, format: options, className }: DateTimeProps) {
   );
 }
 
-// The time zone stays the same while the page is open.
+// 页面打开期间时区不会变。
 function subscribe() {
   return () => {};
 }

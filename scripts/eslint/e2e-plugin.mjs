@@ -1,4 +1,4 @@
-// Local rules for e2e; the rule itself is Hydration in .claude/rules/e2e.md.
+// e2e 的本地规则，规则本身见 .claude/rules/e2e.md 的 Hydration。
 
 const LOADS = new Set(["goto", "reload"]);
 const ACTIONS = new Set([
@@ -23,7 +23,7 @@ const FUNCTIONS = new Set([
   "FunctionExpression",
 ]);
 
-/** The calls in `node` outside nested functions: a call in a callback does not happen when this statement runs. */
+/** `node` 里不在嵌套函数中的调用：回调里的调用不在这条语句执行时发生。 */
 function callsIn(node, visitorKeys, calls = []) {
   if (node.type === "CallExpression") calls.push(node);
   for (const key of visitorKeys[node.type] ?? []) {
@@ -53,9 +53,8 @@ function baseIdentifier(node) {
 }
 
 /**
- * After a full page load, confirm the page can be acted on before acting: an `expect(...)` waiting
- * for browser-only content, or a helper call without an object such as `openTask`, counts as the
- * confirmation. The first action before it is reported.
+ * 整页加载之后，先确认页面能操作再操作：`expect(...)` 等到只在浏览器里渲染的内容，或者 `openTask` 这类
+ * 不带对象的 helper 调用，都算确认过。确认之前出现的第一个操作会被报告。
  */
 const actAfterReady = {
   meta: {

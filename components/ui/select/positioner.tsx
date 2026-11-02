@@ -4,10 +4,7 @@ import { Select as SelectPrimitive } from "@base-ui/react/select";
 
 import { cn } from "@/lib/cn";
 
-/**
- * Positions the options, keeping Base UI's positioning props and default
- * behavior.
- */
+/** 选项定位层，保留 Base UI 的定位参数和默认行为。 */
 export function SelectPositioner({
   className,
   ...props

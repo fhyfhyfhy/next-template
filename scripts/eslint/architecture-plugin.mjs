@@ -17,8 +17,8 @@ const componentSourceEntryPattern = new RegExp(
 );
 
 /**
- * Turns the layer declarations into import/no-restricted-paths zones of forbidden dependencies.
- * `except` is not resolved against basePath, so everything is written as globs.
+ * 将层级声明转换为 import/no-restricted-paths 的禁止依赖区域。
+ * except 不按 basePath 解析，所以全部用 glob 表达。
  */
 export function layerZones(layers, section) {
   return layers.slice(1).map((layer, index) => {
@@ -33,7 +33,7 @@ export function layerZones(layers, section) {
   });
 }
 
-/** Creates the architecture plugin for the caller's project root; the instance shares its resolver and cycle-check state. */
+/** 为调用方的项目根目录创建架构插件，解析器与循环检查状态在该实例内共享。 */
 export default function createArchitecturePlugin(projectRoot) {
   const resolveProjectImport = createProjectResolver(projectRoot);
 
@@ -74,7 +74,7 @@ export default function createArchitecturePlugin(projectRoot) {
     const parts = relative(projectRoot, filename).split(sep);
     const componentsIndex = parts.lastIndexOf("components");
     if (parts[0] === ".." || componentsIndex === -1) return null;
-    // ui/ is a collection of components; components/ui/dialog/ is a component directory.
+    // ui/ 是组件集合；components/ui/dialog/ 才是独立组件目录。
     const componentIndex =
       componentsIndex + (parts[componentsIndex + 1] === "ui" ? 2 : 1);
     if (parts.length <= componentIndex + 1) return null;
@@ -102,7 +102,7 @@ export default function createArchitecturePlugin(projectRoot) {
         const targetDirectory = componentDirectory(imported.target);
         if (!targetDirectory) return;
         if (targetDirectory === sourceDirectory) {
-          // feature-imports already enforces the relative path convention within a feature.
+          // feature-imports 已负责 feature 内的相对路径约定。
           if (!imported.isRelative && !featurePath(projectRoot, filename)) {
             context.report({ node: source, messageId: "relative" });
           }
@@ -242,8 +242,7 @@ export default function createArchitecturePlugin(projectRoot) {
         const imported = projectImport(filename, source);
         if (!imported) return;
         const { target, isRelative } = imported;
-        // feature-imports checks features, component-imports the same component directory, and
-        // import/no-relative-packages node_modules.
+        // feature 由 feature-imports 检查，同一组件目录由 component-imports 检查，node_modules 由 import/no-relative-packages 检查。
         if (
           featurePath(projectRoot, target) ||
           (sourceComponent && componentDirectory(target) === sourceComponent) ||
@@ -292,8 +291,7 @@ export default function createArchitecturePlugin(projectRoot) {
         const manifest = JSON.parse(
           readFileSync(resolve(projectRoot, "package.json"), "utf8"),
         );
-        // Conditions match in key order: a default first would swallow react-server, and an extra
-        // branch could bypass the architecture checks.
+        // 条件按键顺序匹配：default 放在前面会吞掉 react-server；额外分支也可能绕过架构检查。
         if (
           JSON.stringify(manifest.imports?.["#credentials"]) !==
           JSON.stringify({

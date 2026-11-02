@@ -49,9 +49,7 @@ export function DeleteTaskDialog({ taskId, taskName }: DeleteTaskDialogProps) {
               onClick={() =>
                 deleteTask.mutate(
                   { taskId },
-                  // The factory has already cleared the caches; this handles
-                  // only this page's own reaction: leaving the deleted task's
-                  // detail page.
+                  // 工厂已经清理了缓存，这里只负责这个页面自己的反应：离开已删除任务的详情页。
                   { onSuccess: () => router.push("/demos/tasks") },
                 )
               }

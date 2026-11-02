@@ -29,7 +29,7 @@ async function control(method, path, body) {
   return result;
 }
 
-test("the task list returns the seed data paginated, newest first", async () => {
+test("任务列表按创建时间倒序分页返回种子数据", async () => {
   const { status, body } = await request("GET", "/demo/tasks?page_size=5");
 
   expect(status).toBe(200);
@@ -52,7 +52,7 @@ test("the task list returns the seed data paginated, newest first", async () => 
   ]);
 });
 
-test("the task list filters by status, favorite and prompt, and status can repeat", async () => {
+test("任务列表按状态、收藏和 prompt 过滤，status 可以重复传多个", async () => {
   const active = await control(
     "GET",
     "/demo/tasks?status=pending&status=running&page_size=50",
@@ -79,7 +79,7 @@ test("the task list filters by status, favorite and prompt, and status can repea
   ]);
 });
 
-test("sorts by name", async () => {
+test("按名称排序", async () => {
   const page = await control("GET", "/demo/tasks?sort=name_asc&page_size=50");
   const names = page.items.map((task) => task.name);
   expect(names).toStrictEqual(
@@ -87,7 +87,7 @@ test("sorts by name", async () => {
   );
 });
 
-test("a created task starts pending, at the top of the list", async () => {
+test("创建的任务从 pending 开始，排在列表最前", async () => {
   const created = await control("POST", "/demo/tasks", {
     name: "  新的狐狸  ",
     prompt: "一只狐狸",
@@ -101,7 +101,7 @@ test("a created task starts pending, at the top of the list", async () => {
   expect(page.items[0].id).toBe(created.id);
 });
 
-test("a taken name refuses create and rename with 409 and a business code, with param pointing at name", async () => {
+test("名称已被占用时返回 409 和业务 code 拒绝创建和重命名，param 指向 name", async () => {
   const created = await request("POST", "/demo/tasks", {
     name: "低多边形狐狸",
     prompt: "一只狐狸",
@@ -124,7 +124,7 @@ test("a taken name refuses create and rename with 409 and a business code, with 
   expect(kept.name).toBe("低多边形狐狸");
 });
 
-test("an empty name or prompt returns 400, with param and params naming the field and its length limit", async () => {
+test("名称或 prompt 为空时返回 400，param 和 params 说明出错的字段和长度上限", async () => {
   const { status, body } = await request("POST", "/demo/tasks", {
     name: " ",
     prompt: "一只狐狸",
@@ -146,7 +146,7 @@ async function advance(id, steps = 1) {
   return task;
 }
 
-test("the advance endpoint walks a task step by step to done", async () => {
+test("推进接口让任务一步步走到 done", async () => {
   const { id } = await control("POST", "/demo/tasks", {
     name: "推进测试",
     prompt: "一只狐狸",
@@ -173,7 +173,7 @@ test("the advance endpoint walks a task step by step to done", async () => {
   ]).toStrictEqual(["done", 100]);
 });
 
-test("a task with fail in its name ends up failed", async () => {
+test("名字里带 fail 的任务最终失败", async () => {
   const { id } = await control("POST", "/demo/tasks", {
     name: "fail 推进测试",
     prompt: "一只狐狸",
@@ -182,7 +182,7 @@ test("a task with fail in its name ends up failed", async () => {
   expect(task.status).toBe("failed");
 });
 
-test("tasks advance on their own over time when not paused", async () => {
+test("没有暂停时任务按时间自动推进", async () => {
   const fastApi = await startMockApi({
     port: 0,
     stepIntervalMs: 10,
@@ -207,7 +207,7 @@ test("tasks advance on their own over time when not paused", async () => {
   }
 });
 
-test("tasks do not advance on their own while paused", async () => {
+test("暂停时任务不会自动推进", async () => {
   const fastApi = await startMockApi({
     port: 0,
     stepIntervalMs: 10,
@@ -227,7 +227,7 @@ test("tasks do not advance on their own while paused", async () => {
   }
 });
 
-test("only failed tasks can be retried, which returns them to pending with progress cleared", async () => {
+test("只有 failed 的任务能重试，重试后回到 pending 并清空进度", async () => {
   const retried = await control("POST", "/demo/tasks/task-05/retry");
   expect([retried.status, retried.progress]).toStrictEqual(["pending", 0]);
 
@@ -238,7 +238,7 @@ test("only failed tasks can be retried, which returns them to pending with progr
   expect(done.body.error.code).toBe(40902);
 });
 
-test("sets favorite", async () => {
+test("设置收藏", async () => {
   const favorited = await control("PUT", "/demo/tasks/task-02/favorite", {
     favorite: true,
   });
@@ -249,7 +249,7 @@ test("sets favorite", async () => {
   expect(unfavorited.favorite).toBe(false);
 });
 
-test("deleting a task deletes its comments", async () => {
+test("删除任务时它的评论一起删除", async () => {
   expect(
     (await control("GET", "/demo/tasks/task-01/comments")).items.length,
   ).toBe(2);
@@ -262,7 +262,7 @@ test("deleting a task deletes its comments", async () => {
   );
 });
 
-test("comments are listed oldest first, and their content is 1 to 500 characters after trimming", async () => {
+test("评论按发表时间从早到晚排列，内容去掉首尾空白后为 1 到 500 字", async () => {
   const comment = await control("POST", "/demo/tasks/task-01/comments", {
     content: "  新评论  ",
   });
@@ -295,7 +295,7 @@ test("comments are listed oldest first, and their content is 1 to 500 characters
   expect(longest.content.length).toBe(500);
 });
 
-test("deletes a comment", async () => {
+test("删除评论", async () => {
   const { items } = await control("GET", "/demo/tasks/task-01/comments");
   expect(
     await control("DELETE", `/demo/tasks/task-01/comments/${items[0].id}`),
@@ -311,7 +311,7 @@ test("deletes a comment", async () => {
   expect(missing.status).toBe(404);
 });
 
-test("search matches the term against name and prompt, and an empty term returns an empty list", async () => {
+test("搜索按名称和 prompt 匹配关键词，空关键词返回空列表", async () => {
   const { items } = await control(
     "GET",
     `/demo/tasks/search?term=${encodeURIComponent("狐狸")}`,
@@ -331,7 +331,7 @@ test("search matches the term against name and prompt, and an empty term returns
   ).toStrictEqual([]);
 });
 
-test("the feed holds only done tasks, paginated for infinite scroll", async () => {
+test("作品广场只包含 done 的任务，分页供无限滚动使用", async () => {
   const first = await control("GET", "/demo/feed?page=1&page_size=6");
   const second = await control("GET", "/demo/feed?page=2&page_size=6");
   const last = await control("GET", "/demo/feed?page=3&page_size=6");
@@ -346,7 +346,7 @@ test("the feed holds only done tasks, paginated for infinite scroll", async () =
   ]);
 });
 
-test("seed cover images can be read, and a task without one returns 404", async () => {
+test("种子封面图可以读取，没有封面图的任务返回 404", async () => {
   const withCover = await control("GET", "/demo/tasks/task-01");
   expect(
     withCover.cover_url.startsWith(`${mockApi.url}/demo/tasks/task-01/cover`),
@@ -363,7 +363,7 @@ test("seed cover images can be read, and a task without one returns 404", async 
   );
 });
 
-test("uploading an image replaces the cover and changes the cover URL", async () => {
+test("上传图片替换封面图，封面地址随之变化", async () => {
   const before = await control("GET", "/demo/tasks/task-01");
   const image = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3, 4]);
   const form = new FormData();
@@ -382,7 +382,7 @@ test("uploading an image replaces the cover and changes the cover URL", async ()
   expect(new Uint8Array(await cover.arrayBuffer())).toStrictEqual(image);
 });
 
-test("uploading something other than an image returns 400", async () => {
+test("上传的不是图片时返回 400", async () => {
   const form = new FormData();
   form.append("file", new Blob(["hello"], { type: "text/plain" }), "a.txt");
   const response = await fetch(`${mockApi.url}/demo/tasks/task-01/cover`, {
@@ -392,7 +392,7 @@ test("uploading something other than an image returns 400", async () => {
   expect(response.status).toBe(400);
 });
 
-test("a done task offers a valid .glb model file for download", async () => {
+test("done 的任务可以下载合法的 .glb 模型文件", async () => {
   const response = await fetch(`${mockApi.url}/demo/tasks/task-01/model`);
 
   expect(response.status).toBe(200);
@@ -416,7 +416,7 @@ test("a done task offers a valid .glb model file for download", async () => {
   expect(view.getUint32(20 + jsonLength + 4, true)).toBe(0x004e4942); // "BIN"
 });
 
-test("downloading the model of an unfinished task returns 409 and a business code", async () => {
+test("没有完成的任务下载模型时返回 409 和业务 code", async () => {
   const response = await request("GET", "/demo/tasks/task-03/model");
   expect([response.status, response.body.error.code]).toStrictEqual([
     409, 40903,
@@ -439,7 +439,7 @@ async function* readEvents(response) {
   }
 }
 
-test("generation logs push existing and new lines over SSE and end at a final status", async () => {
+test("生成日志用 SSE 推送已有日志和新日志，到终态后结束", async () => {
   await advance("task-11", 2);
   const response = await fetch(`${mockApi.url}/demo/tasks/task-11/logs`);
   expect(response.headers.get("content-type")).toBe("text/event-stream");
@@ -465,7 +465,7 @@ test("generation logs push existing and new lines over SSE and end at a final st
   ]);
 });
 
-test("a task already in a final status pushes all its logs and ends at once", async () => {
+test("已在终态的任务推送全部日志后立即结束", async () => {
   const response = await fetch(`${mockApi.url}/demo/tasks/task-05/logs`);
   const events = [];
   for await (const event of readEvents(response)) events.push(event.event);
@@ -475,7 +475,7 @@ test("a task already in a final status pushes all its logs and ends at once", as
   );
 });
 
-test("a fault can add latency to an endpoint", async () => {
+test("故障可以给接口加延迟", async () => {
   await control("PUT", "/__mock/faults", {
     faults: [{ method: "GET", path: "/demo/tasks/:id", latency_ms: 150 }],
   });
@@ -485,7 +485,7 @@ test("a fault can add latency to an endpoint", async () => {
   expect(body.id).toBe("task-01");
 });
 
-test("business endpoints have a default latency that a fault's latency adds to, and control endpoints have none", async () => {
+test("业务接口有默认延迟，故障的延迟叠加在它之上，控制接口不加延迟", async () => {
   const slowApi = await startMockApi({ port: 0, latencyMs: 100 });
   const elapsed = async (path, init) => {
     const startedAt = performance.now();
@@ -508,7 +508,7 @@ test("business endpoints have a default latency that a fault's latency adds to, 
   }
 });
 
-test("a request whose client disconnects during the delay is not handled", async () => {
+test("延迟期间客户端断开的请求不再处理", async () => {
   const slowApi = await startMockApi({ port: 0, latencyMs: 100 });
   try {
     const controller = new AbortController();
@@ -529,7 +529,7 @@ test("a request whose client disconnects during the delay is not handled", async
   }
 });
 
-test("a write caught by a reset during its delay returns 503 without changing the reset data, while reads return as usual", async () => {
+test("延迟期间赶上重置的写请求返回 503，不改动重置后的数据；读请求照常返回", async () => {
   const slowApi = await startMockApi({ port: 0, latencyMs: 100 });
   try {
     const write = fetch(`${slowApi.url}/demo/tasks/task-02/favorite`, {
@@ -550,7 +550,7 @@ test("a write caught by a reset during its delay returns 503 without changing th
   }
 });
 
-test("an endpoint recovers once a 5xx fault's times are used up", async () => {
+test("指定次数的 5xx 故障用完后接口恢复正常", async () => {
   await control("PUT", "/__mock/faults", {
     faults: [{ method: "GET", path: "/demo/tasks", status: 503, times: 2 }],
   });
@@ -562,7 +562,7 @@ test("an endpoint recovers once a 5xx fault's times are used up", async () => {
   expect((await control("GET", "/__mock/faults")).faults).toStrictEqual([]);
 });
 
-test("a fault can return a 4xx status", async () => {
+test("故障可以返回 4xx 状态码", async () => {
   await control("PUT", "/__mock/faults", {
     faults: [{ method: "GET", path: "/demo/tasks/:id", status: 409, times: 1 }],
   });
@@ -570,7 +570,7 @@ test("a fault can return a 4xx status", async () => {
   expect([status, body.error.code]).toStrictEqual([409, 40900]);
 });
 
-test("a lasting fault can return a 2xx error object or a body that breaks the schema", async () => {
+test("一直生效的故障可以返回 2xx 的 error 对象或不符合 schema 的响应体", async () => {
   await control("PUT", "/__mock/faults", {
     faults: [
       { method: "POST", path: "/demo/tasks/:id/comments", code: 50010 },
@@ -599,7 +599,7 @@ test("a lasting fault can return a 2xx error object or a body that breaks the sc
   ]);
 });
 
-test("a reset clears the faults", async () => {
+test("重置会清除故障", async () => {
   await control("PUT", "/__mock/faults", {
     faults: [{ method: "GET", path: "/demo/tasks", status: 500 }],
   });
@@ -607,7 +607,7 @@ test("a reset clears the faults", async () => {
   expect((await request("GET", "/demo/tasks")).status).toBe(200);
 });
 
-test("the default latency can change, a reset restores the startup value, and an invalid value returns 400", async () => {
+test("默认延迟可以修改，重置后恢复成启动时的值，不合法的值返回 400", async () => {
   expect(await control("GET", "/__mock/latency")).toStrictEqual({
     latency_ms: 0,
   });
@@ -626,7 +626,7 @@ test("the default latency can change, a reset restores the startup value, and an
   expect((await control("GET", "/__mock/latency")).latency_ms).toBe(0);
 });
 
-test("an invalid fault config returns 400, and faults apply only to business endpoints", async () => {
+test("不合法的故障配置返回 400，故障只能配置在业务接口上", async () => {
   for (const fault of [
     { method: "GET", path: "/demo/tasks", status: 302 },
     { method: "POST", path: "/__mock/reset", status: 500 },
@@ -639,7 +639,7 @@ test("an invalid fault config returns 400, and faults apply only to business end
   }
 });
 
-test("grants CORS only to local origins", async () => {
+test("只给本机的 origin 返回跨域许可", async () => {
   const allowed = await fetch(`${mockApi.url}/demo/tasks`, {
     headers: { Origin: "http://127.0.0.1:3000" },
   });
@@ -652,7 +652,7 @@ test("grants CORS only to local origins", async () => {
   expect(foreign.headers.get("access-control-allow-origin")).toBe(null);
 });
 
-test("a CORS preflight returns the allowed methods and headers", async () => {
+test("跨域预检请求返回允许的方法和请求头", async () => {
   const response = await fetch(`${mockApi.url}/demo/tasks/task-01`, {
     method: "OPTIONS",
     headers: {
@@ -671,7 +671,7 @@ test("a CORS preflight returns the allowed methods and headers", async () => {
   );
 });
 
-test("a reset without paused keeps the current pause state", async () => {
+test("重置时不传 paused 就保持当前的暂停状态", async () => {
   const fastApi = await startMockApi({
     port: 0,
     stepIntervalMs: 10,
@@ -694,7 +694,7 @@ test("a reset without paused keeps the current pause state", async () => {
   }
 });
 
-test("the request log lists the route each business request matched since the reset, without control endpoints", async () => {
+test("请求记录列出重置以来每次业务请求匹配的路由，不含控制接口", async () => {
   await request("GET", "/demo/tasks/task-01");
   await request("GET", "/demo/tasks/task-01/comments");
   await request("GET", "/demo/tasks/task-02");
@@ -712,22 +712,22 @@ test("the request log lists the route each business request matched since the re
   expect((await control("GET", "/__mock/requests")).requests).toStrictEqual([]);
 });
 
-test("a missing task's detail returns 404", async () => {
+test("任务详情不存在时返回 404", async () => {
   const { status, body } = await request("GET", "/demo/tasks/task-404");
   expect([status, body.error.code]).toStrictEqual([404, 40400]);
 });
 
-test("returns the URL of a Mock API already on the port", async () => {
+test("端口上已经有 Mock API 时返回它的地址", async () => {
   const port = Number(new URL(mockApi.url).port);
   expect(await findRunningMockApi(port)).toBe(mockApi.url);
 });
 
-test("returns null when nothing listens on the port", async () => {
+test("端口上没有服务时返回 null", async () => {
   const port = await unusedPort();
   expect(await findRunningMockApi(port)).toBe(null);
 });
 
-test("throws when another service holds the port instead of taking it for the Mock API", async () => {
+test("端口被别的服务占用时报错，不把它当成 Mock API", async () => {
   const other = createHttpServer((req, res) => {
     res.statusCode = 404;
     res.end("not here");

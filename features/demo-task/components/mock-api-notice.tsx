@@ -1,9 +1,6 @@
 import { useTranslations } from "next-intl";
 
-/**
- * Shown instead of the Data demo pages when the Mock API isn't running, so the
- * pages send no requests.
- */
+/** Mock API 没有运行时代替 Data demo 页面显示，页面不发任何请求。 */
 export function MockApiNotice() {
   const t = useTranslations("demo-task.mockApiNotice");
   const howToRun = t.rich("howToRun", {

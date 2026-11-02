@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 
 import { SourceCode } from "./source-code";
 
-/** A fixed scenario and its usage code as written. */
+/** 固定场景及其原始使用代码。 */
 export function ExampleCard({
   title,
   description,

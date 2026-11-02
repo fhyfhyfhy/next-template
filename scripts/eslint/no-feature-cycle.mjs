@@ -1,7 +1,7 @@
 import { createFeatureCycleChecker } from "./feature-cycles.mjs";
 import { featurePath } from "./imports.mjs";
 
-/** Creates the project's ESLint rule that reports the current file's references in a feature cycle. */
+/** 为项目创建 ESLint 规则，报告当前文件中参与 feature 循环的引用。 */
 export default function createFeatureCycleRule(projectRoot) {
   const checkFile = createFeatureCycleChecker(projectRoot);
   return {

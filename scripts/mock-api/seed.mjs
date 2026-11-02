@@ -1,6 +1,5 @@
-// The seed data never changes: ids and timestamps are constants, so the Mock API holds the same
-// data after every restart or reset, and the data a demo build caches into its static shell
-// matches the Mock API at start.
+// 种子数据固定不变：id、时间戳都是常量，Mock API 每次重启或重置后的数据完全相同，
+// build 时缓存进静态 shell 的数据和 start 时的 Mock API 也就对得上。
 
 const SEED_EPOCH = Date.UTC(2026, 9, 1);
 const HOUR = 60 * 60 * 1000;
@@ -45,7 +44,7 @@ const COMMENTS = [
   ["task-13", "车漆颜色正是想要的。"],
 ];
 
-/** A fresh copy of the seed data on each call; a reset replaces the in-memory state with it. */
+/** 每次调用返回一份新的种子数据，重置时整体替换内存里的状态。 */
 export function createSeed() {
   const tasks = TASKS.map(
     ([name, prompt, status, favorite, hasCover], index) => {

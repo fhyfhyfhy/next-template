@@ -8,7 +8,7 @@ import { cn } from "@/lib/cn";
 import { SelectSizeContext } from "./context";
 import { selectPopupVariants } from "./variants";
 
-/** The options panel, placed inside a Positioner the caller provides. */
+/** 选项面板，放在调用方提供的 Positioner 内。 */
 export function SelectPopup({
   className,
   ...props

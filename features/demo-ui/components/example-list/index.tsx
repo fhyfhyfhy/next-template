@@ -7,9 +7,7 @@ import type { ExampleDefinition, ExampleSources } from "../../types/examples";
 import { ExampleCard } from "../example-card";
 import { examplesByComponent } from "./registry.generated";
 
-/**
- * Shows the discovered examples, sorted by their own order, then by filename.
- */
+/** 按示例自身的顺序和文件名展示自动发现的场景。 */
 export function ExampleList({
   component,
   sources,
@@ -34,8 +32,7 @@ export function ExampleList({
           const Preview = example.component;
           const source = sources[example.id];
           if (source === undefined) {
-            // Fast Refresh and the RSC update arrive separately; a new example
-            // waits for its source.
+            // Fast Refresh 和 RSC 更新分开到达，新增示例需等待对应源码。
             if (process.env.NODE_ENV === "development") return null;
             throw new Error(
               `Missing source for UI demo example: ${component}/${example.id}`,

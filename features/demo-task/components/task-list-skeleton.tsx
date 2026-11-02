@@ -2,10 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { TASK_LIST_PAGE_SIZE } from "../constants/task-list";
 
-/**
- * Placeholder for the All tasks list, with the loaded list's row count and row
- * height.
- */
+/** 全部任务列表的占位，行数和行高与加载后的列表一致。 */
 export function TaskListSkeleton() {
   return (
     <div

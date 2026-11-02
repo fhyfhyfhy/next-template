@@ -12,10 +12,7 @@ const copyStatusKeys = {
   failed: "copyFailed",
 } as const;
 
-/**
- * Shows and copies the same source; when copying fails, the code is still there
- * to select by hand.
- */
+/** 展示与复制同一份源码；复制失败时保留可手动选择的代码。 */
 export function SourceCode({
   source,
   filename,

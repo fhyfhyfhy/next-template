@@ -17,12 +17,12 @@ import {
 } from "@/components/ui/select";
 
 export const metadata = {
-  title: "Basic usage",
-  description: "Has every import and the structure it needs; copy it as is.",
+  title: "基本用法",
+  description: "包含完整 import 与必要结构，可直接复制。",
   order: 10,
 };
 
-/** items gives Value the text to show. */
+/** items 为 Value 提供显示文案。 */
 export function Example() {
   const id = useId();
   const items = [
@@ -33,7 +33,7 @@ export function Example() {
   return (
     <div className="w-full max-w-xs space-y-2">
       <span id={id} className="text-sm font-medium">
-        Language
+        语言
       </span>
       <SelectRoot items={items} defaultValue="zh">
         <SelectTrigger aria-labelledby={id}>

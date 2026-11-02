@@ -12,8 +12,7 @@ import { DATE_TIME_FORMAT } from "../../constants/date-time";
 
 export function CommentList({ taskId }: { taskId: string }) {
   const t = useTranslations("demo-task.comments");
-  // The server dehydrated a pending query; this takes its promise, and the
-  // enclosing Suspense shows the placeholder until it resolves.
+  // 服务端 dehydrate 的是 pending 的 query，这里接住它的 promise，未完成时由外层 Suspense 显示占位。
   const { data: comments } = useSuspenseQuery(getCommentsQueryOptions(taskId));
   const deleteComment = useMutation(deleteCommentMutationOptions(taskId));
   if (comments.length === 0) {

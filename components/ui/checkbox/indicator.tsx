@@ -4,7 +4,7 @@ import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
 
 import { cn } from "@/lib/cn";
 
-/** The check mark; the caller customizes its content and style. */
+/** 选中标记，内容和样式由调用方定制。 */
 export function CheckboxIndicator({
   className,
   ...props

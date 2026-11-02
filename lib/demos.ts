@@ -1,9 +1,7 @@
 /**
- * Whether this build serves the demos under /demos (the UI demo and the Data
- * demo): under `next dev`, and in the demo builds of `scripts/run-next.mjs
- * --demo`. Never in a plain production build, where proxy.ts answers 404 for
- * them. Both variables are inlined when the code is built, so a running server
- * cannot turn them on.
+ * 这次 build 是否提供 /demos 下的 Demo（UI demo 和 Data demo）：`next dev` 下提供，`scripts/run-next.mjs --demo`
+ * 的 demo build 也提供；普通的生产 build 不提供，由 proxy.ts 对它们返回 404。两个变量都在 build 时内联，
+ * 运行中的服务打不开它们。
  */
 export const DEMOS_SERVED =
   process.env.NODE_ENV !== "production" ||

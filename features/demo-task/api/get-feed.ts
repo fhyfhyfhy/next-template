@@ -13,10 +13,7 @@ export const getFeedPage = (page: number) =>
     auth: false,
   });
 
-/**
- * The Gallery holds only done tasks. It sits under the task list prefix, so it
- * refreshes with the lists when a task write invalidates them.
- */
+/** 作品广场只包含 done 的任务；挂在任务列表前缀下，任务写入后 invalidate 列表时一起刷新。 */
 export const getFeedInfiniteQueryOptions = () =>
   infiniteQueryOptions({
     queryKey: [...taskListKey, "infinite", { status: "done" }],
