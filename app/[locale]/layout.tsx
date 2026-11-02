@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ThemeProvider } from "next-themes";
 
 import { fontVariables } from "@/app/fonts";
 import { Providers } from "@/app/providers";
@@ -29,18 +28,11 @@ export default async function RootLayout({
       className={`${fontVariables} h-full antialiased`}
     >
       <body className="min-h-full">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <RootClientMessages namespaces={["app", "ui"]}>
-            <Providers>
-              <div className="isolate min-h-dvh">{children}</div>
-            </Providers>
-          </RootClientMessages>
-        </ThemeProvider>
+        <RootClientMessages namespaces={["app", "ui"]}>
+          <Providers>
+            <div className="isolate min-h-dvh">{children}</div>
+          </Providers>
+        </RootClientMessages>
       </body>
     </html>
   );

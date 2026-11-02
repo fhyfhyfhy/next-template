@@ -2,7 +2,6 @@ import { nanoid } from "nanoid";
 
 import { mutationOptions } from "@/lib/react-query";
 
-import { unwrapActionResult } from "../utils/task-action-error";
 import { createCommentAction } from "./create-comment-action";
 import { type CommentListItem, getCommentsQueryOptions } from "./get-comments";
 
@@ -14,8 +13,8 @@ interface CreateCommentVariables {
 export const createCommentMutationOptions = (taskId: string) => {
   const { queryKey } = getCommentsQueryOptions(taskId);
   return mutationOptions({
-    mutationFn: async ({ content }: CreateCommentVariables) =>
-      unwrapActionResult(await createCommentAction({ taskId, content })),
+    mutationFn: ({ content }: CreateCommentVariables) =>
+      createCommentAction({ taskId, content }),
     onMutate: async ({ content }, { client }) => {
       // 先取消进行中的 refetch，免得它带着旧数据覆盖乐观插入的评论。
       await client.cancelQueries({ queryKey });

@@ -1,6 +1,9 @@
+import type { ApiErrorObject } from "./fetch";
+
 /**
  * 服务端按业务规则拒绝一次读写时抛出，Route Handler 把它转成 `lib/fetch.ts` 解析的失败响应：HTTP `status`
- * 加 `{ error: { code, message, param?, params? } }`；Server Action 把调用方要识别的 `code` 作为预期失败返回。
+ * 加 `{ error: { code, message, param?, params? } }`；Server Action 把调用方要识别的错误作为
+ * `{ ok: false, error }` 返回，`error` 是同一个对象。
  * `code` 是业务错误码，前三位等于 `status`；`message` 面向开发者和日志，UI 按 `code` 和 `params` 生成文案。
  */
 export class DomainError extends Error {
@@ -60,7 +63,7 @@ export function conflict(
 }
 
 /** 失败响应的 JSON 体，格式见 `lib/fetch.ts` 的 `errorSchema`。 */
-export function errorBody(error: DomainError) {
+export function errorBody(error: DomainError): { error: ApiErrorObject } {
   return {
     error: {
       code: error.code,

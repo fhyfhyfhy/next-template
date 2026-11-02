@@ -1,18 +1,17 @@
 "use server";
 
 import { updateTag } from "next/cache";
-import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
-import { type Locale, routing } from "@/lib/i18n/routing";
+import type { ActionResult } from "@/lib/action-result";
+import { toActionResult } from "@/lib/action-result";
+import type { Locale } from "@/lib/i18n/routing";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
 import { assertDemoBackendEnabled } from "../server/connection";
 import { createTask } from "../server/tasks";
-import type { ActionResult } from "../types/action-result";
 import type { Task } from "../types/task";
-import { toActionResult } from "../utils/action-result";
 import {
   type CreateTaskInput,
   createTaskInputSchema,
@@ -28,10 +27,6 @@ export async function createTaskAction(
   input: CreateTaskInput,
 ): Promise<ActionResult<Task>> {
   assertDemoBackendEnabled();
-  // 参数来自浏览器，类型约束不了实际传来的值。
-  if (!hasLocale(routing.locales, locale)) {
-    throw new Error(`Unsupported locale: ${String(locale)}`);
-  }
   const t = await getTranslations({ locale, namespace: "demo-task" });
   const data = createTaskInputSchema(t).parse(input);
   const result = await toActionResult(

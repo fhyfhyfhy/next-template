@@ -3,9 +3,11 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "./demo-backend";
 
 // 日期和时间按电脑所在时区显示，页面 hydrate 之后由浏览器填上（components/date-time.tsx）。
-// 第一个种子任务创建于 2026-10-01T00:00Z。
+// 第一个种子任务创建于 2026-10-01T00:00Z。用例看英文页面：浏览器语言是英文时，页面就按英文显示。
+test.use({ locale: "en-US" });
+
 async function expectCreatedAt(page: Page, text: RegExp) {
-  await page.goto("/en/demos/tasks/task-01");
+  await page.goto("/demos/tasks/task-01");
   const createdAt = page
     .locator("dt", { hasText: "Created" })
     .locator("xpath=following-sibling::dd[1]");

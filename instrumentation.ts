@@ -11,11 +11,12 @@ declare global {
 export async function register() {
   if (
     process.env.NEXT_RUNTIME !== "nodejs" ||
-    process.env.NEXT_PHASE === "phase-production-build" ||
-    !process.env.DEMO_DATABASE_URL
+    process.env.NEXT_PHASE === "phase-production-build"
   ) {
     return;
   }
+  const { readEnv } = await import("@/lib/env");
+  if (readEnv("DEMO_DATABASE_URL") === undefined) return;
   if (globalThis.__demoBackgroundJobs) return;
   globalThis.__demoBackgroundJobs = true;
   const [{ startDemoGenerator }, { startUploadCleanup }] = await Promise.all([

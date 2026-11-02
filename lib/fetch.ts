@@ -15,6 +15,8 @@ const errorSchema = z.object({
   param: z.string().optional(),
   params: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
 });
+/** 失败响应体里的错误对象。Server Action 返回预期失败时也用它（lib/action-result.ts），浏览器端两条路拿到的字段相同。 */
+export type ApiErrorObject = z.infer<typeof errorSchema>;
 const errorBodySchema = z.object({ error: errorSchema });
 // 2xx 只在响应体只有 `error` 一个字段、且它符合 errorSchema 时算失败：资源自己也可能带 `error` 字段
 // （比如失败任务记录的原因），那仍是成功响应；`{ error: "boom" }` 这类不合格式的按 schema 校验。

@@ -2,6 +2,7 @@ import "server-only";
 
 import { attachUpload, saveServerUpload } from "@/features/demo-upload/server";
 import { startLeaderInterval } from "@/lib/db";
+import { requireEnv } from "@/lib/env";
 
 import { TASK_STEP_INTERVAL_MS } from "../constants/task-rules";
 import { nextTaskStep } from "../utils/task-progress";
@@ -95,7 +96,7 @@ export function startDemoGenerator({
   intervalMs = TASK_STEP_INTERVAL_MS,
 }: { intervalMs?: number } = {}) {
   return startLeaderInterval({
-    connectionString: process.env.DEMO_DATABASE_URL ?? "",
+    connectionString: requireEnv("DEMO_DATABASE_URL"),
     lockKey: GENERATOR_LOCK_KEY,
     intervalMs,
     run: advanceActiveTasks,

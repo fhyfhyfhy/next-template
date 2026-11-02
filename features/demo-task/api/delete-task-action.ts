@@ -8,14 +8,13 @@ import { DomainError } from "@/lib/domain-error";
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { assertDemoBackendEnabled } from "../server/connection";
 import { deleteTask } from "../server/tasks";
-import type { ActionResult } from "../types/action-result";
 
 const inputSchema = z.object({ taskId: z.string().min(1) });
 
 /** 删除任务及其评论。任务已经不存在时按删除成功处理，重复删除不报错。 */
 export async function deleteTaskAction(
   input: z.input<typeof inputSchema>,
-): Promise<ActionResult<null>> {
+): Promise<void> {
   assertDemoBackendEnabled();
   const { taskId } = inputSchema.parse(input);
   try {
@@ -24,5 +23,4 @@ export async function deleteTaskAction(
     if (!(error instanceof DomainError && error.status === 404)) throw error;
   }
   updateTag(TASK_LIST_TAG);
-  return { ok: true, data: null };
 }

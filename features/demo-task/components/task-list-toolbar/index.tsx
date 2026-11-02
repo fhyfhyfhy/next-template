@@ -1,9 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/cn";
-import { Link } from "@/lib/i18n/navigation";
 
 import { TASK_STATUSES } from "../../constants/task-list";
 import { taskListHref, type TaskListParams } from "../../utils/task-urls";

@@ -17,8 +17,5 @@ export default defineConfig({
       "**/*.db.test.?(c|m)[jt]s?(x)",
     ],
     environment: "node",
-    // next-intl 的 navigation 引入 `next/navigation` 时不带扩展名，只有 bundler 解析得了；让 Vite 打包 next-intl，
-    // 而不是交给 Node，就能解析。
-    server: { deps: { inline: ["next-intl"] } },
   },
 });

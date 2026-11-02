@@ -70,45 +70,18 @@ const queryPlugin = withWrapperImports(pluginQuery);
 const QUERY_LIBRARY_MESSAGE =
   "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-fetching.md.";
 
-const LOCALE_NAVIGATION_MESSAGE =
-  "Import Link, redirect, useRouter, and usePathname from @/lib/i18n/navigation: the next/* versions drop the locale prefix of non-default locales. See .claude/rules/i18n.md.";
-
-// lib/i18n/ 以外直接用 next-intl 的 provider 和 useMessages 下发文案，i18n/client-namespaces 就查不到。
+// i18n 里借用 no-restricted-imports、no-restricted-syntax 的两组限制。这两条规则还管着别的事，所以这两组合进
+// 下面的 RESTRICTED_IMPORTS 和 RESTRICTED_SYNTAX；i18n 的其余检查和这两组的例外在配置数组的「i18n」一段。
+//
+// 文案只经 lib/i18n/client-messages 的 ClientMessages 下发：直接用 next-intl 的 provider 和 useMessages，
+// i18n/client-namespaces 就查不到。
 const INTL_PROVIDER_RESTRICTION = {
   name: "next-intl",
   importNames: ["NextIntlClientProvider", "useMessages"],
   message:
     "Send messages to Client Components with ClientMessages from @/lib/i18n/client-messages, so i18n/client-namespaces can check them. See .claude/rules/i18n.md.",
 };
-
-// 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query；
-// 站内导航走 next-intl 生成的 API，非默认 locale 的 URL 前缀才不会丢。
-const RESTRICTED_IMPORTS = {
-  paths: [
-    ...["axios", "swr"].map((name) => ({
-      name,
-      message: QUERY_LIBRARY_MESSAGE,
-    })),
-    { name: "next/link", message: LOCALE_NAVIGATION_MESSAGE },
-    {
-      name: "next/navigation",
-      importNames: [
-        "redirect",
-        "permanentRedirect",
-        "useRouter",
-        "usePathname",
-      ],
-      message: LOCALE_NAVIGATION_MESSAGE,
-    },
-    INTL_PROVIDER_RESTRICTION,
-  ],
-  patterns: [{ group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE }],
-};
-
-const COMPONENT_INDEX_EXPORT_MESSAGE =
-  "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
-
-// 日期和时间按电脑所在时区显示，只有浏览器知道这个时区，所以只由 components/date-time.tsx 格式化（.claude/rules/i18n.md）。
+// 日期和时间按电脑所在时区显示，只有浏览器知道这个时区，所以只由 components/date-time.tsx 格式化。
 const DATE_TIME_MESSAGE =
   "Show a date or time with <DateTime> from @/components/date-time, which renders it in the browser in the computer's time zone. See .claude/rules/i18n.md.";
 const DATE_TIME_FORMATTING = [
@@ -123,11 +96,43 @@ const DATE_TIME_FORMATTING = [
   },
 ];
 
+// 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query。
+const RESTRICTED_IMPORTS = {
+  paths: [
+    ...["axios", "swr"].map((name) => ({
+      name,
+      message: QUERY_LIBRARY_MESSAGE,
+    })),
+    INTL_PROVIDER_RESTRICTION,
+  ],
+  patterns: [{ group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE }],
+};
+
+const COMPONENT_INDEX_EXPORT_MESSAGE =
+  "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
+
+// 应用的部署设置的环境变量只通过 lib/env.ts 读。Node 和 Next 定义的变量直接读，只放行 `process.env.名字`
+// 这种写法：打包器只替换这种写法（.claude/rules/architecture.md「Environment variables」）。
+const FRAMEWORK_ENV = "/^(NODE_ENV|(__)?NEXT_(?!PUBLIC_)\\w+)$/";
+const ENV_ACCESS = [
+  {
+    selector: `MemberExpression[object.name='process'][property.name='env']:not(MemberExpression[computed=false][property.name=${FRAMEWORK_ENV}] > .object)`,
+    message:
+      "Read environment variables with readEnv or requireEnv from @/lib/env, which declares and validates them. See .claude/rules/architecture.md.",
+  },
+];
+
 // 所有应用代码都受的 no-restricted-syntax 限制。
-const RESTRICTED_SYNTAX = [...DATE_TIME_FORMATTING];
-const DATE_TIME_EXEMPT = RESTRICTED_SYNTAX.filter(
-  (restriction) => !DATE_TIME_FORMATTING.includes(restriction),
-);
+const RESTRICTED_SYNTAX = [...DATE_TIME_FORMATTING, ...ENV_ACCESS];
+
+// 给豁免 RESTRICTED_SYNTAX 里一组限制的文件用，其余限制照旧。只设置级别的配置会沿用前面的选项，
+// 所以没有剩下的限制时直接关掉这条规则。
+function restrictedSyntaxWithout(group) {
+  const rest = RESTRICTED_SYNTAX.filter(
+    (restriction) => !group.includes(restriction),
+  );
+  return rest.length ? ["error", ...rest] : "off";
+}
 
 // 会进页面的代码，包括 monorepo 里 workspace 包的源码；scripts/、e2e/、测试和根目录的配置文件不进页面。
 const APPLICATION_CODE = {
@@ -291,29 +296,9 @@ const eslintConfig = defineConfig([
     rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
   },
   {
-    ...APPLICATION_CODE,
-    plugins: { i18n: createI18nPlugin(PROJECT_ROOT) },
-    rules: {
-      // 每个 ClientMessages 发的 namespace 和它下面 Client Component 用到的一致，--fix 改写列表。
-      // 分析整个项目，lint 不能加 --cache（.claude/rules/i18n.md）。
-      "i18n/client-namespaces": "error",
-    },
-  },
-  {
-    // ClientMessages 自己要用 next-intl 的 provider 和 useMessages，在路由之外渲染组件的单元测试也要用；
-    // 同一条规则后面的配置会整个替换前面的选项。
-    files: ["lib/i18n/**", `**/*.test.${extensionGlob}`],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          ...RESTRICTED_IMPORTS,
-          paths: RESTRICTED_IMPORTS.paths.filter(
-            (path) => path !== INTL_PROVIDER_RESTRICTION,
-          ),
-        },
-      ],
-    },
+    // Next 在应用进程里加载的根目录文件也是应用代码；APPLICATION_CODE 排除根目录，是为了跳过各种工具的配置文件。
+    files: [`{proxy,instrumentation}.${extensionGlob}`],
+    rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
   },
   {
     files: [
@@ -338,14 +323,99 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // ---- i18n（.claude/rules/i18n.md）----
+  // - i18next/no-literal-string：用户看得到的文案放进 messages/，用 t() 渲染。
+  // - i18n/client-namespaces：每个 ClientMessages 下发的 namespace 和它包着的 Client Component 用到的一致。
+  // - INTL_PROVIDER_RESTRICTION、DATE_TIME_FORMATTING：前面随 RESTRICTED_IMPORTS、RESTRICTED_SYNTAX 生效，
+  //   这里只放它们的例外，所以这一段要排在设置那两条规则的配置之后。
   {
-    // 唯一格式化日期和时间的地方，其他限制照旧。只给规则设置级别的对象会沿用前面的选项，
-    // 所以没有剩下的限制时直接关掉这条规则。
+    // 只查 JSX 里的文本和下面这些属性，JSX 之外的文案（toast、metadata、常量里的标签）由 rule 约束。
+    // 各组件的 *-examples/ 目录保留字面量：example 和 playground 要能单独复制，控件标签是 prop 名，
+    // 组件 metadata 由生成脚本直接读取字面值。
+    files: ["{app,features,components}/**/*.{jsx,tsx}"],
+    ignores: [
+      "features/demo-ui/components/*-examples/**",
+      "**/*.{test,spec}.{jsx,tsx}",
+    ],
+    plugins: { i18next },
+    rules: {
+      "i18next/no-literal-string": [
+        "error",
+        {
+          mode: "jsx-only",
+          "jsx-attributes": {
+            include: [
+              "aria-label",
+              "aria-description",
+              "aria-valuetext",
+              "title",
+              "placeholder",
+              "alt",
+              "label",
+              "description",
+            ],
+          },
+          // 设置后会替换插件的默认列表：前一项是默认值，最后一项放行 next-intl 的 t.rich 这类调用里的 key。
+          callees: {
+            exclude: [
+              "i18n(ext)?",
+              "t",
+              "require",
+              "addEventListener",
+              "removeEventListener",
+              "postMessage",
+              "getElementById",
+              "dispatch",
+              "commit",
+              "includes",
+              "indexOf",
+              "endsWith",
+              "startsWith",
+              "t\\.(rich|markup|raw|has)",
+            ],
+          },
+          message:
+            "Move user-visible text into messages/ and render it with t() (.claude/rules/i18n.md)",
+        },
+      ],
+    },
+  },
+  {
+    ...APPLICATION_CODE,
+    plugins: { i18n: createI18nPlugin(PROJECT_ROOT) },
+    rules: {
+      // --fix 改写列表。分析整个项目，一个文件的结果取决于别的文件，lint 不能加 --cache。
+      "i18n/client-namespaces": "error",
+    },
+  },
+  {
+    // ClientMessages 自己要用 next-intl 的 provider 和 useMessages，在路由之外渲染组件的单元测试也要用。
+    files: ["lib/i18n/**", `**/*.test.${extensionGlob}`],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          ...RESTRICTED_IMPORTS,
+          paths: RESTRICTED_IMPORTS.paths.filter(
+            (path) => path !== INTL_PROVIDER_RESTRICTION,
+          ),
+        },
+      ],
+    },
+  },
+  {
+    // 唯一格式化日期和时间的地方。
     files: ["components/date-time.tsx"],
     rules: {
-      "no-restricted-syntax": DATE_TIME_EXEMPT.length
-        ? ["error", ...DATE_TIME_EXEMPT]
-        : "off",
+      "no-restricted-syntax": restrictedSyntaxWithout(DATE_TIME_FORMATTING),
+    },
+  },
+  // ---- i18n 结束 ----
+  {
+    // 唯一读应用环境变量的地方。
+    files: ["lib/env.ts"],
+    rules: {
+      "no-restricted-syntax": restrictedSyntaxWithout(ENV_ACCESS),
     },
   },
   {
@@ -403,58 +473,6 @@ const eslintConfig = defineConfig([
           max: 200,
           skipBlankLines: true,
           skipComments: true,
-        },
-      ],
-    },
-  },
-  {
-    // 用户看得到的文案都放进 messages/，用 t() 渲染（.claude/rules/i18n.md）。只查 JSX 里的文本和下面这些属性；
-    // JSX 之外的文案（toast、metadata、常量里的标签）由 rule 约束。各组件的 *-examples/ 目录保留字面量：example 和
-    // playground 要能单独复制，控件标签是 prop 名，组件 metadata 由生成脚本直接读取字面值。
-    files: ["{app,features,components}/**/*.{jsx,tsx}"],
-    ignores: [
-      "features/demo-ui/components/*-examples/**",
-      "**/*.{test,spec}.{jsx,tsx}",
-    ],
-    plugins: { i18next },
-    rules: {
-      "i18next/no-literal-string": [
-        "error",
-        {
-          mode: "jsx-only",
-          "jsx-attributes": {
-            include: [
-              "aria-label",
-              "aria-description",
-              "aria-valuetext",
-              "title",
-              "placeholder",
-              "alt",
-              "label",
-              "description",
-            ],
-          },
-          // 设置后会替换插件的默认列表：前一项是默认值，最后一项放行 next-intl 的 t.rich 这类调用里的 key。
-          callees: {
-            exclude: [
-              "i18n(ext)?",
-              "t",
-              "require",
-              "addEventListener",
-              "removeEventListener",
-              "postMessage",
-              "getElementById",
-              "dispatch",
-              "commit",
-              "includes",
-              "indexOf",
-              "endsWith",
-              "startsWith",
-              "t\\.(rich|markup|raw|has)",
-            ],
-          },
-          message:
-            "Move user-visible text into messages/ and render it with t() (.claude/rules/i18n.md)",
         },
       ],
     },

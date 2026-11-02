@@ -2,6 +2,8 @@ import "server-only";
 import { type Kysely, sql } from "kysely";
 import { Client } from "pg";
 
+import { requireEnv } from "@/lib/env";
+
 import type { TaskTables } from "./tables";
 
 // 任务的状态或日志变化后，经 Postgres 的 LISTEN/NOTIFY 通知正在推送这个任务日志的 SSE 连接。Demo 生成器可能
@@ -75,7 +77,7 @@ function drop(current: ListenerConnection) {
  * 等监听连接就绪后才返回，之后发生的变化不会漏掉。返回取消订阅的函数。
  */
 export async function subscribeTaskChanges(taskId: string, listener: Listener) {
-  const url = process.env.DEMO_DATABASE_URL ?? "";
+  const url = requireEnv("DEMO_DATABASE_URL");
   let current = globalThis.__demoTaskListener;
   if (current?.url !== url) {
     // 测试会在同一个进程里换库，旧库的连接不再需要。

@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { createComment } from "../server/comments";
 import { assertDemoBackendEnabled } from "../server/connection";
-import type { ActionResult } from "../types/action-result";
 import type { TaskComment } from "../types/task";
 
 const inputSchema = z.object({
@@ -18,8 +17,8 @@ const inputSchema = z.object({
  */
 export async function createCommentAction(
   input: z.input<typeof inputSchema>,
-): Promise<ActionResult<TaskComment>> {
+): Promise<TaskComment> {
   assertDemoBackendEnabled();
   const { taskId, content } = inputSchema.parse(input);
-  return { ok: true, data: await createComment(taskId, { content }) };
+  return createComment(taskId, { content });
 }

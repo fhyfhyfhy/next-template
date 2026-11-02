@@ -4,7 +4,6 @@ import {
   type QueryClient,
 } from "@/lib/react-query";
 
-import { unwrapActionResult } from "../utils/task-action-error";
 import { getTaskQueryOptions, type Task } from "./get-task";
 import {
   favoriteTasksQueryOptions,
@@ -27,10 +26,8 @@ type CachedTaskList = TaskPage | InfiniteData<TaskPage> | Task[];
  */
 export const updateTaskFavoriteMutationOptions = () =>
   mutationOptions({
-    mutationFn: async ({ task, favorite }: UpdateTaskFavoriteVariables) =>
-      unwrapActionResult(
-        await updateTaskFavoriteAction({ taskId: task.id, favorite }),
-      ),
+    mutationFn: ({ task, favorite }: UpdateTaskFavoriteVariables) =>
+      updateTaskFavoriteAction({ taskId: task.id, favorite }),
     onMutate: async ({ task, favorite }, { client }) => {
       await client.cancelQueries({ queryKey: taskListKey });
       const previous = client.getQueriesData<CachedTaskList>({

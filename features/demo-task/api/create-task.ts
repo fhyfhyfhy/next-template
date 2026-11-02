@@ -1,11 +1,8 @@
+import { isActionError, unwrapActionResult } from "@/lib/action-result";
 import type { Locale } from "@/lib/i18n/routing";
 import { mutationOptions } from "@/lib/react-query";
 
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
-import {
-  isTaskActionError,
-  unwrapActionResult,
-} from "../utils/task-action-error";
 import { createTaskAction } from "./create-task-action";
 import type { CreateTaskInput } from "./create-task-request";
 import { taskListKey } from "./get-tasks";
@@ -20,6 +17,6 @@ export const createTaskMutationOptions = (locale: Locale) =>
     },
     meta: {
       // 名称被占用由表单在字段上提示，其他失败仍走全局提示。
-      suppressErrorToast: (error) => isTaskActionError(error, TASK_NAME_TAKEN),
+      suppressErrorToast: (error) => isActionError(error, TASK_NAME_TAKEN),
     },
   });

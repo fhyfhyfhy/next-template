@@ -1,6 +1,5 @@
 import { mutationOptions } from "@/lib/react-query";
 
-import { unwrapActionResult } from "../utils/task-action-error";
 import { deleteCommentAction } from "./delete-comment-action";
 import { getCommentsQueryOptions } from "./get-comments";
 
@@ -11,8 +10,8 @@ interface DeleteCommentVariables {
 export const deleteCommentMutationOptions = (taskId: string) => {
   const { queryKey } = getCommentsQueryOptions(taskId);
   return mutationOptions({
-    mutationFn: async ({ commentId }: DeleteCommentVariables) =>
-      unwrapActionResult(await deleteCommentAction({ taskId, commentId })),
+    mutationFn: ({ commentId }: DeleteCommentVariables) =>
+      deleteCommentAction({ taskId, commentId }),
     onMutate: async ({ commentId }, { client }) => {
       await client.cancelQueries({ queryKey });
       const previous = client.getQueryData(queryKey);

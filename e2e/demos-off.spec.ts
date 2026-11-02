@@ -1,6 +1,6 @@
 import { expect, test } from "./test";
 
-// 生产 build 不提供 Demo（lib/demos.ts）：不管带不带 locale 前缀，proxy.ts 都返回 404。
+// 生产 build 不提供 Demo（app/demos.ts）：不管带不带 locale 前缀，proxy.ts 都返回 404。
 const DEMO_PAGES = [
   "/demos",
   "/demos/ui",

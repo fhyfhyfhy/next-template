@@ -11,11 +11,15 @@ const TIME_ZONE = "Asia/Shanghai";
 
 /**
  * next-intl 在服务端取 locale、文案和格式化配置时调用（next.config.ts 的 createNextIntlPlugin 指向这里）。
- * 显式传入的 locale（`getTranslations({ locale, namespace })`）直接使用，这里不校验：它的类型已经是 `Locale`，
- * 来自客户端的值由调用方先用 `hasLocale` 检查，如 `createTaskAction`。没有传入时读 `[locale]` root param。
+ * 显式传入的 locale（`getTranslations({ locale, namespace })`）不支持时抛错：Server Action 和 Route Handler
+ * 读不到 root param，用的是浏览器传来的值，类型约束不了它。没有传入时读 `[locale]` root param。
  */
 export default getRequestConfig(async ({ locale }) => {
-  if (!locale) {
+  if (locale !== undefined) {
+    if (!hasLocale(routing.locales, locale)) {
+      throw new Error(`Unsupported locale: ${String(locale)}`);
+    }
+  } else {
     const paramValue = await rootParams.locale();
     // `[locale]` 也会匹配 /unknown.txt 这类路径，不支持的值按 404 处理。
     if (hasLocale(routing.locales, paramValue)) {

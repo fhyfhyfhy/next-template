@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0005
+---
+
 # 多语言路由用 `[locale]` 根 segment，默认 locale 不带前缀
 
 模板用 next-intl 做多语言，所有路由放在 `app/[locale]/` 下，`localePrefix` 用 `as-needed`：默认 locale 的 URL 不带前缀（`/demos/tasks`），其他 locale 带前缀（`/en/demos/tasks`）。locale 通过 `next/root-params` 从 URL 读出，每个 locale 都能静态预渲染，Cache Components 的静态 shell 和 Partial Prefetching 都照常工作。

@@ -1553,8 +1553,29 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
   });
 });
 
+const restrictedSyntaxLinter = new ESLint({ cwd: project });
+const RESTRICTION_NAMES = [
+  ["Show a date or time", "date-time"],
+  ["List public API", "component-entry"],
+  ["Read environment variables", "env"],
+];
+
+// 每条 no-restricted-syntax 报告，按它来自哪条限制命名。file 用真实存在的路径：import/no-cycle 定位不了不在磁盘上的文件。
+async function restricted(file, source) {
+  const [result] = await restrictedSyntaxLinter.lintText(source, {
+    filePath: join(project, file),
+  });
+  expect(result.fatalErrorCount).toBe(0);
+  return result.messages
+    .filter(({ ruleId }) => ruleId === "no-restricted-syntax")
+    .map(
+      ({ message }) =>
+        RESTRICTION_NAMES.find(([prefix]) => message.startsWith(prefix))?.[1] ??
+        message,
+    );
+}
+
 describe("日期和时间只在 components/date-time.tsx 里格式化", () => {
-  const eslint = new ESLint({ cwd: project });
   const clientDateTime = `"use client";
 
 import { useFormatter } from "next-intl";
@@ -1564,23 +1585,6 @@ export function Probe({ at }: { at: number }) {
   return <p>{format.dateTime(at)}</p>;
 }
 `;
-  // 每条 no-restricted-syntax 报告，按它来自哪条限制命名。
-  const restricted = async (file, source) => {
-    const [result] = await eslint.lintText(source, {
-      filePath: join(project, file),
-    });
-    expect(result.fatalErrorCount).toBe(0);
-    return result.messages
-      .filter(({ ruleId }) => ruleId === "no-restricted-syntax")
-      .map(({ message }) =>
-        message.startsWith("Show a date or time")
-          ? "date-time"
-          : message.startsWith("List public API")
-            ? "component-entry"
-            : message,
-      );
-  };
-  // 用真实存在的文件路径：import/no-cycle 定位不了不在磁盘上的文件。
   for (const { name, file, source, reported } of [
     {
       name: "format.dateTime in a Client Component is reported",
@@ -1635,6 +1639,61 @@ export function Probe({ at, count }: { at: number; count: number }) {
       file: "components/date-time.tsx",
       source: clientDateTime,
       reported: [],
+    },
+  ]) {
+    test(name, async () => {
+      expect(await restricted(file, source)).toStrictEqual(reported);
+    });
+  }
+});
+
+describe("应用的环境变量只通过 lib/env.ts 读", () => {
+  for (const { name, file, source, reported } of [
+    {
+      name: "feature 的服务端代码直接读应用的变量时报错",
+      file: "features/demo-task/server/connection.ts",
+      source: `export const url = process.env.DEMO_DATABASE_URL;\n`,
+      reported: ["env"],
+    },
+    {
+      name: "按变量名取、解构、整个传出去都报错",
+      file: "features/demo-task/server/connection.ts",
+      source: `const name = "DEMO_DATABASE_URL";
+export const byName = process.env[name];
+export const { DEMO_STORAGE_BUCKET } = process.env;
+export const all = Object.keys(process.env);
+`,
+      reported: ["env", "env", "env"],
+    },
+    {
+      name: "Node 和 Next 定义的变量可以直接读，NEXT_PUBLIC_ 除外",
+      file: "features/demo-ui/components/example-list/index.tsx",
+      source: `export const dev = process.env.NODE_ENV === "development";
+export const node = process.env.NEXT_RUNTIME === "nodejs";
+export const devServer = Boolean(process.env.__NEXT_DEV_SERVER);
+export const publicId = process.env.NEXT_PUBLIC_ANALYTICS_ID;
+`,
+      reported: ["env"],
+    },
+    ...["proxy.ts", "instrumentation.ts"].map((file) => ({
+      name: `根目录的 ${file} 也受限制`,
+      file,
+      source: `export const url = process.env.DEMO_DATABASE_URL;\n`,
+      reported: ["env"],
+    })),
+    {
+      name: "lib/env.ts 可以读，其他限制照旧",
+      file: "lib/env.ts",
+      source: `export const url = process.env.DEMO_DATABASE_URL;
+export const probe = (at: number) => new Intl.DateTimeFormat("en").format(at);
+`,
+      reported: ["date-time"],
+    },
+    {
+      name: "components/date-time.tsx 仍然不能直接读",
+      file: "components/date-time.tsx",
+      source: `export const url = process.env.DEMO_DATABASE_URL;\n`,
+      reported: ["env"],
     },
   ]) {
     test(name, async () => {
