@@ -1,4 +1,3 @@
-import { unwrapActionResult } from "@/lib/action-result";
 import {
   type InfiniteData,
   mutationOptions,
@@ -27,10 +26,8 @@ type CachedTaskList = TaskPage | InfiniteData<TaskPage> | Task[];
  */
 export const updateTaskFavoriteMutationOptions = () =>
   mutationOptions({
-    mutationFn: async ({ task, favorite }: UpdateTaskFavoriteVariables) =>
-      unwrapActionResult(
-        await updateTaskFavoriteAction({ taskId: task.id, favorite }),
-      ),
+    mutationFn: ({ task, favorite }: UpdateTaskFavoriteVariables) =>
+      updateTaskFavoriteAction({ taskId: task.id, favorite }),
     onMutate: async ({ task, favorite }, { client }) => {
       await client.cancelQueries({ queryKey: taskListKey });
       const previous = client.getQueriesData<CachedTaskList>({

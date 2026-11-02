@@ -31,7 +31,7 @@ For server-prefetched data, apply the [hydration guidance](../../.agents/skills/
 
 ## Server Actions
 
-Every write goes through a Server Action, including writes whose data React Query owns. Keep an action imported by Client Components in its own top-level `"use server"` module, such as `api/create-task-action.ts`. It checks its inputs and calls the data layer; its runtime exports are only async Server Actions, and validation helpers used only by that action may stay private there. The data layer rejects business-rule violations with `DomainError`; the action returns the ones its caller handles as `{ ok: false, error }`, where `error` is the `ApiErrorObject` from `@/lib/fetch` that a failed Route Handler response carries (`toActionResult` in `lib/action-result.ts`) and lets other errors throw. A synchronous options factory belongs in an ordinary module, such as `api/create-task.ts`, which imports the action. When other callers need the same input schema, extract it to a sibling such as `api/create-task-request.ts`; the action must not import the factory module that calls it.
+Every write goes through a Server Action, including writes whose data React Query owns. Keep an action imported by Client Components in its own top-level `"use server"` module, such as `api/create-task-action.ts`. It checks its inputs and calls the data layer; its runtime exports are only async Server Actions, and validation helpers used only by that action may stay private there. The data layer rejects business-rule violations with `DomainError`. An action whose caller handles some of them returns an `ActionResult` through `toActionResult` from `@/lib/action-result`, which turns those into `{ ok: false, error }`, `error` being the `ApiErrorObject` a failed Route Handler response carries; its factory unwraps the result with `unwrapActionResult`. An action without such failures returns its data, or nothing, and its factory passes it on as is. Both let other errors throw. A synchronous options factory belongs in an ordinary module, such as `api/create-task.ts`, which imports the action. When other callers need the same input schema, extract it to a sibling such as `api/create-task-request.ts`; the action must not import the factory module that calls it.
 
 Expose actions needed outside the feature through a client-importable public sub-entry such as `actions.ts`, which re-exports the action references. Keep them separate from the `server-only` entry for direct server readers and writers. React Query callers normally consume the options factory instead. For expected errors crossing the action boundary and success-only refreshes, follow [Server Action errors](../../.agents/skills/next-data-flow/react-query-integration.md#server-action-errors).
 
@@ -122,8 +122,7 @@ import { mutationOptions } from "@/lib/react-query";
 
 export const deleteTaskMutationOptions = () =>
   mutationOptions({
-    mutationFn: async (variables: { taskId: string }) =>
-      unwrapActionResult(await deleteTaskAction(variables)),
+    mutationFn: deleteTaskAction,
     onSuccess: (_data, { taskId }, _onMutateResult, { client }) => {
       client.removeQueries({ queryKey: getTaskQueryOptions(taskId).queryKey });
       void client.invalidateQueries({ queryKey: taskListKey });
