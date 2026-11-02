@@ -27,7 +27,7 @@ Used directly:
 - Forms: `@tanstack/react-form`, with Base UI `Field` from `@/components/ui/field`
 - Charts: `@tanstack/react-charts`
 - i18n: `next-intl`, set up in `lib/i18n/` ([i18n.md](i18n.md))
-- Formatting dates and numbers for display: next-intl's `useFormatter` and `getFormatter`; date math: native `Date`, and `dayjs` for what it can't handle
+- Dates, times, and numbers ([Dates and numbers](i18n.md#dates-and-numbers)): show a date or time with `<DateTime>` from `@/components/date-time`, which ESLint enforces; format relative times and numbers with next-intl's `useFormatter` and `getFormatter`; do date math with native `Date`, and `dayjs` for what it can't handle
 - IDs: `nanoid`
 - Domain-neutral hooks (debounce, intersection, media queries, element size…): `@mantine/hooks`. Write one in `hooks/` only for behavior it lacks.
 

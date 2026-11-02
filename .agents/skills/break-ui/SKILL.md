@@ -106,7 +106,7 @@ Each of these appears in the screenshot. The cause in the right column is almost
 | Orphaned `—` or empty line where the role was | Placeholder rendered for a missing optional field | Omit the line, or reserve its height intentionally |
 | "1 members", "0 member" | Hardcoded plural | `Intl.PluralRules`, or separate strings per count |
 | Numbers jitter when they update, columns misalign | Proportional figures | `font-variant-numeric: tabular-nums` |
-| `1284`, `1,284.000000001`, `NaN`, `undefined` | Raw number rendered | `Intl.NumberFormat` with the user's locale; guard null |
+| `1284`, `1,284.000000001`, `NaN`, `undefined` | Raw number rendered | next-intl's `useFormatter` or `getFormatter` (`.claude/rules/i18n.md`); guard null |
 | Long translated button label overflows | Fixed-width button | Width from content with `min-width`, never a fixed `width` |
 | Diacritics or tall scripts (Vietnamese, Thai) clipped top or bottom | Tight `line-height` with `overflow: hidden` | Looser `line-height` or no clipping on text boxes |
 | Broken-image icon in the avatar | No `onError` fallback | Fall back to initials; `object-fit: cover` for any aspect ratio |

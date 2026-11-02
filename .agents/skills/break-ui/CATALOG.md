@@ -96,7 +96,7 @@ Unbreakable strings: they have no spaces, so the browser has nowhere to wrap the
 | `2025-12-31T23:30:00-08:00` | Shows as a different day in UTC and the user's timezone |
 | Very long duration (`1,284 hours`) | Duration formatting that never rolls up to days |
 
-Use `Intl.RelativeTimeFormat` and `Intl.DateTimeFormat`, not hand-built strings.
+Show dates and times with `<DateTime>` from `@/components/date-time`, and relative times with next-intl's `useFormatter` or `getFormatter`, not hand-built strings (`.claude/rules/i18n.md`, "Dates and numbers").
 
 ## Images and media
 
