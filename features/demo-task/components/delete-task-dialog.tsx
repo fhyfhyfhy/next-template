@@ -1,6 +1,7 @@
 "use client";
 
 import { IconTrash } from "@tabler/icons-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useRouter } from "@/lib/i18n/navigation";
 import { useMutation } from "@/lib/react-query";
 
 import { deleteTaskMutationOptions } from "../api/delete-task";

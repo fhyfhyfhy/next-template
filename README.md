@@ -55,7 +55,7 @@ The template is full-stack: a project's backend lives in this app ([ADR 0003](do
 
 ## Internationalization
 
-Pages are translated with [next-intl](https://next-intl.dev) into the locales listed in `lib/i18n/routing.ts`: `zh`, the default locale and the one new text is written in, and `en`. URLs of the default locale have no prefix (`/demos`), the others carry one (`/en/demos`), and every locale is prerendered ([ADR 0002](docs/adr/0002-locale-routing-as-needed-prefix.md)). For a URL without a prefix, `proxy.ts` picks the locale from the `NEXT_LOCALE` cookie, then `Accept-Language`.
+Pages are translated with [next-intl](https://next-intl.dev) into the locales listed in `lib/i18n/routing.ts`: `zh`, the default locale and the one new text is written in, and `en`. URLs carry no locale: `proxy.ts` shows each visitor the language they picked with the locale switcher, kept in the `NEXT_LOCALE` cookie, or else their browser's `Accept-Language`, and every locale is still prerendered ([ADR 0005](docs/adr/0005-unprefixed-urls-in-visitor-locale.md)).
 
 Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates and times show in the computer's time zone: `<DateTime>` (`components/date-time.tsx`) renders them in the browser once the page has hydrated.
 

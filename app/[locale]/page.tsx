@@ -1,7 +1,7 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { DEMOS_SERVED } from "@/app/demos";
-import { Link } from "@/lib/i18n/navigation";
 
 export default async function Home() {
   const t = await getTranslations("app.home");

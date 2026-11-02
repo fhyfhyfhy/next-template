@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   createContext,
   type ReactNode,
@@ -7,8 +8,6 @@ import {
   use,
   useOptimistic,
 } from "react";
-
-import { useRouter } from "@/lib/i18n/navigation";
 
 import { taskListHref, type TaskListParams } from "../utils/task-urls";
 

@@ -1,8 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-
-import { usePathname } from "@/lib/i18n/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { LocaleItems } from "./locale-items";
 

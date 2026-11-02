@@ -10,10 +10,15 @@ test("首页显示占位内容，没有指向 Demo 的链接", async ({ page }) 
   await expect(page.getByRole("link")).toHaveCount(0);
 });
 
-test("英文首页在 /en 下", async ({ page }) => {
-  await page.goto("/en");
-  await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Next.js template" }),
-  ).toBeVisible();
+test.describe("浏览器语言是英文", () => {
+  test.use({ locale: "en-US" });
+
+  test("首页按浏览器语言显示英文，地址不变", async ({ page }) => {
+    await page.goto("/");
+    await expect(page).toHaveURL("/");
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Next.js template" }),
+    ).toBeVisible();
+  });
 });

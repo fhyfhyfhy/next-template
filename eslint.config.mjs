@@ -70,9 +70,6 @@ const queryPlugin = withWrapperImports(pluginQuery);
 const QUERY_LIBRARY_MESSAGE =
   "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-fetching.md.";
 
-const LOCALE_NAVIGATION_MESSAGE =
-  "Import Link, redirect, useRouter, and usePathname from @/lib/i18n/navigation: the next/* versions drop the locale prefix of non-default locales. See .claude/rules/i18n.md.";
-
 // lib/i18n/ 以外直接用 next-intl 的 provider 和 useMessages 下发文案，i18n/client-namespaces 就查不到。
 const INTL_PROVIDER_RESTRICTION = {
   name: "next-intl",
@@ -81,25 +78,13 @@ const INTL_PROVIDER_RESTRICTION = {
     "Send messages to Client Components with ClientMessages from @/lib/i18n/client-messages, so i18n/client-namespaces can check them. See .claude/rules/i18n.md.",
 };
 
-// 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query；
-// 站内导航走 next-intl 生成的 API，非默认 locale 的 URL 前缀才不会丢。
+// 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query。
 const RESTRICTED_IMPORTS = {
   paths: [
     ...["axios", "swr"].map((name) => ({
       name,
       message: QUERY_LIBRARY_MESSAGE,
     })),
-    { name: "next/link", message: LOCALE_NAVIGATION_MESSAGE },
-    {
-      name: "next/navigation",
-      importNames: [
-        "redirect",
-        "permanentRedirect",
-        "useRouter",
-        "usePathname",
-      ],
-      message: LOCALE_NAVIGATION_MESSAGE,
-    },
     INTL_PROVIDER_RESTRICTION,
   ],
   patterns: [{ group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE }],

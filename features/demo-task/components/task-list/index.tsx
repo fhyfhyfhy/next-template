@@ -1,10 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { use } from "react";
 
 import { DateTime } from "@/components/date-time";
-import { Link } from "@/lib/i18n/navigation";
 
 import type { TaskPage } from "../../api/get-tasks";
 import { DATE_TIME_FORMAT } from "../../constants/date-time";

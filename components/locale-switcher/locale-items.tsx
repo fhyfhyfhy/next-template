@@ -4,7 +4,6 @@ import { useLocale } from "next-intl";
 
 import { BASE_PATH } from "@/lib/base-path";
 import { cn } from "@/lib/cn";
-import { getPathname } from "@/lib/i18n/navigation";
 import { type Locale, routing } from "@/lib/i18n/routing";
 
 // 每种语言用它自己的写法显示，不随当前 locale 翻译，用户才认得出自己的语言；加 locale 时类型检查会要求补上。
@@ -17,16 +16,17 @@ const itemClassName =
   "rounded-control px-2 py-1 text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring";
 
 interface LocaleItemsProps {
-  /** 当前页面不带 locale 的地址，含 query。不传时其他语言也只显示文字，用作链接就绪前的占位。 */
+  /** 当前页面的地址，含 query，不含 basePath。不传时其他语言也只显示文字，用作链接就绪前的占位。 */
   href?: string;
 }
 
 /**
- * 当前语言显示为文字，其他语言各一个指向 `href` 在那种语言下的链接。
+ * 当前语言显示为文字，其他语言各一个链接，切换到那种语言并停在 `href`。
  *
- * 链接是整页跳转的 `<a>`，不用 next-intl 的 `Link`：切到默认 locale 时地址带前缀（`/zh/...`），proxy 记下选择后
- * 跳到不带前缀的地址。客户端导航和 prefetch 会把这段跳转当作 RSC 请求发出，Next 再补一次跳转加上 `_rsc` 参数，
- * 浏览器按页面 URL 缓存这次跳转，之后前进后退到这个页面时地址栏会带上 `_rsc`。
+ * 链接是整页跳转的 `<a>`，不用 `next/link`：地址是 `/{locale}` 加上 `href`，proxy 把这个 locale 记成访问者的选择，
+ * 再跳回 `href`（docs/adr/0005-unprefixed-urls-in-visitor-locale.md）。客户端导航和 prefetch 会把这段跳转当作
+ * RSC 请求发出，Next 再补一次跳转加上 `_rsc` 参数，浏览器按页面 URL 缓存这次跳转，之后前进后退到这个页面时
+ * 地址栏会带上 `_rsc`。整页跳转也清掉了客户端缓存的旧语言页面，它们和新语言的页面地址相同。
  */
 export function LocaleItems({ href }: LocaleItemsProps) {
   const current = useLocale();
@@ -54,8 +54,7 @@ export function LocaleItems({ href }: LocaleItemsProps) {
     return (
       <a
         key={locale}
-        // 普通的 <a>：Next 只给自己的链接加 basePath，这里要自己加。
-        href={BASE_PATH + getPathname({ href, locale, forcePrefix: true })}
+        href={switchHref(locale, href)}
         lang={locale}
         hrefLang={locale}
         className={itemClassName}
@@ -64,4 +63,10 @@ export function LocaleItems({ href }: LocaleItemsProps) {
       </a>
     );
   });
+}
+
+/** 切换到 `locale` 的地址。普通的 `<a>` 要自己加 basePath，Next 只给它自己的链接加。根路径不带结尾的 `/`。 */
+function switchHref(locale: Locale, href: string) {
+  const path = href === "/" || href.startsWith("/?") ? href.slice(1) : href;
+  return `${BASE_PATH}/${locale}${path}`;
 }

@@ -1,45 +1,61 @@
 import { expect, test } from "./demo-backend";
 
-// 路由规则见 docs/adr/0002-locale-routing-as-needed-prefix.md：默认 locale（zh）不带前缀，en 在 /en 下。
-// Playwright 配置把浏览器的语言设成 zh-CN，下面需要英文浏览器的用例单独设置。
+// 规则见 docs/adr/0005-unprefixed-urls-in-visitor-locale.md：URL 不带 locale，页面按语言切换器记下的选择显示，
+// 没选过时按浏览器语言。Playwright 配置把浏览器语言设成 zh-CN，需要英文浏览器的用例单独设置。
 
-test("en 的页面带 /en 前缀，整页渲染英文", async ({ page }) => {
-  await page.goto("/en/demos");
-  await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(
-    page.getByRole("link", { name: /Data demo · All tasks/ }),
-  ).toBeVisible();
-  await expect(page).toHaveTitle("Demo · Next Demo");
-});
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
-test("切换语言后停在同一页面，再打开不带前缀的地址时记得选择", async ({
+test("切换语言后地址不变，之后的客户端导航和整页打开都按选择显示", async ({
   page,
 }) => {
-  await page.goto("/demos/ui?component=select");
+  await page.goto("/demos/search");
   const switcher = page.getByRole("navigation", { name: "切换语言" });
-  // 切换器的链接只在浏览器里渲染（预渲染时是不可点的文字），找到链接说明已经 hydrate。
+  // 切换器的链接是整页跳转的 <a>，不用等 hydrate。
   await expect(switcher.getByRole("link", { name: "English" })).toBeVisible();
   await switcher.getByRole("link", { name: "English" }).click();
+  await expect(page).toHaveURL("/demos/search");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
-  await expect(page).toHaveURL("/en/demos/ui?component=select");
+  // 客户端导航：地址和中文页面相同，拿到的要是英文页面。徽标只在浏览器里渲染，出现说明已经 hydrate。
+  await expect(page.getByLabel(/^\d+ tasks? in progress$/)).toBeVisible();
+  await page
+    .getByRole("navigation", { name: "Data demo navigation" })
+    .getByRole("link", { name: "All tasks" })
+    .click();
+  await expect(page).toHaveURL("/demos/tasks");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "All tasks.",
+  );
+
+  await page.goto("/demos/ui?component=select");
   await expect(page.getByRole("heading", { name: "Select." })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Usage examples" }),
-  ).toBeVisible();
-
-  await page.goto("/demos");
-  await expect(page).toHaveURL("/en/demos");
-
   const englishSwitcher = page.getByRole("navigation", { name: "Language" });
   await expect(
     englishSwitcher.getByRole("link", { name: "中文" }),
   ).toBeVisible();
   await englishSwitcher.getByRole("link", { name: "中文" }).click();
-  await expect(page).toHaveURL("/demos");
+  await expect(page).toHaveURL("/demos/ui?component=select");
   await expect(page.locator("html")).toHaveAttribute("lang", "zh");
+});
 
-  await page.goto("/demos");
+test("带 locale 前缀的地址记下选择，跳到不带前缀的地址，选择保留一年", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/en/demos");
   await expect(page).toHaveURL("/demos");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+
+  const cookie = (await context.cookies()).find(
+    ({ name }) => name === "NEXT_LOCALE",
+  );
+  expect(cookie?.value).toBe("en");
+  expect(cookie?.expires).toBeGreaterThan(
+    (Date.now() + ONE_YEAR_MS) / 1000 - 60,
+  );
+
+  await page.goto("/demos/ui");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
 
 test("不支持的 locale 前缀返回 404", async ({ request }) => {
@@ -50,8 +66,31 @@ test("不支持的 locale 前缀返回 404", async ({ request }) => {
 test.describe("浏览器语言是英文", () => {
   test.use({ locale: "en-US" });
 
-  test("第一次打开不带前缀的地址时跳到 /en", async ({ page }) => {
+  test("没选过语言时按浏览器语言显示，不记成选择", async ({
+    page,
+    context,
+  }) => {
     await page.goto("/demos");
-    await expect(page).toHaveURL("/en/demos");
+    await expect(page).toHaveURL("/demos");
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(
+      page.getByRole("link", { name: /Data demo · All tasks/ }),
+    ).toBeVisible();
+    await expect(page).toHaveTitle("Demo · Next Demo");
+    expect((await context.cookies()).map(({ name }) => name)).not.toContain(
+      "NEXT_LOCALE",
+    );
+  });
+
+  test("选了中文之后，之后的页面都显示中文", async ({ page }) => {
+    await page.goto("/demos");
+    const switcher = page.getByRole("navigation", { name: "Language" });
+    await expect(switcher.getByRole("link", { name: "中文" })).toBeVisible();
+    await switcher.getByRole("link", { name: "中文" }).click();
+    await expect(page).toHaveURL("/demos");
+    await expect(page.locator("html")).toHaveAttribute("lang", "zh");
+
+    await page.goto("/demos/ui?component=select");
+    await expect(page.locator("html")).toHaveAttribute("lang", "zh");
   });
 });

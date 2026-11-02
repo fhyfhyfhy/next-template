@@ -23,7 +23,7 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: "retain-on-failure",
   },
-  // 设备预设的 locale 是 en-US，proxy 会按 Accept-Language 把不带前缀的 URL 跳到 /en；用例看默认 locale 的页面。
+  // 设备预设的 locale 是 en-US，页面会按 Accept-Language 显示英文；用例看默认 locale 的页面。
   projects: [
     {
       name: "chromium",
