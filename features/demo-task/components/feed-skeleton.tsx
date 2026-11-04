@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { FEED_PAGE_SIZE } from "../api/get-feed";
+import { FEED_PAGE_SIZE } from "../constants/feed";
 
 export function FeedSkeleton() {
   return (

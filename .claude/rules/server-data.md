@@ -3,19 +3,18 @@ paths:
   - "features/*/server/**"
   - "features/*/server.ts"
   - "features/*/api/*-action.ts"
-  - "features/*/api/get-cached-*.ts"
   - "app/api/**"
 ---
 
 # Server data
 
-Code that reads and writes data on the server: a feature's data layer in `server/` and its `server.ts` entry, the Server Actions and `use cache` reads in its `api/`, and the Route Handlers under `app/api/`. The Data demo's `features/demo-task/` and `features/demo-upload/` are the runnable reference ([demos.md](../../.agents/skills/next-data-flow/demos.md)).
+Code that reads and writes data on the server: a feature's data layer and `use cache` reads in `server/`, its `server.ts` entry, the Server Actions in its `api/`, and the Route Handlers under `app/api/`. The Data demo's `features/demo-task/` and `features/demo-upload/` are the runnable reference ([demos.md](../../.agents/skills/next-data-flow/demos.md)).
 
 ## Data layer
 
 A feature's `server/` directory holds its data access: the queries and writes on the tables it owns and the business rules they enforce. Server code calls it directly, as [Transport](data-flow.md#transport) describes; code outside the feature reaches it through the feature's `server.ts` entry.
 
-- Guard every module here and the `server.ts` entry with `import "server-only"`, except `migrations.mts` (below).
+- Guard every module here and the `server.ts` entry with `import "server-only"`, except `migrations.mts` and the tests (below).
 - Export one function per operation. Wrap reads in React `cache()`, so `generateMetadata` and the page share one query within a render.
 - Validate inputs inside the function: Route Handlers and Server Actions pass values that came from the browser. The data layer has the final say, even when a Server Action has checked the same values first.
 - Writes that touch several rows run in one transaction. A function that another feature calls inside its transaction accepts that transaction as an optional executor parameter, as `attachUpload` in `features/demo-upload/server/uploads.ts` does.
@@ -38,12 +37,12 @@ Every write goes through a Server Action, including writes whose data React Quer
 
 - The action validates its inputs, with a translated schema when the form shows field messages, authorizes the write, and calls the data layer.
 - An action whose caller handles some of the data layer's `DomainError`s returns an `ActionResult` through `toActionResult` from `@/lib/action-result`, which turns those into `{ ok: false, error }`, `error` being the `ApiErrorObject` a failed Route Handler response carries. An action without such failures returns its data, or nothing. Both let other errors throw.
-- When other callers need the same input schema, extract it to a sibling such as `api/create-task-request.ts`; the action must not import the options factory that calls it.
-- Expose actions needed outside the feature through the main entry `index.ts`, which Client Components can import: the `"use server"` directive in the action's own module turns the export into an action reference, whichever entry re-exports it. Keep them out of the `server-only` entry `server.ts`.
+- When other callers need the same input schema, extract it to a sibling such as `api/create-task-schema.ts`; the action must not import the options factory that calls it.
+- Expose actions needed outside the feature through the main entry `index.ts`, which Client Components can import: the `"use server"` directive in the action's own module turns the export into an action reference, whichever entry re-exports it.
 
 ## Cached reads
 
-A server read cached with `use cache` wraps the data-layer read in its own module in `api/` guarded by `import "server-only"`, one cached read per file, named `get-cached-<resource>.ts` after the function it exports, such as `api/get-cached-task-page.ts` wrapping `listTasks` from `server/tasks.ts`: `use cache` functions cannot enter a client bundle. Code outside the feature imports it from the feature's `server.ts` entry.
+A server read cached with `use cache` wraps the data-layer read in its own module in `server/` guarded by `import "server-only"`, one cached read per file, named `get-cached-<resource>.ts` after the function it exports, such as `server/get-cached-task-page.ts` wrapping `listTasks` from `server/tasks.ts`: `use cache` functions cannot enter a client bundle. Code outside the feature imports it from the feature's `server.ts` entry.
 
 ## Tables and migrations
 
@@ -52,7 +51,7 @@ A server read cached with `use cache` wraps the data-layer read in its own modul
 
 ## Tests
 
-Test the data layer through the feature's `server.ts` entry against a real database, in `*.db.test.ts` files next to that entry; `pnpm demo:test` runs them for the Demo features. Check each read's result with its schema after a JSON round trip. Pure rules extracted into `utils/` are tested in `pnpm test`.
+Test each module in `server/` against a real database, in a `*.db.test.ts` file beside it, such as `server/tasks.db.test.ts` for `server/tasks.ts`. `pnpm test` runs them with the rest of the tests. Check each read's result with its schema after a JSON round trip. Pure rules extracted into `utils/` get plain unit tests, without the database.
 
 ## Demo-only parts
 

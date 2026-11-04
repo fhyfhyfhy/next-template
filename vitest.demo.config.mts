@@ -3,8 +3,9 @@ import { configDefaults, defineConfig } from "vitest/config";
 
 import { demoEnv } from "./scripts/demo-backend/datasets.mjs";
 
-// Demo 后端的数据层测试（pnpm demo:test）：连接 compose.demo.yaml 里真实的 Postgres 和对象存储，用 test 数据集，
-// 和 demo:dev、e2e 的数据互不影响。需要 Docker，所以不放进 pnpm test；只认 *.db.test.*，vitest.config.mts 排除它们。
+// Demo feature（features/demo-*）的测试（pnpm demo:test），vitest.config.mts 排除它们。其中数据层测试（*.db.test.*）
+// 连接 compose.demo.yaml 里真实的 Postgres 和对象存储，用 test 数据集，和 demo:dev、e2e 的数据互不影响；需要 Docker，
+// 所以不放进 pnpm test。
 export default defineConfig({
   resolve: {
     alias: {
@@ -16,7 +17,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["**/*.db.test.?(c|m)[jt]s?(x)"],
+    include: ["features/demo-*/**/*.test.?(c|m)[jt]s?(x)"],
     exclude: [...configDefaults.exclude, ".claude/worktrees/**"],
     environment: "node",
     globalSetup: "./scripts/demo-backend/test-setup.mjs",

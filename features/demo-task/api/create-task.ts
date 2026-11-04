@@ -5,7 +5,7 @@ import { mutationOptions } from "@/lib/react-query";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
 import type { DemoTaskTranslator } from "../types/translator";
 import { createTaskAction } from "./create-task-action";
-import type { CreateTaskInput } from "./create-task-request";
+import type { CreateTaskInput } from "./create-task-schema";
 import { taskListKey } from "./get-tasks";
 
 /** 创建同时影响两种负责方：action 让列表页的服务端缓存失效，这里刷新浏览器里的列表 query。`locale` 转交给 action。 */

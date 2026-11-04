@@ -34,9 +34,9 @@ Git hooks run through [husky](https://typicode.github.io/husky/): `git commit` f
 
 ## Tests
 
-`pnpm test` runs the unit tests with Vitest: every `*.test.*` file, kept next to the code it tests, except `*.db.test.*`. `vitest.config.mts` resolves `@/` like `tsconfig.json`.
+`pnpm test` runs every `*.test.*` file with Vitest, kept next to the code it tests, outside the Demo features, including the data-layer tests (`*.db.test.*`) of the project's own features, which need their database. `vitest.config.mts` resolves `@/` like `tsconfig.json`.
 
-`pnpm demo:test` runs the Demo backend's data-layer tests (`*.db.test.*`, `vitest.demo.config.mts`) against real Postgres and object storage on the `test` dataset, its own database and bucket. It starts the services, so it needs Docker, which keeps it out of `pnpm check`.
+`pnpm demo:test` runs the Demo features' tests (`features/demo-*/**/*.test.*`, `vitest.demo.config.mts`). Their data-layer tests (`*.db.test.*`) run against real Postgres and object storage on the `test` dataset, its own database and bucket. It starts the services, so it needs Docker, which keeps it out of `pnpm check`.
 
 End-to-end specs run with Playwright in two sets, each against its own production build and port, so they can run side by side and alongside `pnpm dev`. Install the browser once with `pnpm exec playwright install chromium`.
 

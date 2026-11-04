@@ -15,7 +15,7 @@ import { createTaskMutationOptions } from "../api/create-task";
 import {
   type CreateTaskInput,
   createTaskInputSchema,
-} from "../api/create-task-request";
+} from "../api/create-task-schema";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
 
 const defaultValues: CreateTaskInput = { name: "", prompt: "" };

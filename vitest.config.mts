@@ -1,12 +1,19 @@
 import { fileURLToPath } from "node:url";
 import { configDefaults, defineConfig } from "vitest/config";
 
-// 单元测试（pnpm test）。只认 *.test.*：e2e/ 下的 *.spec.ts 由 Playwright 运行（playwright.config.ts、playwright.demo.config.ts），
-// 连接 Demo 数据库的 *.db.test.* 由 pnpm demo:test 运行（vitest.demo.config.mts），这里不依赖 Docker。
+// pnpm test 跑 Demo feature 以外的所有 *.test.*，包括项目自己 feature 的数据库测试（*.db.test.*）。Demo feature
+// （features/demo-*）的测试由 pnpm demo:test 运行（vitest.demo.config.mts）；e2e/ 下的 *.spec.ts 由 Playwright 运行
+// （playwright.config.ts、playwright.demo.config.ts）。
 export default defineConfig({
   resolve: {
-    // 和 tsconfig.json 的 paths 一致，被测代码里的 @/ 才能解析。
-    alias: { "@": fileURLToPath(new URL(".", import.meta.url)) },
+    alias: {
+      // 和 tsconfig.json 的 paths 一致，被测代码里的 @/ 才能解析。
+      "@": fileURLToPath(new URL(".", import.meta.url)),
+      // 数据层模块带 import "server-only"，它在 react-server 条件之外会直接抛错；测试进程不是 React 服务端环境。
+      "server-only": fileURLToPath(
+        new URL("node_modules/server-only/empty.js", import.meta.url),
+      ),
+    },
   },
   test: {
     include: ["**/*.test.?(c|m)[jt]s?(x)"],
@@ -14,7 +21,7 @@ export default defineConfig({
     exclude: [
       ...configDefaults.exclude,
       ".claude/worktrees/**",
-      "**/*.db.test.?(c|m)[jt]s?(x)",
+      "features/demo-*/**",
     ],
     environment: "node",
   },

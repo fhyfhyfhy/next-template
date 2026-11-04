@@ -1,10 +1,10 @@
 import { fetchApi } from "@/lib/fetch";
 import { infiniteQueryOptions } from "@/lib/react-query";
 
+import { FEED_PAGE_SIZE } from "../constants/feed";
 import { feedPageSchema } from "../types/task";
 import { taskListKey } from "./get-tasks";
 
-export const FEED_PAGE_SIZE = 6;
 /** 第一页没有游标，pageParam 用空字符串表示。 */
 export const FIRST_FEED_PAGE = "";
 

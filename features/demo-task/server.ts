@@ -1,7 +1,7 @@
 import "server-only";
 
-export { getCachedFeedSnapshot } from "./api/get-cached-feed-snapshot";
-export { getCachedTaskPage } from "./api/get-cached-task-page";
+export { getCachedFeedSnapshot } from "./server/get-cached-feed-snapshot";
+export { getCachedTaskPage } from "./server/get-cached-task-page";
 export { createComment, deleteComment, listComments } from "./server/comments";
 export {
   assertDemoBackendEnabled,
