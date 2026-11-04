@@ -5,5 +5,4 @@ import { env } from "@/lib/env";
  * demo:* 命令会设置 `DEMO_DATABASE_URL`（scripts/run-next.mjs），所以用它识别 demo build。
  */
 export const DEMOS_SERVED =
-  process.env.NODE_ENV !== "production" ||
-  env.DEMO_DATABASE_URL !== undefined;
+  process.env.NODE_ENV !== "production" || env.DEMO_DATABASE_URL !== undefined;
