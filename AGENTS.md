@@ -16,6 +16,15 @@ Knowledge about this repo that later sessions need goes into the repo, placed pe
 - When adding tests, reuse the existing test entry and select scope through runner arguments. Add a separate entry only when execution setup differs, such as browser tests requiring a server.
 - When adding source checks, extend the existing linter through configuration, plugins, or local rules. Use a standalone checker only when the linter cannot support the required inputs or execution, and document that limitation.
 
+## Environment variables
+
+A value read while prerendering is frozen into the static output. `lib/env.ts` fails the build when a required variable is missing there, but two cases pass silently:
+
+- The build environment also sets the variable, with a different value than at runtime.
+- The variable is optional or has a default, and the build environment lacks it.
+
+Read a value that must come from the runtime after `await connection()`.
+
 ## Agent skills
 
 ### Issue tracker

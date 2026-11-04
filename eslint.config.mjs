@@ -118,7 +118,7 @@ const ENV_ACCESS = [
   {
     selector: `MemberExpression[object.name='process'][property.name='env']:not(MemberExpression[computed=false][property.name=${FRAMEWORK_ENV}] > .object)`,
     message:
-      "Read environment variables through env from @/lib/env, which declares and validates them. See .claude/rules/env.md.",
+      "Read environment variables through env from @/lib/env, which declares and validates them. See AGENTS.md § Environment variables.",
   },
 ];
 
