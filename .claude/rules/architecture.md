@@ -104,16 +104,6 @@ Architecture checks are configured in [eslint.config.mjs](../../eslint.config.mj
 
 The project has no conditional `#` package imports. The `architecture/package-imports` rule rejects them: their resolution depends on the runtime condition, which the layer and cycle checks do not follow. Import project modules through `@/` or relative paths; extend the architecture checks before introducing one.
 
-### Environment variables
-
-Application code, `proxy.ts`, and `instrumentation.ts` read the variables the app's deployment sets through `readEnv` and `requireEnv` from `lib/env.ts`, which lists each one with its schema; add a variable there before reading it. `lib/env.ts` only reads and validates. What a value means belongs to the owner that acts on it, such as `isDemoBackendEnabled` in `features/demo-task/server/connection.ts` and `DEMOS_SERVED` in `app/demos.ts`.
-
-Variables that Node and Next define, `NODE_ENV` and those starting with `NEXT_` except `NEXT_PUBLIC_`, are read as `process.env.NAME`: the bundler replaces some of them, such as `NODE_ENV` and `NEXT_RUNTIME`, with constants and drops the branches they rule out.
-
-`lib/env.ts` is server-only. A `NEXT_PUBLIC_` variable for the browser goes in a module of its own that reads it as `process.env.NAME`, the only form Next inlines, with its own exemption in the ESLint rule.
-
-`no-restricted-syntax` in [eslint.config.mjs](../../eslint.config.mjs) enforces this. Config files and `scripts/` run outside the app and read `process.env` directly.
-
 ### Component directories
 
 A simple component is a single file. A directory can contain a main component with private subcomponents, or a compound component with several public parts:

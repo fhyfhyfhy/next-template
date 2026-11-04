@@ -112,13 +112,13 @@ const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
 
 // 应用的部署设置的环境变量只通过 lib/env.ts 读。Node 和 Next 定义的变量直接读，只放行 `process.env.名字`
-// 这种写法：打包器只替换这种写法（.claude/rules/architecture.md「Environment variables」）。
+// 这种写法：打包器只替换这种写法。
 const FRAMEWORK_ENV = "/^(NODE_ENV|(__)?NEXT_(?!PUBLIC_)\\w+)$/";
 const ENV_ACCESS = [
   {
     selector: `MemberExpression[object.name='process'][property.name='env']:not(MemberExpression[computed=false][property.name=${FRAMEWORK_ENV}] > .object)`,
     message:
-      "Read environment variables with readEnv or requireEnv from @/lib/env, which declares and validates them. See .claude/rules/architecture.md.",
+      "Read environment variables through env from @/lib/env, which declares and validates them. See .claude/rules/env.md.",
   },
 ];
 

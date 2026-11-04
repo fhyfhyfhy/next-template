@@ -1,5 +1,5 @@
 import { sql } from "kysely";
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { UPLOAD_ALREADY_USED } from "@/features/demo-upload";
 import { createUpload } from "@/features/demo-upload/server";
@@ -782,8 +782,7 @@ describe("故障实验室", () => {
 
 describe("Demo 后端没有启用时", () => {
   test("Route Handler 一律返回 404", async () => {
-    const url = process.env.DEMO_DATABASE_URL;
-    delete process.env.DEMO_DATABASE_URL;
+    vi.stubEnv("DEMO_DATABASE_URL", ""); // lib/env.ts 把空字符串当作没设置
     try {
       const response = await getTaskOverHttp(
         new Request("http://localhost/api/demo/tasks/task-01"),
@@ -791,7 +790,7 @@ describe("Demo 后端没有启用时", () => {
       );
       expect(response.status).toBe(404);
     } finally {
-      process.env.DEMO_DATABASE_URL = url;
+      vi.unstubAllEnvs();
     }
   });
 });

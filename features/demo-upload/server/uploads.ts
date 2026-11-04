@@ -4,14 +4,17 @@ import { nanoid } from "nanoid";
 import { DatabaseError } from "pg";
 
 import { badRequest, conflict, notFound } from "@/lib/domain-error";
-import { requireEnv } from "@/lib/env";
 
 import {
   UPLOAD_ALREADY_USED,
   UPLOAD_NOT_READY,
 } from "../constants/error-codes";
 import { isUploadPurpose, UPLOAD_PURPOSES } from "../constants/upload-purposes";
-import { getUploadDb, getUploadStorage } from "./connection";
+import {
+  getUploadDb,
+  getUploadStorage,
+  uploadStorageConfig,
+} from "./connection";
 import type { UploadTables } from "./tables";
 
 /** 签发的上传 URL 的有效期。清理任务要等得比它久得多，才不会删掉还在上传的文件（cleanup.ts）。 */
@@ -293,7 +296,7 @@ export async function restoreSeedUploads(
   uploads: readonly SeedUpload[],
   executor?: Executor,
 ) {
-  const bucket = requireEnv("DEMO_STORAGE_BUCKET");
+  const { bucket } = uploadStorageConfig();
   if (!writtenSeedBuckets.has(bucket)) {
     const storage = getUploadStorage();
     await Promise.all(

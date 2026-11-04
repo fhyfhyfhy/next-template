@@ -6,10 +6,9 @@ import {
   SEED_KEY_PREFIX,
   type SeedUpload,
 } from "@/features/demo-upload/server";
-import { requireEnv } from "@/lib/env";
 
 import type { TaskStatus } from "../types/task-filters";
-import { getTaskDb } from "./connection";
+import { demoDatabaseUrl, getTaskDb } from "./connection";
 import { cubeGlb, generatedCoverSvg } from "./generated-files";
 import type { TaskTables } from "./tables";
 
@@ -157,7 +156,7 @@ const seeded = new Map<string, Promise<void>>();
  * 读到的总是种子数据。写过一次之后不再写，即使任务后来全被删掉：恢复种子数据要用重置。
  */
 export function ensureDemoSeeded() {
-  const url = requireEnv("DEMO_DATABASE_URL");
+  const url = demoDatabaseUrl();
   let promise = seeded.get(url);
   if (!promise) {
     promise = getTaskDb()
