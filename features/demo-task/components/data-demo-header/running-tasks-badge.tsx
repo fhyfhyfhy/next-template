@@ -13,7 +13,7 @@ const POLL_INTERVAL_MS = 10_000;
 
 /** 进行中（排队中和生成中）的任务数。 */
 export function RunningTasksBadge() {
-  const t = useTranslations("demo-task.runningTasksBadge");
+  const t = useTranslations("demo-task");
   const { data } = useQuery({
     ...activeTasksQueryOptions(),
     refetchInterval: (query) =>
@@ -23,10 +23,10 @@ export function RunningTasksBadge() {
   return (
     <Badge
       variant={data.total > 0 ? "primary" : "muted"}
-      aria-label={t("label", { total: data.total })}
+      aria-label={t("runningTasksBadge.label", { total: data.total })}
     >
       {data.total > 0 && <IconLoader2 className="animate-spin" aria-hidden />}
-      {t("text", { total: data.total })}
+      {t("runningTasksBadge.text", { total: data.total })}
     </Badge>
   );
 }

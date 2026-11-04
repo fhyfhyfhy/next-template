@@ -8,6 +8,7 @@ import { toast, Toaster } from "@/components/ui/toaster";
 import { SchemaValidationError, shouldRetryRequest } from "@/lib/fetch";
 import {
   environmentManager,
+  type FailedRequest,
   type HandleRequestErrorOptions,
   QueryClient,
   QueryClientProvider,
@@ -15,7 +16,8 @@ import {
 
 function handleRequestError(
   error: unknown,
-  { suppressErrorToast }: HandleRequestErrorOptions,
+  { suppressErrorToast, errorMessage }: HandleRequestErrorOptions,
+  { id }: FailedRequest,
 ) {
   // schema 不匹配说明前后端契约已经不一致，调用方不弹提示时也要留下记录。
   if (error instanceof SchemaValidationError) console.error(error);
@@ -26,12 +28,14 @@ function handleRequestError(
     typeof suppressErrorToast === "function"
       ? suppressErrorToast(error)
       : suppressErrorToast;
-  if (!suppressed) {
-    toast.error(<RequestErrorMessage />, { id: "request-error" });
-  }
+  if (suppressed) return;
+  const message =
+    typeof errorMessage === "function" ? errorMessage(error) : errorMessage;
+  // 按请求区分提示：同一个 query 反复失败（比如轮询）只留一个，无关的请求各自提示。
+  toast.error(message ?? <RequestErrorMessage />, { id });
 }
 
-// 这个 handler 在 React 之外调用，取不到翻译；toast 的内容在 <Toaster /> 里渲染，那里能用 hook。
+// 这个 handler 在 React 之外调用，取不到翻译；通用文案在 <Toaster /> 里渲染，那里能用 hook。
 function RequestErrorMessage() {
   const t = useTranslations("app");
   return t("requestError");

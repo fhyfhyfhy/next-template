@@ -43,7 +43,8 @@
   },
   "demoReset": {
     "button": "重置 Demo 数据",
-    "done": "已重置"
+    "done": "已重置",
+    "failed": "重置 Demo 数据失败，请稍后重试"
   },
   "demoNote": {
     "label": "这页演示什么"
@@ -55,7 +56,8 @@
     "promptLabel": "Prompt",
     "promptPlaceholder": "描述要生成的模型",
     "submit": "创建任务",
-    "submitting": "创建中…"
+    "submitting": "创建中…",
+    "failed": "创建任务失败，请稍后重试"
   },
   "taskList": {
     "label": "任务列表",
@@ -117,27 +119,31 @@
     "formLabel": "重命名任务",
     "nameLabel": "新名称",
     "save": "保存",
-    "cancel": "取消"
+    "cancel": "取消",
+    "failed": "重命名任务失败，请稍后重试"
   },
   "taskActions": {
     "retry": "重试",
     "download": "下载模型",
     "downloadFailed": "下载失败，请稍后重试",
-    "notRetryable": "任务状态已变化，已刷新为最新状态。"
+    "notRetryable": "任务状态已变化，已刷新为最新状态。",
+    "retryFailed": "重试任务失败，请稍后重试"
   },
   "taskCover": {
     "uploading": "上传中…",
     "change": "更换封面图",
     "notAnImage": "只能上传图片。",
     "tooLarge": "图片不能超过 {max} MB。",
-    "rejected": "图片没能设为封面，请重新选择。"
+    "rejected": "图片没能设为封面，请重新选择。",
+    "changeFailed": "更换封面失败，请稍后重试"
   },
   "deleteTask": {
     "trigger": "删除任务",
     "title": "删除“{name}”？",
     "description": "任务和它的评论都会被删除，不能恢复。",
     "cancel": "取消",
-    "confirm": "删除"
+    "confirm": "删除",
+    "failed": "删除任务失败，请稍后重试"
   },
   "taskLogs": {
     "title": "生成日志",
@@ -157,7 +163,9 @@
     "formLabel": "发表评论",
     "inputLabel": "写评论",
     "placeholder": "写下你的评论",
-    "submit": "发表"
+    "submit": "发表",
+    "createFailed": "发表评论失败，请稍后重试",
+    "deleteFailed": "删除评论失败，请稍后重试"
   },
   "queryErrorBoundary": {
     "retry": "重试"
@@ -222,7 +230,8 @@
       "unexpected": "抛出意外错误",
       "businessError": "按业务错误 {code} 拒绝"
     },
-    "timesLeft": "还剩 {count} 次"
+    "timesLeft": "还剩 {count} 次",
+    "updateFailed": "更新故障设置失败，请稍后重试"
   },
   "faultForm": {
     "operation": "操作",
@@ -243,6 +252,10 @@
   "defaultLatency": {
     "label": "默认延迟",
     "readFailed": "读取默认延迟失败",
-    "reading": "读取默认延迟…"
+    "reading": "读取默认延迟…",
+    "updateFailed": "修改默认延迟失败，请稍后重试"
+  },
+  "favorite": {
+    "failed": "更新收藏失败，请稍后重试"
   }
 }

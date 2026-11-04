@@ -12,7 +12,7 @@ import { LabSection } from "./lab-section";
 
 const TASK_IDS = ["task-10", "task-12", "task-13"];
 
-/** 几个已有数据的 query 同时刷新失败，各自都会触发全局提示，但它们共用一个 toast ID，只显示一个。 */
+/** 几个已有数据的 query 同时刷新失败：它们是不同的请求，各弹一个提示；同一个 query 再次失败只更新它自己的那个。 */
 export function LabConcurrentFailures() {
   const t = useTranslations("demo-task");
   const injectFault = useInjectDemoFault();

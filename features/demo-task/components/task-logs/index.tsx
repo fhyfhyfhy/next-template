@@ -12,7 +12,7 @@ type StreamState = "streaming" | "ended" | "failed";
  * 卸载时中止连接。调用方在任务进入或离开进行中状态时换 key：结束时重新挂载读完整日志，重试后重新订阅。
  */
 export function TaskLogs({ taskId }: { taskId: string }) {
-  const t = useTranslations("demo-task.taskLogs");
+  const t = useTranslations("demo-task");
   const [lines, setLines] = useState<string[]>([]);
   const [state, setState] = useState<StreamState>("streaming");
 
@@ -34,21 +34,23 @@ export function TaskLogs({ taskId }: { taskId: string }) {
 
   return (
     <section>
-      <h2 className="mb-2 text-sm font-medium">{t("title")}</h2>
+      <h2 className="mb-2 text-sm font-medium">{t("taskLogs.title")}</h2>
       <div
         role="log"
-        aria-label={t("title")}
+        aria-label={t("taskLogs.title")}
         className="max-h-48 overflow-y-auto rounded-panel bg-secondary p-3 font-mono text-xs/5 text-secondary-foreground"
       >
         {lines.length === 0 && state === "streaming" && (
-          <p className="opacity-60">{t("waiting")}</p>
+          <p className="opacity-60">{t("taskLogs.waiting")}</p>
         )}
         {lines.map((line, index) => (
           // 日志只追加不重排，下标就是稳定的 key。
           <p key={index}>{line}</p>
         ))}
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">{t(state)}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t(`taskLogs.${state}`)}
+      </p>
     </section>
   );
 }

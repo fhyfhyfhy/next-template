@@ -123,16 +123,22 @@ test("5xx 会重试，4xx、2xx 上的 error 和 schema 不匹配不重试", asy
     .toContain("SchemaValidationError");
 });
 
-test("几个请求同时失败只弹一个提示", async ({ page }) => {
+test("无关的请求同时失败各弹一个提示，同一个请求再次失败不增加提示", async ({
+  page,
+}) => {
   const demo = section(page, "同时失败");
   await expect(demo.getByRole("listitem")).toHaveCount(3);
+  const refreshAll = demo.getByRole("button", {
+    name: "同时刷新（都会失败）",
+  });
 
-  await demo.getByRole("button", { name: "同时刷新（都会失败）" }).click();
+  await refreshAll.click();
+  await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(3);
 
-  await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(1);
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言一段时间内没有冒出第二个提示，等待是断言的一部分。
+  await refreshAll.click();
+  // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言一段时间内没有冒出新的提示，等待是断言的一部分。
   await page.waitForTimeout(500);
-  await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(1);
+  await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(3);
 });
 
 /** 打开故障实验室并等它 hydrate：故障列表只在浏览器里请求，和 Draft Mode 开关在同一个 Suspense 边界里。 */

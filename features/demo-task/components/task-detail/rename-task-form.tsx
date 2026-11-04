@@ -28,7 +28,7 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
     () => z.object({ name: createTaskNameSchema(t) }),
     [t],
   );
-  const rename = useMutation(updateTaskMutationOptions(locale));
+  const rename = useMutation(updateTaskMutationOptions(t, locale));
   const form = useForm({
     defaultValues: { name: task.name },
     validationLogic: revalidateLogic(),

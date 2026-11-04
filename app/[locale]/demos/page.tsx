@@ -7,8 +7,8 @@ import { getTranslations } from "next-intl/server";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("app.demos");
-  return { title: t("metadataTitle") };
+  const t = await getTranslations("app");
+  return { title: t("demos.metadataTitle") };
 }
 
 const sections = [
@@ -21,21 +21,21 @@ const sections = [
 ] as const;
 
 export default function DemosPage() {
-  const t = useTranslations("app.demos");
+  const t = useTranslations("app");
   return (
     <main className="mx-auto max-w-5xl px-5 py-12 sm:px-8 lg:py-20">
       <div className="flex items-center justify-between gap-4">
         <p className="font-mono text-[10px] tracking-[0.16em] text-muted-foreground">
-          {t("eyebrow")}
+          {t("demos.eyebrow")}
         </p>
         <LocaleSwitcher />
       </div>
       <h1 className="mt-5 text-5xl font-medium tracking-[-0.055em] sm:text-6xl">
-        {t("title")}
+        {t("demos.title")}
         <span className="text-primary">.</span>
       </h1>
       <p className="mt-5 max-w-2xl text-base/7 text-muted-foreground">
-        {t("intro")}
+        {t("demos.intro")}
       </p>
       <ul className="mt-10 grid gap-4">
         {sections.map((section) => (
@@ -46,10 +46,10 @@ export default function DemosPage() {
             >
               <span>
                 <span className="block text-lg font-medium">
-                  {t(`sections.${section.key}.title`)}
+                  {t(`demos.sections.${section.key}.title`)}
                 </span>
                 <span className="mt-1 block text-sm text-muted-foreground">
-                  {t(`sections.${section.key}.description`)}
+                  {t(`demos.sections.${section.key}.description`)}
                 </span>
               </span>
               <IconArrowRight

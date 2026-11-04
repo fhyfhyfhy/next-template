@@ -2,11 +2,12 @@ import { isActionError, unwrapActionResult } from "@/lib/action-result";
 import { mutationOptions } from "@/lib/react-query";
 
 import { TASK_NOT_RETRYABLE } from "../constants/error-codes";
+import type { DemoTaskTranslator } from "../types/translator";
 import { getTaskQueryOptions } from "./get-task";
 import { taskListKey } from "./get-tasks";
 import { retryTaskAction } from "./retry-task-action";
 
-export const retryTaskMutationOptions = () =>
+export const retryTaskMutationOptions = (t: DemoTaskTranslator) =>
   mutationOptions({
     mutationFn: async (variables: { taskId: string }) =>
       unwrapActionResult(await retryTaskAction(variables)),
@@ -24,6 +25,7 @@ export const retryTaskMutationOptions = () =>
       }
     },
     meta: {
+      errorMessage: t("taskActions.retryFailed"),
       suppressErrorToast: (error) => isActionError(error, TASK_NOT_RETRYABLE),
     },
   });

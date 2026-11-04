@@ -20,7 +20,7 @@ const DEBOUNCE_MS = 300;
  * query key 只来自 URL 里已提交的关键词。换关键词时旧请求被中止，新结果到达前继续显示旧结果。
  */
 export function TaskSearch() {
-  const t = useTranslations("demo-task.taskSearch");
+  const t = useTranslations("demo-task");
   const committed = useSearchParams().get("q") ?? "";
   const [input, setInput] = useState(committed);
   const [debounced] = useDebouncedValue(input.trim(), DEBOUNCE_MS);
@@ -51,13 +51,13 @@ export function TaskSearch() {
           aria-hidden
         />
         <label htmlFor="task-search" className="sr-only">
-          {t("label")}
+          {t("taskSearch.label")}
         </label>
         <Input
           id="task-search"
           type="search"
           value={input}
-          placeholder={t("placeholder")}
+          placeholder={t("taskSearch.placeholder")}
           className="pl-9"
           onChange={(event) => setInput(event.target.value)}
         />
@@ -68,20 +68,20 @@ export function TaskSearch() {
       >
         {searching && (
           <>
-            {search.isPlaceholderData && t("updating")}
+            {search.isPlaceholderData && t("taskSearch.updating")}
             {!search.isPlaceholderData &&
               search.data &&
-              t("found", { count: search.data.length })}
+              t("taskSearch.found", { count: search.data.length })}
             {!search.data && search.error && (
-              <span className="text-destructive">{t("failed")}</span>
+              <span className="text-destructive">{t("taskSearch.failed")}</span>
             )}
-            {!search.data && search.isFetching && t("searching")}
+            {!search.data && search.isFetching && t("taskSearch.searching")}
           </>
         )}
       </div>
       {searching && search.data && search.data.length > 0 && (
         <ul
-          aria-label={t("results")}
+          aria-label={t("taskSearch.results")}
           className={cn(
             "mt-2 divide-y divide-border rounded-panel border border-border bg-card transition-opacity",
             search.isPlaceholderData && "opacity-50",

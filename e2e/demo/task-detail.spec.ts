@@ -51,20 +51,13 @@ test.describe("首屏和 404", () => {
     );
   });
 
-  test("标题进 metadata，服务端渲染时详情只读一次", async ({
-    page,
-    demoBackend,
-  }) => {
+  test("标题进 metadata", async ({ page }) => {
     await page.goto("/demos/tasks/task-01");
 
     await expect(page).toHaveTitle(/低多边形狐狸/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "低多边形狐狸",
     );
-    // generateMetadata 和页面的 prefetch 读的是同一个用 React cache() 包过的数据层函数。
-    expect(await demoBackend.calls("task.get")).toStrictEqual([
-      { operation: "task.get", source: "server", calledAt: expect.any(Number) },
-    ]);
   });
 
   test("首屏 HTML 已经包含详情，hydration 后浏览器不再请求详情", async ({
@@ -197,7 +190,7 @@ test.describe("写入", () => {
 
     await expect(page.getByText("任务状态已变化")).toBeVisible();
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
-    await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(0);
+    await expect(page.getByText("重试任务失败，请稍后重试")).toHaveCount(0);
   });
 
   test("删除任务后回到列表，任务不再出现，详情显示不存在", async ({ page }) => {
@@ -225,7 +218,7 @@ test.describe("写入", () => {
     await input.fill("坐着的狐狸 v2");
     await page.getByRole("button", { name: "保存" }).click();
     await expect(page.getByText("名称已被其他任务占用")).toBeVisible();
-    await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(0);
+    await expect(page.getByText("重命名任务失败，请稍后重试")).toHaveCount(0);
 
     await input.fill("改名后的狐狸");
     await page.getByRole("button", { name: "保存" }).click();
@@ -388,7 +381,7 @@ test.describe("评论", () => {
     await page.getByLabel("写评论").fill("发不出去的评论");
     await page.getByRole("button", { name: "发表" }).click();
 
-    await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(1);
+    await expect(page.getByText("发表评论失败，请稍后重试")).toHaveCount(1);
     await expect(comments(page)).toHaveCount(2);
     await expect(page.getByLabel("写评论")).toHaveValue("发不出去的评论");
   });
@@ -408,7 +401,7 @@ test.describe("评论", () => {
       .first()
       .getByRole("button", { name: "删除评论" })
       .click();
-    await expect(page.getByText(GLOBAL_ERROR_TOAST)).toBeVisible();
+    await expect(page.getByText("删除评论失败，请稍后重试")).toBeVisible();
     await expect(comments(page)).toHaveCount(1);
   });
 

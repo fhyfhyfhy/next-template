@@ -66,12 +66,16 @@ const FEATURE_LAYERS = [
   files: [`features/*/${dir}/**`],
 }));
 
-const queryPlugin = withWrapperImports(pluginQuery);
+// TanStack 官方规则和本地规则合成一个插件，规则名统一用官方的前缀 @tanstack/query/*。
+// withWrapperImports 让官方规则识别从 @/lib/react-query 封装的 import。
+const tanstackQueryPlugin = withWrapperImports(pluginQuery);
+tanstackQueryPlugin.rules["mutation-callbacks"] = mutationCallbacksRule;
+tanstackQueryPlugin.rules["api-file-factories"] = apiFileFactoriesRule;
 const QUERY_LIBRARY_MESSAGE =
-  "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-fetching.md.";
+  "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-flow.md.";
 
-// i18n 里借用 no-restricted-imports、no-restricted-syntax 的两组限制。这两条规则还管着别的事，所以这两组合进
-// 下面的 RESTRICTED_IMPORTS 和 RESTRICTED_SYNTAX；i18n 的其余检查和这两组的例外在配置数组的「i18n」一段。
+// i18n 里借用 no-restricted-imports、no-restricted-syntax 的几组限制。这两条规则还管着别的事，所以这几组合进
+// 下面的 RESTRICTED_IMPORTS 和 RESTRICTED_SYNTAX；i18n 的其余检查和这几组的例外在配置数组的「i18n」一段。
 //
 // 文案只经 lib/i18n/client-messages 的 ClientMessages 下发：直接用 next-intl 的 provider 和 useMessages，
 // i18n/client-namespaces 就查不到。
@@ -93,6 +97,22 @@ const DATE_TIME_FORMATTING = [
     selector:
       "MemberExpression[object.name='Intl'][property.name='DateTimeFormat']",
     message: DATE_TIME_MESSAGE,
+  },
+];
+// 翻译函数只按 owner 的 namespace 取，key 写完整路径：一个 feature 只有一种 t，组件、options 工厂和
+// schema 工厂之间可以直接传递。
+const TRANSLATOR_NAMESPACE_MESSAGE =
+  'Pass only the owner\'s namespace, such as "demo-task", and write the full key path at each call, such as t("comments.createFailed"). See .claude/rules/i18n.md.';
+const TRANSLATOR_NAMESPACE = [
+  {
+    selector:
+      "CallExpression[callee.name=/^(useTranslations|getTranslations)$/] > Literal[value=/\\./]",
+    message: TRANSLATOR_NAMESPACE_MESSAGE,
+  },
+  {
+    selector:
+      "CallExpression[callee.name='getTranslations'] > ObjectExpression > Property[key.name='namespace'] > Literal[value=/\\./]",
+    message: TRANSLATOR_NAMESPACE_MESSAGE,
   },
 ];
 
@@ -123,7 +143,11 @@ const ENV_ACCESS = [
 ];
 
 // 所有应用代码都受的 no-restricted-syntax 限制。
-const RESTRICTED_SYNTAX = [...DATE_TIME_FORMATTING, ...ENV_ACCESS];
+const RESTRICTED_SYNTAX = [
+  ...DATE_TIME_FORMATTING,
+  ...TRANSLATOR_NAMESPACE,
+  ...ENV_ACCESS,
+];
 
 // 给豁免 RESTRICTED_SYNTAX 里一组限制的文件用，其余限制照旧。只设置级别的配置会沿用前面的选项，
 // 所以没有剩下的限制时直接关掉这条规则。
@@ -226,12 +250,7 @@ const eslintConfig = defineConfig([
       "simple-import-sort": simpleImportSort,
       architecture: createArchitecturePlugin(PROJECT_ROOT),
       naming: createNamingPlugin(PROJECT_ROOT),
-      "data-fetching": {
-        rules: {
-          "mutation-callbacks": mutationCallbacksRule,
-          "api-file-factories": apiFileFactoriesRule,
-        },
-      },
+      "@tanstack/query": tanstackQueryPlugin,
     },
     rules: {
       // 按 importGroups 固定顺序并支持自动修复，减少增删依赖时无关的排序 diff。
@@ -250,7 +269,7 @@ const eslintConfig = defineConfig([
       // 源码路径统一用 kebab-case，同时保留 Next.js 路由目录的特殊命名约定。
       "naming/kebab-case": "error",
       // 保留 factory 负责的缓存更新；调用方的成功、失败及结束回调放在 mutate 的第二个参数。
-      "data-fetching/mutation-callbacks": "error",
+      "@tanstack/query/mutation-callbacks": "error",
       // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。
       "import/no-relative-packages": "error",
       "no-restricted-imports": ["error", RESTRICTED_IMPORTS],
@@ -275,11 +294,11 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // 复用 TanStack 的严格推荐检查；queryPlugin 让这些规则识别项目封装的 import。
+  // 复用 TanStack 的严格推荐检查。
   ...pluginQuery.configs["flat/recommended-strict"].map((config) => ({
     ...config,
     files: [SOURCE_GLOB],
-    plugins: { "@tanstack/query": queryPlugin },
+    plugins: { "@tanstack/query": tanstackQueryPlugin },
   })),
   {
     // 只查应用代码目录：scripts/ 和根目录配置文件不经过 Next.js 打包，解析不了 @/。
@@ -324,6 +343,7 @@ const eslintConfig = defineConfig([
   // ---- i18n（.claude/rules/i18n.md）----
   // - i18next/no-literal-string：用户看得到的文案放进 messages/，用 t() 渲染。
   // - i18n/client-namespaces：每个 ClientMessages 下发的 namespace 和它包着的 Client Component 用到的一致。
+  // - TRANSLATOR_NAMESPACE：翻译函数只按 owner 的 namespace 取，随 RESTRICTED_SYNTAX 生效，没有例外。
   // - INTL_PROVIDER_RESTRICTION、DATE_TIME_FORMATTING：前面随 RESTRICTED_IMPORTS、RESTRICTED_SYNTAX 生效，
   //   这里只放它们的例外，所以这一段要排在设置那两条规则的配置之后。
   {
@@ -479,7 +499,7 @@ const eslintConfig = defineConfig([
     files: ["features/*/api/**"],
     rules: {
       // options 工厂跟着文件名里的 HTTP 方法走，读接口的工厂不会混进写接口的文件，反之亦然。
-      "data-fetching/api-file-factories": "error",
+      "@tanstack/query/api-file-factories": "error",
     },
   },
   // Playwright 推荐的 e2e 检查，比如不用固定时长的等待、expect.poll 必须 await。

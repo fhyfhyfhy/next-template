@@ -4,6 +4,7 @@ import {
   type QueryClient,
 } from "@/lib/react-query";
 
+import type { DemoTaskTranslator } from "../types/translator";
 import { getTaskQueryOptions, type Task } from "./get-task";
 import {
   favoriteTasksQueryOptions,
@@ -24,7 +25,7 @@ type CachedTaskList = TaskPage | InfiniteData<TaskPage> | Task[];
  * `mutationFn` 调用的 Server Action 同时让列表页的服务端缓存失效。全部任务页的收藏也走它，
  * 那一页自己的星标另用 `useOptimistic`（`FavoriteToggle`）。
  */
-export const updateTaskFavoriteMutationOptions = () =>
+export const updateTaskFavoriteMutationOptions = (t: DemoTaskTranslator) =>
   mutationOptions({
     mutationFn: ({ task, favorite }: UpdateTaskFavoriteVariables) =>
       updateTaskFavoriteAction({ taskId: task.id, favorite }),
@@ -61,6 +62,7 @@ export const updateTaskFavoriteMutationOptions = () =>
         queryKey: getTaskQueryOptions(task.id).queryKey,
       });
     },
+    meta: { errorMessage: t("favorite.failed") },
   });
 
 /** 和 `favoriteTasksQueryOptions` 的 `created_desc` 一致，乐观插入的位置就是重新请求后的位置。 */

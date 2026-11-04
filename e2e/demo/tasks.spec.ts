@@ -239,7 +239,7 @@ test("创建时名称被占用，错误显示在名称字段下，不弹全局�
   await page.getByRole("button", { name: "创建任务" }).click();
 
   await expect(page.getByText("名称已被其他任务占用")).toBeVisible();
-  await expect(page.getByText("请求失败，请稍后重试")).toHaveCount(0);
+  await expect(page.getByText("创建任务失败，请稍后重试")).toHaveCount(0);
 
   await page.getByLabel("名称").fill("低多边形狐狸 2");
   await expect(page.getByText("名称已被其他任务占用")).toHaveCount(0);
@@ -316,7 +316,7 @@ test("创建出错时弹全局提示，填的内容还在，重试能成功", as
   await page.getByLabel("Prompt").fill("一只狐狸");
   await page.getByRole("button", { name: "创建任务" }).click();
 
-  await expect(page.getByText("请求失败，请稍后重试")).toHaveCount(1);
+  await expect(page.getByText("创建任务失败，请稍后重试")).toHaveCount(1);
   await expect(page.getByLabel("名称")).toHaveValue("出错的任务");
   await expect(page.getByLabel("Prompt")).toHaveValue("一只狐狸");
 
@@ -360,7 +360,7 @@ test("收藏失败时星标恢复原状，只弹一个全局提示", async ({
 
   await star.click();
 
-  await expect(page.getByText("请求失败，请稍后重试")).toHaveCount(1);
+  await expect(page.getByText("更新收藏失败，请稍后重试")).toHaveCount(1);
   await expect(star).toHaveAttribute("aria-pressed", "false");
 });
 

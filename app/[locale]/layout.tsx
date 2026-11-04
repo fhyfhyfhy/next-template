@@ -14,8 +14,8 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("app.metadata");
-  return { title: t("title"), description: t("description") };
+  const t = await getTranslations("app");
+  return { title: t("metadata.title"), description: t("metadata.description") };
 }
 
 export default async function RootLayout({

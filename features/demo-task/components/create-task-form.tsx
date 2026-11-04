@@ -44,7 +44,7 @@ export function CreateTaskForm() {
   const t = useTranslations("demo-task");
   const locale = useLocale();
   const schema = useMemo(() => createTaskInputSchema(t), [t]);
-  const createTask = useMutation(createTaskMutationOptions(locale));
+  const createTask = useMutation(createTaskMutationOptions(t, locale));
   const form = useForm({
     defaultValues,
     validationLogic: revalidateLogic(),

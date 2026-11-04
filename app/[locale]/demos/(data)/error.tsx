@@ -12,13 +12,17 @@ interface DataDemoErrorProps {
 
 /** Data demo 页面渲染时遇到的意外错误，比如服务端读取时后端返回 5xx。 */
 export default function DataDemoError({ retry }: DataDemoErrorProps) {
-  const t = useTranslations("app.demos.dataError");
+  const t = useTranslations("app");
   return (
     <div className="py-16 text-center">
-      <h1 className="text-3xl font-medium tracking-tight">{t("title")}</h1>
-      <p className="mt-3 text-sm text-muted-foreground">{t("description")}</p>
+      <h1 className="text-3xl font-medium tracking-tight">
+        {t("demos.dataError.title")}
+      </h1>
+      <p className="mt-3 text-sm text-muted-foreground">
+        {t("demos.dataError.description")}
+      </p>
       <Button className="mt-6" onClick={retry}>
-        {t("retry")}
+        {t("demos.dataError.retry")}
       </Button>
     </div>
   );

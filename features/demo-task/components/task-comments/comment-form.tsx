@@ -37,7 +37,7 @@ export function CommentForm({ taskId }: { taskId: string }) {
   const hydrated = useHydrated();
   const t = useTranslations("demo-task");
   const commentSchema = useMemo(() => createCommentSchema(t), [t]);
-  const createComment = useMutation(createCommentMutationOptions(taskId));
+  const createComment = useMutation(createCommentMutationOptions(t, taskId));
   const form = useForm({
     defaultValues: { content: "" },
     validationLogic: revalidateLogic(),

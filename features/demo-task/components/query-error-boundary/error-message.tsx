@@ -15,7 +15,7 @@ interface ErrorMessageProps extends QueryErrorBoundaryProps {
 }
 
 export function ErrorMessage({ message, retry }: ErrorMessageProps) {
-  const t = useTranslations("demo-task.queryErrorBoundary");
+  const t = useTranslations("demo-task");
   const { reset } = useQueryErrorResetBoundary();
   return (
     <div
@@ -33,7 +33,7 @@ export function ErrorMessage({ message, retry }: ErrorMessageProps) {
           retry();
         }}
       >
-        {t("retry")}
+        {t("queryErrorBoundary.retry")}
       </Button>
     </div>
   );

@@ -16,15 +16,15 @@ import { updateTaskFavoriteMutationOptions } from "../../api/update-task-favorit
  * 由工厂同步浏览器里缓存的那些副本。
  */
 export function FavoriteToggle({ task }: { task: Task }) {
-  const t = useTranslations("demo-task.taskList");
+  const t = useTranslations("demo-task");
   const [optimisticFavorite, setOptimisticFavorite] = useOptimistic(
     task.favorite,
   );
-  const updateFavorite = useMutation(updateTaskFavoriteMutationOptions());
+  const updateFavorite = useMutation(updateTaskFavoriteMutationOptions(t));
   return (
     <button
       type="button"
-      aria-label={t("favorite")}
+      aria-label={t("taskList.favorite")}
       aria-pressed={optimisticFavorite}
       className="rounded-control p-1.5 text-muted-foreground outline-none hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring aria-pressed:text-primary"
       onClick={() => {

@@ -30,8 +30,9 @@ import {
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/demos/tasks/[id]">): Promise<Metadata> {
-  const t = await getTranslations("app.demos.taskDetail");
-  if (!isDemoBackendEnabled()) return { title: t("demoBackendOffTitle") };
+  const t = await getTranslations("app");
+  if (!isDemoBackendEnabled())
+    return { title: t("demos.taskDetail.demoBackendOffTitle") };
   const { id } = await params;
   // 和页面里的 prefetch 读的是同一个数据层函数，它用 React cache() 包过，一次渲染内只查一次库。connection()
   // 让读取只发生在真正响应请求的那次渲染里，原因见下面的 TaskDetailHydration。
@@ -41,7 +42,9 @@ export async function generateMetadata({
     throw error;
   });
   return {
-    title: t("metadataTitle", { name: task?.name ?? t("notFound.title") }),
+    title: t("demos.taskDetail.metadataTitle", {
+      name: task?.name ?? t("demos.taskDetail.notFound.title"),
+    }),
   };
 }
 
@@ -50,12 +53,12 @@ export async function generateMetadata({
 export default function TaskDetailPage({
   params,
 }: PageProps<"/[locale]/demos/tasks/[id]">) {
-  const t = useTranslations("app.demos.taskDetail.note");
+  const t = useTranslations("app");
   return (
     <>
       <DemoNote>
-        <p>{t("ownership")}</p>
-        <p>{t("tryIt")}</p>
+        <p>{t("demos.taskDetail.note.ownership")}</p>
+        <p>{t("demos.taskDetail.note.tryIt")}</p>
       </DemoNote>
       <Suspense fallback={<TaskDetailSkeleton />}>
         {params.then(({ id }) => (

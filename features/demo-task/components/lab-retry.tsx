@@ -51,7 +51,7 @@ type ScenarioKey = (typeof scenarios)[number]["key"];
 
 /** `shouldRetryRequest`：5xx 和网络错误最多重试 3 次；4xx、2xx 上的 error、schema 不匹配重试也不会成功，直接失败。 */
 export function LabRetry() {
-  const t = useTranslations("demo-task.labRetry");
+  const t = useTranslations("demo-task");
   const queryClient = useQueryClient();
   const injectFault = useInjectDemoFault();
   const options = getTaskQueryOptions(TASK_ID);
@@ -64,25 +64,28 @@ export function LabRetry() {
   function describeResult() {
     if (task.isFetching) {
       return task.failureCount > 0
-        ? t("retrying", { count: task.failureCount })
-        : t("requesting");
+        ? t("labRetry.retrying", { count: task.failureCount })
+        : t("labRetry.requesting");
     }
     if (task.status === "success") {
       return failures > 0
-        ? t("succeededAfterRetry", { count: failures })
-        : t("succeeded");
+        ? t("labRetry.succeededAfterRetry", { count: failures })
+        : t("labRetry.succeeded");
     }
     if (task.status === "error") {
       return failures > 1
-        ? t("failedAfterRetry", { count: failures - 1 })
-        : t("failedWithoutRetry");
+        ? t("labRetry.failedAfterRetry", { count: failures - 1 })
+        : t("labRetry.failedWithoutRetry");
     }
     return null;
   }
   const result = describeResult();
 
   return (
-    <LabSection title={t("title")} description={t("description")}>
+    <LabSection
+      title={t("labRetry.title")}
+      description={t("labRetry.description")}
+    >
       <div className="mb-4 flex flex-wrap gap-2">
         {scenarios.map(({ key, fault }) => (
           <Button
@@ -96,14 +99,14 @@ export function LabRetry() {
               await queryClient.resetQueries({ queryKey: options.queryKey });
             }}
           >
-            {t(`scenarios.${key}`)}
+            {t(`labRetry.scenarios.${key}`)}
           </Button>
         ))}
       </div>
       <p className="rounded-control bg-muted p-3 text-sm" aria-live="polite">
         {scenario && result
-          ? t("scenarioResult", {
-              scenario: t(`scenarios.${scenario}`),
+          ? t("labRetry.scenarioResult", {
+              scenario: t(`labRetry.scenarios.${scenario}`),
               result,
             })
           : result}
