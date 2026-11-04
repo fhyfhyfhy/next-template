@@ -1,3 +1,4 @@
+export { createUploadAction } from "./api/create-upload-action";
 export { uploadFile } from "./api/upload-file";
 export { UPLOAD_ALREADY_USED, UPLOAD_NOT_READY } from "./constants/error-codes";
 export {

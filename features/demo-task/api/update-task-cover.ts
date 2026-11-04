@@ -1,9 +1,9 @@
 import {
+  createUploadAction,
   UPLOAD_ALREADY_USED,
   UPLOAD_NOT_READY,
   uploadFile,
 } from "@/features/demo-upload";
-import { createUploadAction } from "@/features/demo-upload/actions";
 import { isActionError, unwrapActionResult } from "@/lib/action-result";
 import { mutationOptions } from "@/lib/react-query";
 

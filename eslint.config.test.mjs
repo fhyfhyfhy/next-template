@@ -22,7 +22,6 @@ const componentEntryRule = "architecture/component-entry";
 const componentExportsRule = "architecture/component-exports";
 const wrapperRule = "architecture/wrapper-imports";
 const rootRule = "architecture/root-imports";
-const packageImportsRule = "architecture/package-imports";
 const namingRule = "naming/kebab-case";
 const cases = [];
 const statements = {
@@ -578,13 +577,6 @@ for (const syntax of [
   "require",
   "importEquals",
 ]) {
-  addCase(`${syntax} 不能通过未支持的 package import 绕过架构检查`, {
-    from: "app/CASE.ts",
-    source: "#other",
-    syntax,
-    rule: packageImportsRule,
-    messageId: "unsupported",
-  });
   addCase(`${syntax} 禁止业务代码直接引用 React Query 原包`, {
     from: "app/CASE.ts",
     source: "@tanstack/react-query",
@@ -597,12 +589,6 @@ for (const syntax of [
     syntax,
   });
 }
-addCase("lib/fetch.ts 也不能使用 package import", {
-  from: "lib/fetch.ts",
-  source: "#credentials",
-  rule: packageImportsRule,
-  messageId: "unsupported",
-});
 addCase("React Query 原包的子路径也只能由封装引用", {
   from: "app/CASE.ts",
   source: "@tanstack/react-query/build/modern/index.js",

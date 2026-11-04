@@ -108,7 +108,7 @@ export function shouldRetryRequest(failureCount: number, error: unknown) {
 
 /**
  * 浏览器请求本 app 的接口（`/api` 下的 Route Handler），按 `schema` 校验响应体，返回 schema 的输出。
- * 只在浏览器里调用：服务端代码直接调用 feature 的数据层，不请求自己的 Route Handler（.claude/rules/data-layer.md），
+ * 只在浏览器里调用：服务端代码直接调用 feature 的数据层，不请求自己的 Route Handler（.claude/rules/data-fetching.md 的 Transport），
  * 在服务端调用时直接抛错。浏览器自己带着同源的 cookie，不另外附加凭证。
  * HTTP 非 2xx 或 2xx 的响应体只有 `error` 对象时抛 `ApiError`，响应体校验失败抛 `SchemaValidationError`；
  * 网络错误和 `signal` 的中止原样抛出。
