@@ -11,15 +11,17 @@ import { getCommentsQueryOptions } from "../../api/get-comments";
 import { DATE_TIME_FORMAT } from "../../constants/date-time";
 
 export function CommentList({ taskId }: { taskId: string }) {
-  const t = useTranslations("demo-task.comments");
+  const t = useTranslations("demo-task");
   // 服务端 dehydrate 的是 pending 的 query，这里接住它的 promise，未完成时由外层 Suspense 显示占位。
   const { data: comments } = useSuspenseQuery(getCommentsQueryOptions(taskId));
-  const deleteComment = useMutation(deleteCommentMutationOptions(taskId));
+  const deleteComment = useMutation(deleteCommentMutationOptions(t, taskId));
   if (comments.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
+    return (
+      <p className="text-sm text-muted-foreground">{t("comments.empty")}</p>
+    );
   }
   return (
-    <ul aria-label={t("listLabel")} className="space-y-2">
+    <ul aria-label={t("comments.listLabel")} className="space-y-2">
       {comments.map((comment) => (
         <li
           key={comment.id}
@@ -31,7 +33,7 @@ export function CommentList({ taskId }: { taskId: string }) {
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {comment.sending ? (
-                t("sending")
+                t("comments.sending")
               ) : (
                 <DateTime value={comment.createdAt} format={DATE_TIME_FORMAT} />
               )}
@@ -40,7 +42,7 @@ export function CommentList({ taskId }: { taskId: string }) {
           {!comment.sending && (
             <button
               type="button"
-              aria-label={t("delete")}
+              aria-label={t("comments.delete")}
               className="rounded-control p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
               onClick={() => deleteComment.mutate({ commentId: comment.id })}
             >

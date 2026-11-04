@@ -12,9 +12,9 @@ const PRESETS_MS = [0, 200, 500, 1000, 2000, 3000];
 
 /** 业务操作的默认延迟，选中后立即生效。 */
 export function DefaultLatencySelect() {
-  const t = useTranslations("demo-task.defaultLatency");
+  const t = useTranslations("demo-task");
   const latency = useQuery(getDemoLatencyQueryOptions());
-  const update = useMutation(updateDemoLatencyMutationOptions());
+  const update = useMutation(updateDemoLatencyMutationOptions(t));
 
   if (latency.data !== undefined) {
     // 当前值可能不在预设里（比如经控制接口设成了别的值），补进选项才能显示出来。
@@ -24,7 +24,7 @@ export function DefaultLatencySelect() {
     return (
       <div className="mb-4 max-w-40">
         <OptionSelect
-          label={t("label")}
+          label={t("defaultLatency.label")}
           value={String(latency.data)}
           options={values.map((value) => ({
             value: String(value),
@@ -37,7 +37,9 @@ export function DefaultLatencySelect() {
   }
   return (
     <p className="mb-4 text-sm text-muted-foreground">
-      {latency.error ? t("readFailed") : t("reading")}
+      {latency.error
+        ? t("defaultLatency.readFailed")
+        : t("defaultLatency.reading")}
     </p>
   );
 }

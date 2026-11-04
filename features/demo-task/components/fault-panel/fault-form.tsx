@@ -19,7 +19,7 @@ const TIMES = ["1", "3", "always"] as const;
 type Times = (typeof TIMES)[number];
 
 export function FaultForm() {
-  const t = useTranslations("demo-task.faultForm");
+  const t = useTranslations("demo-task");
   const injectFault = useInjectDemoFault();
   const [operation, setOperation] = useState<DemoOperation>("task.get");
   const [kind, setKind] = useState<FaultKindOption>("latency");
@@ -28,29 +28,29 @@ export function FaultForm() {
   return (
     <div className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr_auto] sm:items-end">
       <OptionSelect
-        label={t("operation")}
+        label={t("faultForm.operation")}
         value={operation}
         options={OPERATIONS.map((value) => ({ value, label: value }))}
         onChange={setOperation}
       />
       <OptionSelect
-        label={t("kind")}
+        label={t("faultForm.kind")}
         value={kind}
         options={FAULT_KINDS.map(({ value, labelKey }) => ({
           value,
-          label: t(`kinds.${labelKey}`),
+          label: t(`faultForm.kinds.${labelKey}`),
         }))}
         onChange={setKind}
       />
       <OptionSelect
-        label={t("times")}
+        label={t("faultForm.times")}
         value={times}
         options={TIMES.map((value) => ({
           value,
           label:
             value === "always"
-              ? t("always")
-              : t("nextTimes", { count: Number(value) }),
+              ? t("faultForm.always")
+              : t("faultForm.nextTimes", { count: Number(value) }),
         }))}
         onChange={setTimes}
       />
@@ -72,7 +72,7 @@ export function FaultForm() {
           }
         }}
       >
-        {t("submit")}
+        {t("faultForm.submit")}
       </Button>
     </div>
   );

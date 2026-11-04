@@ -15,7 +15,7 @@ interface TaskHeadingProps {
 }
 
 export function TaskHeading({ task, editable }: TaskHeadingProps) {
-  const t = useTranslations("demo-task.taskHeading");
+  const t = useTranslations("demo-task");
   const [renaming, setRenaming] = useState(false);
   if (renaming) {
     return <RenameTaskForm task={task} onDone={() => setRenaming(false)} />;
@@ -26,7 +26,7 @@ export function TaskHeading({ task, editable }: TaskHeadingProps) {
       <LiveTaskStatus taskId={task.id} />
       {editable && (
         <Button variant="ghost" size="sm" onClick={() => setRenaming(true)}>
-          {t("rename")}
+          {t("taskHeading.rename")}
         </Button>
       )}
     </div>

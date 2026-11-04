@@ -20,7 +20,7 @@ const links = [
 
 /** Data demo 各页面共用的导航，右侧是轮询中的进行中任务数。 */
 export function DataDemoHeader() {
-  const t = useTranslations("demo-task.nav");
+  const t = useTranslations("demo-task");
   const pathname = usePathname();
   return (
     <header className="border-b border-border bg-card text-card-foreground">
@@ -32,9 +32,12 @@ export function DataDemoHeader() {
           <span className="flex size-8 items-center justify-center rounded-control bg-primary text-primary-foreground">
             <IconStack2 className="size-5" aria-hidden />
           </span>
-          {t("home")}
+          {t("nav.home")}
         </Link>
-        <nav aria-label={t("label")} className="flex flex-1 flex-wrap gap-1">
+        <nav
+          aria-label={t("nav.label")}
+          className="flex flex-1 flex-wrap gap-1"
+        >
           {links.map((link) => {
             const current = pathname.startsWith(link.href);
             return (
@@ -49,7 +52,7 @@ export function DataDemoHeader() {
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                 )}
               >
-                {t(link.key)}
+                {t(`nav.${link.key}`)}
               </Link>
             );
           })}

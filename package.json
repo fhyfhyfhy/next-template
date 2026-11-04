@@ -19,7 +19,11 @@
     "demo:start": "node scripts/run-next.mjs start --demo",
     "demo:test": "vitest run --config vitest.demo.config.mts",
     "demo:test:e2e": "playwright test --config playwright.demo.config.ts",
-    "demo:generate:examples": "node scripts/demo-ui/index-generator.mjs"
+    "demo:generate:examples": "node scripts/demo-ui/index-generator.mjs",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1161.0",
@@ -62,6 +66,8 @@
     "eslint-plugin-i18next": "^6.1.5",
     "eslint-plugin-playwright": "^2.12.1",
     "eslint-plugin-simple-import-sort": "^14.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "prettier": "3.9.10",
     "prettier-plugin-tailwindcss": "0.8.1",
     "tailwindcss": "^4",

@@ -79,7 +79,7 @@ const QUERY_FACTORIES = new Set(["queryOptions", "infiniteQueryOptions"]);
 const WRITE_VERBS = new Set(["create", "update", "delete"]);
 
 /**
- * api 文件按 HTTP 方法命名、一个文件一个接口（.claude/rules/api-modules.md 的 Files），工厂跟着接口走：
+ * api 文件按 HTTP 方法命名、一个文件一个接口（.claude/rules/tanstack-query.md 的 Files），工厂跟着接口走：
  * get- 文件不放 mutationOptions，create-、update-、delete- 文件不放 query 工厂。领域动词（retry-、search-）
  * 不对应固定的方法，不检查。只认从 @/lib/react-query 引入的工厂，包括改名引入。
  */
@@ -89,9 +89,9 @@ export const apiFileFactoriesRule = {
     schema: [],
     messages: {
       query:
-        "{{factory}} reads a GET endpoint, but {{file}} holds a write. Move it to the get- file of the endpoint it reads: one endpoint per file, named after its HTTP method (Files in .claude/rules/api-modules.md).",
+        "{{factory}} reads a GET endpoint, but {{file}} holds a write. Move it to the get- file of the endpoint it reads: one endpoint per file, named after its HTTP method (Files in .claude/rules/tanstack-query.md).",
       mutation:
-        "mutationOptions builds a write, but {{file}} holds a GET. Move it to the file named after the write's HTTP method, such as update- or create-: one endpoint per file (Files in .claude/rules/api-modules.md).",
+        "mutationOptions builds a write, but {{file}} holds a GET. Move it to the file named after the write's HTTP method, such as update- or create-: one endpoint per file (Files in .claude/rules/tanstack-query.md).",
     },
   },
   create(context) {

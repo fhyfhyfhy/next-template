@@ -14,20 +14,26 @@ import { TaskLinkRow } from "./task-link-row";
  * 读到 id 之后每个任务一个 query，复用详情页的工厂和缓存。
  */
 export function RecentTasks() {
-  const t = useTranslations("demo-task.recentTasks");
+  const t = useTranslations("demo-task");
   const { ids } = useRecentTaskIds();
   const tasks = useQueries({
     queries: (ids ?? []).map((id) => getTaskQueryOptions(id)),
   });
   if (ids === null) {
-    return <p className="text-sm text-muted-foreground">{t("reading")}</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        {t("recentTasks.reading")}
+      </p>
+    );
   }
   if (ids.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
+    return (
+      <p className="text-sm text-muted-foreground">{t("recentTasks.empty")}</p>
+    );
   }
   return (
     <ul
-      aria-label={t("label")}
+      aria-label={t("recentTasks.label")}
       className="max-w-2xl divide-y divide-border rounded-panel border border-border bg-card"
     >
       {ids.map((id, index) => {
@@ -38,11 +44,11 @@ export function RecentTasks() {
               <TaskLinkRow task={data} />
             ) : isTaskNotFound(error) ? (
               <span className="text-muted-foreground">
-                {t("deleted", { id })}
+                {t("recentTasks.deleted", { id })}
               </span>
             ) : error ? (
               <span className="text-destructive">
-                {t("loadFailed", { id })}
+                {t("recentTasks.loadFailed", { id })}
               </span>
             ) : (
               <Skeleton className="h-4 w-40" />

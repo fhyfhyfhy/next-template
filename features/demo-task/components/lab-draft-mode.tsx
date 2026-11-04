@@ -16,10 +16,13 @@ interface LabDraftModeProps {
 
 /** 状态存在 cookie 里，由服务端读出后传进来；切换时先显示新状态，失败时 transition 结束，回到服务端给的值。 */
 export function LabDraftMode({ enabled }: LabDraftModeProps) {
-  const t = useTranslations("demo-task.labDraftMode");
+  const t = useTranslations("demo-task");
   const [optimisticEnabled, setOptimisticEnabled] = useOptimistic(enabled);
   return (
-    <LabSection title={t("title")} description={t("description")}>
+    <LabSection
+      title={t("labDraftMode.title")}
+      description={t("labDraftMode.description")}
+    >
       <label className="flex items-center gap-3 text-sm">
         <SwitchRoot
           checked={optimisticEnabled}
@@ -30,14 +33,14 @@ export function LabDraftMode({ enabled }: LabDraftModeProps) {
                 await setDraftModeAction(checked);
               } catch {
                 // 不是 React Query 的请求，不经过全局错误处理；用 feature 自己的提示，不占用全局请求错误的 toast ID。
-                toast.error(t("switchFailed"));
+                toast.error(t("labDraftMode.switchFailed"));
               }
             });
           }}
         >
           <SwitchThumb />
         </SwitchRoot>
-        {t("switchLabel")}
+        {t("labDraftMode.switchLabel")}
       </label>
     </LabSection>
   );

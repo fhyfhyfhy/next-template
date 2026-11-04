@@ -11,7 +11,7 @@ For browser-only inputs, `useQuery` can wait with `enabled`. `useSuspenseQuery` 
 ## Adapt the official examples
 
 - Import React Query APIs and types through `@/lib/react-query`, including `QueryClient`, `dehydrate`, `defaultShouldDehydrateQuery`, and `DehydratedState`. Reuse `app/providers.tsx` for the browser client and its error policy; create server prefetch clients per render/request as the guide describes. The wrapper also supplies the repo's server GC policy.
-- Use feature options factories and query keys from [API modules](../../../.claude/rules/api-modules.md). A server override of `queryFn` must return the same data represented by that key, calling the data layer as [Transport](../../../.claude/rules/data-fetching.md#transport) describes.
+- Use feature options factories and query keys from [TanStack Query](../../../.claude/rules/tanstack-query.md). A server override of `queryFn` must return the same data represented by that key, calling the data layer as [Transport](../../../.claude/rules/data-flow.md#transport) describes.
 - The guide uses `prefetchQuery`; the installed Query API deprecates it in favor of `query()`. To retain prefetch's ignored-error behavior, use `queryClient.query(options).catch(noop)`, importing `noop` from the wrapper. Await it for completed prefetch, or start it without awaiting when following the guide's pending-query dehydration pattern. Check `@tanstack/query-core/src/queryClient.ts` and `hydration.ts` for the installed contracts; with pnpm they are under `node_modules/.pnpm/@tanstack+query-core@<version>/node_modules/@tanstack/query-core/`.
 
 Render query-owned data through subscribed query consumers, including counts or summaries beside the main list. Reading a prefetched result into a separate Server Component snapshot leaves that display unchanged when the query refetches.
@@ -31,12 +31,12 @@ For unexpected initial refetches, inspect the factory, call-site overrides, and 
 
 ## Server Action errors
 
-For a mutation calling a Server Action, follow [API modules: Server Actions](../../../.claude/rules/api-modules.md#server-actions) for module boundaries and the `ActionResult` contract, and [Refresh coordination](refresh.md#after-a-write) for the success path.
+For a mutation calling a Server Action, follow [Server data: Server Actions](../../../.claude/rules/server-data.md#server-actions) for the action and its `ActionResult`, [TanStack Query: Mutations](../../../.claude/rules/tanstack-query.md#mutations) for the factory that unwraps it, and [Refresh coordination](refresh.md#after-a-write) for the success path.
 
 Expected failures come back as a value because a thrown server error does not preserve its `DomainError` class or custom fields across Flight, and production also hides its message. Returning the `ApiErrorObject` that a failed Route Handler response carries gives the browser the same `code` and `params` from a failed read or write.
 
 React Query treats every resolved value as success, including `{ ok: false }`. `unwrapActionResult` throws an `ActionError` for it instead, so failed writes do not run the factory's or caller's `onSuccess`. A plain action consumer branches on the result directly.
 
-Configure shared suppression through the factory's [error policy](../../../.claude/rules/api-modules.md#error-policy); the component follows [consumer error handling](../../../.claude/rules/data-fetching.md#errors-in-react-queryowned-data) to present recoverable errors. Other failures continue through the global handler.
+Suppress the toast for a recoverable failure in the factory's `meta` and present it in the component, as [Toasts](../../../.claude/rules/data-flow.md#toasts) describes. Other failures continue through the global handler.
 
 Sources: installed Next.js `01-getting-started/10-error-handling.md` (Server Functions) and `02-guides/server-actions.md` (Security); `emitErrorChunk` in `next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-server.browser.production.js`; installed query-core `src/mutation.ts`, `execute`.

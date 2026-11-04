@@ -45,11 +45,22 @@ export interface HandleRequestErrorOptions extends Record<string, unknown> {
    * query 已有数据时默认 `false`：组件继续显示旧数据，提示是刷新失败的唯一信号；没有数据时默认 `true`，由组件渲染错误。
    */
   suppressErrorToast?: boolean | ((error: unknown) => boolean);
+  /**
+   * 提示的文案，已经翻译好；传函数时按错误生成。不传时显示通用文案。
+   * 全局提示渲染在根布局，那里只有 `app` 和 `ui` 的文案，所以 feature 的文案由它的 factory 用调用方传入的 `t` 生成。
+   */
+  errorMessage?: string | ((error: unknown) => string);
+}
+
+/** 失败的是哪一个 query 或 mutation。同一个 `id` 的提示只显示一个，不同的各自显示。 */
+export interface FailedRequest {
+  id: string;
 }
 
 export type RequestErrorHandler = (
   error: unknown,
   options: HandleRequestErrorOptions,
+  request: FailedRequest,
 ) => void;
 
 declare module "@tanstack/react-query" {
@@ -93,14 +104,22 @@ export class QueryClient extends TanstackQueryClient {
     super({
       queryCache: new QueryCache({
         onError: (error, query) =>
-          onRequestError?.(error, {
-            suppressErrorToast: query.state.data === undefined,
-            ...query.meta,
-          }),
+          onRequestError?.(
+            error,
+            {
+              suppressErrorToast: query.state.data === undefined,
+              ...query.meta,
+            },
+            { id: `query:${query.queryHash}` },
+          ),
       }),
       mutationCache: new MutationCache({
         onError: (error, _variables, _onMutateResult, mutation) =>
-          onRequestError?.(error, { ...mutation.meta }),
+          onRequestError?.(
+            error,
+            { ...mutation.meta },
+            { id: `mutation:${mutation.mutationId}` },
+          ),
       }),
       ...config,
     });

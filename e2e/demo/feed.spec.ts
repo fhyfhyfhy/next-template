@@ -120,7 +120,7 @@ test("收藏失败时卡片和“我的收藏”一起回滚，只弹一个全�
 
   await card.getByRole("button", { name: "收藏" }).click();
 
-  await expect(page.getByText("请求失败，请稍后重试")).toHaveCount(1);
+  await expect(page.getByText("更新收藏失败，请稍后重试")).toHaveCount(1);
   await expect(card.getByRole("button", { name: "收藏" })).toHaveAttribute(
     "aria-pressed",
     "true",

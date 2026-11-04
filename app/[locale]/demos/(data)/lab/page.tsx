@@ -16,16 +16,16 @@ import {
 } from "@/features/demo-task";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("app.demos.lab");
-  return { title: t("metadataTitle") };
+  const t = await getTranslations("app");
+  return { title: t("demos.lab.metadataTitle") };
 }
 
 export default function LabPage() {
-  const t = useTranslations("app.demos.lab");
+  const t = useTranslations("app");
   return (
     <>
-      <PageIntro title={t("title")}>
-        <p>{t("intro")}</p>
+      <PageIntro title={t("demos.lab.title")}>
+        <p>{t("demos.lab.intro")}</p>
       </PageIntro>
       <div className="mb-6">
         <DemoResetButton />

@@ -43,7 +43,8 @@
   },
   "demoReset": {
     "button": "Reset Demo data",
-    "done": "Reset"
+    "done": "Reset",
+    "failed": "Couldn't reset the Demo data. Please try again later."
   },
   "demoNote": {
     "label": "What this page demonstrates"
@@ -55,7 +56,8 @@
     "promptLabel": "Prompt",
     "promptPlaceholder": "Describe the model to generate",
     "submit": "Create task",
-    "submitting": "Creating…"
+    "submitting": "Creating…",
+    "failed": "Couldn't create the task. Please try again later."
   },
   "taskList": {
     "label": "Task list",
@@ -117,27 +119,31 @@
     "formLabel": "Rename task",
     "nameLabel": "New name",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "failed": "Couldn't rename the task. Please try again later."
   },
   "taskActions": {
     "retry": "Retry",
     "download": "Download model",
     "downloadFailed": "Download failed. Please try again later.",
-    "notRetryable": "The task's status changed, so it has been refreshed."
+    "notRetryable": "The task's status changed, so it has been refreshed.",
+    "retryFailed": "Couldn't retry the task. Please try again later."
   },
   "taskCover": {
     "uploading": "Uploading…",
     "change": "Change cover image",
     "notAnImage": "Only images can be uploaded.",
     "tooLarge": "Images can be at most {max} MB.",
-    "rejected": "The image couldn't be set as the cover. Choose it again."
+    "rejected": "The image couldn't be set as the cover. Choose it again.",
+    "changeFailed": "Couldn't change the cover. Please try again later."
   },
   "deleteTask": {
     "trigger": "Delete task",
     "title": "Delete “{name}”?",
     "description": "The task and its comments will be deleted. This can't be undone.",
     "cancel": "Cancel",
-    "confirm": "Delete"
+    "confirm": "Delete",
+    "failed": "Couldn't delete the task. Please try again later."
   },
   "taskLogs": {
     "title": "Generation log",
@@ -157,7 +163,9 @@
     "formLabel": "Post a comment",
     "inputLabel": "Write a comment",
     "placeholder": "Write your comment",
-    "submit": "Post"
+    "submit": "Post",
+    "createFailed": "Couldn't post the comment. Please try again later.",
+    "deleteFailed": "Couldn't delete the comment. Please try again later."
   },
   "queryErrorBoundary": {
     "retry": "Retry"
@@ -222,7 +230,8 @@
       "unexpected": "throw an unexpected error",
       "businessError": "reject with business error {code}"
     },
-    "timesLeft": "{count} left"
+    "timesLeft": "{count} left",
+    "updateFailed": "Couldn't update the faults. Please try again later."
   },
   "faultForm": {
     "operation": "Operation",
@@ -243,6 +252,10 @@
   "defaultLatency": {
     "label": "Default latency",
     "readFailed": "Couldn't read the default latency",
-    "reading": "Reading the default latency…"
+    "reading": "Reading the default latency…",
+    "updateFailed": "Couldn't change the default latency. Please try again later."
+  },
+  "favorite": {
+    "failed": "Couldn't update the favorite. Please try again later."
   }
 }

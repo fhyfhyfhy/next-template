@@ -12,11 +12,11 @@ import {
 
 /** `progress` 为 null 表示还在排队、进度未知。 */
 export function TaskProgress({ progress }: { progress: number | null }) {
-  const t = useTranslations("demo-task.taskProgress");
+  const t = useTranslations("demo-task");
   return (
     <ProgressRoot value={progress}>
       <ProgressLabel>
-        {progress === null ? t("queued") : t("label")}
+        {progress === null ? t("taskProgress.queued") : t("taskProgress.label")}
       </ProgressLabel>
       <ProgressValue />
       <ProgressTrack>

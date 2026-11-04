@@ -15,7 +15,7 @@ export function ExampleList({
   component: ComponentId;
   sources: ExampleSources["examples"];
 }) {
-  const t = useTranslations("demo-ui.examples");
+  const t = useTranslations("demo-ui");
   const examples: readonly ExampleDefinition[] = examplesByComponent[component];
   if (examples.length === 0) return null;
 
@@ -26,7 +26,7 @@ export function ExampleList({
   );
   return (
     <div className="space-y-5">
-      <h2 className="text-lg font-medium">{t("title")}</h2>
+      <h2 className="text-lg font-medium">{t("examples.title")}</h2>
       <div className="grid items-start gap-5 xl:grid-cols-2">
         {ordered.map((example) => {
           const Preview = example.component;

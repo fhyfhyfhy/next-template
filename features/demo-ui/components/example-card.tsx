@@ -22,7 +22,7 @@ export function ExampleCard({
   filename: string;
   children: ReactNode;
 }) {
-  const t = useTranslations("demo-ui.examples");
+  const t = useTranslations("demo-ui");
   const [showCode, setShowCode] = useState(false);
   return (
     <section className="min-w-0 overflow-hidden rounded-panel border border-border bg-card text-card-foreground">
@@ -34,7 +34,9 @@ export function ExampleCard({
         <Button
           variant="ghost"
           size="sm"
-          aria-label={t(showCode ? "hideCode" : "showCode", { title })}
+          aria-label={t(showCode ? "examples.hideCode" : "examples.showCode", {
+            title,
+          })}
           aria-expanded={showCode}
           onClick={() => setShowCode(!showCode)}
         >

@@ -18,7 +18,7 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `demo:` 
 `/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it. They are served only under `pnpm dev` and the `pnpm demo:*` scripts: a plain production build (`pnpm build`, `pnpm start`) answers 404 for every `/demos` page, and its home page is a placeholder without a link to them (`app/demos.ts`).
 
 - **UI demo** (`/demos/ui`): the design-system components; see [UI demo examples](#ui-demo-examples).
-- **Data demo** (the other `/demos` pages): a small task app that exercises the data-fetching rules against the Demo backend. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.
+- **Data demo** (the other `/demos` pages): a small task app that exercises the data rules against the Demo backend. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.
 
 The **Demo backend** is built into this app the way the template expects a project's own backend to be ([ADR 0003](docs/adr/0003-fullstack-demo-backend.md)): the `demo-task` and `demo-upload` features hold its data layer, Route Handlers under `app/api/demo/` serve the browser's reads, and Server Actions do the writes. Data lives in Postgres and files in S3-compatible object storage ([ADR 0004](docs/adr/0004-demo-uploads-presigned-object-storage.md)), both from `compose.demo.yaml`, so the Demo needs Docker.
 
@@ -27,6 +27,8 @@ The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo
 ## Checks
 
 `pnpm check` runs `format:check`, `lint`, `typecheck`, and `test` in that order and stops at the first failure. The e2e sets run on their own (see [Tests](#tests)).
+
+Git hooks run through [husky](https://typicode.github.io/husky/): `git commit` formats the staged files with Prettier ([lint-staged](https://github.com/lint-staged/lint-staged), configured in `package.json`), and `git push` runs `pnpm lint` over the whole repo, stopping the push when it fails. `pnpm install` enables the hooks through the `prepare` script; it skips that step when the dependencies are already installed, so an existing checkout runs `pnpm prepare` once.
 
 `pnpm typecheck` runs `next typegen` before `tsc --noEmit`, because helpers such as `PageProps<"/[locale]/demos/tasks">` come from the route types Next generates in `.next/types`. `tsconfig.json` excludes the copies that `next dev`, the `demo:` scripts, and the e2e builds keep in `.next/dev` and the other `.next-*` directories: after a route is removed or renamed, they stay stale until their script runs again.
 
@@ -49,8 +51,8 @@ While debugging, `E2E_REUSE_SERVER=1` makes either set reuse a server you starte
 
 The template is full-stack: a project's backend lives in this app ([ADR 0003](docs/adr/0003-fullstack-demo-backend.md)), and the Data demo is its runnable reference.
 
-- Each feature's `server/` holds its data layer: queries, writes, business rules, and migrations ([.claude/rules/data-layer.md](.claude/rules/data-layer.md)). `lib/db.ts` creates the Kysely + pg connection, `lib/object-storage.ts` wraps S3-compatible storage, and `lib/domain-error.ts` carries business-rule failures.
-- Server Components, `use cache` reads, Server Actions, and Route Handlers call the data layer directly. The browser reads through `fetchApi` (`lib/fetch.ts`) from Route Handlers under `/api` and writes through Server Actions ([.claude/rules/data-fetching.md](.claude/rules/data-fetching.md)).
+- Each feature's `server/` holds its data layer: queries, writes, business rules, and migrations ([.claude/rules/server-data.md](.claude/rules/server-data.md)). `lib/db.ts` creates the Kysely + pg connection, `lib/object-storage.ts` wraps S3-compatible storage, and `lib/domain-error.ts` carries business-rule failures.
+- Server Components, `use cache` reads, Server Actions, and Route Handlers call the data layer directly. The browser reads through `fetchApi` (`lib/fetch.ts`) from Route Handlers under `/api` and writes through Server Actions ([.claude/rules/data-flow.md](.claude/rules/data-flow.md)).
 - `lib/fetch.ts` defines the response format: a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or as the only field of a 2xx body. `app/providers.tsx` decides what a failed browser request shows.
 
 ## Internationalization

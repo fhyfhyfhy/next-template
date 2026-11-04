@@ -26,7 +26,7 @@ interface TaskListProps {
 }
 
 export function TaskList({ tasksPromise, params }: TaskListProps) {
-  const t = useTranslations("demo-task.taskList");
+  const t = useTranslations("demo-task");
   const { items, total, hasMore } = use(tasksPromise);
   const { pending, navigate } = useTaskListNavigation(params);
   useRefreshTaskListWhenActiveChanges(items);
@@ -40,11 +40,11 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
     >
       {items.length === 0 ? (
         <p className="rounded-panel border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-          {t("empty")}
+          {t("taskList.empty")}
         </p>
       ) : (
         <ul
-          aria-label={t("label")}
+          aria-label={t("taskList.label")}
           className="divide-y divide-border rounded-panel border border-border bg-card"
         >
           {items.map((task) => (
@@ -71,10 +71,12 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
         </ul>
       )}
       <nav
-        aria-label={t("pagination")}
+        aria-label={t("taskList.pagination")}
         className="mt-4 flex items-center justify-between text-sm"
       >
-        <span className="text-muted-foreground">{t("total", { total })}</span>
+        <span className="text-muted-foreground">
+          {t("taskList.total", { total })}
+        </span>
         <div className="flex gap-2">
           {params.page > 1 && (
             <Link
@@ -85,7 +87,7 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
               }}
               className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
             >
-              {t("previousPage")}
+              {t("taskList.previousPage")}
             </Link>
           )}
           {hasMore && (
@@ -97,7 +99,7 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
               }}
               className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
             >
-              {t("nextPage")}
+              {t("taskList.nextPage")}
             </Link>
           )}
         </div>

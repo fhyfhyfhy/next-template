@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useMutation, useQueryClient } from "@/lib/react-query";
 
 import { getDemoFaultsQueryOptions } from "../api/get-demo-faults";
@@ -12,7 +14,8 @@ export type DemoFaultInput = Pick<DemoFault, "operation" | "kind"> &
 /** 在现有的故障配置后面追加一条故障，不覆盖故障面板里已有的配置。 */
 export function useInjectDemoFault() {
   const queryClient = useQueryClient();
-  const update = useMutation(updateDemoFaultsMutationOptions());
+  const t = useTranslations("demo-task");
+  const update = useMutation(updateDemoFaultsMutationOptions(t));
   return async (fault: DemoFaultInput) => {
     const current = await queryClient.fetchQuery({
       ...getDemoFaultsQueryOptions(),

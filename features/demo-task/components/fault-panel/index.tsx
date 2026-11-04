@@ -20,7 +20,7 @@ export function FaultPanel() {
     ...getDemoFaultsQueryOptions(),
     refetchInterval: (query) => (query.state.data?.length ? 2000 : false),
   });
-  const update = useMutation(updateDemoFaultsMutationOptions());
+  const update = useMutation(updateDemoFaultsMutationOptions(t));
   return (
     <LabSection
       title={t("faultPanel.title")}

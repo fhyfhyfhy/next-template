@@ -1,0 +1,7 @@
+# 推送前检查整个仓库：feature 之间的环可能由没改动的文件引起，只查改动的文件或用 --cache 都会漏报。
+# 没有全局 pnpm 时退回 corepack。
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm lint
+else
+  corepack pnpm lint
+fi

@@ -3,12 +3,16 @@ import type { Locale } from "@/lib/i18n/routing";
 import { mutationOptions } from "@/lib/react-query";
 
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
+import type { DemoTaskTranslator } from "../types/translator";
 import { createTaskAction } from "./create-task-action";
 import type { CreateTaskInput } from "./create-task-request";
 import { taskListKey } from "./get-tasks";
 
 /** 创建同时影响两种负责方：action 让列表页的服务端缓存失效，这里刷新浏览器里的列表 query。`locale` 转交给 action。 */
-export const createTaskMutationOptions = (locale: Locale) =>
+export const createTaskMutationOptions = (
+  t: DemoTaskTranslator,
+  locale: Locale,
+) =>
   mutationOptions({
     mutationFn: async (input: CreateTaskInput) =>
       unwrapActionResult(await createTaskAction(locale, input)),
@@ -16,6 +20,7 @@ export const createTaskMutationOptions = (locale: Locale) =>
       void client.invalidateQueries({ queryKey: taskListKey });
     },
     meta: {
+      errorMessage: t("createTask.failed"),
       // 名称被占用由表单在字段上提示，其他失败仍走全局提示。
       suppressErrorToast: (error) => isActionError(error, TASK_NAME_TAKEN),
     },

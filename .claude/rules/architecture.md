@@ -50,12 +50,12 @@ types/          domain-neutral shared contracts
 ```
 features/{name}/
   index.ts      main entry
-  server.ts     server entry: the data layer and other server-only code (data-layer.md)
+  server.ts     server entry: the data layer and other server-only code (server-data.md)
   components/   feature-specific UI
   hooks/        feature-specific hooks
   stores/       Zustand stores
-  api/          browser requests (fetchApi), Server Actions, use cache reads, query and mutation options factories (api-modules.md)
-  server/       server-only data access: queries, writes, business rules, migrations (data-layer.md)
+  api/          browser requests (fetchApi), Server Actions, use cache reads, query and mutation options factories (tanstack-query.md)
+  server/       server-only data access: queries, writes, business rules, migrations (server-data.md)
   utils/        feature-specific utilities
   constants/    feature-specific constants
   types/        feature business types

@@ -1342,7 +1342,9 @@ export function Example() {
       );
       expect(
         result.messages
-          .filter(({ ruleId }) => ruleId === "data-fetching/mutation-callbacks")
+          .filter(
+            ({ ruleId }) => ruleId === "@tanstack/query/mutation-callbacks",
+          )
           .map(({ message }) => message.match(/^Keep (\w+)/)?.[1]),
         JSON.stringify(result.messages, null, 2),
       ).toStrictEqual(reported);
@@ -1412,7 +1414,9 @@ export function Example() {
       );
       expect(
         result.messages
-          .filter(({ ruleId }) => ruleId === "data-fetching/api-file-factories")
+          .filter(
+            ({ ruleId }) => ruleId === "@tanstack/query/api-file-factories",
+          )
           .map(({ message }) => message.split(" ")[0]),
         JSON.stringify(result.messages, null, 2),
       ).toStrictEqual(reported);
@@ -1542,6 +1546,7 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
 const restrictedSyntaxLinter = new ESLint({ cwd: project });
 const RESTRICTION_NAMES = [
   ["Show a date or time", "date-time"],
+  ["Pass only the owner's namespace", "translator-namespace"],
   ["List public API", "component-entry"],
   ["Read environment variables", "env"],
 ];
@@ -1624,6 +1629,55 @@ export function Probe({ at, count }: { at: number; count: number }) {
       name: "components/date-time.tsx formats them",
       file: "components/date-time.tsx",
       source: clientDateTime,
+      reported: [],
+    },
+  ]) {
+    test(name, async () => {
+      expect(await restricted(file, source)).toStrictEqual(reported);
+    });
+  }
+});
+
+describe("翻译函数只按 owner 的 namespace 取", () => {
+  for (const { name, file, source, reported } of [
+    {
+      name: "useTranslations 带子路径时报错",
+      file: "features/demo-task/components/task-list/index.tsx",
+      source: `"use client";
+
+import { useTranslations } from "next-intl";
+
+export function Probe() {
+  const t = useTranslations("demo-task.comments");
+  return <p>{t("empty")}</p>;
+}
+`,
+      reported: ["translator-namespace"],
+    },
+    {
+      name: "getTranslations 带子路径时报错，对象写法也一样",
+      file: "app/[locale]/page.tsx",
+      source: `import { getTranslations } from "next-intl/server";
+
+export async function probe(locale: string) {
+  const a = await getTranslations("app.home");
+  const b = await getTranslations({ locale, namespace: "app.home" });
+  return [a("title"), b("title")];
+}
+`,
+      reported: ["translator-namespace", "translator-namespace"],
+    },
+    {
+      name: "只用 namespace、key 写完整路径时不报",
+      file: "app/[locale]/page.tsx",
+      source: `import { getTranslations } from "next-intl/server";
+
+export async function probe(locale: string) {
+  const a = await getTranslations("app");
+  const b = await getTranslations({ locale, namespace: "app" });
+  return [a("home.title"), b("home.title")];
+}
+`,
       reported: [],
     },
   ]) {
