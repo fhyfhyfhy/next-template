@@ -1,0 +1,6 @@
+# 切换分支后依赖变了就重新安装。第三个参数为 1 表示切换了分支，为 0 表示只检出了文件。
+[ "$3" = "1" ] || exit 0
+if git diff --name-only "$1" "$2" -- pnpm-lock.yaml 2>/dev/null | grep -q .; then
+  . .husky/ensure-pnpm.sh
+  pnpm install --frozen-lockfile
+fi
