@@ -29,7 +29,7 @@ A read can carry signals for both owners, such as URL filters and changes while 
 
 ## Project integration
 
-- Follow [data-fetching.md](../../../.claude/rules/data-fetching.md) for data consumption, error feedback, and session isolation; follow [data-fetching-api.md](../../../.claude/rules/data-fetching-api.md) for browser requests, Server Actions, options factories, and feature public entries, and [data-layer.md](../../../.claude/rules/data-layer.md) for the server data layer they call. Adapt official examples to these contracts.
+- Follow [data-fetching.md](../../../.claude/rules/data-fetching.md) for data consumption, error feedback, and session isolation; follow [api-modules.md](../../../.claude/rules/api-modules.md) for browser requests, Server Actions, options factories, and feature public entries, and [data-layer.md](../../../.claude/rules/data-layer.md) for the server data layer they call. Adapt official examples to these contracts.
 - For browser-only inputs, server prefetch, hydration, or a Server Action called by a mutation, read [React Query integration](react-query-integration.md).
 - For URL changes, writes, changes made elsewhere, or session changes, read [Refresh coordination](refresh.md).
 - Before implementing one of these patterns, read its runnable reference in the [Data demo](demos.md): code and e2e spec per scenario.

@@ -20,20 +20,18 @@ Design-system primitives are an exception to the rule of three: when a current U
 
 Add features by **adding code** (a new component, case, or implementation) rather than reworking the internals of existing code:
 
-- Drive variation with props, composition, lookup tables, or polymorphism, and keep type-based branching in one place. Split a chain of if/else handling unrelated cases into one unit per case.
+- Drive variation with props, composition ([vercel-composition-patterns](../../.agents/skills/vercel-composition-patterns/SKILL.md)), lookup tables, or polymorphism, and keep type-based branching in one place. Split a chain of if/else handling unrelated cases into one unit per case.
 - Extensible ≠ prematurely general: add extension points only for needs that have already arrived (see YAGNI above).
 
 ### One-way dependencies
 
-Dependencies may stay within the same layer or point to a lower layer. Dependencies between features and between modules must remain acyclic. To break a cycle (`A → B → A`, or a longer loop), extract a shared contract or implementation into a lower layer within its owner, or move composition to the caller. Business code keeps its feature ownership when resolving cycles (see "Shared code ownership").
+Dependencies may stay within the same layer or point to a lower layer. Dependencies between features and between modules must remain acyclic. Feature cycles include type-only dependencies and may exist without file cycles. To break a cycle (`A → B → A`, or a longer loop), extract a shared contract or implementation into a lower layer within its owner, or move composition to the caller. Business code keeps its feature ownership when resolving cycles (see "Shared code ownership").
 
 ## Code organization
 
 ### Layers
 
-Ordered top to bottom; each layer may import from the same layer and any layer below it, without creating cycles. This table and the next are enforced by `ROOT_LAYERS` / `FEATURE_LAYERS` in `eslint.config.mjs` — change both together.
-
-Architecture checks apply equally to JavaScript and TypeScript sources, including JSX and ESM/CommonJS file extensions.
+Ordered top to bottom, as "One-way dependencies" describes. This table and the next are enforced by `ROOT_LAYERS` / `FEATURE_LAYERS` in `eslint.config.mjs` — change both together.
 
 ```
 app/            routes; composes features
@@ -43,70 +41,52 @@ components/ui/  design-system components (generic UI primitives)
 hooks/          domain-neutral hooks (interaction and platform behavior)
 lib/            framework and infrastructure adapters
 utils/          domain-neutral pure utility functions
-constants/      domain-neutral constants and design tokens
+constants/      domain-neutral constants
 types/          domain-neutral shared contracts
 ```
-
-Cross-feature dependencies go through public entries (see "Feature public API") and remain one-way and acyclic.
 
 ### Feature structure
 
 ```
 features/{name}/
-  index.ts      entry (see "Feature public API")
+  index.ts      main entry
+  server.ts     server entry: the data layer and other server-only code (data-layer.md)
   components/   feature-specific UI
   hooks/        feature-specific hooks
   stores/       Zustand stores
-  api/          browser requests (fetchApi), Server Actions, query and mutation options factories
+  api/          browser requests (fetchApi), Server Actions, use cache reads, query and mutation options factories (api-modules.md)
   server/       server-only data access: queries, writes, business rules, migrations (data-layer.md)
   utils/        feature-specific utilities
   constants/    feature-specific constants
   types/        feature business types
 ```
 
-Same ordering rule: each layer may import from the same layer and any layer below it, without creating cycles.
+Ordered top to bottom, like "Layers".
 
 ### Where files go
 
-- Use only the directories in the two tables above. To add a new kind of directory, update this document first.
-- Browser end-to-end specs live in top-level `e2e/`, outside the layers. They observe the app through the browser and import no application code; ESLint enforces this. The demos' specs live in `e2e/demo/`, and the Data demo's among them also drive the Demo backend's control endpoints (`/api/demo/control/*`); `pnpm demo:test:e2e` runs them, and `pnpm test:e2e` runs the rest.
-- Translated text lives in top-level `messages/{locale}/{namespace}.json`, outside the layers: it is data that `lib/i18n/messages.ts` loads, owned per namespace as [i18n.md](i18n.md) describes.
-- Layer directories (`hooks/`, `utils/`, `features/{name}/api/`, etc.) contain only files, with two exceptions:
+- Application code goes only in the directories of the two tables above. To add a new kind of directory, update this document first.
+- Browser end-to-end specs live in `e2e/` ([e2e.md](e2e.md)) and translated text in `messages/` ([i18n.md](i18n.md)), both outside the layers.
+- Layer directories contain only files, with two exceptions:
   - Any `components/` may contain one level of component directories (see "Component directories"), and so may the reserved `components/ui/`.
-  - `lib/` may group an adapter that spans several files into one level of directory; a single-file adapter stays a file, such as `lib/fetch.ts`. Files inside import each other by relative path. When outside code uses one module and the other files only serve it, that module is the directory's `index`, imported by the directory's path (`@/lib/{adapter}`). When outside code uses several modules, it imports each by its path (`@/lib/i18n/client-messages`), with no `index` re-exporting them: such an entry would put modules that run only on the server, such as `lib/i18n/request.ts`, into the import graph of Client Components.
-- Independent hooks go in `hooks/` and utility functions in `utils/`. Component-specific private contexts, hooks, helpers, and types may stay in the component directory (see "Component directories").
+  - `lib/` may group an adapter that spans several files into one level of directory. When outside code uses only one of its modules, that module is the directory's `index`; when it uses several, it imports each by its path and the directory has no `index`.
 - Keep types with the module or schema that owns them. Extract a shared contract into that owner's `types/` when needed to preserve dependency direction or give the contract an independent role.
-- Choose feature or root placement by "Shared code ownership" below.
 
 ### Shared code ownership
 
 Choose the owner by responsibility. Code that represents a business concept or changes with its policies belongs to that feature, including pure functions, presentational components, types, and constants. Cross-feature consumers reuse it through the feature's public entries. A global lifetime or multiple consumers does not change ownership.
 
-Root shared code provides domain-neutral behavior with stable, reusable interfaces. Promote feature-local code only when concrete reuse justifies extraction, following "Duplication and abstraction". Business data, decisions, and actions come from callers through arguments, props, callbacks, or children. Framework adapters and shared providers are allowed; make their required setup explicit.
+Root shared code provides domain-neutral behavior with stable, reusable interfaces. Promote feature-local code only when concrete reuse justifies extraction, following "Duplication and abstraction". Business data, decisions, and actions come from callers through arguments, props, callbacks, or children. Framework adapters and shared providers are allowed; make their required setup explicit. The same ownership rule applies transitively: a shared helper or adapter must not hide a dependency on a business policy.
 
-| Kind | Root shared code | Code owned by a feature |
-| --- | --- | --- |
-| `components/` | `DataTable` with caller-defined columns and cells | `TaskTable` with task actions and permissions |
-| `components/ui/` | `Button`, `Dialog` | `DeleteTaskDialog` |
-| `hooks/` | Domain-neutral hooks that `@mantine/hooks` lacks ([libraries.md](libraries.md)) | `useCurrentUser`, `useTaskPermissions` |
-| `utils/` | `clamp`, `formatBytes` | `calculateOrderTotal`, `canDeleteTask` |
-| `constants/` | Keyboard keys, design tokens | Subscription tiers, task status values |
-| `types/` | Generic pagination contracts | `User`, `Task`, `Order` |
-| `lib/` | Transport and framework adapters, reading environment variables | Pricing, permission, and workflow policies |
-
-`components/ui/` may use generic hooks for focus, measurement, keyboard handling, or controlled state, and declared providers for theme or locale. Feature components supply business data and actions. The same ownership rule applies transitively: a shared helper or adapter must not hide a dependency on a business policy.
-
-When a module mixes general behavior with business rules, keep the business part in its feature and extract only the stable general part. If multiple features need composition, their caller can assemble them without moving their business implementations into root directories. Composition and policies that belong to the whole app rather than one feature, such as which builds serve the Demo (`app/demos.ts`), live in `app/` beside the routes, as `app/providers.tsx` does; Next routes only its special file names, so these modules add no routes.
-
-Architecture checks are configured in [eslint.config.mjs](../../eslint.config.mjs). Feature cycles include type-only dependencies and may exist without file cycles. Run without ESLint's per-file `--cache`, since other files can change a feature's cycle status. Domain ownership and provider requirements are checked during review; directory placement alone does not prove that code is domain-neutral.
+When a module mixes general behavior with business rules, keep the business part in its feature and extract only the stable general part. If multiple features need composition, their caller can assemble them without moving their business implementations into root directories. Composition and policies that belong to the whole app rather than one feature live in `app/` beside the routes.
 
 ### Package imports
 
-The project has no conditional `#` package imports. The `architecture/package-imports` rule rejects them: their resolution depends on the runtime condition, which the layer and cycle checks do not follow. Import project modules through `@/` or relative paths; extend the architecture checks before introducing one.
+Import from the same directory and its subdirectories by relative path (`./`), and from everywhere else through `@/`. A feature counts as one directory: its files import each other by relative path, `../` included.
 
 ### Component directories
 
-A simple component is a single file. A directory can contain a main component with private subcomponents, or a compound component with several public parts:
+A simple component is a single file. A complex component is a directory, holding either a main component with private subcomponents or a compound component with several public parts:
 
 ```
 features/task/components/
@@ -115,14 +95,6 @@ features/task/components/
     toolbar.tsx       ← private subcomponent
     status-bar.tsx
 ```
-
-- Each directory has one public source `index` entry: normally `index.tsx` when it contains JSX, or `index.ts` for exports only. ESLint rejects multiple source entries across the supported JS/TS extensions. Declaration companions such as `index.d.ts` may accompany that entry; they are not additional implementation entries.
-- Files inside import each other by relative path. This applies to every component directory, including root `components/`, `components/ui/`, and component directories under `app/` or a feature. All code outside the directory, including other components in the same feature and feature entries, imports or re-exports only through this entry. Cross-feature consumers still go through the feature's public entries.
-- Explicitly export the components, contexts, hooks, and related types that callers need through the entry. Named re-exports and importing then exporting named bindings are both allowed. `export *`, `export * as`, and exporting an entire imported namespace (including through aliases) are forbidden so new implementation exports do not become public automatically. Namespace imports may be used internally, including `React`, or to select named public parts explicitly, such as `export const DialogRoot = Parts.Root`.
-- Implementation files remain private import paths, even when selected symbols are exposed by the entry. Keep one component per implementation file; the entry may collect multiple public components.
-- Keep component-specific contexts, hooks, helpers, and types alongside its parts. Keep implementation-only symbols private. Extract them to the appropriate layer within their owner when they acquire an independent reuse role; business ownership remains unchanged.
-
-For example, a compound dialog exposes its composable parts and context while keeping its internal hook private:
 
 ```
 components/ui/dialog/
@@ -145,7 +117,11 @@ export { DialogBackdrop } from "./backdrop";
 export { DialogContext } from "./context";
 ```
 
-Component directories are one level deep, so when one grows past ~5–7 files, split it into **sibling** component directories; the main component imports each sibling's entry, using relative paths within the same feature:
+- Code outside the directory imports only through its `index`.
+- The `index` exports by name each component, context, hook, and type that callers need.
+- Keep component-specific contexts, hooks, helpers, and types alongside its parts. Keep implementation-only symbols private. Extract them to the appropriate layer within their owner when they acquire an independent reuse role; business ownership remains unchanged.
+
+Component directories are one level deep, so when one grows past ~5–7 files, split it into **sibling** component directories:
 
 ```
 features/task/components/
@@ -159,20 +135,4 @@ features/task/components/
 
 ### Feature public API
 
-A feature's **entry** files at its root define its public API: the main entry `index.ts`, plus optional sub-entries (e.g. `canvas.ts`). Outside code imports only from entries using `@/features/{name}` or `@/features/{name}/{sub-entry}`; implementation paths remain private even when their symbols are re-exported. Files inside the same feature must import each other by relative path, including across subdirectories, while respecting component directory entries. Imports of project code outside that feature must use `@/`; third-party packages use their package names.
-
-Feature implementation files import the modules they need directly; they must not import or re-export from their own feature's root entry or sub-entries. For example, `utils/example.ts` cannot reach a component through `../index`. Root entry files may aggregate other entries without creating cycles. Component directory entries remain required when crossing a component's private boundary.
-
-**Heavy dependencies go through a sub-entry.** Named re-exports can be tree-shaken; their presence alone does not mean every exported module ships in the initial bundle. Side effects, module format, and bundler behavior affect the result. Separate heavy sub-entries make the dependency boundary explicit and provide a target for lazy loading:
-
-- Export modules that `import` heavy libraries such as `three` from a sub-entry; the main `index.ts` exports only lightweight code.
-- First-load and general code imports the main entry. Load nonessential heavy features on demand with dynamic imports / lazy loading through their sub-entry; a separate entry alone does not defer loading. Verify route and client bundle contents with the [Next.js bundle analyzer](https://nextjs.org/docs/app/guides/package-bundling).
-- Modules that use only `import type` from a heavy library are exported from the main `index.ts` as usual with `export type` — types are erased at compile time.
-
-```
-features/scene-viewer/
-  index.ts        ← main entry, lightweight exports only
-  canvas.ts       ← sub-entry, re-exports 3D rendering code by relative path
-  components/
-    scene-canvas/index.tsx   ← import { Scene } from "three"
-```
+Heavy dependencies, such as `three`, go through a sub-entry beside `index.ts`, such as `canvas.ts`: the main entry stays light, and callers can load the heavy part lazily.

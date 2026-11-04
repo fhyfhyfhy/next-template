@@ -3,11 +3,7 @@ import { DatabaseError } from "pg";
 
 import { startLeaderInterval } from "@/lib/db";
 
-import {
-  getUploadDb,
-  getUploadStorage,
-  uploadDatabaseUrl,
-} from "./connection";
+import { getUploadDb, getUploadStorage, uploadDatabaseUrl } from "./connection";
 import { SEED_KEY_PREFIX } from "./uploads";
 
 /**

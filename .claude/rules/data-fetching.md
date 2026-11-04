@@ -12,13 +12,14 @@ paths:
 
 # Data fetching
 
-When choosing a data owner, integrating RSC with React Query, or changing URL/write refresh coordination, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md). Framework mechanisms come from the installed Next.js docs; shell and prefetch optimization use the official workflows linked there. Before adding or changing a browser request, Server Action, query/mutation options factory, or feature public request entry, read [data-fetching-api.md](data-fetching-api.md) for request configuration and factory contracts; for the server data layer they call, read [data-layer.md](data-layer.md). Each rule here has a runnable reference listed in the [Data demo](../../.agents/skills/next-data-flow/demos.md).
+When choosing a data owner, integrating RSC with React Query, or changing URL/write refresh coordination, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md). Framework mechanisms come from the installed Next.js docs; shell and prefetch optimization use the official workflows linked there. Before adding or changing a browser request, Server Action, `use cache` read, query/mutation options factory, or feature public request entry, read [api-modules.md](api-modules.md) for request configuration and factory contracts; for the server data layer they call, read [data-layer.md](data-layer.md). Each rule here has a runnable reference listed in the [Data demo](../../.agents/skills/next-data-flow/demos.md).
 
 ## Transport
 
-- Server code (Server Components, `generateMetadata`, `use cache` reads, Server Actions, Route Handlers) calls the feature's server data layer directly ([data-layer.md](data-layer.md)). It never requests the app's own Route Handlers.
+- Server code (Server Components, `generateMetadata`, `use cache` reads, Server Actions, Route Handlers, and background jobs started from `instrumentation.ts`) calls the feature's server data layer directly ([data-layer.md](data-layer.md)). Route Handlers exist for the browser: a prerender at build time has no server to answer a request to them, and at request time it adds a round trip (`node_modules/next/dist/docs/01-app/02-guides/backend-for-frontend.md`, Caveats).
+- A Server Component or `generateMetadata` that reads uncached, per-request data awaits `connection()` from `next/server` before calling the data layer. At request time Next renders a route once more before the render it sends, and the data layer's `cache()` deduplicates only within one render, so without `connection()` the query runs twice. Reads inside `use cache` need no `connection()` and must not call it. The task detail page (`app/[locale]/demos/(data)/tasks/[id]/page.tsx`) is the reference.
 - The browser reads through `fetchApi` from `@/lib/fetch`, against the app's Route Handlers under `/api`, and writes through Server Actions. The client dispatches Server Actions one at a time (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, Sequential dispatch on the client), so reads that poll, stream, run in parallel, or are aborted as the user types stay on Route Handlers.
-- Raw `fetch` is for what `fetchApi` does not cover: streaming or SSE responses, binary downloads, and URLs outside the app, such as a presigned object-storage URL. Configure requests as [Requests](data-fetching-api.md#requests) describes.
+- Raw `fetch` is for what `fetchApi` does not cover: streaming or SSE responses, binary downloads, and URLs outside the app, such as a presigned object-storage URL. Configure requests as [Requests](api-modules.md#requests) describes.
 
 ## Copies
 
@@ -45,7 +46,7 @@ if (todos.error) {
 return "Loading...";
 ```
 
-- Put shared defaults in the factory's [error policy](data-fetching-api.md#error-policy). For a policy specific to one caller, override `meta` there. A call site's `meta` replaces the factory's whole, so spread the factory's to change one field:
+- Put shared defaults in the factory's [error policy](api-modules.md#error-policy). For a policy specific to one caller, override `meta` there. A call site's `meta` replaces the factory's whole, so spread the factory's to change one field:
 
   ```tsx
   const options = getTodosQueryOptions();

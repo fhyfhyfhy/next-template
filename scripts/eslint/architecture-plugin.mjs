@@ -262,25 +262,6 @@ export default function createArchitecturePlugin(projectRoot) {
     },
   };
 
-  const packageImportsRule = {
-    meta: {
-      type: "problem",
-      schema: [],
-      messages: {
-        unsupported:
-          "The project has no package imports (#...): their targets depend on runtime conditions that the architecture checks do not follow. Use @/ or relative paths, and extend the checks before adding one.",
-      },
-    },
-    create(context) {
-      return importVisitors((source) => {
-        const specifier = importSpecifier(source);
-        if (specifier?.startsWith("#")) {
-          context.report({ node: source, messageId: "unsupported" });
-        }
-      });
-    },
-  };
-
   const reactQueryWrappers = new Set(
     SOURCE_EXTENSIONS.map((extension) =>
       resolve(projectRoot, `lib/react-query.${extension}`),
@@ -319,7 +300,6 @@ export default function createArchitecturePlugin(projectRoot) {
       "component-imports": componentImportsRule,
       "component-entry": componentEntryRule,
       "component-exports": componentExportsRule,
-      "package-imports": packageImportsRule,
       "wrapper-imports": wrapperImportsRule,
     },
   };

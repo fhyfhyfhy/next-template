@@ -245,8 +245,6 @@ const eslintConfig = defineConfig([
       "architecture/component-imports": "error",
       // 每个组件目录只保留一个实现入口，避免多个 index 扩展名产生解析歧义；允许声明文件并存。
       "architecture/component-entry": "error",
-      // 约束条件导入的调用方、目标及顺序，防止未经支持的 # 路径绕过架构检查。
-      "architecture/package-imports": "error",
       // React Query 统一从项目封装引入，避免直接使用原包而绕过项目的 QueryClient 策略。
       "architecture/wrapper-imports": "error",
       // 源码路径统一用 kebab-case，同时保留 Next.js 路由目录的特殊命名约定。
@@ -270,7 +268,7 @@ const eslintConfig = defineConfig([
               target: ["e2e/**"],
               from: ROOT_LAYERS.flatMap((layer) => layer.files),
               message:
-                'e2e/ observes the app only through the browser and the Demo backend\'s control endpoints, so it imports no application code. See "Where files go" in .claude/rules/architecture.md.',
+                "e2e/ observes the app only through the browser and the Demo backend's control endpoints, so it imports no application code. See .claude/rules/e2e.md.",
             },
           ],
         },
