@@ -1,4 +1,5 @@
 import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
+import eslintReact from "@eslint-react/eslint-plugin";
 import pluginQuery from "@tanstack/eslint-plugin-query";
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
@@ -240,6 +241,27 @@ const eslintConfig = defineConfig([
       ],
       // 用 warn 提醒处理 null/undefined，避免非空断言 ! 隐藏实际可能为空的值。
       "@typescript-eslint/no-non-null-assertion": "warn",
+    },
+  },
+  {
+    files: [SOURCE_GLOB],
+    plugins: { "@eslint-react": eslintReact },
+    rules: {
+      // React 19 的写法，见 .claude/rules/react.md。
+      "@eslint-react/no-forward-ref": "error",
+      "@eslint-react/no-use-context": "error",
+      "@eslint-react/dom-no-use-form-state": "error",
+      // no-context-provider 只按名字认出 context（<XxxContext.Provider>），所以 createContext 的结果都要叫 XxxContext。
+      "@eslint-react/no-context-provider": "error",
+      "@eslint-react/naming-convention-context-name": "error",
+      // 原生 button 默认 type="submit"，放在 form 里点一下就会提交。
+      "@eslint-react/dom-no-missing-button-type": "error",
+      // 组件和 hook 加的监听、定时器、observer 要在 cleanup 里撤掉，否则卸载后还在跑。
+      "@eslint-react/web-api-no-leaked-event-listener": "error",
+      "@eslint-react/web-api-no-leaked-timeout": "error",
+      "@eslint-react/web-api-no-leaked-interval": "error",
+      "@eslint-react/web-api-no-leaked-resize-observer": "error",
+      "@eslint-react/web-api-no-leaked-intersection-observer": "error",
     },
   },
   {

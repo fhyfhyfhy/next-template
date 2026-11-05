@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
   basePath: BASE_PATH,
   distDir,
   cacheComponents: true,
+  reactCompiler: {
+    // 手写的 useMemo、useCallback、memo 照旧保证缓存。默认值随 compiler 的实现和版本而变（Babel 版 1.0 是 true），所以写明。
+    environment: { enablePreserveExistingMemoizationGuarantees: true },
+  },
   // 内置的内存 handler 在生产环境过了 cacheLife 的 revalidate 就丢弃条目，请求只能同步等新数据；
   // 这个 handler 保留到 expire，生产环境和 dev 一样先返回旧数据、后台刷新。
   // 必须是绝对路径：Next 校验配置时按当前目录解析，运行时又按 distDir 解析相对路径。
