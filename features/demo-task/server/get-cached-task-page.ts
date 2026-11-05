@@ -2,10 +2,8 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
-import { listTasks } from "../server/tasks";
 import type { TaskFilters } from "../types/task-filters";
-
-// `use cache` 函数不能进客户端 bundle，所以放在 server-only 模块。
+import { listTasks } from "./tasks";
 
 /**
  * 列表页由 Server Component 负责，读取结果按筛选条件缓存。任务状态会随时间自动推进，列表只是快照，

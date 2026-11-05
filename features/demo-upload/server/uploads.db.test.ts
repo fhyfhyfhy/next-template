@@ -1,78 +1,22 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 
-import { DomainError, ErrorCode } from "@/lib/domain-error";
+import { ErrorCode } from "@/lib/domain-error";
 
-import { UPLOAD_ALREADY_USED, UPLOAD_NOT_READY } from "./constants/error-codes";
 import {
-  attachUpload,
-  cleanupUnattachedUploads,
-  clearUploads,
-  createUpload,
-  detachRecordUploads,
-  getAttachedUploadUrls,
-} from "./server";
+  UPLOAD_ALREADY_USED,
+  UPLOAD_NOT_READY,
+} from "../constants/error-codes";
+import {
+  clearUploadsBeforeEach,
+  cover,
+  coverUrl,
+  PNG,
+  rejection,
+  upload,
+} from "./db-test-helpers";
+import { attachUpload, clearUploads, createUpload } from "./uploads";
 
-// 上传的数据层，经 server.ts 入口调用，连接真实的 Postgres 和对象存储（pnpm demo:test）。
-// 记录用的是不透明的 record_type、record_id：这个 feature 不知道业务表，测试里也不需要真实的任务。
-
-beforeEach(async () => {
-  const deleteFiles = await clearUploads();
-  await deleteFiles();
-});
-
-const PNG = Uint8Array.from(
-  atob(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-  ),
-  (char) => char.charCodeAt(0),
-);
-
-async function rejection(promise: Promise<unknown>) {
-  const error = await promise.then(
-    () => null,
-    (reason: unknown) => reason,
-  );
-  if (!(error instanceof DomainError)) {
-    throw new Error(`Expected a DomainError, got ${String(error)}`);
-  }
-  const { status, code, param, params } = error;
-  return { status, code, param, params };
-}
-
-/** 签发一次封面上传；`body` 不为 null 时按浏览器的做法直传到对象存储。 */
-async function upload(
-  body: Uint8Array<ArrayBuffer> | null = PNG,
-  contentType = "image/png",
-) {
-  const { id, uploadUrl } = await createUpload({
-    purpose: "task-cover",
-    contentType,
-    size: PNG.byteLength,
-  });
-  if (body) {
-    const response = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": contentType },
-      body,
-    });
-    expect(response.status).toBe(200);
-  }
-  return { id, uploadUrl };
-}
-
-const cover = (recordId: string, uploadId: string) => ({
-  uploadId,
-  purpose: "task-cover",
-  recordType: "note",
-  recordId,
-  name: "cover",
-});
-
-async function coverUrl(recordId: string) {
-  return (await getAttachedUploadUrls("note", [recordId], "cover")).get(
-    recordId,
-  );
-}
+clearUploadsBeforeEach();
 
 describe("签发上传", () => {
   test("按用途的规则校验声明的类型和大小，不合格时按参数错误拒绝", async () => {
@@ -168,40 +112,6 @@ describe("关联", () => {
     const after = await coverUrl("n1");
     expect(after).not.toBe(before);
     expect(after).toContain(second.id);
-  });
-});
-
-describe("清理没被使用的上传", () => {
-  test("删除过了等待时间、没被任何记录使用的上传和文件，正在使用的保留", async () => {
-    const used = await upload();
-    const unused = await upload();
-    await attachUpload(cover("n1", used.id));
-
-    expect(await cleanupUnattachedUploads(0)).toBe(1);
-
-    expect((await fetch(unused.uploadUrl.split("?")[0])).status).not.toBe(200);
-    expect((await rejection(attachUpload(cover("n2", unused.id)))).status).toBe(
-      404,
-    );
-    expect((await fetch((await coverUrl("n1")) ?? "")).status).toBe(200);
-  });
-
-  test("还没过等待时间的上传不删，正在上传的文件不受影响", async () => {
-    await upload();
-    expect(await cleanupUnattachedUploads()).toBe(0);
-  });
-
-  test("记录解除关联、换下来的旧文件在下一次清理时删除", async () => {
-    const first = await upload();
-    const second = await upload();
-    await attachUpload(cover("n1", first.id));
-    await attachUpload(cover("n1", second.id));
-    await attachUpload(cover("n2", (await upload()).id));
-    await detachRecordUploads("note", "n2");
-
-    expect(await cleanupUnattachedUploads(0)).toBe(2);
-    expect(await coverUrl("n1")).toContain(second.id);
-    expect(await coverUrl("n2")).toBeUndefined();
   });
 });
 

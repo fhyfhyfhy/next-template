@@ -15,7 +15,7 @@ import type { Task } from "../types/task";
 import {
   type CreateTaskInput,
   createTaskInputSchema,
-} from "./create-task-request";
+} from "./create-task-schema";
 
 /**
  * 创建任务。名称被占用是预期失败，返回 `ok: false`；其他错误照常抛出。

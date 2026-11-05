@@ -1,7 +1,4 @@
-# 推送前检查整个仓库：feature 之间的环可能由没改动的文件引起，只查改动的文件或用 --cache 都会漏报。
-# 没有全局 pnpm 时退回 corepack。
-if command -v pnpm >/dev/null 2>&1; then
-  pnpm lint
-else
-  corepack pnpm lint
-fi
+# 推送前完整检查一遍：格式、整个仓库的 lint、类型检查和单元测试。feature 之间的环可能由没改动的文件引起，
+# 只查暂存文件或用 --cache 都会漏报。
+. .husky/ensure-pnpm.sh
+pnpm check

@@ -10,20 +10,17 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --project app",
     "test:e2e": "playwright test",
     "e2e:at": "node scripts/e2e-at.mjs",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
     "demo:dev": "node scripts/run-next.mjs dev --demo",
     "demo:build": "node scripts/run-next.mjs build --demo",
     "demo:start": "node scripts/run-next.mjs start --demo",
-    "demo:test": "vitest run --config vitest.demo.config.mts",
+    "demo:test": "vitest run --project demo-unit --project demo-db",
     "demo:test:e2e": "playwright test --config playwright.demo.config.ts",
     "demo:generate:examples": "node scripts/demo-ui/index-generator.mjs",
     "prepare": "husky"
-  },
-  "lint-staged": {
-    "*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1161.0",

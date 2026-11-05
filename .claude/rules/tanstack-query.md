@@ -5,7 +5,7 @@ paths:
 
 # TanStack Query
 
-Define the browser's requests and the React Query options factories that use them, in a feature's `api/`. Server Actions and `use cache` reads in `api/`, and the data layer they all reach, follow [server-data.md](server-data.md). A factory's `meta` configures the failure toasts, as [Toasts](data-flow.md#toasts) describes. The `next-data-flow` skill chooses the data owner. Read `lib/fetch.ts` and `lib/react-query.ts` for their available options and exports. `features/demo-task/api/` follows these conventions end to end; the [Data demo](../../.agents/skills/next-data-flow/demos.md) maps each one to its code.
+Define the browser's requests and the React Query options factories that use them, in a feature's `api/`. Server Actions in `api/`, and the data layer and `use cache` reads in `server/`, follow [server-data.md](server-data.md). A factory's `meta` configures the failure toasts, as [Toasts](data-flow.md#toasts) describes. The `next-data-flow` skill chooses the data owner. Read `lib/fetch.ts` and `lib/react-query.ts` for their available options and exports. `features/demo-task/api/` follows these conventions end to end; the [Data demo](../../.agents/skills/next-data-flow/demos.md) maps each one to its code.
 
 ## Files
 

@@ -26,17 +26,31 @@ The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo
 
 ## Checks
 
-`pnpm check` runs `format:check`, `lint`, `typecheck`, and `test` in that order and stops at the first failure. The e2e sets run on their own (see [Tests](#tests)).
+`pnpm check` runs `format:check`, `lint`, `typecheck`, and `test` in that order and stops at the first failure. The e2e sets and the Demo features' tests run on their own (see [Tests](#tests)).
 
-Git hooks run through [husky](https://typicode.github.io/husky/): `git commit` formats the staged files with Prettier ([lint-staged](https://github.com/lint-staged/lint-staged), configured in `package.json`), and `git push` runs `pnpm lint` over the whole repo, stopping the push when it fails. `pnpm install` enables the hooks through the `prepare` script; it skips that step when the dependencies are already installed, so an existing checkout runs `pnpm prepare` once.
+Git hooks run through [husky](https://typicode.github.io/husky/), from `.husky/`:
+
+| Hook | Does |
+| --- | --- |
+| `pre-commit` | refuses commits on `main`; on the staged files, runs `eslint --fix` and Prettier, the unit tests related to staged code (`vitest related`, in the `app` or `demo-unit` project), the messages test when `messages/` changed, and the docs links test when a `.md` changed ([lint-staged](https://github.com/lint-staged/lint-staged), `lint-staged.config.mjs`) |
+| `pre-push` | `pnpm check` over the whole repo |
+| `post-merge`, `post-checkout` | `pnpm install --frozen-lockfile` when `pnpm-lock.yaml` changed |
+
+`pnpm install` enables the hooks through the `prepare` script; it skips that step when the dependencies are already installed, so an existing checkout runs `pnpm prepare` once.
 
 `pnpm typecheck` runs `next typegen` before `tsc --noEmit`, because helpers such as `PageProps<"/[locale]/demos/tasks">` come from the route types Next generates in `.next/types`. `tsconfig.json` excludes the copies that `next dev`, the `demo:` scripts, and the e2e builds keep in `.next/dev` and the other `.next-*` directories: after a route is removed or renamed, they stay stale until their script runs again.
 
 ## Tests
 
-`pnpm test` runs the unit tests with Vitest: every `*.test.*` file, kept next to the code it tests, except `*.db.test.*`. `vitest.config.mts` resolves `@/` like `tsconfig.json`.
+Vitest runs every `*.test.*` file, kept next to the code it tests, in one of three projects in `vitest.config.mts`, which also resolves `@/` like `tsconfig.json`:
 
-`pnpm demo:test` runs the Demo backend's data-layer tests (`*.db.test.*`, `vitest.demo.config.mts`) against real Postgres and object storage on the `test` dataset, its own database and bucket. It starts the services, so it needs Docker, which keeps it out of `pnpm check`.
+| Project | Tests | Run by |
+| --- | --- | --- |
+| `app` | everything outside the Demo features, including the data-layer tests (`*.db.test.*`) of the project's own features, which need their database | `pnpm test` |
+| `demo-unit` | the Demo features' unit tests | `pnpm demo:test`, and `git commit` for the tests related to the staged Demo files |
+| `demo-db` | the Demo features' data-layer tests, against real Postgres and object storage on the `test` dataset, its own database and bucket | `pnpm demo:test` |
+
+`demo-db` starts the services, so `pnpm demo:test` needs Docker, which keeps it out of `pnpm check`.
 
 End-to-end specs run with Playwright in two sets, each against its own production build and port, so they can run side by side and alongside `pnpm dev`. Install the browser once with `pnpm exec playwright install chromium`.
 
