@@ -14,7 +14,7 @@ Over-abstraction is harder to undo than duplication, so abstract sparingly:
 - **YAGNI**: write single-use code as a plain, concrete implementation. Add abstractions, config options, and extension points when a real need arrives.
 - Extract only **stable commonality**. Two pieces that merely look alike but will evolve separately stay separate — merging them now costs more to split later.
 
-Design-system primitives are an exception to the rule of three: when a current UI need requires a shared visual and interaction contract, implement the primitive directly in `components/ui/`, even for its first consumer. Build only the capabilities needed now. Feature-specific UI still follows the ownership and extraction rules below.
+Design-system primitives are an exception to the rule of three and YAGNI: when a current UI need requires a shared visual and interaction contract, implement the primitive directly in `components/ui/`, even for its first consumer, with the scope that [Write a component](components.md#write-a-component) sets for primitives. Feature-specific UI still follows the ownership and extraction rules below.
 
 ### Design for change
 
