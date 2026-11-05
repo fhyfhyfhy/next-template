@@ -20,7 +20,7 @@ import { isDemoBackendEnabled } from "./connection";
 import { HttpFaultError, runAsHttpRequest } from "./demo-controls";
 
 /**
- * `/api/demo` 下 Route Handler 的适配层：Demo 后端没有启用时一律 404；其余情况执行 `handler`，返回值序列化成
+ * `/api/demo` 下 Route Handler 的适配层：Demo backend 没有启用时一律 404；其余情况执行 `handler`，返回值序列化成
  * JSON（返回 `Response` 时原样发出），数据层抛出的 `DomainError` 转成 `lib/fetch.ts` 解析的失败响应，
  * 其他错误记日志后返回 500。`handler` 里的数据层调用记为来自 HTTP（调用记录和只在 HTTP 上生效的故障据此区分）。
  */
@@ -30,7 +30,7 @@ export function demoRoute<TContext>(
   return async (request: Request, context: TContext): Promise<Response> => {
     // 开启 Cache Components 后，GET 会在 build 时尝试预渲染；handler 一读数据库，预渲染就停下、改在请求时执行
     // （node_modules/next/dist/docs/01-app/01-getting-started/15-route-handlers.md 的 With Cache Components）。
-    // Demo 后端没有启用的 build 里，这里的 404 会被预渲染成静态响应，正好就是要的结果。
+    // Demo backend 没有启用的 build 里，这里的 404 会被预渲染成静态响应，正好就是要的结果。
     if (!isDemoBackendEnabled()) {
       return Response.json(errorBody(notFound("Not found")), { status: 404 });
     }

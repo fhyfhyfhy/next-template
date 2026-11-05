@@ -1,6 +1,6 @@
 import "server-only";
 
-// Demo 生成器和种子数据产出的文件内容：任务的封面图和 3D 模型。都按需生成，不放进仓库。
+// Demo generator 和种子数据产出的文件内容：任务的封面图和 3D 模型。都按需生成，不放进仓库。
 
 const GLB_MAGIC = 0x46546c67; // "glTF"
 const CHUNK_JSON = 0x4e4f534a;

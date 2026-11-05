@@ -2,7 +2,7 @@ import type { APIRequestContext, Page } from "@playwright/test";
 
 import { expect, test as base } from "../test";
 
-// e2e 只通过浏览器和 Demo 后端的控制接口（/api/demo/control/*）观察、准备条件，不引用应用代码。
+// e2e 只通过浏览器和 Demo backend 的控制接口（/api/demo/control/*）观察、准备条件，不引用应用代码。
 // 控制接口和页面在同一个服务上，请求按 playwright.demo.config.ts 的 baseURL 发出；那个服务用 e2e 数据集，
 // 不会动到开着的 demo:dev 的数据。
 
@@ -102,7 +102,7 @@ export class DemoBackend {
   }
 }
 
-/** 每个测试开始前重置 Demo 后端，不管测试有没有用到它。 */
+/** 每个测试开始前重置 Demo backend，不管测试有没有用到它。 */
 export const test = base.extend<{ demoBackend: DemoBackend }>({
   demoBackend: [
     async ({ request }, use) => {

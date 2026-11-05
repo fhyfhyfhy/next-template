@@ -1,6 +1,6 @@
-// Demo 后端的数据集：同一个 Postgres 服务和对象存储里，各用各的 database 和 bucket，互不干扰。
+// Demo backend 的数据集：同一个 Postgres 服务和对象存储里，各用各的 database 和 bucket，互不干扰。
 // demo:* 命令用 dev，Data demo 的 e2e 用 e2e（playwright.demo.config.ts），数据层测试用 test（pnpm demo:test）。
-// 连接参数和 compose.demo.yaml 一致；Demo 后端只连这里的服务，不读 .env 文件。
+// 连接参数和 compose.demo.yaml 一致；Demo backend 只连这里的服务，不读 .env 文件。
 
 /** @type {Record<string, { database: string, bucket: string }>} */
 export const DEMO_DATASETS = {
@@ -43,7 +43,7 @@ export function databaseUrl(database) {
 }
 
 /**
- * 启动 Next 时写进环境变量的 Demo 后端配置。Demo 后端只在 `DEMO_DATABASE_URL` 存在时启用
+ * 启动 Next 时写进环境变量的 Demo backend 配置。Demo backend 只在 `DEMO_DATABASE_URL` 存在时启用
  * （features/demo-task/server/connection.ts），所以只有 demo:* 命令和数据层测试会设置它们。
  */
 export function demoEnv(name) {

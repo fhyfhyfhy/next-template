@@ -11,7 +11,7 @@ import { ensureDemoSeeded } from "./seed";
 import { notifyTaskChanged } from "./task-events";
 import { findTaskRow, toTask } from "./tasks";
 
-// Demo 生成器：模拟一个外部的生成服务，只有它推进任务。业务读写的代码不碰推进逻辑。
+// Demo generator：模拟一个外部的生成服务，只有它推进任务。业务读写的代码不碰推进逻辑。
 
 // 和上传清理、写种子的锁用不同的 key。
 const GENERATOR_LOCK_KEY = 2_026_110_201;

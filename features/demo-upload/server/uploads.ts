@@ -248,7 +248,7 @@ export async function getAttachedUploadDownloadUrl(
 }
 
 /**
- * 服务端自己产出的文件（比如 Demo 生成器写的模型）：先记下这次上传、再写入存储，返回它的 id，由调用方关联。
+ * 服务端自己产出的文件（比如 Demo generator 写的模型）：先记下这次上传、再写入存储，返回它的 id，由调用方关联。
  * 不经过签发，所以不受 constants/upload-purposes.ts 的限制。记录用自己的连接立即提交，不加入调用方的事务：
  * 调用方的事务回滚时，这次上传只是没被使用，由清理任务连同文件一起删除；文件写入失败时同理。
  */

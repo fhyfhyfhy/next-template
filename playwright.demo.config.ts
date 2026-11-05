@@ -6,7 +6,7 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = Number(process.env.DEMO_E2E_PORT ?? 3999);
 const BASE_URL = `http://localhost:${PORT}`;
 
-// Demo 的 e2e（pnpm demo:test:e2e）：对着启用了 Demo 后端的 demo 生产构建运行，缓存新鲜度和 prefetch 只有在
+// Demo 的 e2e（pnpm demo:test:e2e）：对着启用了 Demo backend 的 demo 生产构建运行，缓存新鲜度和 prefetch 只有在
 // next start 下才可信。默认总是自己 build 并启动；调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务（比如设
 // DEMO_DATASET=e2e 后运行 pnpm demo:dev --port 3999，让它用 e2e 的数据集），这时依赖生产行为的用例（如预取）会失败。
 export default defineConfig({

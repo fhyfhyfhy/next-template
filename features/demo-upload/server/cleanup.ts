@@ -12,7 +12,7 @@ import { SEED_KEY_PREFIX } from "./uploads";
  */
 export const UNATTACHED_UPLOAD_TTL_MS = 60 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
-// 和 Demo 生成器的锁（demo-task）用不同的 key：两个后台任务各自选出运行的进程。
+// 和 Demo generator 的锁（demo-task）用不同的 key：两个后台任务各自选出运行的进程。
 const CLEANUP_LOCK_KEY = 2_026_110_202;
 
 /**

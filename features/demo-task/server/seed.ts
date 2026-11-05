@@ -16,7 +16,7 @@ import type { TaskTables } from "./tables";
 
 const SEED_EPOCH = Date.UTC(2026, 9, 1);
 const HOUR = 60 * 60 * 1000;
-// 和 Demo 生成器、上传清理的锁用不同的 key。
+// 和 Demo generator、上传清理的锁用不同的 key。
 const SEED_LOCK_KEY = 2_026_110_203;
 
 const PROMPTS = {
@@ -152,7 +152,7 @@ export async function lockDemoData(trx: Kysely<TaskTables>) {
 const seeded = new Map<string, Promise<void>>();
 
 /**
- * 库里还没写过种子数据时写入。Demo 后端在每次数据层调用前等它，所以第一次启动后（包括 build 时的预渲染）
+ * 库里还没写过种子数据时写入。Demo backend 在每次数据层调用前等它，所以第一次启动后（包括 build 时的预渲染）
  * 读到的总是种子数据。写过一次之后不再写，即使任务后来全被删掉：恢复种子数据要用重置。
  */
 export function ensureDemoSeeded() {

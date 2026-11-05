@@ -1,3 +1,4 @@
+import markdown from "@eslint/markdown";
 import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
 import eslintReact from "@eslint-react/eslint-plugin";
 import pluginQuery from "@tanstack/eslint-plugin-query";
@@ -24,6 +25,7 @@ import withWrapperImports, {
   mutationCallbacksRule,
 } from "./scripts/eslint/query-plugin.mjs";
 import { TAILWIND_PALETTES } from "./scripts/eslint/tailwind-palettes.mjs";
+import writingStylePlugin from "./scripts/eslint/writing-style-plugin.mjs";
 
 const PROJECT_ROOT = import.meta.dirname;
 const extensionGlob = `{${SOURCE_EXTENSIONS.join(",")}}`;
@@ -67,6 +69,16 @@ const FEATURE_LAYERS = [
   name: `features/{name}/${dir}/`,
   files: [`features/*/${dir}/**`],
 }));
+
+// agent 读的指令，用英文写。和 .claude/rules/writing-style.md「Language by content」表里 Agent instructions
+// 一行对应，改一边要同步另一边。
+const AGENT_INSTRUCTIONS = [
+  "AGENTS.md",
+  "CLAUDE.md",
+  ".claude/rules/**/*.md",
+  ".agents/**/*.md",
+  "docs/agents/**/*.md",
+];
 
 // TanStack 官方规则和本地规则合成一个插件，规则名统一用官方的前缀 @tanstack/query/*。
 // withWrapperImports 让官方规则识别从 @/lib/react-query 封装的 import。
@@ -241,6 +253,12 @@ const eslintConfig = defineConfig([
       ],
       // 用 warn 提醒处理 null/undefined，避免非空断言 ! 隐藏实际可能为空的值。
       "@typescript-eslint/no-non-null-assertion": "warn",
+      // identifier 只用 ASCII 字母、数字、_ 和 $（.claude/rules/writing-style.md「Names and fixed terms」）。
+      "id-match": [
+        "error",
+        "^[\\w$]+$",
+        { properties: true, classFields: true },
+      ],
     },
   },
   {
@@ -569,6 +587,13 @@ const eslintConfig = defineConfig([
         },
       ],
     },
+  },
+  {
+    files: AGENT_INSTRUCTIONS,
+    plugins: { markdown, "writing-style": writingStylePlugin },
+    language: "markdown/gfm",
+    languageOptions: { frontmatter: "yaml" },
+    rules: { "writing-style/english-only": "error" },
   },
   // 项目级忽略项在 Next 默认项上加入 worktree，避免重复检查其他 checkout。
   globalIgnores([

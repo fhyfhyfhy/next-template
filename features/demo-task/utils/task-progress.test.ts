@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { nextTaskStep, type TaskProgressState } from "./task-progress";
 
-describe("Demo 生成器推进一步", () => {
+describe("Demo generator 推进一步", () => {
   test("pending 进入 running 0%，之后每步加 25%，到 100% 后完成", () => {
     const steps = [];
     let task: TaskProgressState = {

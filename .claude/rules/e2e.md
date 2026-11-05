@@ -30,7 +30,7 @@ Playwright pages stay in the foreground, so a return to the tab is simulated: us
 
 ## Waiting
 
-- Task state changes only through `demoBackend.advance()`: the `demoBackend` fixture pauses the Demo 生成器's clock.
+- Task state changes only through `demoBackend.advance()`: the `demoBackend` fixture pauses the Demo generator's clock.
 - End each wait on the event that completes it, such as `page.waitForResponse` for a Server Action. A fixed wait fits only a negative assertion, "nothing else happens within N ms", and its `eslint-disable` comment gives that reason.
 - `demoBackend.calls()` reads the data-layer call log once. Poll it with `expect.poll` when the browser sends the request; read it directly for calls made while the server renders, which finish before the HTML arrives.
 
