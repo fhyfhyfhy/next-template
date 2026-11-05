@@ -24,6 +24,10 @@ export const buttonVariants = cva(
         sm: "h-control-sm px-3 text-xs",
         md: "h-control-md px-4 text-sm",
         lg: "h-control-lg px-5 text-sm",
+        // 只放图标的按钮：正方形，可访问名称由调用方的 aria-label 提供。
+        "icon-sm": "size-control-sm",
+        "icon-md": "size-control-md",
+        "icon-lg": "size-control-lg",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },

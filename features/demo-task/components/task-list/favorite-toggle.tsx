@@ -4,6 +4,7 @@ import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import { startTransition, useOptimistic } from "react";
 
+import { Button } from "@/components/ui/button";
 import { useMutation } from "@/lib/react-query";
 
 import type { Task } from "../../api/get-task";
@@ -22,11 +23,12 @@ export function FavoriteToggle({ task }: { task: Task }) {
   );
   const updateFavorite = useMutation(updateTaskFavoriteMutationOptions(t));
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon-sm"
       aria-label={t("taskList.favorite")}
       aria-pressed={optimisticFavorite}
-      className="rounded-control p-1.5 text-muted-foreground outline-none hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring aria-pressed:text-primary"
+      className="text-muted-foreground not-data-disabled:hover:text-primary aria-pressed:text-primary"
       onClick={() => {
         const next = !optimisticFavorite;
         startTransition(async () => {
@@ -40,10 +42,10 @@ export function FavoriteToggle({ task }: { task: Task }) {
       }}
     >
       {optimisticFavorite ? (
-        <IconStarFilled className="size-4" aria-hidden />
+        <IconStarFilled aria-hidden />
       ) : (
-        <IconStar className="size-4" aria-hidden />
+        <IconStar aria-hidden />
       )}
-    </button>
+    </Button>
   );
 }

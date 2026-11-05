@@ -4,6 +4,7 @@ import { IconStar, IconStarFilled } from "@tabler/icons-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
+import { Button } from "@/components/ui/button";
 import { useMutation } from "@/lib/react-query";
 
 import type { Task } from "../../api/get-task";
@@ -25,19 +26,20 @@ export function FeedCard({ task }: { task: Task }) {
         >
           {task.name}
         </Link>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-sm"
           aria-label={t("feed.favorite")}
           aria-pressed={task.favorite}
-          className="rounded-control p-1.5 text-muted-foreground hover:bg-accent hover:text-primary aria-pressed:text-primary"
+          className="text-muted-foreground not-data-disabled:hover:text-primary aria-pressed:text-primary"
           onClick={() => favorite.mutate({ task, favorite: !task.favorite })}
         >
           {task.favorite ? (
-            <IconStarFilled className="size-4" aria-hidden />
+            <IconStarFilled aria-hidden />
           ) : (
-            <IconStar className="size-4" aria-hidden />
+            <IconStar aria-hidden />
           )}
-        </button>
+        </Button>
       </div>
     </article>
   );

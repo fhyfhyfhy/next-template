@@ -8,7 +8,11 @@ import {
   Example as Example1,
   metadata as metadata1,
 } from "./composition.example";
-import { Example as Example2, metadata as metadata2 } from "./icons.example";
+import {
+  Example as Example2,
+  metadata as metadata2,
+} from "./icon-only.example";
+import { Example as Example3, metadata as metadata3 } from "./icons.example";
 
 export const examples = [
   {
@@ -25,8 +29,14 @@ export const examples = [
   },
   {
     ...metadata2,
+    id: "icon-only",
+    filename: "icon-only.example.tsx",
+    component: Example2,
+  },
+  {
+    ...metadata3,
     id: "icons",
     filename: "icons.example.tsx",
-    component: Example2,
+    component: Example3,
   },
 ] satisfies readonly ExampleDefinition[];

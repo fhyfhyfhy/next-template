@@ -2,7 +2,7 @@
 
 // 源码内容变化也要更新此模块，让开发服务器重新读取展示和复制用的源码。
 export const exampleSourceRevision =
-  "9f5be33e0cfcc1c7cc300a883f7f41d683a185fbc0026fc430450e698b80cd28";
+  "92bab52ad55c6f7e351eb6f06446db68d114b4f7d92677dc8109f26aa69497ba";
 
 export const exampleFiles = {
   badge: [
@@ -12,6 +12,7 @@ export const exampleFiles = {
   button: [
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
+    { id: "icon-only", filename: "icon-only.example.tsx" },
     { id: "icons", filename: "icons.example.tsx" },
   ],
   checkbox: [
@@ -28,6 +29,7 @@ export const exampleFiles = {
     { id: "server-errors", filename: "server-errors.example.tsx" },
     { id: "tanstack-form", filename: "tanstack-form.example.tsx" },
   ],
+  form: [{ id: "basic", filename: "basic.example.tsx" }],
   input: [
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },

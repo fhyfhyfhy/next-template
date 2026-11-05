@@ -29,6 +29,12 @@ export const catalog = [
       "Groups a label, control, and error message; TanStack Form supplies the state.",
   },
   {
+    id: "form",
+    title: "Form",
+    description:
+      "A form that validates its fields on submit and focuses the first invalid one.",
+  },
+  {
     id: "input",
     title: "Input",
     description: "A native input element that automatically works with Field.",

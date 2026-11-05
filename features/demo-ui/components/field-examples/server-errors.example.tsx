@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useHydrated } from "@/hooks/use-hydrated";
 
@@ -46,8 +47,7 @@ export function Example() {
     },
   });
   return (
-    <form
-      noValidate
+    <Form
       className="w-full max-w-xs space-y-3"
       onSubmit={(event) => {
         event.preventDefault();
@@ -87,6 +87,6 @@ export function Example() {
           已保存：{saved}
         </p>
       )}
-    </form>
+    </Form>
   );
 }

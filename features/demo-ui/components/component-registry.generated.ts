@@ -19,12 +19,13 @@ import { Demo as Component1Demo } from "./button-examples";
 import { Demo as Component2Demo } from "./checkbox-examples";
 import { Demo as Component3Demo } from "./dialog-examples";
 import { Demo as Component4Demo } from "./field-examples";
-import { Demo as Component5Demo } from "./input-examples";
-import { Demo as Component6Demo } from "./progress-examples";
-import { Demo as Component7Demo } from "./select-examples";
-import { Demo as Component8Demo } from "./skeleton-examples";
-import { Demo as Component9Demo } from "./switch-examples";
-import { Demo as Component10Demo } from "./toaster-examples";
+import { Demo as Component5Demo } from "./form-examples";
+import { Demo as Component6Demo } from "./input-examples";
+import { Demo as Component7Demo } from "./progress-examples";
+import { Demo as Component8Demo } from "./select-examples";
+import { Demo as Component9Demo } from "./skeleton-examples";
+import { Demo as Component10Demo } from "./switch-examples";
+import { Demo as Component11Demo } from "./toaster-examples";
 
 export const demosByComponent = {
   badge: Component0Demo,
@@ -32,12 +33,13 @@ export const demosByComponent = {
   checkbox: Component2Demo,
   dialog: Component3Demo,
   field: Component4Demo,
-  input: Component5Demo,
-  progress: Component6Demo,
-  select: Component7Demo,
-  skeleton: Component8Demo,
-  switch: Component9Demo,
-  toaster: Component10Demo,
+  form: Component5Demo,
+  input: Component6Demo,
+  progress: Component7Demo,
+  select: Component8Demo,
+  skeleton: Component9Demo,
+  switch: Component10Demo,
+  toaster: Component11Demo,
 };
 
 export const iconsByComponent = {
@@ -46,6 +48,7 @@ export const iconsByComponent = {
   checkbox: IconCheckbox,
   dialog: IconAppWindow,
   field: IconClipboardCheck,
+  form: IconForms,
   input: IconForms,
   progress: IconProgress,
   select: IconSelector,

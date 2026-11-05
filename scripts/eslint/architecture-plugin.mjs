@@ -268,6 +268,37 @@ export default function createArchitecturePlugin(projectRoot) {
     ),
   );
 
+  const isUiWrapper = (filename) =>
+    relative(projectRoot, filename)
+      .split(sep)
+      .join("/")
+      .startsWith("components/ui/");
+
+  // 只能由封装文件引用的包。UI 库是 .claude/rules/libraries.md 里「used through their wrappers」那几个；
+  // openSubpaths 是不渲染 UI 的工具，封装之外也能直接用。
+  const wrappedPackages = [
+    {
+      name: "@tanstack/react-query",
+      isWrapper: (filename) => reactQueryWrappers.has(filename),
+      messageId: "wrapper",
+    },
+    ...["@base-ui/react", "sonner", "input-otp"].map((name) => ({
+      name,
+      isWrapper: isUiWrapper,
+      messageId: "uiLibrary",
+      openSubpaths:
+        name === "@base-ui/react"
+          ? [
+              "merge-props",
+              "use-render",
+              "types",
+              "csp-provider",
+              "direction-provider",
+            ]
+          : [],
+    })),
+  ];
+
   const wrapperImportsRule = {
     meta: {
       type: "problem",
@@ -275,18 +306,31 @@ export default function createArchitecturePlugin(projectRoot) {
       messages: {
         wrapper:
           "Import from @/lib/react-query. Only that wrapper may access the original package.",
+        uiLibrary:
+          "Use the project's wrapper of {{name}} from @/components/ui/. When it lacks the part you need, add that part to the wrapper. See .claude/rules/components.md.",
       },
     },
     create(context) {
-      if (reactQueryWrappers.has(context.filename)) return {};
+      const restricted = wrappedPackages.filter(
+        ({ isWrapper }) => !isWrapper(context.filename),
+      );
+      if (!restricted.length) return {};
 
       return importVisitors((source) => {
         const specifier = importSpecifier(source);
-        if (
-          specifier === "@tanstack/react-query" ||
-          specifier?.startsWith("@tanstack/react-query/")
-        ) {
-          context.report({ node: source, messageId: "wrapper" });
+        if (!specifier) return;
+        const wrapped = restricted.find(
+          ({ name, openSubpaths = [] }) =>
+            specifier === name ||
+            (specifier.startsWith(`${name}/`) &&
+              !openSubpaths.includes(specifier.slice(name.length + 1))),
+        );
+        if (wrapped) {
+          context.report({
+            node: source,
+            messageId: wrapped.messageId,
+            data: { name: wrapped.name },
+          });
         }
       });
     },

@@ -4,6 +4,7 @@ import { IconX } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 
 import { DateTime } from "@/components/date-time";
+import { Button } from "@/components/ui/button";
 import { useMutation, useSuspenseQuery } from "@/lib/react-query";
 
 import { deleteCommentMutationOptions } from "../../api/delete-comment";
@@ -40,14 +41,15 @@ export function CommentList({ taskId }: { taskId: string }) {
             </p>
           </div>
           {!comment.sending && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               aria-label={t("comments.delete")}
-              className="rounded-control p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="text-muted-foreground"
               onClick={() => deleteComment.mutate({ commentId: comment.id })}
             >
-              <IconX className="size-4" aria-hidden />
-            </button>
+              <IconX aria-hidden />
+            </Button>
           )}
         </li>
       ))}

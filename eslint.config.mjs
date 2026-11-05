@@ -156,11 +156,42 @@ const ENV_ACCESS = [
   },
 ];
 
+// Base UI 有对应组件的原生元素只在 components/ui/ 的封装里渲染，别处渲染封装，样式、状态和可访问性才一致。
+// 选择器只匹配小写的原生标签：<Form>、<form.Field> 这类组件和成员表达式不受影响。
+const nativeElement = (element, replacement, condition = "") => ({
+  selector: `JSXOpeningElement[name.name='${element}']${condition}`,
+  message: `Native <${element}> renders only inside components/ui/: use ${replacement}. See .claude/rules/components.md.`,
+});
+const NATIVE_ELEMENTS = [
+  nativeElement("button", "Button from @/components/ui/button"),
+  // Base UI 没有文件选择和隐藏字段的组件，这两种 input 保持原生。
+  nativeElement(
+    "input",
+    "Input, Checkbox, or Switch from @/components/ui/",
+    ":not(:has(JSXAttribute[name.name='type'] > Literal[value=/^(file|hidden)$/]))",
+  ),
+  nativeElement("select", "the Select parts from @/components/ui/select"),
+  nativeElement("progress", "the Progress parts from @/components/ui/progress"),
+  nativeElement("dialog", "the Dialog parts from @/components/ui/dialog"),
+  nativeElement("form", "Form from @/components/ui/form"),
+  ...[
+    ["fieldset", "Fieldset"],
+    ["meter", "Meter"],
+    ["hr", "Separator"],
+  ].map(([element, part]) =>
+    nativeElement(
+      element,
+      `a wrapper of Base UI's ${part} in components/ui/, adding it first if it is missing`,
+    ),
+  ),
+];
+
 // 所有应用代码都受的 no-restricted-syntax 限制。
 const RESTRICTED_SYNTAX = [
   ...DATE_TIME_FORMATTING,
   ...TRANSLATOR_NAMESPACE,
   ...ENV_ACCESS,
+  ...NATIVE_ELEMENTS,
 ];
 
 // 给豁免 RESTRICTED_SYNTAX 里一组限制的文件用，其余限制照旧。只设置级别的配置会沿用前面的选项，
@@ -306,7 +337,7 @@ const eslintConfig = defineConfig([
       "architecture/component-imports": "error",
       // 每个组件目录只保留一个实现入口，避免多个 index 扩展名产生解析歧义；允许声明文件并存。
       "architecture/component-entry": "error",
-      // React Query 统一从项目封装引入，避免直接使用原包而绕过项目的 QueryClient 策略。
+      // React Query 和 UI 库只经项目封装引入：绕过封装会丢掉 QueryClient 策略，或者项目统一的样式、默认值和行为。
       "architecture/wrapper-imports": "error",
       // 源码路径统一用 kebab-case，同时保留 Next.js 路由目录的特殊命名约定。
       "naming/kebab-case": "error",
@@ -362,17 +393,28 @@ const eslintConfig = defineConfig([
     rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
   },
   {
-    files: [
-      `**/components/!(ui)/index.${extensionGlob}`,
+    // 封装 Base UI 的地方，可以渲染 NATIVE_ELEMENTS 里的原生元素。
+    files: ["components/ui/**"],
+    ignores: APPLICATION_CODE.ignores,
+    rules: { "no-restricted-syntax": restrictedSyntaxWithout(NATIVE_ELEMENTS) },
+  },
+  // 组件入口在所在位置的限制之外，禁止 export * 和 export * as，要求显式列出公开成员。
+  ...[
+    [`**/components/!(ui)/index.${extensionGlob}`, RESTRICTED_SYNTAX],
+    [
       `**/components/ui/*/index.${extensionGlob}`,
+      RESTRICTED_SYNTAX.filter(
+        (restriction) => !NATIVE_ELEMENTS.includes(restriction),
+      ),
     ],
+  ].map(([files, restrictions]) => ({
+    files: [files],
     rules: {
       // 追踪导入的 namespace 及其 const 别名，避免入口间接暴露整个命名空间。
       "architecture/component-exports": "error",
-      // 禁止入口直接使用 export * 和 export * as，要求显式列出公开成员。
       "no-restricted-syntax": [
         "error",
-        ...RESTRICTED_SYNTAX,
+        ...restrictions,
         {
           selector: "ExportAllDeclaration",
           message: COMPONENT_INDEX_EXPORT_MESSAGE,
@@ -383,7 +425,7 @@ const eslintConfig = defineConfig([
         },
       ],
     },
-  },
+  })),
   // ---- i18n（.claude/rules/i18n.md）----
   // - i18next/no-literal-string：用户看得到的文案放进 messages/，用 t() 渲染。
   // - i18n/client-namespaces：每个 ClientMessages 下发的 namespace 和它包着的 Client Component 用到的一致。

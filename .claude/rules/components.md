@@ -9,52 +9,44 @@ paths:
 
 # Components
 
-## Use an existing component
+Every UI task starts at [Reuse, compose, extend, or add](#reuse-compose-extend-or-add). [Use a component](#use-a-component) governs each place your code renders a project component. [Write a component](#write-a-component) governs each component you create, and each existing one whose public API you change.
 
-1. Search `components/ui/`, `components/`, and the owning feature's components, then read the candidate's public entry, Props, and usage examples. Confirm its behavior, supported states, and required providers before choosing it.
-2. Choose the smallest change that covers the requested interaction:
+## Reuse, compose, extend, or add
 
-   | What is missing? | Action |
+1. Search `components/ui/`, the rest of root `components/`, the owning feature's `components/`, and other features' public entries for components that cover the need. For each candidate, read its public entry and Props, its examples in `features/demo-ui/components/<component-id>-examples/` when it has them, and its existing callers. Confirm its behavior, supported states, and required providers.
+2. Compare the best-fitting candidate with the need, and take the least invasive action that covers it. The rows run from least to most invasive:
+
+   | What the candidate lacks | Action |
    | --- | --- |
-   | Nothing | Reuse the component. |
+   | Nothing | Reuse it. |
    | A different arrangement or content | Compose its public parts, children, and props. |
-   | A capability that belongs to the same component's responsibility | Extend its public API and update affected callers. |
-   | A distinct behavior or responsibility | Follow "Add or change a component" below. |
+   | A capability within its responsibility, including a library part it does not expose yet | Extend its public API. |
+   | A distinct behavior or responsibility | Add a component. |
 
-3. Import through the owner's public entry, following [Component directories](architecture.md#component-directories) and [Shared code ownership](architecture.md#shared-code-ownership). Prefer existing project components whenever they meet the UI's requirements, including page structure and content. Preserve semantic HTML whether using project components or native elements.
-4. Prefer existing variants and sizes for component appearance. See "Styles and variants" below for local customization.
+## Use a component
 
-## Add or change a component
+- Choose the appearance with the component's existing `variant` and `size`. The caller owns placement, surrounding spacing, and layout, and sets them through `className`, along with local adjustments such as a color for a state only this caller has. When a third caller repeats the same visual override, extend the component's variants or defaults instead; UI demo examples do not count as callers.
+- Give each trigger or control exactly one interactive DOM element. To make a trigger look like a project button, pass the button as its `render` prop, as `DeleteTaskDialog` in `features/demo-task/components/delete-task-dialog.tsx` does with `<DialogTrigger render={<Button variant="ghost" />}>`; a button nested in another button or a link is invalid HTML.
 
-1. Determine the owner using [Shared code ownership](architecture.md#shared-code-ownership). Apply [Duplication and abstraction](architecture.md#duplication-and-abstraction) when extracting shared code or introducing a design-system primitive for its first consumer. Keep a simple component in one file. When it needs private implementation files or multiple public parts, use a component directory with a public index entry, following [Component directories](architecture.md#component-directories).
-2. Define the smallest public API that satisfies current callers: what they can render, which visual variants they can choose, which state they control or leave to the component, and which events they can handle. Read nearby implementations for naming and defaults. For a public API change, search all callers and update their usage in the same change.
-3. Implement the component using the contracts below. When wrapping a UI library, follow [Wrap a UI library](#wrap-a-ui-library). Keep business actions and decisions in the owning feature or caller.
-4. Follow [Examples and verification](#examples-and-verification).
+## Write a component
 
-## Public API and composition
+1. Place it by [Shared code ownership](architecture.md#shared-code-ownership). When extracting shared code, or adding a design-system primitive for its first consumer, apply [Duplication and abstraction](architecture.md#duplication-and-abstraction). Keep a simple component in one file; give one that needs private files or several public parts a component directory ([Component directories](architecture.md#component-directories)).
+2. Define the public API. A design-system primitive in `components/ui/` may offer, beyond what its callers use now, the variants, sizes, and parts that shadcn/ui's version of it, when there is one, and the underlying library provide. Every other component offers the smallest public API its current callers need: what they can render, which visual variants they choose, which state they control or leave to the component, and which events they handle. Follow the names and defaults of nearby components. When the public API changes, update every caller in the same change.
+3. Implement it by [Public API](#public-api) and [Styles and variants](#styles-and-variants), and a wrapper around a UI library also by [Wrap a UI library](#wrap-a-ui-library). When ESLint's size warning fires, apply [Split by responsibility](#split-by-responsibility).
 
-When designing or refactoring component APIs, composing public parts, sharing state between parts, or reviewing component architecture, read [React Composition Patterns](../../.agents/skills/vercel-composition-patterns/SKILL.md) and follow the relevant files in its `rules/` directory. Apply the project's ownership and public-entry rules when placing those implementations.
+### Public API
 
-- Declare component implementations with named `export function` declarations. For files loaded by the framework, follow its export convention; for example, Next.js `page.tsx` and `layout.tsx` require default exports. A selected primitive part may be re-exported directly when it needs no adaptation; follow [Component directories](architecture.md#component-directories) instead of adding an empty wrapper.
-- Derive wrapper Props from the underlying component's exported types, preserving its generics where applicable. Add project-specific props explicitly. Document intentional omissions or changed semantics at the public interface; avoid silently narrowing the underlying API.
-- Keep controlled state in the caller and pass its value and change callback through together. For uncontrolled usage, pass default-value props and let the underlying primitive own the state. Avoid local mirrors of controlled props. Preserve the callback's arguments, event details, and cancellation behavior.
-- Use defaults that callers can override for supported options. Consume wrapper-only props before forwarding the remaining props. Merge classes, styles, refs, and handlers where both layers contribute; verify precedence instead of relying on prop spread order to preserve both behaviors.
-- For compound components, expose the parts callers need to arrange content and actions as named exports, as `components/ui/` does. A Server Component cannot access static members such as `Menu.Item` on an imported client reference. Keep required relationships and setup discoverable in examples: which root owns the state, which parts belong inside it, and which providers are required. Business workflows compose those parts in their own owner.
-- Components used as render targets must pass the supplied ref and element props to the underlying DOM element. Follow [React conventions](react.md) for ref handling. When composing triggers and controls, use a single interactive DOM element. Avoid invalid nesting such as a button inside another button or a link.
+When designing or refactoring a component API, composing public parts, sharing state between parts, or reviewing component architecture, read [React Composition Patterns](../../.agents/skills/vercel-composition-patterns/SKILL.md) and follow the relevant files in its `rules/` directory. This rule and [architecture.md](architecture.md) decide where its patterns live.
 
-## Wrap a UI library
+- Declare components as named `export function` declarations. Files the framework loads follow its export convention, such as the default export of Next.js `page.tsx` and `layout.tsx`.
+- Keep controlled state in the caller: accept the value and its change callback together, and read the value from props on every render rather than copying it into local state. For uncontrolled use, accept a default-value prop and let the underlying primitive own the state. Pass the callback's arguments, event details, and cancellation through unchanged.
+- Represent independent behavior, such as `disabled`, with a state prop, separate from `variant` and `size`.
+- Export each part of a compound component that callers arrange as a named export, as `components/ui/` does: a Server Component cannot read static members such as `Menu.Item` from an imported client reference. Show in its UI demo examples (`features/demo-ui/components/<component-id>-examples/`) which root owns the state, which parts belong inside it, and which providers are required.
+- A component used as a render target passes the supplied ref and element props to its DOM element, handling `ref` per [React conventions](react.md).
 
-- Before adding or changing a component in `components/ui/`, read the matching [shadcn/ui source](https://github.com/shadcn-ui/ui/tree/main/apps/v4/registry/bases) for the project's selected underlying library. Refer to its wrappers, prop handling, and variant organization. Project architecture and the underlying library's API and component boundaries take precedence when adapting the reference.
-- Place wrappers for the project's UI libraries, listed in [libraries.md](libraries.md), in `components/ui/`. Callers import UI components through the project's public entries. When a caller needs a part of the underlying library that the project component does not expose, add that part to the project component and its public exports.
-- Preserve the library's original component boundaries: wrap and export each part separately, and let callers assemble them. For example, Base UI's `Dialog.Portal`, `Dialog.Backdrop`, and `Dialog.Popup` remain separate public components, each retaining its own props and styling entry points.
-- Before wrapping a library component or changing its behavior, read its official API reference and check the installed package's public types. Resolve differences against the installed version.
-- Use the library's documented composition and styling APIs. Let the underlying library handle the interactions it provides, such as keyboard navigation and focus management. The wrapper adds project styles, defaults, and required behavior that the library does not provide.
+### Styles and variants
 
-## Styles and variants
-
-### Styling tools
-
-Write static styles as Tailwind CSS class strings. Use these imports for variants and class merging:
+Write static styles as Tailwind CSS class strings. Build variants with `cva` and merge classes with `cn`:
 
 ```tsx
 import { cva, type VariantProps } from "class-variance-authority";
@@ -62,29 +54,27 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
 ```
 
-- Define `cva` variants alongside their component and derive variant types with `VariantProps`. Extract `variants.ts` only when sharing those inferred types across compound parts would otherwise create circular imports.
-- Use `cn` in `lib/cn.ts` for conditional class names and merging Tailwind classes; extend its theme configuration for custom tokens. Merge caller-provided `className` after component styles: `cn(componentVariants({ variant, size }), className)`.
+- Define `cva` variants beside their component and derive the variant types with `VariantProps`. Move them into a `variants.ts`, as in `components/ui/select/variants.ts`, only when compound parts sharing those types would otherwise import each other in a cycle.
+- Combine conditional classes with `cn`, and pass the caller's `className` as its second and last argument: `cn(componentVariants({ variant, size }), className)`. Only in that position does `cn` resolve a Base UI function `className` against the component state; in a later position it drops the function.
+- Keep the project's visual design in the theme tokens of `app/globals.css`: semantic colors, typography, control dimensions, radii, and shadows. A new shared design value becomes a token beside them. Name semantic colors and pair each background with its foreground as [shadcn/ui Theming](https://ui.shadcn.com/docs/theming) does, taking the values from the project's palette.
+- After adding a token, check that `cn` merges its class with a built-in class of the same utility, as `cn("rounded-control", "rounded-lg")` returns `"rounded-lg"`. When both classes stay, `cn` cannot tell that they conflict: register the token under its theme key in the `theme` that `lib/cn.ts` passes to `createCn`, as `radius: ["control", "panel"]` registers `rounded-control`.
+- Use `variant` and `size` for stable visual choices, following the existing names and defaults.
+- Style interaction states from the primitive's data attributes, such as `data-checked:` and `data-disabled:` in `components/ui/checkbox/root.tsx`, or from native pseudo-classes such as `focus-visible:`.
+- Pass computed values through CSS variables or inline styles.
 
-### Theme and variants
+### Wrap a UI library
 
-- Keep the project's own visual design in shared theme tokens: semantic colors, typography, control dimensions, radii, and shadows. Components reference those tokens; a new shared design value belongs beside the existing tokens.
-- Follow [shadcn/ui Theming](https://ui.shadcn.com/docs/theming) for semantic color-token names and meanings, including background/foreground pairs. Assign values from the project's own palette.
-- Use `variant` and `size` for stable visual choices, following existing names and defaults. Add options for current needs. Represent independent behavior such as `disabled` with a state prop.
+- Before adding or changing a wrapper in `components/ui/`, read the matching [shadcn/ui source](https://github.com/shadcn-ui/ui/tree/main/apps/v4/registry/bases/base/ui), the library's official API reference, and the installed package's public types. Refer to shadcn/ui for wrappers, prop handling, and variant organization; where they differ, the project architecture, the project's existing names and tokens, and the installed library's API and component boundaries win.
+- Keep the library's component boundaries: wrap and export each part separately, and let callers assemble them. Base UI's `Dialog.Portal`, `Dialog.Backdrop`, and `Dialog.Popup` stay separate public components, each with its own props and styling entry points. Re-export a part that needs no adaptation directly, as `DialogRoot` in `components/ui/dialog/index.ts`.
+- Derive the wrapper's Props from the underlying component's exported types, preserving its generics, and add project-specific props explicitly. Document any omitted prop or changed semantics at the public interface.
+- Take wrapper-only props out before forwarding the rest. Where the wrapper and the caller both set a class, style, ref, or handler, merge the two and confirm which wins, since a plain spread keeps only one: `cn` merges classes, and `mergeProps` from `@base-ui/react/merge-props` merges styles and handlers but not `ref`, as `Badge` in `components/ui/badge.tsx` uses it.
+- Let the library handle the interactions it provides, such as keyboard navigation and focus management. The wrapper adds project styles, defaults, and the behavior the library lacks.
 
-### Caller customization
+### Split by responsibility
 
-Callers own placement, surrounding spacing, and layout. Use `className` for these and necessary local customization. Customize styles through public props or exposed component parts. Repeated visual overrides are a signal to revisit the component's variants or defaults.
+An ESLint size warning triggers a responsibility review. Thresholds, counting rules, and exclusions live in [eslint.config.mjs](../../eslint.config.mjs); a component with one clear responsibility may stay whole.
 
-### Dynamic values and interaction states
-
-- Use CSS variables or inline styles for computed values.
-- Derive interaction styles directly from the primitive's state hooks or native selectors.
-
-## Split by responsibility
-
-An ESLint size warning triggers a responsibility review. Thresholds, counting rules, and exclusions live in [eslint.config.mjs](../../eslint.config.mjs); a component with one clear responsibility may remain intact.
-
-Check for independent state or effects, JSX with its own UI meaning that obscures the parent structure, or changes that require understanding unrelated behavior. Extract according to the responsibility:
+Look for independent state or effects, JSX with its own UI meaning that obscures the parent's structure, or changes that require understanding unrelated behavior. Extract by responsibility:
 
 | Responsibility | Extract into |
 | --- | --- |
@@ -92,10 +82,11 @@ Check for independent state or effects, JSX with its own UI meaning that obscure
 | Independent state, subscriptions, or interaction logic | A hook |
 | Formatting, calculation, or filtering | A pure function |
 
-Apply the ownership and private-boundary rules when placing the result. Splitting is complete when the parent exposes the overall flow and each part changes for its own reason. Keep short, single-use JSX inline when it has no independent meaning.
+Splitting is complete when the parent shows the overall flow and each part changes for its own reason. Keep short, single-use JSX without a meaning of its own inline.
 
 ## Examples and verification
 
-Before adding a public component in `components/ui/` or root `components/`, changing its API, or editing UI demo examples, read [UI demo examples](../../README.md#ui-demo-examples). Include affected runnable examples in the same change.
+Finish every UI change with the checks below that apply.
 
-Verify affected scenarios in a browser against their expected appearance, behavior, and accessibility requirements. Use `/demos/ui` for shared components and actual pages for feature-specific components and private subcomponents.
+- Before adding a public component in `components/ui/`, changing its public API, or editing UI demo examples, read [UI demo examples](../../README.md#ui-demo-examples), and update the affected runnable examples in the same change.
+- Check each affected scenario in a browser against its expected appearance, behavior, and accessibility: design-system components on `/demos/ui`, every other component on the pages that render it.
