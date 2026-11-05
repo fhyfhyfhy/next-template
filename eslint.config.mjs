@@ -13,6 +13,7 @@ import { BUILD_DIRS } from "./scripts/build-dirs.mjs";
 import createArchitecturePlugin, {
   layerZones,
 } from "./scripts/eslint/architecture-plugin.mjs";
+import createDataFlowPlugin from "./scripts/eslint/data-flow-plugin.mjs";
 import e2ePlugin from "./scripts/eslint/e2e-plugin.mjs";
 import createI18nPlugin from "./scripts/eslint/i18n-plugin.mjs";
 import { SOURCE_EXTENSIONS, SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
@@ -250,6 +251,7 @@ const eslintConfig = defineConfig([
       "simple-import-sort": simpleImportSort,
       architecture: createArchitecturePlugin(PROJECT_ROOT),
       naming: createNamingPlugin(PROJECT_ROOT),
+      "data-flow": createDataFlowPlugin(PROJECT_ROOT),
       "@tanstack/query": tanstackQueryPlugin,
     },
     rules: {
@@ -268,6 +270,8 @@ const eslintConfig = defineConfig([
       "architecture/wrapper-imports": "error",
       // 源码路径统一用 kebab-case，同时保留 Next.js 路由目录的特殊命名约定。
       "naming/kebab-case": "error",
+      // 服务端代码直接调数据层，不用 fetchApi 请求本 app 自己的接口。
+      "data-flow/no-server-self-fetch": "error",
       // 保留 factory 负责的缓存更新；调用方的成功、失败及结束回调放在 mutate 的第二个参数。
       "@tanstack/query/mutation-callbacks": "error",
       // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。

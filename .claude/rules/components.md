@@ -63,7 +63,7 @@ import { cn } from "@/lib/cn";
 ```
 
 - Define `cva` variants alongside their component and derive variant types with `VariantProps`. Extract `variants.ts` only when sharing those inferred types across compound parts would otherwise create circular imports.
-- Use the project's `cn` for conditional class names and merging Tailwind classes; extend its theme configuration for custom tokens. Merge caller-provided `className` after component styles: `cn(componentVariants({ variant, size }), className)`.
+- Use `cn` in `lib/cn.ts` for conditional class names and merging Tailwind classes; extend its theme configuration for custom tokens. Merge caller-provided `className` after component styles: `cn(componentVariants({ variant, size }), className)`.
 
 ### Theme and variants
 

@@ -46,8 +46,9 @@ export function firstPageData<TPage>(page: TPage): InfiniteData<TPage, string> {
 }
 
 /**
- * 去掉 query 和 mutation 的 `meta.suppressErrorToast` 函数：函数不能序列化后传给 Client Component，
- * 浏览器里的 query 工厂仍带着它。复制受影响的条目，不修改原对象，也保留 pending 的 promise 等其他字段。
+ * 去掉 query 和 mutation 的 `meta` 里的函数值，比如 `suppressErrorToast` 和 `errorMessage` 的函数写法：函数不能
+ * 序列化后传给 Client Component，浏览器里的 options 工厂仍带着它们。复制受影响的条目，不修改原对象，也保留
+ * pending 的 promise 等其他字段。
  */
 export function omitFunctionMeta(state: DehydratedState): DehydratedState {
   return {
@@ -60,8 +61,11 @@ export function omitFunctionMeta(state: DehydratedState): DehydratedState {
 function withoutFunctionMeta<TEntry extends { meta?: Record<string, unknown> }>(
   entry: TEntry,
 ): TEntry {
-  if (typeof entry.meta?.suppressErrorToast !== "function") return entry;
-  const meta = { ...entry.meta };
-  delete meta.suppressErrorToast;
+  if (!entry.meta) return entry;
+  const values = Object.entries(entry.meta);
+  if (!values.some(([, value]) => typeof value === "function")) return entry;
+  const meta = Object.fromEntries(
+    values.filter(([, value]) => typeof value !== "function"),
+  );
   return { ...entry, meta };
 }

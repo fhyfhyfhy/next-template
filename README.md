@@ -15,7 +15,7 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `demo:` 
 
 ## Demo
 
-`/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it. They are served only under `pnpm dev` and the `pnpm demo:*` scripts: a plain production build (`pnpm build`, `pnpm start`) answers 404 for every `/demos` page, and its home page is a placeholder without a link to them (`app/demos.ts`).
+`/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it. They are served only under `pnpm dev` and the `pnpm demo:*` scripts: a plain production build (`pnpm build`, `pnpm start`) answers 404 for every `/demos` page, and its home page is a placeholder without a link to them, as `DEMOS_SERVED` in `app/demos.ts` decides.
 
 - **UI demo** (`/demos/ui`): the design-system components; see [UI demo examples](#ui-demo-examples).
 - **Data demo** (the other `/demos` pages): a small task app that exercises the data rules against the Demo backend. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.
@@ -66,20 +66,20 @@ While debugging, `E2E_REUSE_SERVER=1` makes either set reuse a server you starte
 The template is full-stack: a project's backend lives in this app ([ADR 0003](docs/adr/0003-fullstack-demo-backend.md)), and the Data demo is its runnable reference.
 
 - Each feature's `server/` holds its data layer: queries, writes, business rules, and migrations ([.claude/rules/server-data.md](.claude/rules/server-data.md)). `lib/db.ts` creates the Kysely + pg connection, `lib/object-storage.ts` wraps S3-compatible storage, and `lib/domain-error.ts` carries business-rule failures.
-- Server Components, `use cache` reads, Server Actions, and Route Handlers call the data layer directly. The browser reads through `fetchApi` (`lib/fetch.ts`) from Route Handlers under `/api` and writes through Server Actions ([.claude/rules/data-flow.md](.claude/rules/data-flow.md)).
+- Server Components, `use cache` reads, Server Actions, and Route Handlers call the data layer directly. The browser reads through `fetchApi` in `lib/fetch.ts` from Route Handlers under `/api` and writes through Server Actions ([.claude/rules/data-flow.md](.claude/rules/data-flow.md)).
 - `lib/fetch.ts` defines the response format: a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or as the only field of a 2xx body. `app/providers.tsx` decides what a failed browser request shows.
 
 ## Internationalization
 
 Pages are translated with [next-intl](https://next-intl.dev) into the locales listed in `lib/i18n/routing.ts`: `zh`, the default locale and the one new text is written in, and `en`. URLs carry no locale: `proxy.ts` shows each visitor the language they picked with the locale switcher, kept in the `NEXT_LOCALE` cookie, or else their browser's `Accept-Language`, and every locale is still prerendered ([ADR 0005](docs/adr/0005-unprefixed-urls-in-visitor-locale.md)).
 
-Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates and times show in the computer's time zone: `<DateTime>` (`components/date-time.tsx`) renders them in the browser once the page has hydrated.
+Text lives in `messages/{locale}/{namespace}.json`, one namespace per owner. Agents write and translate it into every locale themselves, following [.claude/rules/i18n.md](.claude/rules/i18n.md), and `pnpm test` checks each locale against the source locale and `messages/terms.json`. Dates and times show in the computer's time zone: `DateTime` in `components/date-time.tsx` renders them in the browser once the page has hydrated.
 
 ## Agent skills
 
 Skills live in `.agents/skills/`, which Codex reads directly. Claude Code reads `.claude/skills/`, which holds local links made by `scripts/link-skills.sh`; the SessionStart hook in `.claude/settings.json` runs it whenever a Claude Code session starts here. To make the links without starting a session, run `bash scripts/link-skills.sh` (in Git Bash on Windows).
 
-Next.js framework guidance comes from the installed `node_modules/next/dist/docs/`. The project [data-flow skill](.agents/skills/next-data-flow/SKILL.md) covers ownership and React Query integration; the official [Cache Components optimizer](.agents/skills/next-cache-components-optimizer/SKILL.md) and [Partial Prefetching optimizer](.agents/skills/next-partial-prefetching-optimizer/SKILL.md) provide targeted optimization workflows. [next-dev-loop](.agents/skills/next-dev-loop/SKILL.md) verifies development behavior using Next.js MCP and the user-level `browser-harness` skill, which this repo does not ship: install it from [browser-use/browser-harness](https://github.com/browser-use/browser-harness) for every agent that runs these workflows. Official skill adaptations are recorded in `.agents/skill-patches/` and reapplied on updates as [Skill patches](.agents/skills/skills-and-rules/PATCHES.md) describes.
+Next.js framework guidance comes from the installed `node_modules/next/dist/docs/`. The project [data-flow skill](.agents/skills/next-data-flow/SKILL.md) covers choosing a data owner, designing refreshes, and diagnosing stale views, while the rules in `.claude/rules/` cover how to write the code; the official [Cache Components optimizer](.agents/skills/next-cache-components-optimizer/SKILL.md) and [Partial Prefetching optimizer](.agents/skills/next-partial-prefetching-optimizer/SKILL.md) provide targeted optimization workflows. [next-dev-loop](.agents/skills/next-dev-loop/SKILL.md) verifies development behavior using Next.js MCP and the user-level `browser-harness` skill, which this repo does not ship: install it from [browser-use/browser-harness](https://github.com/browser-use/browser-harness) for every agent that runs these workflows. Official skill adaptations are recorded in `.agents/skill-patches/` and reapplied on updates as [Skill patches](.agents/skills/skills-and-rules/PATCHES.md) describes.
 
 Official Next.js skills record a versioned `ref` in `skills-lock.json`. When upgrading Next.js, select a compatible skill ref and reapply its patches; updating a pinned ref does not follow canary automatically.
 
