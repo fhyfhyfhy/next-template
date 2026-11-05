@@ -75,6 +75,26 @@ test("新结果返回前继续显示上一次的结果", async ({ page, demoBack
   await expect(results(page).first()).toContainText("跑车");
 });
 
+test("清空关键词后重新搜索，新结果返回前不显示清空前的结果", async ({
+  page,
+  demoBackend,
+}) => {
+  await page.goto(`/demos/search?q=${encodeURIComponent("狐狸")}`);
+  await expect(results(page)).toHaveCount(3);
+  const input = page.getByLabel("搜索任务");
+  await input.fill("");
+  await expect(results(page)).toHaveCount(0);
+  await demoBackend.setFaults([
+    { operation: "task.search", kind: "latency", latencyMs: 1500 },
+  ]);
+
+  await input.fill("跑车");
+
+  await expect(page.getByText("搜索中…")).toBeVisible();
+  await expect(results(page)).toHaveCount(0);
+  await expect(results(page).first()).toContainText("跑车");
+});
+
 test("清空关键词后不再显示结果和状态", async ({ page }) => {
   await page.goto(`/demos/search?q=${encodeURIComponent("狐狸")}`);
   await expect(results(page)).toHaveCount(3);

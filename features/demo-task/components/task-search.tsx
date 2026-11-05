@@ -4,10 +4,11 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { IconSearch } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import { useQueryStates } from "nuqs";
+import { useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
-import { keepPreviousData, useQuery } from "@/lib/react-query";
+import { useQuery } from "@/lib/react-query";
 
 import { searchTasksQueryOptions } from "../api/search-tasks";
 import { taskSearchSearchParams } from "../utils/task-search-search-params";
@@ -23,13 +24,19 @@ export function TaskSearch() {
   const t = useTranslations("demo-task");
   const [{ q }, setSearchParams] = useQueryStates(taskSearchSearchParams);
   const [term] = useDebouncedValue(q.trim(), DEBOUNCE_MS);
+  // 用户最后一次清空搜索框的时刻：清空之前的结果属于上一轮搜索，不拿来给新的一轮当占位。
+  const [clearedAt, setClearedAt] = useState(0);
 
-  // 关键词为空时 query 关着，keepPreviousData 却仍把上一次的结果当占位数据，所以状态和结果都按它判断。
+  // 关键词为空时 query 关着，占位数据却可能还在，所以状态和结果都按 searching 判断。
   const searching = term !== "";
   const search = useQuery({
     ...searchTasksQueryOptions(term),
     enabled: searching,
-    placeholderData: keepPreviousData,
+    // 改关键词时，新结果返回前继续显示上一次的结果；清空过就从“搜索中”开始。
+    placeholderData: (previous, previousQuery) =>
+      previousQuery && previousQuery.state.dataUpdatedAt > clearedAt
+        ? previous
+        : undefined,
   });
 
   return (
@@ -48,7 +55,11 @@ export function TaskSearch() {
           value={q}
           placeholder={t("taskSearch.placeholder")}
           className="pl-9"
-          onChange={(event) => void setSearchParams({ q: event.target.value })}
+          onChange={(event) => {
+            const value = event.target.value;
+            if (value.trim() === "") setClearedAt(Date.now());
+            void setSearchParams({ q: value });
+          }}
         />
       </div>
       <div
