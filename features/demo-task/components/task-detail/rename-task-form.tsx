@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { isActionError } from "@/lib/action-result";
 import { useMutation } from "@/lib/react-query";
@@ -53,9 +54,8 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
     },
   });
   return (
-    <form
+    <Form
       aria-label={t("renameTask.formLabel")}
-      noValidate
       className="flex flex-wrap items-start gap-2"
       onSubmit={(event) => {
         event.preventDefault();
@@ -92,6 +92,6 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
       <Button type="button" variant="ghost" onClick={onDone}>
         {t("renameTask.cancel")}
       </Button>
-    </form>
+    </Form>
   );
 }

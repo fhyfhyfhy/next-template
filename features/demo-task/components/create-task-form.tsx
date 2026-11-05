@@ -6,6 +6,7 @@ import { useMemo } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { isActionError } from "@/lib/action-result";
@@ -66,9 +67,8 @@ export function CreateTaskForm() {
     },
   });
   return (
-    <form
+    <Form
       aria-label={t("createTask.formLabel")}
-      noValidate
       className="mb-8 grid gap-3 rounded-panel border border-border bg-card p-4 sm:grid-cols-[1fr_2fr_auto] sm:items-start"
       onSubmit={(event) => {
         event.preventDefault();
@@ -110,6 +110,6 @@ export function CreateTaskForm() {
           </Button>
         )}
       </form.Subscribe>
-    </form>
+    </Form>
   );
 }

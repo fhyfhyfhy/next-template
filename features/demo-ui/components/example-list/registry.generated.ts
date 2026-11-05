@@ -7,12 +7,13 @@ import { examples as component1Examples } from "../button-examples";
 import { examples as component2Examples } from "../checkbox-examples";
 import { examples as component3Examples } from "../dialog-examples";
 import { examples as component4Examples } from "../field-examples";
-import { examples as component5Examples } from "../input-examples";
-import { examples as component6Examples } from "../progress-examples";
-import { examples as component7Examples } from "../select-examples";
-import { examples as component8Examples } from "../skeleton-examples";
-import { examples as component9Examples } from "../switch-examples";
-import { examples as component10Examples } from "../toaster-examples";
+import { examples as component5Examples } from "../form-examples";
+import { examples as component6Examples } from "../input-examples";
+import { examples as component7Examples } from "../progress-examples";
+import { examples as component8Examples } from "../select-examples";
+import { examples as component9Examples } from "../skeleton-examples";
+import { examples as component10Examples } from "../switch-examples";
+import { examples as component11Examples } from "../toaster-examples";
 
 export const examplesByComponent = {
   badge: component0Examples,
@@ -20,10 +21,11 @@ export const examplesByComponent = {
   checkbox: component2Examples,
   dialog: component3Examples,
   field: component4Examples,
-  input: component5Examples,
-  progress: component6Examples,
-  select: component7Examples,
-  skeleton: component8Examples,
-  switch: component9Examples,
-  toaster: component10Examples,
+  form: component5Examples,
+  input: component6Examples,
+  progress: component7Examples,
+  select: component8Examples,
+  skeleton: component9Examples,
+  switch: component10Examples,
+  toaster: component11Examples,
 };

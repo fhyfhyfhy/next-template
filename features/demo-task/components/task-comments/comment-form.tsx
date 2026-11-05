@@ -12,6 +12,7 @@ import {
   FieldLabel,
   FieldRoot,
 } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useMutation } from "@/lib/react-query";
 
@@ -51,9 +52,8 @@ export function CommentForm({ taskId }: { taskId: string }) {
     },
   });
   return (
-    <form
+    <Form
       aria-label={t("comments.formLabel")}
-      noValidate
       className="mt-3 flex items-start gap-2"
       onSubmit={(event) => {
         event.preventDefault();
@@ -90,6 +90,6 @@ export function CommentForm({ taskId }: { taskId: string }) {
       <Button type="submit" disabled={!hydrated}>
         {t("comments.submit")}
       </Button>
-    </form>
+    </Form>
   );
 }
