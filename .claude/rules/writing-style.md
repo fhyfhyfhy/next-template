@@ -4,9 +4,9 @@ Which language the text written into files uses: code comments, test description
 
 ## Prose language
 
-This repo's prose language is **Simplified Chinese**. This line is its only setting; the rest of this file and the skills that write docs follow it.
+This repo's prose language is **Simplified Chinese**. This line is its only setting.
 
-Changing it applies to text written from then on; existing text keeps its language until a task translates it. When you change it, also translate the plan headings in `.agents/skill-patches/improve-animations.md`, which fixes them in the prose language, and apply that patch again.
+Changing it applies to text written from then on; existing text keeps its language until a task translates it.
 
 ## Language by content
 
