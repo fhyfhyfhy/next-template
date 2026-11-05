@@ -8,6 +8,8 @@ import { listFeed } from "./tasks";
 /**
  * 作品广场第一页及其读取时刻，进入静态 shell。数据和时间戳来自同一次缓存，一起失效、一起前进，
  * 作为 hydration 的 `updatedAt` 时才能正确覆盖浏览器里更旧的 query。
+ * 作品广场由 React Query 负责：数据超过 60 秒的 staleTime 后，下一次挂载或回到标签页时重新请求，快照也一样，
+ * hydrate 后发现它更旧就立即重新请求。所以 `"minutes"` 的缓存时长只影响首屏，不放宽这个 freshness bound。
  */
 export async function getCachedFeedSnapshot() {
   "use cache";

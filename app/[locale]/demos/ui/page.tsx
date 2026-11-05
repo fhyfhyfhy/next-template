@@ -1,6 +1,10 @@
 import { Suspense } from "react";
 
-import { getComponentId, UiDemo, UiDemoHeader } from "@/features/demo-ui";
+import {
+  loadUiDemoSearchParams,
+  UiDemo,
+  UiDemoHeader,
+} from "@/features/demo-ui";
 import { readExampleSources } from "@/features/demo-ui/server";
 
 export default function UiDemoPage({
@@ -16,7 +20,7 @@ export default function UiDemoPage({
 async function UiDemoContent({
   searchParams,
 }: Pick<PageProps<"/[locale]/demos/ui">, "searchParams">) {
-  const component = getComponentId((await searchParams).component);
+  const { component } = await loadUiDemoSearchParams(searchParams);
   const sources = await readExampleSources(component);
   return <UiDemo component={component} sources={sources} />;
 }

@@ -46,7 +46,8 @@ function makeQueryClient() {
   return new QueryClient({
     onRequestError: handleRequestError,
     defaultOptions: {
-      // 服务端预取的数据 hydrate 后在这段时间内不会被重新请求。
+      // 服务端预取的数据 hydrate 后在这段时间内不会被重新请求。没有单独设置的 query，数据超过这个时间后
+      // 在下一次挂载或回到标签页时重新请求；页面一直开着时不会自己刷新，需要更新的 query 自己设轮询。
       queries: {
         staleTime: 60 * 1000,
         retry: environmentManager.isServer() ? false : shouldRetryRequest,

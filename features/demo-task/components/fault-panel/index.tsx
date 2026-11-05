@@ -12,13 +12,17 @@ import { DefaultLatencySelect } from "./default-latency-select";
 import { FaultForm } from "./fault-form";
 import { describeFault } from "./fault-kinds";
 
+const FAULTS_FRESHNESS_MS = 2000;
+
 /** 当前的故障配置。故障按数据层操作匹配，对服务端渲染、浏览器请求和 Server Action 都生效。 */
 export function FaultPanel() {
   const t = useTranslations("demo-task");
-  // 有故障时定期刷新：其他页面的请求会消耗故障次数，这里要跟着显示剩余次数。
+  // 有故障时定期刷新：其他页面的请求会消耗故障次数，这里要跟着显示剩余次数。按剩余次数的 freshness bound
+  // 轮询，没有故障时停。
   const faults = useQuery({
     ...getDemoFaultsQueryOptions(),
-    refetchInterval: (query) => (query.state.data?.length ? 2000 : false),
+    refetchInterval: (query) =>
+      query.state.data?.length ? FAULTS_FRESHNESS_MS : false,
   });
   const update = useMutation(updateDemoFaultsMutationOptions(t));
   return (

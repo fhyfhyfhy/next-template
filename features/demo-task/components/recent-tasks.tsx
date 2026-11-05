@@ -7,6 +7,7 @@ import { useQueries } from "@/lib/react-query";
 
 import { getTaskQueryOptions, isTaskNotFound } from "../api/get-task";
 import { useRecentTaskIds } from "../hooks/use-recent-task-ids";
+import { RecentTasksLoading } from "./recent-tasks-loading";
 import { TaskLinkRow } from "./task-link-row";
 
 /**
@@ -19,13 +20,7 @@ export function RecentTasks() {
   const tasks = useQueries({
     queries: (ids ?? []).map((id) => getTaskQueryOptions(id)),
   });
-  if (ids === null) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {t("recentTasks.reading")}
-      </p>
-    );
-  }
+  if (ids === null) return <RecentTasksLoading />;
   if (ids.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">{t("recentTasks.empty")}</p>

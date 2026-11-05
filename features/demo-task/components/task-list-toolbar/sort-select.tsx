@@ -17,16 +17,12 @@ import {
 } from "@/components/ui/select";
 
 import { TASK_SORT_MESSAGE_KEYS, TASK_SORTS } from "../../constants/task-list";
-import type { TaskListParams } from "../../utils/task-urls";
-
-interface SortSelectProps {
-  selected: TaskListParams;
-  onNavigate: (params: TaskListParams) => void;
-}
+import { useTaskListSearchParams } from "../task-list-navigation";
 
 /** 换排序时回到第一页。 */
-export function SortSelect({ selected, onNavigate }: SortSelectProps) {
+export function SortSelect() {
   const t = useTranslations("demo-task");
+  const [{ sort: selected }, setSearchParams] = useTaskListSearchParams();
   const items = TASK_SORTS.map((value) => ({
     value,
     label: t(`taskSort.${TASK_SORT_MESSAGE_KEYS[value]}`),
@@ -35,9 +31,9 @@ export function SortSelect({ selected, onNavigate }: SortSelectProps) {
     <SelectRoot
       size="sm"
       items={items}
-      value={selected.sort}
+      value={selected}
       onValueChange={(sort) => {
-        if (sort) onNavigate({ ...selected, sort, page: 1 });
+        if (sort) void setSearchParams({ sort, page: null });
       }}
     >
       <SelectTrigger aria-label={t("taskListToolbar.sort")} className="w-32">

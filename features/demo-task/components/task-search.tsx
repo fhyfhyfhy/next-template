@@ -2,43 +2,32 @@
 
 import { useDebouncedValue } from "@mantine/hooks";
 import { IconSearch } from "@tabler/icons-react";
-import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useQueryStates } from "nuqs";
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
 import { keepPreviousData, useQuery } from "@/lib/react-query";
 
 import { searchTasksQueryOptions } from "../api/search-tasks";
+import { taskSearchSearchParams } from "../utils/task-search-search-params";
 import { TaskLinkRow } from "./task-link-row";
 
 const DEBOUNCE_MS = 300;
 
 /**
- * 边输入边搜索：输入停顿后把关键词 shallow 写进 URL（replaceState，不触发服务端渲染，也不留历史记录），
- * query key 只来自 URL 里已提交的关键词。换关键词时旧请求被中止，新结果到达前继续显示旧结果。
+ * 边输入边搜索：关键词随输入 shallow 写进 URL（不触发服务端渲染，也不留历史记录），刷新和分享链接都能还原。
+ * query key 来自 debounce 后的关键词，请求等输入停顿才发。换关键词时旧请求被中止，新结果到达前继续显示旧结果。
  */
 export function TaskSearch() {
   const t = useTranslations("demo-task");
-  const committed = useSearchParams().get("q") ?? "";
-  const [input, setInput] = useState(committed);
-  const [debounced] = useDebouncedValue(input.trim(), DEBOUNCE_MS);
-
-  useEffect(() => {
-    if (debounced === committed) return;
-    const query = debounced ? `?q=${encodeURIComponent(debounced)}` : "";
-    window.history.replaceState(
-      null,
-      "",
-      `${window.location.pathname}${query}`,
-    );
-  }, [debounced, committed]);
+  const [{ q }, setSearchParams] = useQueryStates(taskSearchSearchParams);
+  const [term] = useDebouncedValue(q.trim(), DEBOUNCE_MS);
 
   // 关键词为空时 query 关着，keepPreviousData 却仍把上一次的结果当占位数据，所以状态和结果都按它判断。
-  const searching = committed !== "";
+  const searching = term !== "";
   const search = useQuery({
-    ...searchTasksQueryOptions(committed),
+    ...searchTasksQueryOptions(term),
     enabled: searching,
     placeholderData: keepPreviousData,
   });
@@ -56,10 +45,10 @@ export function TaskSearch() {
         <Input
           id="task-search"
           type="search"
-          value={input}
+          value={q}
           placeholder={t("taskSearch.placeholder")}
           className="pl-9"
-          onChange={(event) => setInput(event.target.value)}
+          onChange={(event) => void setSearchParams({ q: event.target.value })}
         />
       </div>
       <div

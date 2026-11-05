@@ -29,6 +29,7 @@ export {
   queryOptions,
   skipToken,
   useInfiniteQuery,
+  useIsMutating,
   useMutation,
   useQueries,
   useQuery,

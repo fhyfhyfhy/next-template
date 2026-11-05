@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { TASK_PROMPT_MAX_LENGTH } from "../constants/task-rules";
 import type { DemoTaskTranslator } from "../types/translator";
-import { createTaskNameSchema } from "./get-task";
+import { createTaskNameSchema } from "./task-name-schema";
 
 /** 创建任务的输入校验，浏览器里的表单和服务端的 `createTaskAction` 共用；校验文案由传入的 `t` 生成。 */
 export const createTaskInputSchema = (t: DemoTaskTranslator) =>

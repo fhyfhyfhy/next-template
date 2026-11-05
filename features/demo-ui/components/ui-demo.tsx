@@ -28,7 +28,7 @@ export function UiDemo({
       </a>
       <UiDemoHeader />
       <div className="mx-auto grid max-w-[1600px] md:min-h-[calc(100dvh-5rem)] md:grid-cols-[208px_minmax(0,1fr)] lg:grid-cols-[248px_minmax(0,1fr)]">
-        <ComponentNavigation selected={component} />
+        <ComponentNavigation />
         <main id="main-content" className="min-w-0 px-5 py-8 sm:px-8 lg:p-12">
           <div className="mb-9">
             <div className="flex items-center gap-3 font-mono text-[10px] tracking-[0.16em] text-muted-foreground">

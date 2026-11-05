@@ -59,17 +59,11 @@ export function FaultForm() {
         disabled={pending}
         onClick={async () => {
           setPending(true);
-          try {
-            await injectFault(
-              toFault(
-                operation,
-                kind,
-                times === "always" ? null : Number(times),
-              ),
-            );
-          } finally {
-            setPending(false);
-          }
+          // 没加上时表单保持原样，可以再提交。
+          await injectFault(
+            toFault(operation, kind, times === "always" ? null : Number(times)),
+          );
+          setPending(false);
         }}
       >
         {t("faultForm.submit")}

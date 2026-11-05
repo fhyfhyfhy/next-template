@@ -41,12 +41,13 @@ export function LabConcurrentFailures() {
         size="sm"
         disabled={tasks.some((task) => !task.data)}
         onClick={async () => {
-          await injectFault({
+          const injected = await injectFault({
             operation: TASK_DETAIL_OPERATION,
             kind: "httpStatus",
             status: 409,
             times: TASK_IDS.length,
           });
+          if (!injected) return;
           await Promise.all(tasks.map((task) => task.refetch()));
         }}
       >

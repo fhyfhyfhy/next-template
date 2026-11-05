@@ -28,7 +28,7 @@ export function LabQueryStates() {
   const task = useQuery(options);
 
   const firstLoad = async (failing: boolean) => {
-    if (failing) await injectFault(FAULT);
+    if (failing && !(await injectFault(FAULT))) return;
     // 清掉缓存，让下一次请求回到“首次加载”的状态。
     await queryClient.resetQueries({ queryKey: options.queryKey });
   };
@@ -50,8 +50,7 @@ export function LabQueryStates() {
           size="sm"
           disabled={!task.data}
           onClick={async () => {
-            await injectFault(FAULT);
-            await task.refetch();
+            if (await injectFault(FAULT)) await task.refetch();
           }}
         >
           {t("labQueryStates.refreshFails")}

@@ -83,7 +83,7 @@
       "metadataTitle": "Search · Data demo",
       "title": "Search",
       "intro": {
-        "typing": "Requests go out as you type, and React Query owns the data: a server render on every keystroke would lag noticeably. After a 300ms pause the keyword goes into the URL, but only as a shallow update: no navigation and no new history entry, yet a reload or a shared link restores it.",
+        "typing": "Requests go out as you type, and React Query owns the data: a server render on every keystroke would lag noticeably. The keyword goes into the URL as you type, but only as a shallow update: no navigation and no new history entry, yet a reload or a shared link restores it. A request goes out once typing pauses for 300ms.",
         "tryIt": "Try it: change the keyword quickly and the requests for old keywords are aborted; the list keeps the previous results until new ones arrive."
       }
     },

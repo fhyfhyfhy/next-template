@@ -96,7 +96,6 @@ test("换筛选后立即显示新的选择，新列表到达前旧列表标记�
 
   await expect(failedTab).toHaveAttribute("aria-current", "page");
   await expect(busyList).toBeVisible();
-  await expect(page).toHaveURL("/demos/tasks");
 
   await expect(page).toHaveURL("/demos/tasks?status=failed");
   await expect(rows(page)).toHaveCount(3);

@@ -7,9 +7,7 @@ import { expect, test } from "./demo-backend";
 const results = (page: Page) =>
   page.getByRole("list", { name: "搜索结果" }).getByRole("listitem");
 
-test("输入停顿后把关键词写进 URL 并显示结果，不新增历史记录", async ({
-  page,
-}) => {
+test("关键词随输入写进 URL 并显示结果，不新增历史记录", async ({ page }) => {
   await page.goto("/demos/tasks");
   await page.goto("/demos/search");
   const historyLength = await page.evaluate(() => history.length);
@@ -45,10 +43,18 @@ test("换关键词时中止还没返回的旧请求", async ({ page, demoBackend
   });
   await page.goto("/demos/search");
   const input = page.getByLabel("搜索任务");
+  // 关键词立即进 URL，请求要等输入停顿，所以等请求发出而不是等 URL。
+  const firstRequest = page.waitForRequest((request) => {
+    const url = new URL(request.url());
+    return (
+      url.pathname === "/api/demo/tasks/search" &&
+      url.searchParams.get("term") === "狐"
+    );
+  });
 
   // eslint-disable-next-line e2e/act-after-ready -- 搜索框读 useSearchParams，只在浏览器里渲染，找得到它时页面已经 hydrate。
   await input.fill("狐");
-  await expect(page).toHaveURL(`/demos/search?q=${encodeURIComponent("狐")}`);
+  await firstRequest;
   await input.fill("狐狸");
 
   await expect(results(page)).toHaveCount(3);

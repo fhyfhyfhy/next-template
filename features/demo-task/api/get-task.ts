@@ -1,31 +1,11 @@
-import { z } from "zod";
-
 import { ApiError, fetchApi } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
 
-import {
-  TASK_NAME_MAX_LENGTH,
-  TASK_STEP_INTERVAL_MS,
-} from "../constants/task-rules";
+import { TASK_STEP_INTERVAL_MS } from "../constants/task-rules";
 import { taskSchema } from "../types/task";
 import type { TaskStatus } from "../types/task-filters";
-import type { DemoTaskTranslator } from "../types/translator";
 
 export type { Task } from "../types/task";
-
-/**
- * 任务名称的规则：去掉首尾空白后 1 到 40 个字，和数据层的校验一致。创建、重命名的表单和 action 共用，
- * 校验文案由调用方传入的 `t` 按当前 locale 生成。
- */
-export const createTaskNameSchema = (t: DemoTaskTranslator) =>
-  z
-    .string()
-    .trim()
-    .min(1, t("validation.nameRequired"))
-    .max(
-      TASK_NAME_MAX_LENGTH,
-      t("validation.nameTooLong", { max: TASK_NAME_MAX_LENGTH }),
-    );
 
 export function isTaskActive(status: TaskStatus | undefined) {
   return status === "pending" || status === "running";
@@ -46,7 +26,8 @@ export const getTaskQueryOptions = (id: string) =>
   queryOptions({
     queryKey: ["demo-task", "task", "detail", id],
     queryFn: () => getTask(id),
-    // 任务在 pending、running 时会自己推进，用户停留在页面上也要看到进度；到终态或任务已被删除后停止轮询。
+    // 任务在 pending、running 时会自己推进。进度的 freshness bound 是 Demo generator 的一步，按这个间隔轮询，
+    // 用户停留在页面上能看到每一步；到终态或任务已被删除后停止轮询。
     refetchInterval: (query) =>
       isTaskActive(query.state.data?.status) &&
       !isTaskNotFound(query.state.error)

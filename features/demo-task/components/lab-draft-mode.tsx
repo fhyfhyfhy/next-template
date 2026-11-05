@@ -4,9 +4,9 @@ import { useTranslations } from "next-intl";
 import { startTransition, useOptimistic } from "react";
 
 import { SwitchRoot, SwitchThumb } from "@/components/ui/switch";
-import { toast } from "@/components/ui/toaster";
+import { useMutation } from "@/lib/react-query";
 
-import { setDraftModeAction } from "../api/set-draft-mode-action";
+import { setDraftModeMutationOptions } from "../api/set-draft-mode";
 import { LabSection } from "./lab-section";
 
 interface LabDraftModeProps {
@@ -18,6 +18,7 @@ interface LabDraftModeProps {
 export function LabDraftMode({ enabled }: LabDraftModeProps) {
   const t = useTranslations("demo-task");
   const [optimisticEnabled, setOptimisticEnabled] = useOptimistic(enabled);
+  const setDraftMode = useMutation(setDraftModeMutationOptions(t));
   return (
     <LabSection
       title={t("labDraftMode.title")}
@@ -30,10 +31,9 @@ export function LabDraftMode({ enabled }: LabDraftModeProps) {
             startTransition(async () => {
               setOptimisticEnabled(checked);
               try {
-                await setDraftModeAction(checked);
+                await setDraftMode.mutateAsync(checked);
               } catch {
-                // 不是 React Query 的请求，不经过全局错误处理；用 feature 自己的提示，不占用全局请求错误的 toast ID。
-                toast.error(t("labDraftMode.switchFailed"));
+                // 失败由工厂 meta.errorMessage 的 toast 提示；这里只接住 rejection，免得它冒到错误边界。
               }
             });
           }}

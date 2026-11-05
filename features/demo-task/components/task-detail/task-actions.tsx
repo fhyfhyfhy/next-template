@@ -17,7 +17,7 @@ import { DeleteTaskDialog } from "../delete-task-dialog";
 
 export function TaskActions({ task }: { task: Task }) {
   const t = useTranslations("demo-task");
-  const retry = useMutation(retryTaskMutationOptions(t));
+  const retry = useMutation(retryTaskMutationOptions(t, task.id));
   const [downloading, setDownloading] = useState(false);
   return (
     <div className="space-y-2">
@@ -26,7 +26,7 @@ export function TaskActions({ task }: { task: Task }) {
           <Button
             variant="outline"
             disabled={retry.isPending}
-            onClick={() => retry.mutate({ taskId: task.id })}
+            onClick={() => retry.mutate()}
           >
             <IconRefresh aria-hidden />
             {t("taskActions.retry")}

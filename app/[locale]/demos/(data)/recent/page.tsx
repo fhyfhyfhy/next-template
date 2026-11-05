@@ -3,7 +3,11 @@ import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
-import { PageIntro, RecentTasks } from "@/features/demo-task";
+import {
+  PageIntro,
+  RecentTasks,
+  RecentTasksLoading,
+} from "@/features/demo-task";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("app");
@@ -17,7 +21,7 @@ export default function RecentPage() {
       <PageIntro title={t("demos.recent.title")}>
         <p>{t("demos.recent.intro")}</p>
       </PageIntro>
-      <Suspense fallback={null}>
+      <Suspense fallback={<RecentTasksLoading />}>
         <RecentTasks />
       </Suspense>
     </>

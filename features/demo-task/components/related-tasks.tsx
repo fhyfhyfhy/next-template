@@ -5,12 +5,12 @@ import { useTranslations } from "next-intl";
 import { useQuery } from "@/lib/react-query";
 
 import { getTaskQueryOptions } from "../api/get-task";
-import { getTasksQueryOptions } from "../api/get-tasks";
+import { relatedTasksQueryOptions } from "../api/get-tasks";
 import { TaskLinkRow } from "./task-link-row";
 
 /**
  * 依赖查询：先从详情 query 里取 prompt，再用它查其他任务；prompt 还没拿到时第二个请求不发。
- * 只在浏览器里请求，不在服务端预取。
+ * 详情页在服务端拿到任务后就预取它，首屏不用等浏览器再请求一轮。
  */
 export function RelatedTasks({ taskId }: { taskId: string }) {
   const t = useTranslations("demo-task");
@@ -19,7 +19,7 @@ export function RelatedTasks({ taskId }: { taskId: string }) {
     select: (task) => task.prompt,
   });
   const related = useQuery({
-    ...getTasksQueryOptions({ prompt, excludeId: taskId, pageSize: 5 }),
+    ...relatedTasksQueryOptions(taskId, prompt),
     enabled: prompt !== undefined,
   });
   return (

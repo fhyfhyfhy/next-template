@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { isActionError } from "@/lib/action-result";
 import { useMutation } from "@/lib/react-query";
 
-import { createTaskNameSchema, type Task } from "../../api/get-task";
+import type { Task } from "../../api/get-task";
+import { createTaskNameSchema } from "../../api/task-name-schema";
 import { updateTaskMutationOptions } from "../../api/update-task";
 import { TASK_NAME_TAKEN } from "../../constants/error-codes";
 
