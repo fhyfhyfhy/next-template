@@ -12,7 +12,7 @@ paths:
 
 # Data flow
 
-- When choosing a data owner, coordinating refreshes after URL changes, writes, or session changes, or diagnosing a stale view, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md).
+- When writing or changing code that displays backend data, or a write that changes data a page displays, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md) to decide its owner, server read, delivery, and refreshes.
 - When adding or changing code that reads or writes data on the server (the data layer, a Server Action, a `use cache` read, or a Route Handler), read [server-data.md](server-data.md).
 - When adding or changing a browser request or a React Query options factory, read [tanstack-query.md](tanstack-query.md).
 - When you need a working example of a data rule, here or in those two, read the [Data demo](../../.agents/skills/next-data-flow/demos.md), which maps each rule to its code and e2e spec.
@@ -37,7 +37,7 @@ When a Server Component prefetches a read that React Query owns, follow the inst
 
 ## Copies
 
-Render server data from its owner: props or a promise from a Server Component, or `useQuery` with `select`. Keep no copy in React state, context, or a store; the copy stops following refreshes. Refetching part of one read through a second owner, such as a query for one field of each listed item, is a copy too: it refreshes on its own schedule while everything else derived from that read, such as its filtering and counts, keeps the old state. So is a Server Component rendering a prefetched result that React Query owns, such as a count beside the list: it keeps its value when the query refetches. A value the user edits before saving it may start from the data, such as a form being edited; a write saves it.
+Render server data from its owner: props or a promise from a Server Component, or `useQuery` with `select`. Keep no copy in React state, context, or a store; the copy stops following refreshes. Refetching part of one read through a second owner, such as a query for one field of each listed item, is a copy too: it refreshes on its own schedule while everything else derived from that read, such as its filtering and counts, keeps the old state. A Server Component that prefetches a query for React Query and renders from the same result, such as a count beside the list, makes a copy too: the count keeps the prefetched value while the list follows each refetch. A value the user edits before saving it may start from the data, such as a form being edited; a write saves it.
 
 ## Errors in React Query–owned data
 
