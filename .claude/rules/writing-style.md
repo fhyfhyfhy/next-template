@@ -2,18 +2,24 @@
 
 Which language the text written into files uses: code comments, test descriptions, docs, and names.
 
+## Prose language
+
+This repo's prose language is **Simplified Chinese**. This line is its only setting.
+
+Changing it applies to text written from then on; existing text keeps its language until a task translates it.
+
 ## Language by content
 
 | Content | Language |
 | ------- | -------- |
-| Body of specs, design docs, and plans | Simplified Chinese |
-| Code comments | Simplified Chinese |
-| `describe` / `it` / `test` descriptions in tests | Simplified Chinese |
-| Agent instructions: `AGENTS.md`, `CLAUDE.md`, rules (`.claude/rules/`), skills (name, description, instructions, and every file in them) and their patches (`.agents/skill-patches/`), and the docs they send agents to (`docs/agents/`) | English |
+| Body of specs, design docs, plans, `GLOSSARY.md`, and ADRs (`docs/adr/`) | Prose language |
+| Code comments | Prose language |
+| `describe` / `it` / `test` descriptions in tests | Prose language |
+| Agent instructions: `AGENTS.md`, `CLAUDE.md`, rules (`.claude/rules/`), skills (name, description, instructions, and every file in them) and their patches (`.agents/skill-patches/`), and the docs they send agents to (`docs/agents/`) | English, whatever the prose language |
 
 ## English in agent instructions
 
-Text that must stay in another language, such as UI copy, test data, or a template for a Chinese document, is literal: quote it as inline code or a code block. Write everything else in English, including domain terms, which take their English names from `GLOSSARY.md`.
+Text that must stay in another language, such as UI copy, test data, or a template for a prose-language document, is literal: quote it as inline code or a code block. Write everything else in English, including domain terms, which take their English names from `GLOSSARY.md`.
 
 ## Names and fixed terms
 

@@ -6,14 +6,14 @@ const CJK =
 
 /**
  * Markdown 里 inline code 和 code block 以外的 CJK 文字，每段连续的文字报告一次。frontmatter、HTML 注释和
- * 链接都算正文；引用的 UI 文案、测试数据和中文文档模板放进 code，原样保留。
+ * 链接都算正文；引用的 UI 文案、测试数据和正文语言文档的模板放进 code，原样保留。
  */
 const englishOnly = {
   meta: {
     type: "problem",
     schema: [],
     messages: {
-      cjk: 'Write agent instructions in English: found "{{text}}". Quote text that must stay in another language, such as UI copy, test data, or a template for a Chinese document, as inline code or a code block (.claude/rules/writing-style.md).',
+      cjk: 'Write agent instructions in English: found "{{text}}". Quote text that must stay in another language, such as UI copy, test data, or a template for a prose-language document, as inline code or a code block (.claude/rules/writing-style.md).',
     },
   },
   create(context) {
