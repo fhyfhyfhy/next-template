@@ -7,7 +7,7 @@ paths:
 
 Specs observe the app through the browser and import no application code.
 
-Import `test` and `expect` from `e2e/test.ts`, or from `e2e/demo/demo-backend.ts` in the demos' specs, which builds on it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (the Playwright configs); a test that needs another one sets `test.use({ locale })`, as `e2e/demo/locale.spec.ts` does. Dates and times render in the browser's time zone after hydration (`components/date-time.tsx`): a spec that asserts one sets `timezoneId`, as `e2e/demo/date-time.spec.ts` does.
+Use `test` and `expect` in `e2e/test.ts`, or in `e2e/demo/demo-backend.ts` for the demos' specs, which builds on it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (the Playwright configs); a test that needs another one sets `test.use({ locale })`, as `e2e/demo/locale.spec.ts` does. `DateTime` in `components/date-time.tsx` renders dates and times in the browser's time zone after hydration: a spec that asserts one sets `timezoneId`, as `e2e/demo/date-time.spec.ts` does.
 
 ## Hydration
 
@@ -26,7 +26,7 @@ When the assertion observes another Suspense boundary, that boundary must be hyd
 
 ## Browser events
 
-Playwright pages stay in the foreground, so a return to the tab is simulated: use `returnToTab` from `e2e/browser.ts`. Dispatch any other browser event with the real event's target and init, such as `bubbles: true`.
+Playwright pages stay in the foreground, so a return to the tab is simulated: use `returnToTab` in `e2e/browser.ts`. Dispatch any other browser event with the real event's target and init, such as `bubbles: true`.
 
 ## Waiting
 

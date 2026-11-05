@@ -1,13 +1,13 @@
 ---
 name: next-data-flow
-description: Choose RSC or React Query ownership and coordinate server data in this repo. Use when choosing or changing a data owner, integrating server-prefetched queries or Server Actions with React Query, or diagnosing stale views after URL changes, writes, changes made elsewhere, or session changes. Framework-only questions and shell or prefetch optimization use the installed Next.js docs and official skills.
+description: Choose RSC or React Query ownership and coordinate server data in this repo. Use when choosing or changing a data owner, deciding whether to prefetch a query on the server, designing how a view refreshes after URL changes, writes, changes made elsewhere, or session changes, or diagnosing a stale view. Framework-only questions and shell or prefetch optimization use the installed Next.js docs and official skills.
 ---
 
 # Project data flow
 
 Each **read** (one request's result and everything derived from it: its fields, filtering, sorting, counts, and pagination) has one **owner** responsible for refreshing it: the Server Component render or the browser's React Query cache. This is the repo's design convention. Ownership is separate from where the first fetch runs, whether data is cached, and which component code reaches the browser.
 
-For a new flow, identify its consumers, inputs, update triggers, freshness tolerance, and initial-display requirements. For an existing flow, trace the affected read through its consumers and refresh triggers; retain its owner unless the requirement calls for a change. A read's **consumers** are every display of its data and every value computed from it, on the server or in other components. The design is complete when every consumer has a refresh path for every [update trigger](refresh.md), and consumers shown together refresh from the same trigger. Diagnose a stale view by reproducing the reported steps and observing each consumer, then identifying the owner and cache that supplied the value.
+For a new flow, identify its consumers, inputs, update triggers, freshness tolerance, and initial-display requirements. For an existing flow, trace the affected read through its consumers and refresh triggers; retain its owner unless the requirement calls for a change. A read's **consumers** are every display of its data and every value computed from it, on the server or in other components. The design is complete when every consumer has a refresh path for every [update trigger](refresh.md), and consumers shown together refresh from the same trigger. Diagnose a stale view by reproducing the reported steps and observing each consumer, then identifying the owner and cache that supplied the value. For a query that refetches right after hydration, inspect its factory, call-site overrides, and the `staleTime` and refetch defaults in `app/providers.tsx`; Next.js `cacheLife` does not set a query's freshness.
 
 ## Ownership
 
@@ -23,15 +23,14 @@ The Server Component render owns a read unless a React Query signal applies:
 | Should refresh when the tab regains focus | React Query |
 | Needs browser-only inputs, such as geolocation or `localStorage` | Client fetch, usually React Query |
 
-Interactive Client Components can display server-owned props or promises. Server prefetch can seed query-owned data; its subscribed Client Component then renders that data. A separate server-rendered snapshot of the same query-owned item can diverge when the query refetches.
+Interactive Client Components can display server-owned props or promises. Server prefetch can seed query-owned data; its subscribed Client Component then renders that data. A separate server-rendered snapshot of the same query-owned item can diverge when the query refetches. Prefetch a query-owned read on the server when the server can obtain its inputs; the data layer reads the request's session itself. Otherwise fetch it in the browser once its inputs exist. Either way the read keeps its owner.
 
 A read can carry signals for both owners, such as URL filters and changes while the user stays. Give the whole read one owner: React Query when most of it changes continuously, such as progress, and the Server Component when changes are occasional beside navigation. The other signal becomes that owner's refresh trigger: a server-owned read refreshes on a change signal ([Changes made elsewhere](refresh.md#changes-made-elsewhere)), and a query-owned read with URL inputs derives its key from the URL ([URL changes](refresh.md#url-changes)). Different reads on one page may have different owners.
 
 ## Project integration
 
-- Follow [data-flow.md](../../../.claude/rules/data-flow.md) for data consumption, error feedback, and session isolation; follow [tanstack-query.md](../../../.claude/rules/tanstack-query.md) for browser requests and options factories, and [server-data.md](../../../.claude/rules/server-data.md) for the data layer, Server Actions, `use cache` reads, and Route Handlers. Adapt official examples to these contracts.
-- For browser-only inputs, server prefetch, hydration, or a Server Action called by a mutation, read [React Query integration](react-query-integration.md).
-- For URL changes, writes, changes made elsewhere, or session changes, read [Refresh coordination](refresh.md).
+- When writing the code, follow the rules: [data-flow.md](../../../.claude/rules/data-flow.md) for transport, server prefetch and hydration, copies, error feedback, and session isolation; [tanstack-query.md](../../../.claude/rules/tanstack-query.md) for browser requests and options factories; [server-data.md](../../../.claude/rules/server-data.md) for the data layer, Server Actions, `use cache` reads, and Route Handlers. Adapt official examples to them.
+- When designing refreshes for URL changes, writes, changes made elsewhere, or session changes, read [Refresh coordination](refresh.md).
 - Before implementing one of these patterns, read its runnable reference in the [Data demo](demos.md): code and e2e spec per scenario.
 
 ## Framework guidance

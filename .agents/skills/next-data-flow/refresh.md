@@ -26,7 +26,7 @@ Every write runs in a Server Action ([Server data: Server Actions](../../../.cla
 | React Query | Feature `mutationOptions` factory whose `mutationFn` calls a Server Action, consumed through `useMutation` | Update or invalidate the affected queries in the factory's `onSuccess` |
 | Both | Factory whose `mutationFn` calls a Server Action | Action refreshes the server-owned data; factory refreshes the queries |
 
-For the combined path, adapt expected action failures as [React Query integration](react-query-integration.md#server-action-errors) describes so only successful writes reach `onSuccess`. Factory/caller callback responsibilities remain in [React Query](../../../.claude/rules/tanstack-query.md#mutations).
+For the combined path, unwrap expected action failures as [Mutations](../../../.claude/rules/tanstack-query.md#mutations) describes so only successful writes reach `onSuccess`. Factory/caller callback responsibilities remain in [React Query](../../../.claude/rules/tanstack-query.md#mutations).
 
 When part of the write happens only in the browser, such as the direct upload, run it inside the mutation before calling the action, and coordinate the server-owned displays after success. `router.refresh()` requests the current route again but leaves server caches reusable; cached reads also need an authorized invalidation path. If that path is unavailable, revisit the affected view's owner or cache policy.
 
@@ -37,7 +37,7 @@ Optimistic updates follow the owner of the displayed value:
 
 When both owners display the value, combine the React Query path with a factory `mutationFn` that calls the Server Action. This holds even when the query-owned copies are on other pages, where they may sit in the browser cache: a Server Component display keeps its `useOptimistic` value and awaits the factory's `mutateAsync` inside the transition, and the global toast reports a failure.
 
-On a page that React Query owns, that action's `updateTag` still makes the action response render the current page, so the page's server reads run once more although the browser keeps its own queries; Next.js 16.4.3 has no option to skip that render (`server/app-render/action-handler.js`, `skipPageRendering`). Accept that read rather than splitting the write path, and keep the page's hydration from replacing the browser's data, as [Hydration](react-query-integration.md#hydration) describes for infinite queries.
+On a page that React Query owns, that action's `updateTag` still makes the action response render the current page, so the page's server reads run once more although the browser keeps its own queries; Next.js 16.4.3 has no option to skip that render (`server/app-render/action-handler.js`, `skipPageRendering`). Accept that read rather than splitting the write path, and keep the page's hydration from replacing the browser's data, as [Server prefetch and hydration](../../../.claude/rules/data-flow.md#server-prefetch-and-hydration) describes for infinite queries.
 
 ## Changes made elsewhere
 

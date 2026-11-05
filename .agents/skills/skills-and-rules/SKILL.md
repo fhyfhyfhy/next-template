@@ -1,6 +1,6 @@
 ---
 name: skills-and-rules
-description: This repo's skills and rules. Use when adding, updating, customizing, or creating a skill, or adding a rule.
+description: This repo's skills and rules. Use when adding, updating, customizing, or creating a skill, or adding or editing a rule.
 ---
 
 Run these commands from the repo root.
@@ -23,3 +23,7 @@ A skill change is done when `.agents/skills/<name>/SKILL.md` is in place and, in
 - A short rule for every task goes in `AGENTS.md`, which `CLAUDE.md` imports.
 - A longer topic, or a rule for only some files, goes in its own `.claude/rules/<topic>.md`. It needs no pointer: Claude Code loads these files itself, and `AGENTS.md` § Rule files sends Codex and Cursor there.
 - Leave to the linter whatever it can check; a rule holds the judgment calls lint can't express.
+
+## Citing code
+
+In skills and rules, cite this repo's code as `symbol` in `path`, the path written from the repo root, such as `fetchApi` in `lib/fetch.ts`, so the reader opens it without searching; cite a whole file by its path alone. Later mentions in the same document use the name alone. Symbols from frameworks and packages take no path.
