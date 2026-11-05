@@ -4,14 +4,14 @@ Upstream: `skills/pick-ui-library/` in `emilkowalski/skills`, as `npx skills upd
 
 ## Agents pick libraries on their own
 
-`.claude/rules/libraries.md` sends agents here for any need its own list leaves out, so the skill has to load when an agent chooses a library, not only when a user invokes it. The description names the moment to reach for it and lists only needs the skill still covers. The canned first reply goes too: an agent that invokes the skill mid-task needs the pick, not a greeting that waits for a question.
+`.claude/rules/libraries.md` sends agents here for any need its own list leaves out, so the skill has to load when an agent chooses a library, not only when a user invokes it. The description names the moment to reach for it and lists only needs the skill still covers, with no `: ` in it, which strict YAML parsers such as `npx skills` reject in a plain value. The canned first reply goes too: an agent that invokes the skill mid-task needs the pick, not a greeting that waits for a question.
 
 ```diff
 @@ frontmatter @@
  name: pick-ui-library
 -description: Pick the right library for a given frontend task from a curated, opinionated list — numbers, OTP inputs, charts, command menus, virtualization, drag and drop, toasts, state, styling, and more. Only runs when explicitly invoked; it does not trigger on its own.
 -disable-model-invocation: true
-+description: Choose the library for a task from a curated list. Use before adding a dependency or writing code that needs one: toasts, OTP inputs, command menus, animation, animated numbers, drag and drop, virtualization, state, styling, syntax highlighting, and more.
++description: Choose the library for a task from a curated list. Use before adding a dependency or writing code that needs one, such as toasts, OTP inputs, command menus, animation, animated numbers, drag and drop, virtualization, state, styling, or syntax highlighting.
  ---
 ```
 

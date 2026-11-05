@@ -1,6 +1,6 @@
 ---
 name: pick-ui-library
-description: Choose the library for a task from a curated list. Use before adding a dependency or writing code that needs one: toasts, OTP inputs, command menus, animation, animated numbers, drag and drop, virtualization, state, styling, syntax highlighting, and more.
+description: Choose the library for a task from a curated list. Use before adding a dependency or writing code that needs one, such as toasts, OTP inputs, command menus, animation, animated numbers, drag and drop, virtualization, state, styling, or syntax highlighting.
 ---
 
 # Picking The Right Library
