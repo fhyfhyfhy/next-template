@@ -1809,3 +1809,139 @@ export const probe = (at: number) => new Intl.DateTimeFormat("en").format(at);
     });
   }
 });
+
+describe("React 19 写法和 effect 清理由 @eslint-react 检查", () => {
+  // 报告的 @eslint-react 规则，去掉前缀。file 用真实存在的路径，原因同 restricted。
+  async function reactRules(source) {
+    const [result] = await restrictedSyntaxLinter.lintText(source, {
+      filePath: join(
+        project,
+        "features/demo-task/components/task-list/index.tsx",
+      ),
+    });
+    expect(result.fatalErrorCount).toBe(0);
+    return result.messages
+      .filter(({ ruleId }) => ruleId?.startsWith("@eslint-react/"))
+      .map(({ ruleId }) => ruleId.slice("@eslint-react/".length));
+  }
+
+  for (const { name, source, reported } of [
+    {
+      name: "forwardRef 报错，经 namespace import 调用也报",
+      source: `import * as React from "react";
+import { forwardRef } from "react";
+
+export const A = forwardRef<HTMLInputElement>(function A(_, ref) {
+  return <input ref={ref} />;
+});
+export const B = React.forwardRef<HTMLInputElement>(function B(_, ref) {
+  return <input ref={ref} />;
+});
+`,
+      reported: ["no-forward-ref", "no-forward-ref"],
+    },
+    {
+      name: "<Context.Provider> 和 useContext 报错",
+      source: `import { createContext, type ReactNode, useContext } from "react";
+
+const ThemeContext = createContext("light");
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  return <ThemeContext.Provider value="dark">{children}</ThemeContext.Provider>;
+}
+export function useTheme() {
+  return useContext(ThemeContext);
+}
+`,
+      reported: ["no-context-provider", "no-use-context"],
+    },
+    {
+      name: "createContext 的结果不以 Context 结尾时报错",
+      source: `import { createContext } from "react";
+
+export const Theme = createContext("light");
+`,
+      reported: ["naming-convention-context-name"],
+    },
+    {
+      name: "<Context value> 和 use(Context) 不报，组件库的 X.Provider 也不报",
+      source: `import { Tooltip } from "@base-ui/react/tooltip";
+import { createContext, type ReactNode, use } from "react";
+
+const ThemeContext = createContext("light");
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  return (
+    <ThemeContext value="dark">
+      <Tooltip.Provider>{children}</Tooltip.Provider>
+    </ThemeContext>
+  );
+}
+export function useTheme() {
+  return use(ThemeContext);
+}
+`,
+      reported: [],
+    },
+    {
+      name: "react-dom 的 useFormState 报错",
+      source: `import { useFormState } from "react-dom";
+
+export function useSave(action: (state: number) => number) {
+  return useFormState(action, 0);
+}
+`,
+      reported: ["dom-no-use-form-state"],
+    },
+    {
+      name: "原生 button 不写 type 时报错",
+      source: `export function Buttons() {
+  return (
+    <>
+      <button>A</button>
+      <button type="button">B</button>
+    </>
+  );
+}
+`,
+      reported: ["dom-no-missing-button-type"],
+    },
+    {
+      name: "effect 里的监听和定时器没在 cleanup 里撤掉时报错",
+      source: `import { useEffect } from "react";
+
+export function useLeaks(onResize: () => void, tick: () => void) {
+  useEffect(() => {
+    window.addEventListener("resize", onResize);
+    setInterval(tick, 1000);
+  }, [onResize, tick]);
+}
+`,
+      reported: [
+        "web-api-no-leaked-event-listener",
+        "web-api-no-leaked-interval",
+      ],
+    },
+    {
+      name: "在 cleanup 里撤掉的监听和定时器不报",
+      source: `import { useEffect } from "react";
+
+export function useCleanedUp(onResize: () => void, tick: () => void) {
+  useEffect(() => {
+    window.addEventListener("resize", onResize);
+    const id = setInterval(tick, 1000);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      clearInterval(id);
+    };
+  }, [onResize, tick]);
+}
+`,
+      reported: [],
+    },
+  ]) {
+    test(name, async () => {
+      expect(await reactRules(source)).toStrictEqual(reported);
+    });
+  }
+});

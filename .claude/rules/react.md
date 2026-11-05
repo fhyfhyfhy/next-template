@@ -6,16 +6,19 @@ paths:
 
 # React 19
 
-仓库已经在 React 19 上,新代码一律按 React 19 写法。看到旧版习惯就改,不留 forwardRef / `Context.Provider` 这类已经被官方标记 deprecated 的 API。
+The repo runs React 19 with React Compiler. Write the React 19 form of each API below; ESLint reports the legacy forms of `ref`, context, and action state. When unsure of an API, read the [React reference](https://react.dev/reference/react) and the [React 19 release notes](https://react.dev/blog/2024/12/05/react-19).
 
-如果对某个 API 拿不准,翻 https://react.dev/blog/2024/12/05/react-19 或 https://react.dev/reference/react, **不要靠记忆里的 React 17/18 写法补代码**——那会引入回退式代码,review 还得回头拆。
+## React Compiler
 
-## ref:用 prop,不要 forwardRef
+`reactCompiler` in `next.config.ts` memoizes components and hooks, so write values, callbacks, and components without `useMemo`, `useCallback`, or `memo`. Keep the existing ones: removing them can change what the compiler memoizes.
 
-React 19 起 `ref` 是普通 prop,组件直接从 props 解构就行。`forwardRef` 已 deprecated,会在后续版本移除。
+The compiler skips a component or hook that breaks the [Rules of React](https://react.dev/reference/rules), leaving it unmemoized. The `react-hooks` lint rules report what makes it skip, so keep each component passing them.
+
+## `ref` is a prop
+
+A function component reads `ref` from its props, in place of `forwardRef`, which React 19 no longer needs and plans to deprecate:
 
 ```tsx
-// RIGHT
 interface MyInputProps {
   placeholder?: string;
   ref?: Ref<HTMLInputElement>;
@@ -24,17 +27,11 @@ interface MyInputProps {
 export function MyInput({ placeholder, ref }: MyInputProps) {
   return <input placeholder={placeholder} ref={ref} />;
 }
-
-// WRONG — forwardRef 已废
-import { forwardRef } from "react";
-export const MyInput = forwardRef<HTMLInputElement, MyInputProps>(
-  function MyInput({ placeholder }, ref) {
-    return <input placeholder={placeholder} ref={ref} />;
-  }
-);
 ```
 
-需要暴露命令式 handle 时,`useImperativeHandle(ref, ...)` 用法不变,只是 `ref` 来源从 forwardRef 第二参数变成 props 字段:
+A wrapper whose props extend the underlying component's props type receives `ref` among them and forwards it with the spread, as `Input` in `components/ui/input.tsx` does.
+
+To expose an imperative handle, pass that prop to `useImperativeHandle`:
 
 ```tsx
 interface ComposerProps {
@@ -50,55 +47,40 @@ export function Composer({ ref }: ComposerProps) {
 }
 ```
 
-消费方写法不变:`<Composer ref={composerRef} />`。
+## Ref callbacks return their cleanup
 
-## ref callback 可以返回 cleanup
+A ref callback that sets something up returns the teardown. React calls it when the ref detaches and then skips calling the callback with `null`, so the teardown lives in the returned function, in place of a `node === null` branch:
 
 ```tsx
 <div
   ref={(node) => {
     if (!node) return;
-    const observer = new ResizeObserver(/* ... */);
-    observer.observe(node);
-    // 返回 cleanup,unmount 时 React 会调
-    return () => observer.disconnect();
+    node.addEventListener("wheel", onWheel, { passive: false });
+    return () => node.removeEventListener("wheel", onWheel);
   }}
 />
 ```
 
-返回了 cleanup,React 就不再用 `null` 调一次 callback,所以不要再写 `if (node === null) { ... }` 这种旧 pattern。
+## Context
 
-## Context:`<Context value=...>`,不要 `.Provider`
+Render the context itself as its provider, in place of `<Context.Provider>`, which React plans to deprecate:
 
 ```tsx
-// RIGHT
 const ThemeContext = createContext<Theme>(defaultTheme);
 
 <ThemeContext value={theme}>{children}</ThemeContext>;
-
-// WRONG — .Provider 已 deprecated
-<ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>;
 ```
 
-读 context 优先 `use(Context)` 而不是 `useContext(Context)`,因为 `use` 可以在条件分支 / 早 return 之后调:
+Read it with `use(Context)` in place of `useContext(Context)`. `use` may be called inside a condition or after an early return:
 
 ```tsx
 function Heading({ children }: { children: ReactNode }) {
   if (!children) return null;
-  const theme = use(ThemeContext); // 可以在 early return 之后,useContext 不行
+  const theme = use(ThemeContext);
   return <h1 style={{ color: theme.color }}>{children}</h1>;
 }
 ```
 
-`use()` 还能直接 unwrap promise(配合 Suspense),省掉手写 loading 分支。
+## Action state
 
-## 还在用旧 API 怎么办
-
-- 看到 `forwardRef` / `Context.Provider` / `useFormState` 等 deprecated API,改写成新 pattern 顺手做掉(在自己改的文件内)。
-- Validate changes with the project's lint and TypeScript checks, using its `package.json` and `tsconfig.json` to determine the commands.
-
-## Refs
-
-- React 19 release notes: https://react.dev/blog/2024/12/05/react-19
-- React reference: https://react.dev/reference/react
-- 拿不准就读文档,**不要凭印象写**。
+Use `useActionState` from `react`, in place of `useFormState` from `react-dom`, which React 19 renamed to it.
