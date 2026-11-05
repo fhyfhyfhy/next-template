@@ -43,7 +43,7 @@ export function startDemoServices() {
 
 /**
  * 准备一个数据集：库不存在就创建，执行 migration，初始化 bucket。可以重复执行。
- * 种子数据由 Demo 后端在第一次访问数据库时写入（features/demo-task/server/seed.ts）。
+ * 种子数据由 Demo backend 在第一次访问数据库时写入（features/demo-task/server/seed.ts）。
  * @returns {Record<string, string>} 这个数据集的 `DEMO_*` 环境变量
  */
 export async function prepareDemoDataset(name) {

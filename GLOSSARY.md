@@ -17,12 +17,12 @@ UI demo 里一个可以单独复制的用法文件，对应组件的一种使用
 _Avoid_: 用 demo 指单个用法
 
 **Data demo**:
-Demo 里读写 Demo 后端、演示前后端数据流的 task 小应用，包括验证它的 e2e 测试。
+Demo 里读写 Demo backend、演示前后端数据流的 task 小应用，包括验证它的 e2e 测试。
 _Avoid_: 数据示例、task demo
 
-**Demo 后端**:
+**Demo backend**:
 Data demo 自带的后端，由本 app 实现，数据存在 Demo 专用的数据库和对象存储里，只在配置了 Demo 数据库时启用。
-_Avoid_: Mock API、mock server、假后端、fake backend
+_Avoid_: Demo 后端、Mock API、mock server、假后端、fake backend
 
 ## 多语言
 
@@ -43,9 +43,9 @@ _Avoid_: 留言、备注
 **Demo task status**:
 Demo task 当前所处的阶段，依次为 `pending`、`running`（带进度）、`done` 或 `failed`。只有 `failed` 的任务可以重试，重试后回到 `pending`。
 
-**Demo 生成器**:
-Demo 后端里模拟生成过程的后台程序：推进 Demo task 的状态和进度，写入日志，任务完成时产出模型文件。
-_Avoid_: worker、定时器
+**Demo generator**:
+Demo backend 里模拟生成过程的后台程序：推进 Demo task 的状态和进度，写入日志，任务完成时产出模型文件。
+_Avoid_: Demo 生成器、worker、定时器
 
 **Demo upload**:
 用户为某个用途（比如 Demo task 的封面图）上传的一个文件。先上传，再被一条业务记录使用，一个 Demo upload 只能被一条记录使用；创建后一段时间仍没被使用的会被清理。

@@ -1,4 +1,4 @@
-// 每种产物各放一个目录，免得互相覆盖：demo:* 命令（scripts/run-next.mjs --demo）的产物启用了 Demo 后端，
+// 每种产物各放一个目录，免得互相覆盖：demo:* 命令（scripts/run-next.mjs --demo）的产物启用了 Demo backend，
 // 静态 shell 里预渲染的是 Demo 的数据，和项目自己的 build 混用会让 pnpm start 跑起一个依赖 Demo 服务的版本；e2e 的 build 打开了测试 API，
 // 不能被当成正常产物 start，也不能覆盖正在运行的 start。next.config.ts 和 eslint.config.mjs 从这里取目录；
 // tsconfig.json、.gitignore、.prettierignore 写不了 import，由 build-dirs.test.mjs 检查它们覆盖了每个目录。

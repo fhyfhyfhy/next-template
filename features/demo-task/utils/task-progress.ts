@@ -17,7 +17,7 @@ export interface TaskStep {
 }
 
 /**
- * Demo 生成器推进一步之后的状态：pending → running 0% → 每步加 25% → 100% 之后进入终态。名称里带 "fail"
+ * Demo generator 推进一步之后的状态：pending → running 0% → 每步加 25% → 100% 之后进入终态。名称里带 "fail"
  * （不区分大小写）的任务进入 failed，其他进入 done。已在终态的任务返回 null。从 pending 到终态一共 6 步。
  */
 export function nextTaskStep(task: TaskProgressState): TaskStep | null {

@@ -1,6 +1,6 @@
 # Demo 的文件经通用上传直传对象存储
 
-Demo 后端模拟真实后端处理用户文件的方式：文件本体存在兼容 S3 API 的对象存储里，数据库只记元数据。用户上传先经通用的上传资源（独立的 `demo-upload` feature 和 `uploads` 表）签发 presigned URL，浏览器把文件直传到存储，业务记录再通过附件关联使用这次上传。这样文件不经过业务 server，签名和校验由 server 负责，换成真实的 S3 或 R2 只需要改配置。本地用 Docker Compose 里的 Versity Gateway 充当对象存储。引用关系参照 Rails Active Storage 的 blobs 加 attachments，记在 `demo-upload` 自己的 `upload_attachments` 表里，所以它不用了解业务表，就能判断哪些上传没被使用。
+Demo backend 模拟真实后端处理用户文件的方式：文件本体存在兼容 S3 API 的对象存储里，数据库只记元数据。用户上传先经通用的上传资源（独立的 `demo-upload` feature 和 `uploads` 表）签发 presigned URL，浏览器把文件直传到存储，业务记录再通过附件关联使用这次上传。这样文件不经过业务 server，签名和校验由 server 负责，换成真实的 S3 或 R2 只需要改配置。本地用 Docker Compose 里的 Versity Gateway 充当对象存储。引用关系参照 Rails Active Storage 的 blobs 加 attachments，记在 `demo-upload` 自己的 `upload_attachments` 表里，所以它不用了解业务表，就能判断哪些上传没被使用。
 
 ## Considered Options
 

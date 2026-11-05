@@ -131,7 +131,7 @@ export async function setDefaultLatency(latencyMs: unknown) {
   return latencyMs;
 }
 
-/** 暂停或恢复 Demo 生成器的自动推进；控制入口的“推进一步”不受影响。 */
+/** 暂停或恢复 Demo generator 的自动推进；控制入口的“推进一步”不受影响。 */
 export async function setClockPaused(paused: unknown) {
   if (typeof paused !== "boolean") {
     throw badRequest("paused must be a boolean", { param: "paused" });

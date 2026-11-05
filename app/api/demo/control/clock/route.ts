@@ -6,7 +6,7 @@ import {
   setClockPaused,
 } from "@/features/demo-task/server";
 
-/** 暂停或恢复 Demo 生成器的自动推进，请求体为 `{ paused }`。 */
+/** 暂停或恢复 Demo generator 的自动推进，请求体为 `{ paused }`。 */
 export const POST = demoRoute(async (request) => {
   const { paused } = await readJsonBody(
     request,

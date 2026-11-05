@@ -6,7 +6,7 @@ import { z } from "zod";
  * 给浏览器用的 `NEXT_PUBLIC_` 变量要另放一个模块。
  */
 const VARIABLES = {
-  // Demo 后端：只有 demo:* 命令和数据层测试会设置，值来自 scripts/demo-backend/datasets.mjs 的 demoEnv()。
+  // Demo backend：只有 demo:* 命令和数据层测试会设置，值来自 scripts/demo-backend/datasets.mjs 的 demoEnv()。
   DEMO_DATABASE_URL: z.url().optional(),
   DEMO_STORAGE_ENDPOINT: z.url().optional(),
   DEMO_STORAGE_PUBLIC_URL: z.url().optional(),

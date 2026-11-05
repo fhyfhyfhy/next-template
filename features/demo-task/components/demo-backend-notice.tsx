@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 
-/** Demo 后端没有启用时代替 Data demo 页面显示，页面不读写任何数据。 */
+/** Demo backend 没有启用时代替 Data demo 页面显示，页面不读写任何数据。 */
 export function DemoBackendNotice() {
   const t = useTranslations("demo-task");
   const howToRun = t.rich("demoBackendNotice.howToRun", {

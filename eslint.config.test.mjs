@@ -1945,3 +1945,76 @@ export function useCleanedUp(onResize: () => void, tick: () => void) {
     });
   }
 });
+
+describe("agent 指令和 identifier 用英文写", () => {
+  const eslint = new ESLint({ cwd: project });
+  const englishOnly = async (file, source) => {
+    const [result] = await eslint.lintText(source, {
+      filePath: join(project, file),
+    });
+    expect(result.fatalErrorCount).toBe(0);
+    return result.messages
+      .filter(({ ruleId }) => ruleId === "writing-style/english-only")
+      .map(({ line, column, message }) => [
+        line,
+        column,
+        message.match(/found "(.+?)"/)[1],
+      ]);
+  };
+  const markdown = [
+    "---",
+    "name: case",
+    "description: 中文描述",
+    "---",
+    "",
+    "Quote `王秀英` as test data, and name the Demo 生成器.",
+    "",
+    "```md",
+    "## 问题",
+    "```",
+    "",
+    "<!-- 注释 -->",
+    "",
+    "| Term | Note |",
+    "| ---- | ---- |",
+    "| a | 表格，含标点 |",
+    "",
+  ].join("\n");
+
+  test("code 以外的中文都报告，包括 frontmatter、HTML 注释和表格", async () => {
+    expect(await englishOnly(".claude/rules/case.md", markdown)).toStrictEqual([
+      [3, 14, "中文描述"],
+      [6, 45, "生成器"],
+      [12, 6, "注释"],
+      [16, 7, "表格，含标点"],
+    ]);
+  });
+
+  test("规则、skill、skill patch 和 docs/agents 都检查，其他 Markdown 不检查", async () => {
+    const reported = async (file) =>
+      (await englishOnly(file, markdown)).length > 0;
+    expect(await reported("AGENTS.md")).toBe(true);
+    expect(await reported(".agents/skills/case/SKILL.md")).toBe(true);
+    expect(await reported(".agents/skill-patches/case.md")).toBe(true);
+    expect(await reported("docs/agents/case.md")).toBe(true);
+    expect(await reported("GLOSSARY.md")).toBe(false);
+    expect(await reported("docs/adr/case.md")).toBe(false);
+  });
+
+  test("identifier 只能用 ASCII，声明、属性名和引用都报告", async () => {
+    const [result] = await eslint.lintText(
+      "const 名称 = 1;\nexport const value = { 标签: 名称, label: 名称 };\n",
+      { filePath: join(project, "lib/cn.ts") },
+    );
+    expect(
+      result.messages
+        .filter(({ ruleId }) => ruleId === "id-match")
+        .map(({ line, column }) => [line, column]),
+    ).toStrictEqual([
+      [1, 7],
+      [2, 24],
+      [2, 28],
+      [2, 39],
+    ]);
+  });
+});

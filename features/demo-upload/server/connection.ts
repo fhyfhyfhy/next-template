@@ -10,8 +10,8 @@ import {
 
 import type { UploadTables } from "./tables";
 
-// Demo 后端的连接参数只由 demo:* 命令写进环境变量（scripts/demo-backend/datasets.mjs），值指向 compose.demo.yaml
-// 里的服务。Demo 后端没有启用时这里取不到参数、直接抛错：`createUploadAction` 靠它拒绝执行，demo-task 的页面、
+// Demo backend 的连接参数只由 demo:* 命令写进环境变量（scripts/demo-backend/datasets.mjs），值指向 compose.demo.yaml
+// 里的服务。Demo backend 没有启用时这里取不到参数、直接抛错：`createUploadAction` 靠它拒绝执行，demo-task 的页面、
 // Route Handler 和 Server Action 在调用这个 feature 之前已经检查过 DEMO_DATABASE_URL。
 
 const NOT_ENABLED =

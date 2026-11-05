@@ -48,7 +48,7 @@ export interface DemoSettingsTable {
   id: Generated<boolean>;
   /** 业务操作的默认延迟。 */
   latency_ms: number;
-  /** 暂停时 Demo 生成器不自动推进任务。 */
+  /** 暂停时 Demo generator 不自动推进任务。 */
   clock_paused: boolean;
   /** 每次重置加一，写操作据此认出延迟期间赶上重置的请求。 */
   reset_epoch: number;

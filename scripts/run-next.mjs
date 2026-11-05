@@ -15,7 +15,7 @@ import {
 } from "./demo-ui/index-generator.mjs";
 
 // 用法：node scripts/run-next.mjs <dev|build|start> [--demo] [其余参数传给 next]
-// --demo（package.json 的 demo:* 命令）启用 Demo 后端：启动 compose.demo.yaml 里的 Postgres 和对象存储，准备
+// --demo（package.json 的 demo:* 命令）启用 Demo backend：启动 compose.demo.yaml 里的 Postgres 和对象存储，准备
 // DEMO_DATASET 选择的数据集（默认 dev；Data demo 的 e2e 用 e2e，见 playwright.demo.config.ts），把它的 DEMO_* 变量交给
 // next。服务已经在运行时直接用，退出时也不停止它们：数据保存在 named volume 里，下次启动还在。
 
