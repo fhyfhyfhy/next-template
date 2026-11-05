@@ -1,6 +1,6 @@
 ---
 name: next-data-flow
-description: Decide how backend data reaches the page in this repo: which owner refreshes each read, whether the server read is cached or runs per request, how it reaches the component, and how it refreshes. Use when writing or changing code that displays backend data, or a write that changes data a page displays.
+description: Decide how backend data reaches the page in this repo and how it stays fresh. Use when writing or changing code that displays backend data, or a write that changes data a page displays.
 ---
 
 # Project data flow
@@ -11,11 +11,11 @@ A read's **consumers** are every display of its data and every value computed fr
 
 ## Steps
 
-For each read the change displays, list its consumers, inputs, update triggers, how stale each display may be, and what must show on first load. Then decide, in order: [owner](#ownership), [server read](#server-read), [delivery](#delivery), [refreshes](#refreshes), and [loading and failure states](#loading-and-failures). For a read that already exists, keep each current choice unless the requirement calls for a change.
+For each read the change displays, list its consumers, inputs, update triggers, each display's **freshness bound** (how stale its data may be), and what must show on first load. Then decide, in order: [owner](#ownership), [server read](#server-read), [delivery](#delivery), [refreshes](#refreshes), and [loading and failure states](#loading-and-failures). For a read that already exists, keep each current choice unless the requirement calls for a change.
 
 Rank every choice by two goals, in this order:
 
-1. Each display meets its requirement, including how current its data must be. That **freshness bound** caps every cache that can serve the display: `cacheLife` on the server and in the browser's router, and React Query's `staleTime`.
+1. Each display meets its requirement, including its freshness bound, which caps every cache that can serve the display: `cacheLife` on the server and in the browser's router, and React Query's `staleTime`.
 2. Within the freshness bound, useful UI shows as early as possible: on first load, on navigation, and after the user's own write.
 
 The design is done when every consumer has all five, with a refresh path for every [update trigger](refresh.md), and consumers shown together refresh from the same trigger.
@@ -77,12 +77,12 @@ Give every consumer a refresh path for each update trigger it has: URL changes, 
 
 ## Project integration
 
-- When writing the code, follow the rules: [data-flow.md](../../../.claude/rules/data-flow.md) for transport, server prefetch and hydration, copies, error feedback, and session isolation; [tanstack-query.md](../../../.claude/rules/tanstack-query.md) for browser requests and options factories; [server-data.md](../../../.claude/rules/server-data.md) for the data layer, Server Actions, `use cache` reads, and Route Handlers. Adapt official examples to them.
+- When writing the code, follow the rules: [data-flow.md](../../../.claude/rules/data-flow.md), [tanstack-query.md](../../../.claude/rules/tanstack-query.md) for browser requests and options factories, and [server-data.md](../../../.claude/rules/server-data.md) for the data layer, Server Actions, `use cache` reads, and Route Handlers. Adapt official examples to them.
 - Before implementing one of these patterns, read its runnable reference in the [Data demo](demos.md): code and e2e spec per scenario.
 
 ## Framework guidance
 
-Read the relevant installed documentation before implementing framework behavior. Paths below are relative to `node_modules/next/dist/docs/01-app/`; use the installed version and actual flags in `next.config.ts`. Follow links within the selected guide to the needed API. If bundled docs are missing, resolve the installed version before consulting the official online docs.
+Read the relevant installed documentation before implementing framework behavior. Paths below are relative to `node_modules/next/dist/docs/01-app/`; use the installed version and actual flags in `next.config.ts`. If bundled docs are missing, resolve the installed version before consulting the official online docs.
 
 | Question | Installed documentation |
 | --- | --- |

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { ThemeProvider } from "next-themes";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
 import { toast, Toaster } from "@/components/ui/toaster";
@@ -80,7 +81,7 @@ export function Providers({ children }: ProvidersProps) {
       disableTransitionOnChange
     >
       <QueryClientProvider client={getQueryClient()}>
-        {children}
+        <NuqsAdapter>{children}</NuqsAdapter>
         <Toaster />
       </QueryClientProvider>
     </ThemeProvider>
