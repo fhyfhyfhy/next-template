@@ -4,16 +4,18 @@ import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 
 import { DateTime } from "@/components/date-time";
-import { useQuery } from "@/lib/react-query";
+import { useIsMutating, useQuery, useQueryClient } from "@/lib/react-query";
 
 import {
   getTaskQueryOptions,
   isTaskActive,
   isTaskNotFound,
 } from "../../api/get-task";
+import { retryTaskMutationKey } from "../../api/retry-task";
 import { DATE_TIME_FORMAT } from "../../constants/date-time";
 import { useRecentTaskIds } from "../../hooks/use-recent-task-ids";
 import { useRefreshListsWhenSettled } from "../../hooks/use-refresh-lists-when-settled";
+import type { TaskStatus } from "../../types/task-filters";
 import { RelatedTasks } from "../related-tasks";
 import { TaskComments } from "../task-comments";
 import { TaskLogs } from "../task-logs";
@@ -29,6 +31,17 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   const { record } = useRecentTaskIds();
   useRefreshListsWhenSettled(task.data?.status);
   useEffect(() => record(taskId), [record, taskId]);
+  // 重试先乐观地显示 pending；服务端清空上一轮日志前就重新订阅，会读到旧日志和 end，所以等重试确认后再换日志的 key。
+  const retrying =
+    useIsMutating({ mutationKey: retryTaskMutationKey(taskId) }) > 0;
+  const queryClient = useQueryClient();
+  // 日志和旁边的状态一起显示：推送报告的终态和详情不一致时立即刷新详情，不等下一次轮询。
+  const refreshIfSettledElsewhere = (status: TaskStatus) => {
+    if (task.data?.status === status) return;
+    void queryClient.invalidateQueries({
+      queryKey: getTaskQueryOptions(taskId).queryKey,
+    });
+  };
 
   // 先看 data：刷新失败时保留已有数据。404 由 query 工厂的 meta 关掉通用提示，这里显示已删除。
   if (task.data) {
@@ -63,8 +76,9 @@ export function TaskDetail({ taskId }: { taskId: string }) {
           </dl>
           {!deleted && <TaskActions task={data} />}
           <TaskLogs
-            key={isTaskActive(data.status) ? "active" : "settled"}
+            key={isTaskActive(data.status) && !retrying ? "active" : "settled"}
             taskId={taskId}
+            onEnd={refreshIfSettledElsewhere}
           />
           {!deleted && <TaskComments taskId={taskId} />}
         </div>

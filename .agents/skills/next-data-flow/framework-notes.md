@@ -14,9 +14,9 @@ Doc paths below are relative to `node_modules/next/dist/docs/01-app/`; implement
 | `refresh()` from `next/cache` | Refreshes dynamic data and evicts the back/forward cache while preserving the prefetch cache; server-cached data remains reusable |
 | `updateTag`, `revalidatePath`, or cookie mutation | Invalidates client prefetches as well as refreshing the view |
 
-An immediate-expiration profile, such as `revalidateTag(tag, { expire: 0 })`, also requests static-and-dynamic invalidation. The `"max"` observation does not apply to every profile. None of these calls invalidates React Query.
+An action that revalidates always renders the current page into its response, even when the browser displays that page's data from React Query: no option skips that render. An immediate-expiration profile, such as `revalidateTag(tag, { expire: 0 })`, also requests static-and-dynamic invalidation. The `"max"` observation does not apply to every profile. None of these calls invalidates React Query.
 
-**Evidence:** `server/web/spec-extension/revalidate.js`, `revalidate` and `refresh`, choose `ActionDidRevalidateStaticAndDynamic` or `ActionDidRevalidateDynamicOnly`. `server/app-render/action-handler.js`, `executeActionAndPrepareForRender` and `addRevalidationHeader`, determine page rendering and the client signal. `client/components/router-reducer/reducers/server-action-reducer.js` invalidates the prefetch cache only for `ActionDidRevalidateStaticAndDynamic`.
+**Evidence:** `server/web/spec-extension/revalidate.js`, `revalidate` and `refresh`, choose `ActionDidRevalidateStaticAndDynamic` or `ActionDidRevalidateDynamicOnly`. `server/app-render/action-handler.js`, `executeActionAndPrepareForRender` and `addRevalidationHeader`, determine page rendering and the client signal; its `skipPageRendering` is set only when the action did not revalidate, was forwarded, or is an action-only fallback request. `client/components/router-reducer/reducers/server-action-reducer.js` invalidates the prefetch cache only for `ActionDidRevalidateStaticAndDynamic`.
 
 **Recheck:** inspect those branches after upgrading, and verify the affected view plus a previously prefetched destination in production. Remove this note when `cacheLife.md` distinguishes these operations or points to their accurate contracts.
 

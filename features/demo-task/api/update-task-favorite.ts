@@ -1,24 +1,21 @@
-import {
-  type InfiniteData,
-  mutationOptions,
-  type QueryClient,
-} from "@/lib/react-query";
+import { mutationOptions } from "@/lib/react-query";
 
 import type { DemoTaskTranslator } from "../types/translator";
-import { getTaskQueryOptions, type Task } from "./get-task";
 import {
-  favoriteTasksQueryOptions,
-  taskListKey,
-  type TaskPage,
-} from "./get-tasks";
+  insertTaskIntoPage,
+  removeTaskFromPage,
+  restoreTaskLists,
+  setTaskInLists,
+  snapshotTaskLists,
+} from "../utils/task-list-cache";
+import { getTaskQueryOptions, type Task } from "./get-task";
+import { favoriteTasksQueryOptions, taskListKey } from "./get-tasks";
 import { updateTaskFavoriteAction } from "./update-task-favorite-action";
 
 interface UpdateTaskFavoriteVariables {
   task: Task;
   favorite: boolean;
 }
-
-type CachedTaskList = TaskPage | InfiniteData<TaskPage> | Task[];
 
 /**
  * 收藏：浏览器里缓存的每份任务列表（作品广场的卡片、“我的收藏”侧栏等）同时乐观更新，失败时一起回滚。
@@ -30,31 +27,24 @@ export const updateTaskFavoriteMutationOptions = (t: DemoTaskTranslator) =>
     mutationFn: ({ task, favorite }: UpdateTaskFavoriteVariables) =>
       updateTaskFavoriteAction({ taskId: task.id, favorite }),
     onMutate: async ({ task, favorite }, { client }) => {
-      await client.cancelQueries({ queryKey: taskListKey });
-      const previous = client.getQueriesData<CachedTaskList>({
-        queryKey: taskListKey,
-      });
-      const updated = { ...task, favorite };
-      setTaskInLists(client, updated);
+      const previous = await snapshotTaskLists(client, taskListKey);
+      setTaskInLists(client, taskListKey, task.id, (item) => ({
+        ...item,
+        favorite,
+      }));
+      // 只有插进“我的收藏”时用调用方的整条任务：这份列表里原本没有它。
       client.setQueryData(
         favoriteTasksQueryOptions().queryKey,
         (page) =>
-          page && {
-            ...page,
-            items: favorite
-              ? [
-                  ...page.items.filter((item) => item.id !== task.id),
-                  updated,
-                ].sort(newestFirst)
-              : page.items.filter((item) => item.id !== task.id),
-          },
+          page &&
+          (favorite
+            ? insertTaskIntoPage(page, { ...task, favorite })
+            : removeTaskFromPage(page, task.id)),
       );
       return { previous };
     },
     onError: (_error, _variables, onMutateResult, { client }) => {
-      for (const [queryKey, data] of onMutateResult?.previous ?? []) {
-        client.setQueryData(queryKey, data);
-      }
+      restoreTaskLists(client, onMutateResult?.previous);
     },
     onSettled: (_data, _error, { task }, _onMutateResult, { client }) => {
       void client.invalidateQueries({ queryKey: taskListKey });
@@ -64,28 +54,3 @@ export const updateTaskFavoriteMutationOptions = (t: DemoTaskTranslator) =>
     },
     meta: { errorMessage: t("favorite.failed") },
   });
-
-/** 和 `favoriteTasksQueryOptions` 的 `created_desc` 一致，乐观插入的位置就是重新请求后的位置。 */
-function newestFirst(a: Task, b: Task) {
-  return b.createdAt - a.createdAt;
-}
-
-/** 把任务的新值写进每一个缓存里的任务列表：分页列表、无限列表和搜索结果。 */
-function setTaskInLists(client: QueryClient, task: Task) {
-  const replace = (items: Task[]) =>
-    items.map((item) => (item.id === task.id ? task : item));
-  client.setQueriesData<CachedTaskList>({ queryKey: taskListKey }, (data) => {
-    if (!data) return data;
-    if (Array.isArray(data)) return replace(data);
-    if ("pages" in data) {
-      return {
-        ...data,
-        pages: data.pages.map((page) => ({
-          ...page,
-          items: replace(page.items),
-        })),
-      };
-    }
-    return { ...data, items: replace(data.items) };
-  });
-}

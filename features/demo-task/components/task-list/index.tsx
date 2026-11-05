@@ -1,5 +1,6 @@
 "use client";
 
+import { useMounted } from "@mantine/hooks";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { use } from "react";
@@ -8,36 +9,30 @@ import { DateTime } from "@/components/date-time";
 
 import type { TaskPage } from "../../api/get-tasks";
 import { DATE_TIME_FORMAT } from "../../constants/date-time";
-import { useRefreshTaskListWhenActiveChanges } from "../../hooks/use-refresh-task-list-when-active-changes";
-import {
-  taskDetailHref,
-  taskListHref,
-  type TaskListParams,
-} from "../../utils/task-urls";
+import { taskDetailHref, toTaskFilters } from "../../utils/task-urls";
 import { TaskCover } from "../task-cover";
-import { useTaskListNavigation } from "../task-list-navigation";
+import { TaskListLink, useTaskListSearchParams } from "../task-list-navigation";
 import { TaskStatusBadge } from "../task-status-badge";
+import { TaskListChangeSignal } from "./change-signal";
 import { FavoriteToggle } from "./favorite-toggle";
 
 interface TaskListProps {
   /** Server Component 不 await 直接传下来的读取结果，这里用 `use()` 取值，未完成时由外层 Suspense 显示骨架屏。 */
   tasksPromise: Promise<TaskPage>;
-  params: TaskListParams;
 }
 
-export function TaskList({ tasksPromise, params }: TaskListProps) {
+export function TaskList({ tasksPromise }: TaskListProps) {
   const t = useTranslations("demo-task");
-  const { items, total, hasMore } = use(tasksPromise);
-  const { pending, navigate } = useTaskListNavigation(params);
-  useRefreshTaskListWhenActiveChanges(items);
-  const previousPage = { ...params, page: params.page - 1 };
-  const nextPage = { ...params, page: params.page + 1 };
+  const { items, total } = use(tasksPromise);
+  const [searchParams] = useTaskListSearchParams();
+  // 翻页从当前选择的页码出发，而不是这次渲染的列表：导航进行中再点，渲染的还是旧页。页码按服务端读取列表时的
+  // 规则换算；有没有下一页也按这个页码和总数算，旧页的 `hasMore` 对应的是旧页码。
+  const { page, pageSize } = toTaskFilters(searchParams);
+  const hasNextPage = page * pageSize < total;
+  const mounted = useMounted();
   return (
-    // 导航期间显示的还是旧列表，标记为更新中并调淡。
-    <div
-      aria-busy={pending}
-      className="transition-opacity aria-busy:opacity-60"
-    >
+    <>
+      {mounted && <TaskListChangeSignal items={items} />}
       {items.length === 0 ? (
         <p className="rounded-panel border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
           {t("taskList.empty")}
@@ -78,32 +73,24 @@ export function TaskList({ tasksPromise, params }: TaskListProps) {
           {t("taskList.total", { total })}
         </span>
         <div className="flex gap-2">
-          {params.page > 1 && (
-            <Link
-              href={taskListHref(previousPage)}
-              onNavigate={(event) => {
-                event.preventDefault();
-                navigate(previousPage);
-              }}
+          {page > 1 && (
+            <TaskListLink
+              values={{ page: page - 1 }}
               className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
             >
               {t("taskList.previousPage")}
-            </Link>
+            </TaskListLink>
           )}
-          {hasMore && (
-            <Link
-              href={taskListHref(nextPage)}
-              onNavigate={(event) => {
-                event.preventDefault();
-                navigate(nextPage);
-              }}
+          {hasNextPage && (
+            <TaskListLink
+              values={{ page: page + 1 }}
               className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
             >
               {t("taskList.nextPage")}
-            </Link>
+            </TaskListLink>
           )}
         </div>
       </nav>
-    </div>
+    </>
   );
 }

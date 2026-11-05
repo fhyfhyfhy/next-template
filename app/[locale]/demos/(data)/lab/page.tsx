@@ -11,6 +11,7 @@ import {
   LabDraftMode,
   LabQueryStates,
   LabRetry,
+  LabSectionSkeleton,
   LabSuspenseReset,
   PageIntro,
 } from "@/features/demo-task";
@@ -30,22 +31,32 @@ export default function LabPage() {
       <div className="mb-6">
         <DemoResetButton />
       </div>
-      {/* 下面的组件在客户端创建 query，读当前时间，放进 Suspense 才不会打断预渲染。 */}
-      <Suspense fallback={null}>
-        <div className="grid gap-6">
-          {/* 预渲染时 draftMode() 读到关闭，开关以关闭状态进静态 shell；开启后请求绕过静态 shell，在请求时读到开启。 */}
+      {/* 下面的区块在客户端创建 query，读当前时间，各自放进 Suspense 才不会打断预渲染，也互不等待。 */}
+      <div className="grid gap-6">
+        {/* 预渲染时 draftMode() 读到关闭，开关以关闭状态进静态 shell；开启后请求绕过静态 shell，在请求时读到开启。 */}
+        <Suspense fallback={<LabSectionSkeleton className="h-36" />}>
           {draftMode().then(({ isEnabled }) => (
             <LabDraftMode enabled={isEnabled} />
           ))}
+        </Suspense>
+        <Suspense fallback={<LabSectionSkeleton className="h-72" />}>
           <FaultPanel />
-          <div className="grid gap-6 lg:grid-cols-2">
+        </Suspense>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Suspense fallback={<LabSectionSkeleton />}>
             <LabQueryStates />
+          </Suspense>
+          <Suspense fallback={<LabSectionSkeleton />}>
             <LabRetry />
+          </Suspense>
+          <Suspense fallback={<LabSectionSkeleton />}>
             <LabConcurrentFailures />
+          </Suspense>
+          <Suspense fallback={<LabSectionSkeleton />}>
             <LabSuspenseReset />
-          </div>
+          </Suspense>
         </div>
-      </Suspense>
+      </div>
     </>
   );
 }

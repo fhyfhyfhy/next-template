@@ -1,22 +1,33 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import {
   FavoritesPanel,
+  FavoritesPanelSkeleton,
+  favoriteTasksQueryOptions,
   FeedGrid,
   FeedSkeleton,
   getFeedInfiniteQueryOptions,
   PageIntro,
   SeedHydrationBoundary,
+  taskFiltersOf,
 } from "@/features/demo-task";
 import {
   buildHydrationState,
   firstPageData,
   getCachedFeedSnapshot,
   isDemoBackendEnabled,
+  listTasks,
 } from "@/features/demo-task/server";
+import {
+  dehydrate,
+  HydrationBoundary,
+  noop,
+  QueryClient,
+} from "@/lib/react-query";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("app");
@@ -36,9 +47,34 @@ export default function FeedPage() {
         <Suspense fallback={<FeedSkeleton />}>
           <FeedHydration />
         </Suspense>
-        <FavoritesPanel />
+        <Suspense fallback={<FavoritesPanelSkeleton />}>
+          <FavoritesHydration />
+        </Suspense>
       </div>
     </>
+  );
+}
+
+/**
+ * 收藏属于用户自己的数据，按请求读取（Demo 没有用户，按真实应用的形态演示）。服务端预取后随页面送达，
+ * 在自己的 Suspense 里，不挡作品广场。
+ */
+async function FavoritesHydration() {
+  if (!isDemoBackendEnabled()) return null;
+  await connection();
+  const queryClient = new QueryClient();
+  // 读取失败时面板在浏览器里重新请求，并显示自己的错误状态。
+  const favorites = favoriteTasksQueryOptions();
+  await queryClient
+    .query({
+      ...favorites,
+      queryFn: () => listTasks(taskFiltersOf(favorites)),
+    })
+    .catch(noop);
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <FavoritesPanel />
+    </HydrationBoundary>
   );
 }
 

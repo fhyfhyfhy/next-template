@@ -167,8 +167,13 @@ test.describe("写入", () => {
     demoBackend,
   }) => {
     await openTask(page, "task-05");
+    const retried = page.waitForResponse(
+      (response) => response.request().headers()["next-action"] !== undefined,
+    );
     await page.getByRole("button", { name: "重试" }).click();
+    // 重试是乐观更新：服务端处理之前就显示排队中，等 action 返回后再推进，任务才已经回到 pending。
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
+    await retried;
 
     await demoBackend.advance("task-05", 1);
     await expect(page.getByTestId("task-status")).toHaveText("生成中");

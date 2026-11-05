@@ -5,9 +5,10 @@ import { Suspense } from "react";
 
 import {
   CreateTaskForm,
+  loadTaskListSearchParams,
   PageIntro,
-  parseTaskListParams,
   TaskList,
+  TaskListBusy,
   TaskListNavigation,
   TaskListSkeleton,
   TaskListToolbar,
@@ -34,25 +35,24 @@ export default function TasksPage({
         <p>{t("demos.tasks.intro.tryIt")}</p>
       </PageIntro>
       <CreateTaskForm />
-      {/* page 保持同步，只在 Suspense 里等 searchParams：工具栏和列表以外的部分都能进静态 shell。 */}
+      {/* page 保持同步，只在 Suspense 里读 URL：工具栏和列表以外的部分都能进静态 shell。 */}
       <TaskListNavigation>
+        {/* 工具栏用 useQueryStates 读 URL，它读 useSearchParams，预渲染时没有值。 */}
         <Suspense fallback={<div className="mb-4 h-8" />}>
-          {searchParams.then((query) => (
-            <TaskListToolbar params={parseTaskListParams(query)} />
-          ))}
+          <TaskListToolbar />
         </Suspense>
-        <Suspense fallback={<TaskListSkeleton />}>
-          {searchParams.then((query) => {
-            if (!isDemoBackendEnabled()) return null;
-            const params = parseTaskListParams(query);
-            return (
-              <TaskList
-                params={params}
-                tasksPromise={getCachedTaskPage(toTaskFilters(params))}
-              />
-            );
-          })}
-        </Suspense>
+        <TaskListBusy>
+          <Suspense fallback={<TaskListSkeleton />}>
+            {loadTaskListSearchParams(searchParams).then((params) => {
+              if (!isDemoBackendEnabled()) return null;
+              return (
+                <TaskList
+                  tasksPromise={getCachedTaskPage(toTaskFilters(params))}
+                />
+              );
+            })}
+          </Suspense>
+        </TaskListBusy>
       </TaskListNavigation>
     </>
   );

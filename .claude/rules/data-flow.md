@@ -12,7 +12,7 @@ paths:
 
 # Data flow
 
-- When choosing a data owner, coordinating refreshes after URL changes, writes, or session changes, or diagnosing a stale view, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md).
+- When writing or changing code that displays backend data, or a write that changes data a page displays, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md).
 - When adding or changing code that reads or writes data on the server (the data layer, a Server Action, a `use cache` read, or a Route Handler), read [server-data.md](server-data.md).
 - When adding or changing a browser request or a React Query options factory, read [tanstack-query.md](tanstack-query.md).
 - When you need a working example of a data rule, here or in those two, read the [Data demo](../../.agents/skills/next-data-flow/demos.md), which maps each rule to its code and e2e spec.
@@ -23,6 +23,24 @@ paths:
 - A Server Component or `generateMetadata` that reads data that differs per request awaits `connection()` from `next/server` before calling the data layer. Without it, the read also runs while Next prerenders the route, and one request queries the database twice. A read inside `use cache` is cached across renders and skips `connection()`; calling it there is an error. The reference is `app/[locale]/demos/(data)/tasks/[id]/page.tsx`.
 - The browser reads through `fetchApi` in `lib/fetch.ts`, against the app's Route Handlers under `/api`, and writes through Server Actions. The client dispatches Server Actions one at a time (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, Sequential dispatch on the client), so reads that poll, stream, run in parallel, or may be aborted midway stay on Route Handlers.
 - Raw `fetch` is for what `fetchApi` does not cover: streaming or SSE responses and binary bodies, such as a file sent to a presigned object-storage URL or a model file downloaded.
+
+## URL state
+
+A page's state that belongs in the URL, such as its filters, sorting, pagination, or search term, goes through nuqs. [URL changes](../../.agents/skills/next-data-flow/refresh.md#url-changes) decides which updates navigate, push history, or wait for a pause; this section turns them into code.
+
+- Define a page's parsers once, in the owning feature's `utils/<page>-search-params.ts`, such as `order-list-search-params.ts`, and export from the same module a loader (`createLoader`) and a serializer (`createSerializer`) built on them. Import these from `nuqs/server`: the `nuqs` entry is a client module, and Server Components use them too.
+- A Server Component reads the state with the loader, inside the `<Suspense>` that awaits `searchParams`. A Client Component reads and sets it with `useQueryStates` from `nuqs` and the same parsers, rendered inside `<Suspense>`, since the hook reads `useSearchParams`. A link to another state of the page takes its `href` from the serializer.
+- Express the decisions through the setter's options:
+
+  | Decision | Option |
+  | --- | --- |
+  | A Server Component reads the state | `shallow: false`, with `startTransition` from `useTransition` to mark the previous content `aria-busy` while the server responds |
+  | Only query-owned reads depend on it | `shallow: true`, the default |
+  | Back should undo the change | `history: "push"`; intermediate states keep the default `"replace"` |
+  | The input changes continuously | With `shallow: false`, `limitUrlUpdates: debounce(ms)`: the value updates at once, the server render after the pause. For query-owned reads, build the query key from the value debounced with `useDebouncedValue` from `@mantine/hooks`: `limitUrlUpdates` leaves the hook's value immediate |
+
+- When the content to mark busy sits in another component than the setter's caller, hold `useTransition` in a Client Component that wraps both and share it through context: the caller passes `startTransition` to the setter, and a Client Component around the content sets `aria-busy` from `isPending`.
+- The new value shows at once, also while a `shallow: false` update waits for the server: nuqs holds it in `useOptimistic` until the navigation commits. A `Link` to another state of the page gets the same by calling the setter in `onNavigate` after `event.preventDefault()`; `onNavigate` skips modifier clicks, which still open a new tab.
 
 ## Server prefetch and hydration
 
@@ -37,7 +55,33 @@ When a Server Component prefetches a read that React Query owns, follow the inst
 
 ## Copies
 
-Render server data from its owner: props or a promise from a Server Component, or `useQuery` with `select`. Keep no copy in React state, context, or a store; the copy stops following refreshes. Refetching part of one read through a second owner, such as a query for one field of each listed item, is a copy too: it refreshes on its own schedule while everything else derived from that read, such as its filtering and counts, keeps the old state. So is a Server Component rendering a prefetched result that React Query owns, such as a count beside the list: it keeps its value when the query refetches. A value the user edits before saving it may start from the data, such as a form being edited; a write saves it.
+Render server data from its owner: props or a promise from a Server Component, or `useQuery` with `select`. Keep no copy in React state, context, or a store; the copy stops following refreshes. Refetching part of one read through a second owner, such as a query for one field of each listed item, is a copy too: it refreshes on its own schedule while everything else derived from that read, such as its filtering and counts, keeps the old state. A Server Component that prefetches a query for React Query and renders from the same result, such as a count beside the list, makes a copy too: the count keeps the prefetched value while the list follows each refetch. A value the user edits before saving it may start from the data, such as a form being edited; a write saves it.
+
+## Optimistic updates
+
+[Optimistic updates](../../.agents/skills/next-data-flow/refresh.md#optimistic-updates) decides when a write shows its result before the server confirms it. Write the optimistic value through the displayed value's owner:
+
+- A value React Query owns: the factory's `onMutate` ([Mutations](tanstack-query.md#mutations)).
+- A value a Server Component renders: `useOptimistic` in the Client Component that triggers the write, set inside the transition that awaits the write. The value falls back to the server's when the transition ends, so it needs no rollback. Catch the write's rejection in the transition: an uncaught one reaches the nearest error boundary.
+
+  ```tsx
+  const [pinned, setPinned] = useOptimistic(task.pinned);
+  const pinTaskMutation = useMutation(pinTaskMutationOptions(t));
+
+  function togglePinned() {
+    const next = !pinned;
+    startTransition(async () => {
+      setPinned(next);
+      try {
+        await pinTaskMutation.mutateAsync({ taskId: task.id, pinned: next });
+      } catch {
+        // The factory's meta.errorMessage already shows the failure toast.
+      }
+    });
+  }
+  ```
+
+  When React Query also displays the value, such as in a detail query or a list cached for another page, the factory's `onMutate` updates it there as well ([Mutations](tanstack-query.md#mutations)).
 
 ## Errors in React Query–owned data
 

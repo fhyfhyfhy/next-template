@@ -9,14 +9,17 @@ import {
   DemoNote,
   getCommentsQueryOptions,
   getTaskQueryOptions,
+  relatedTasksQueryOptions,
   TaskDetail,
   TaskDetailSkeleton,
+  taskFiltersOf,
 } from "@/features/demo-task";
 import {
   getTask,
   isDemoBackendEnabled,
   isTaskMissing,
   listComments,
+  listTasks,
   omitFunctionMeta,
 } from "@/features/demo-task/server";
 import {
@@ -41,6 +44,8 @@ export async function generateMetadata({
     if (isTaskMissing(error)) return null;
     throw error;
   });
+  // 标题里的任务名是服务端渲染时的值，不跟着详情 query 刷新：只在导航或 Server Action 失效页面时更新。
+  // 别处改名后，标签页标题会比页面上的名字旧，Demo 接受这一点。
   return {
     title: t("demos.taskDetail.metadataTitle", {
       name: task?.name ?? t("demos.taskDetail.notFound.title"),
@@ -79,18 +84,24 @@ async function TaskDetailHydration({ id }: { id: string }) {
   // 不先等 connection()，预备渲染也会查库，同一个请求就查两次（e2e 断言服务端只读一次）。
   await connection();
   const queryClient = new QueryClient();
+  // 评论不依赖任务，和任务同时发起；它不阻塞首屏：不 await，以 pending 状态 dehydrate，数据到了再流式送到浏览器。
+  void queryClient
+    .query({ ...getCommentsQueryOptions(id), queryFn: () => listComments(id) })
+    .catch(noop);
+  let prompt: string;
   try {
-    await queryClient.query({
+    ({ prompt } = await queryClient.query({
       ...getTaskQueryOptions(id),
       queryFn: () => getTask(id),
-    });
+    }));
   } catch (error) {
     if (isTaskMissing(error)) notFound();
     throw error;
   }
-  // 评论不阻塞首屏：不 await，以 pending 状态 dehydrate，数据到了再流式送到浏览器。
+  // 相关任务要用任务的 prompt 查询，拿到任务后再发起，同样以 pending 状态流式送达。
+  const related = relatedTasksQueryOptions(id, prompt);
   void queryClient
-    .query({ ...getCommentsQueryOptions(id), queryFn: () => listComments(id) })
+    .query({ ...related, queryFn: () => listTasks(taskFiltersOf(related)) })
     .catch(noop);
   const state = dehydrate(queryClient, {
     shouldDehydrateQuery: (query) =>

@@ -1,9 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 
 import { streamTaskLogs } from "../../api/get-task-logs";
+import type { TaskStatus } from "../../types/task-filters";
 
 type StreamState = "streaming" | "ended" | "failed";
 
@@ -11,19 +12,30 @@ type StreamState = "streaming" | "ended" | "failed";
  * 生成日志是 SSE 推送的追加流，不属于任何 query：按传输例外用 raw `fetch` 读取，累积在组件自己的 state 里。
  * 卸载时中止连接。调用方在任务进入或离开进行中状态时换 key：结束时重新挂载读完整日志，重试后重新订阅。
  */
-export function TaskLogs({ taskId }: { taskId: string }) {
+export function TaskLogs({
+  taskId,
+  onEnd,
+}: {
+  taskId: string;
+  /** 推送结束时收到任务的终态。 */
+  onEnd: (status: TaskStatus) => void;
+}) {
   const t = useTranslations("demo-task");
   const [lines, setLines] = useState<string[]>([]);
   const [state, setState] = useState<StreamState>("streaming");
+  const handleEnd = useEffectEvent(onEnd);
 
   useEffect(() => {
     const controller = new AbortController();
     void (async () => {
       try {
         for await (const event of streamTaskLogs(taskId, controller.signal)) {
-          if (event.type === "log")
+          if (event.type === "log") {
             setLines((current) => [...current, event.line]);
-          else setState("ended");
+            continue;
+          }
+          setState("ended");
+          handleEnd(event.status);
         }
       } catch {
         if (!controller.signal.aborted) setState("failed");

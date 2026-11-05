@@ -12,7 +12,7 @@ Define the browser's requests and the React Query options factories that use the
 
 ## Files
 
-- One request per file, named `<verb>-<resource>.ts` after the operation: GET → `get-` (plural for a list, `get-tasks.ts`), POST → `create-`, PUT and PATCH → `update-`, DELETE → `delete-`, and a domain verb for other actions (`cancel-task.ts`). Its response schema lives in the feature's `types/`, shared with the data layer that produces the data. Each read or write that React Query owns gets a `queryOptions`, `infiniteQueryOptions`, or `mutationOptions` factory.
+- One request per file, named `<verb>-<resource>.ts` after the operation: GET → `get-` (plural for a list, `get-tasks.ts`), POST → `create-`, PUT and PATCH → `update-`, DELETE → `delete-`, and a domain verb for other actions (`cancel-task.ts`). Its response schema lives in the feature's `types/`, shared with the data layer that produces the data. Each read that React Query owns gets a `queryOptions` or `infiniteQueryOptions` factory, and every write a `mutationOptions` factory.
 - Export from the feature's entry what code outside the feature uses, such as an options factory for a route's server prefetch or another feature's cache update, and keep the rest private, request functions included. Add a feature hook only for logic beyond one query or mutation, such as combining two queries.
 
 ## Requests
@@ -34,6 +34,7 @@ export const taskSchema = z.object({
   id: z.string(),
   name: z.string(),
   status: z.enum(["pending", "running", "done", "failed"]),
+  pinned: z.boolean(),
   createdAt: z.number(),
 });
 export type Task = z.infer<typeof taskSchema>;
@@ -127,6 +128,28 @@ deleteTaskMutation.mutate({ taskId }, { onSuccess: () => onClose() });
 ```
 
 - A write's `mutationFn` calls its Server Action ([Server Actions](server-data.md#server-actions)). The factory lives in an ordinary module, such as `features/demo-task/api/create-task.ts`, which imports the action. When the action returns an `ActionResult`, the factory unwraps it with `unwrapActionResult`, which throws an `ActionError` for `{ ok: false }`, all in `lib/action-result.ts`: React Query treats every resolved value as success, so without it a failed write would run `onSuccess`. Otherwise the factory passes the result on as is.
-- A caller that writes through React Query uses the factory, not the action: the factory holds the cache updates.
+- A Client Component triggers a write through its factory, also when no query displays the data: the factory holds the pending state, the failure toast, and any cache updates.
 - The factory's callbacks update the cache for every caller, reaching the `QueryClient` through the callbacks' last argument. A caller's own reaction, such as closing a dialog or navigating, stays at the call site, never in the factory. Put it in the second argument of `mutate`, whose callbacks run after the factory's and only while the component is mounted, or after `await mutateAsync(...)` when the caller needs the promise, such as a form's `onSubmit` that keeps the form submitting until the write settles.
+- An optimistic update lives in the factory too. `onMutate` cancels the queries it writes, snapshots them, and writes the new value into every query that displays it, each in that query's own data shape; `onError` restores the snapshot, and the global toast reports the failure; `onSettled` invalidates them so the server's value wins. Insert into a list where its server order puts it, so the refetch does not move it.
+
+  ```ts
+  export const pinTaskMutationOptions = (t: TaskTranslator) =>
+    mutationOptions({
+      mutationFn: pinTaskAction,
+      onMutate: async ({ taskId, pinned }, { client }) => {
+        const { queryKey } = getTaskQueryOptions(taskId);
+        await client.cancelQueries({ queryKey });
+        const previous = client.getQueryData(queryKey);
+        client.setQueryData(queryKey, (task) => task && { ...task, pinned });
+        return { previous };
+      },
+      onError: (_error, { taskId }, onMutateResult, { client }) => {
+        client.setQueryData(getTaskQueryOptions(taskId).queryKey, onMutateResult?.previous);
+      },
+      onSettled: (_data, _error, { taskId }, _onMutateResult, { client }) =>
+        client.invalidateQueries({ queryKey: getTaskQueryOptions(taskId).queryKey }),
+      meta: { errorMessage: t("pinTask.failed") },
+    });
+  ```
+
 - Values that change per call are variables (`mutate({ taskId })`). Context fixed for the mutation, such as the record a comment belongs to, is a factory argument after `t` (`createCommentMutationOptions(t, taskId)`): it can build the request URL as well as the cache keys, and variables stay the per-call payload.

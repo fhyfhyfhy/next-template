@@ -8,7 +8,10 @@ import { getTaskQueryOptions } from "./get-task";
 import { taskListKey } from "./get-tasks";
 import { updateTaskAction } from "./update-task-action";
 
-/** 重命名同时影响详情（React Query）和列表页（服务端缓存）：action 让列表缓存失效，这里更新 query。`locale` 转交给 action。 */
+/**
+ * 重命名同时影响详情（React Query）和列表页（服务端缓存）：action 让列表缓存失效，这里更新 query。`locale` 转交给 action。
+ * 不做乐观更新：名称是否被占用由服务端的唯一约束决定，浏览器预测不了结果。
+ */
 export const updateTaskMutationOptions = (
   t: DemoTaskTranslator,
   locale: Locale,

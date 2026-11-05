@@ -35,12 +35,13 @@ export function LabSuspenseReset() {
           queryClient.removeQueries({
             queryKey: getTaskQueryOptions(TASK_ID).queryKey,
           });
-          await injectFault({
+          const injected = await injectFault({
             operation: TASK_DETAIL_OPERATION,
             kind: "httpStatus",
             status: 409,
             times: 1,
           });
+          if (!injected) return;
           setMounted(true);
         }}
       >

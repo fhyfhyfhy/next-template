@@ -14,7 +14,7 @@ import { assertDemoBackendEnabled } from "../server/connection";
 import { renameTask } from "../server/tasks";
 import type { Task } from "../types/task";
 import type { DemoTaskTranslator } from "../types/translator";
-import { createTaskNameSchema } from "./get-task";
+import { createTaskNameSchema } from "./task-name-schema";
 
 const createRenameInputSchema = (t: DemoTaskTranslator) =>
   z.object({

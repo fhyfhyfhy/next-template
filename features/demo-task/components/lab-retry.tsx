@@ -93,7 +93,7 @@ export function LabRetry() {
             variant="outline"
             size="sm"
             onClick={async () => {
-              await injectFault(fault);
+              if (!(await injectFault(fault))) return;
               setScenario(key);
               setFailures(0);
               await queryClient.resetQueries({ queryKey: options.queryKey });

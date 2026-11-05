@@ -4,11 +4,13 @@ import { IconStack2 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import type { ReactNode } from "react";
 
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { cn } from "@/lib/cn";
 
-import { RunningTasksBadge } from "./running-tasks-badge";
+export { RunningTasksBadge } from "./running-tasks-badge";
+export { RunningTasksBadgeSkeleton } from "./running-tasks-badge-skeleton";
 
 const links = [
   { href: "/demos/tasks", key: "tasks" },
@@ -18,8 +20,11 @@ const links = [
   { href: "/demos/lab", key: "lab" },
 ] as const;
 
-/** Data demo 各页面共用的导航，右侧是轮询中的进行中任务数。 */
-export function DataDemoHeader() {
+/**
+ * Data demo 各页面共用的导航。`badge` 是右侧的进行中任务数，由 layout 在自己的 Suspense 里预取后传入，
+ * 导航不用等这次读取。
+ */
+export function DataDemoHeader({ badge }: { badge: ReactNode }) {
   const t = useTranslations("demo-task");
   const pathname = usePathname();
   return (
@@ -57,7 +62,7 @@ export function DataDemoHeader() {
             );
           })}
         </nav>
-        <RunningTasksBadge />
+        {badge}
         <LocaleSwitcher />
       </div>
     </header>

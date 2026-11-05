@@ -6,38 +6,33 @@ Update triggers are URL changes, this user's writes, changes made elsewhere, and
 
 | Affected data owner | Coordinate the update |
 | --- | --- |
-| Server Component | Navigate with `Link`, `router.push`, or `router.replace`; feed the page's URL input into its read |
-| React Query only | Update URL state shallowly and derive the query key from it; the query follows its own freshness policy |
-| Both | Navigate and derive the query key from the resulting URL; a shallow-only update leaves the server output unchanged |
+| Server Component | Navigate with a `Link` or a URL update that renders on the server ([URL state](../../../.claude/rules/data-flow.md#url-state)), and pass the URL values the read depends on, such as a filter from `searchParams`, to the read as arguments |
+| React Query only | Update the URL without a server render and derive the query key from it; the query follows its own freshness policy |
+| Both | Navigate, and derive the query key from the resulting URL; an update without a server render leaves the server output unchanged |
 
-Use the same committed URL input for both owners. Debounce typed filters before committing them to the URL and query key; use `replace` for intermediate states and `push` for choices the user expects Back to undo.
+Use the same committed URL input for both owners. Debounce an input that changes continuously, such as typing, before it reaches a request: the query key, or a URL update that renders on the server. Replace the history entry for intermediate states, and push one for choices the user expects Back to undo.
 
-A Server Component navigation that misses the server cache waits for the server. Until it commits, the URL and server-rendered props keep their previous values, and React keeps the content already on screen instead of showing its Suspense fallback, so a control derived from those props does not react to the click. To show the choice at once, call `router.push` inside `startTransition` and set the chosen value there with `useOptimistic`: it lasts until the navigation commits. Mark the previous content `aria-busy` meanwhile. For a `Link`, take over in `onNavigate` with `preventDefault()`, not `onClick`, so modifier clicks still open a new tab.
+Every choice responds at once. A navigation that misses the server cache waits for the server; until it commits, the URL and server-rendered props keep their previous values, and React keeps the previous content on screen instead of a Suspense fallback. Show the chosen value immediately with an optimistic value that lasts until the navigation commits, and mark the previous content busy meanwhile. [URL state](../../../.claude/rules/data-flow.md#url-state) writes these choices.
 
-For History API integration, read `node_modules/next/dist/docs/01-app/02-guides/single-page-applications.md`, **Shallow routing**. For parameter access and Suspense requirements, read the installed `03-api-reference/04-functions/use-search-params.md`. Navigation can reuse existing output; verify the displayed values and Back/Forward behavior rather than assuming every URL change sends a request.
+Navigation can reuse output the router already holds: verify the displayed values and Back/Forward rather than assuming every URL change sends a request. For how a URL update without a server render works, read `node_modules/next/dist/docs/01-app/02-guides/single-page-applications.md`, **Shallow routing**.
 
 ## After a write
 
-Every write runs in a Server Action ([Server data: Server Actions](../../../.claude/rules/server-data.md#server-actions)), so first confirm its inputs can reach one: an action receives serializable arguments within its request body limit, so a file goes from the browser straight to object storage and the action then records it, as the Data demo's cover upload does. A read's owner determines which display must refresh.
+Every write runs in a Server Action ([Server data: Server Actions](../../../.claude/rules/server-data.md#server-actions)), so first confirm its inputs can reach one: an action receives serializable arguments within its request body limit, so a file goes from the browser straight to object storage and the action then records it, as the Data demo's cover upload does. A Client Component triggers it through the feature's options factory ([Mutations](../../../.claude/rules/tanstack-query.md#mutations)). A read's owner determines which display must refresh:
 
-| Affected data owner | Default write path when eligible | After success |
-| --- | --- | --- |
-| Server Component | Server Action | Invalidate affected server-cached reads as needed and request updated server output |
-| React Query | Feature `mutationOptions` factory whose `mutationFn` calls a Server Action, consumed through `useMutation` | Update or invalidate the affected queries in the factory's `onSuccess` |
-| Both | Factory whose `mutationFn` calls a Server Action | Action refreshes the server-owned data; factory refreshes the queries |
+| Affected data owner | After success |
+| --- | --- |
+| Server Component | The action invalidates the affected server-cached reads, and its response carries the updated page |
+| React Query | The factory's `onSuccess` updates or invalidates the affected queries |
+| Both | Both of the above |
 
-For the combined path, unwrap expected action failures as [Mutations](../../../.claude/rules/tanstack-query.md#mutations) describes so only successful writes reach `onSuccess`. Factory/caller callback responsibilities remain in [React Query](../../../.claude/rules/tanstack-query.md#mutations).
+When part of the write happens only in the browser, such as the direct upload, run it inside the mutation before calling the action, and coordinate the server-owned displays after success. `router.refresh()` requests the current route again but leaves server caches reusable; cached reads also need an authorized invalidation path, usually the write's Server Action calling `updateTag`, or a Route Handler calling `revalidateTag` for an event from outside the app. If that path is unavailable, revisit the affected view's owner or cache policy.
 
-When part of the write happens only in the browser, such as the direct upload, run it inside the mutation before calling the action, and coordinate the server-owned displays after success. `router.refresh()` requests the current route again but leaves server caches reusable; cached reads also need an authorized invalidation path. If that path is unavailable, revisit the affected view's owner or cache policy.
+On a page that React Query owns, the action's `updateTag` still renders the current page into the action response, so the page's server reads run once more although the browser keeps its own queries ([Server Action invalidation](framework-notes.md#server-action-invalidation)). Accept that read rather than splitting the write path, and keep the page's hydration from replacing the browser's data, as [Server prefetch and hydration](../../../.claude/rules/data-flow.md#server-prefetch-and-hydration) describes for infinite queries.
 
-Optimistic updates follow the owner of the displayed value:
+### Optimistic updates
 
-- **Server Component**: call the Server Action inside a transition and set the value with `useOptimistic`. The optimistic value lasts until the transition ends, so a failure falls back to the server's value without rollback code. Catch the action's rejection inside the transition and give feature feedback; an uncaught rejection reaches the nearest error boundary.
-- **React Query**: in the factory's `onMutate`, cancel the affected queries, snapshot them, and write the new value into every displayed copy, inserting into a list where its server order puts it so the refetch does not move it; restore the snapshot in `onError` and invalidate in `onSettled`. Failure feedback stays with the global toast.
-
-When both owners display the value, combine the React Query path with a factory `mutationFn` that calls the Server Action. This holds even when the query-owned copies are on other pages, where they may sit in the browser cache: a Server Component display keeps its `useOptimistic` value and awaits the factory's `mutateAsync` inside the transition, and the global toast reports a failure.
-
-On a page that React Query owns, that action's `updateTag` still makes the action response render the current page, so the page's server reads run once more although the browser keeps its own queries; Next.js 16.4.3 has no option to skip that render (`server/app-render/action-handler.js`, `skipPageRendering`). Accept that read rather than splitting the write path, and keep the page's hydration from replacing the browser's data, as [Server prefetch and hydration](../../../.claude/rules/data-flow.md#server-prefetch-and-hydration) describes for infinite queries.
+Show a write's result at once by default, before the server confirms it, whenever the browser can predict that result, such as a toggled flag, an edited field, or a removed item. When the result comes from the server, such as an assigned number or a stock check, show the write as pending until it settles. Update every copy the user can see, including query-owned copies cached for other pages: [Optimistic updates](../../../.claude/rules/data-flow.md#optimistic-updates) writes each owner's way.
 
 ## Changes made elsewhere
 
@@ -48,17 +43,17 @@ Data can change without this user acting: other users' edits, background jobs, o
 | React Query | Poll while the data can change (`refetchInterval`), refetch on focus, or invalidate on a pushed event |
 | Server Component | Invalidate the cached reads from the backend's change event, such as `revalidateTag` in a Route Handler; refresh open views from a change signal |
 
+Set the polling interval, and how often a change signal is checked, from the [freshness bound](SKILL.md#steps) of the displays involved.
+
 A **change signal** is a cheap query or pushed event that reveals a change to the view: a version, a count, or the IDs and states the view depends on. Compare successive results and refresh only when they differ. When the backend has invalidated the cached reads, `router.refresh()` updates an open view. When only the browser can detect the change, call a Server Action that invalidates them; its response carries the refreshed page. Every open page then sends that action, so prefer the backend event when the backend can emit one. Choose the invalidation's freshness as [Server invalidation and refresh](#server-invalidation-and-refresh) describes.
 
 A stale-while-revalidate read can reach the page older than the signal's first result. Check the view against that first result once and refresh if they disagree.
 
 ## Server invalidation and refresh
 
-Read `node_modules/next/dist/docs/01-app/01-getting-started/09-revalidating.md` and the relevant `updateTag`, `revalidatePath`, `revalidateTag`, `refresh`, or `use-router` API page under `03-api-reference/04-functions/`. Choose according to the written data, cache tags/paths, and required freshness. Also read the [Server Action invalidation correction](framework-notes.md#server-action-invalidation) before relying on what an action response refreshes or which client prefetches it invalidates.
+Read `node_modules/next/dist/docs/01-app/01-getting-started/09-revalidating.md` and the relevant `updateTag`, `revalidatePath`, `revalidateTag`, `refresh`, or `use-router` API page under `03-api-reference/04-functions/`. Choose according to the written data, cache tags/paths, and the displays' freshness bound. Also read the [Server Action invalidation correction](framework-notes.md#server-action-invalidation) before relying on what an action response refreshes or which client prefetches it invalidates.
 
 Preserve the distinction between the Server Action `refresh()` API and the client `router.refresh()`, and between stale-while-revalidate and read-your-own-writes. Next.js invalidation does not invalidate React Query; coordinate both for displays or hydration payloads that could otherwise restore stale data.
-
-Verify initial load, the write or URL change, and revisiting affected views, including Back/Forward, with the relevant cache state.
 
 ## Session changes
 
