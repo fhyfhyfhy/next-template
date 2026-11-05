@@ -1435,6 +1435,74 @@ export function Example() {
   }
 });
 
+describe("服务端代码不用 fetchApi 请求本 app 自己的接口", () => {
+  const eslint = new ESLint({
+    cwd: project,
+    overrideConfig: { rules: { "import/no-cycle": "off" } },
+  });
+  const request = (url) => `fetchApi({ url: ${url}, schema: z.null() })`;
+  for (const { name, file, directive = "", url, reported } of [
+    {
+      name: "Route Handler 请求同源路径时报错",
+      file: "app/api/probe/route.ts",
+      url: `"/api/demo/tasks"`,
+      reported: 1,
+    },
+    {
+      name: "Server Component 用模板字符串拼的同源路径也报错",
+      file: "app/[locale]/probe/page.tsx",
+      url: "`/api/demo/tasks/${id}`",
+      reported: 1,
+    },
+    {
+      name: "数据层和 Server Action 请求同源路径时报错",
+      file: "features/demo-task/api/probe-action.ts",
+      directive: `"use server";\n\n`,
+      url: `"/api/demo/tasks"`,
+      reported: 1,
+    },
+    {
+      name: "服务端请求其他服务的完整 URL 不报",
+      file: "features/demo-task/server/probe.ts",
+      url: `"https://api.example.com/v1/items"`,
+      reported: 0,
+    },
+    {
+      name: "Client Component 请求同源路径不报",
+      file: "app/[locale]/probe/client.tsx",
+      directive: `"use client";\n\n`,
+      url: `"/api/demo/tasks"`,
+      reported: 0,
+    },
+    {
+      name: "feature 的浏览器请求模块不报",
+      file: "features/demo-task/api/get-probe.ts",
+      url: `"/api/demo/tasks"`,
+      reported: 0,
+    },
+  ]) {
+    test(name, async () => {
+      const source = `${directive}import { z } from "zod";
+
+import { fetchApi } from "@/lib/fetch";
+
+export async function probe(id: string) {
+  return ${request(url)};
+}
+`;
+      const [result] = await eslint.lintText(source, {
+        filePath: join(project, file),
+      });
+      expect(
+        result.messages.filter(
+          ({ ruleId }) => ruleId === "data-flow/no-server-self-fetch",
+        ),
+        JSON.stringify(result.messages, null, 2),
+      ).toHaveLength(reported);
+    });
+  }
+});
+
 describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", () => {
   const eslint = new ESLint({ cwd: project });
   const filePath = join(project, "components/tailwind-classes.tsx");

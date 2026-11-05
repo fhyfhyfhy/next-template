@@ -4,8 +4,8 @@ import queryString, {
 } from "query-string";
 import { z } from "zod";
 
-/** 本 app 的接口路径，同源，比如 `/api/demo/tasks`。 */
-export type ApiPath = `/${string}`;
+/** 接口地址：本 app 的接口用同源路径，比如 `/api/demo/tasks`；其他服务的接口用完整 URL。 */
+export type ApiPath = `/${string}` | `https://${string}` | `http://${string}`;
 
 // 失败响应体 `{ error: { code, message, param?, params? } }` 里的错误对象。`message` 面向开发者，
 // UI 按 `code` 和 `params` 生成文案。服务端按这个格式写失败响应（lib/domain-error.ts 的 `errorBody`）。
@@ -26,7 +26,7 @@ export interface FetchApiConfig<TSchema extends z.ZodType> extends Omit<
   RequestInit,
   "body"
 > {
-  /** 业务接口路径，不带 query：query 参数放进 `params`。 */
+  /** 接口地址，不带 query：query 参数放进 `params`。 */
   url: ApiPath;
   /**
    * 响应体必须通过的 schema；空响应体（如 204）按 `null` 校验。成功响应直接是资源本身，
@@ -107,9 +107,10 @@ export function shouldRetryRequest(failureCount: number, error: unknown) {
 }
 
 /**
- * 浏览器请求本 app 的接口（`/api` 下的 Route Handler），按 `schema` 校验响应体，返回 schema 的输出。
- * 只在浏览器里调用：服务端代码直接调用 feature 的数据层，不请求自己的 Route Handler（.claude/rules/data-flow.md 的 Transport），
- * 在服务端调用时直接抛错。浏览器自己带着同源的 cookie，不另外附加凭证。
+ * 发 HTTP 请求取 JSON，按 `schema` 校验响应体，返回 schema 的输出。浏览器和服务端都能用：本 app 的接口用同源路径
+ * （`/api` 下的 Route Handler），其他服务的接口用完整 URL。服务端代码不请求本 app 自己的接口，直接调用 feature 的
+ * 数据层（.claude/rules/data-flow.md 的 Transport），ESLint 的 `data-flow/no-server-self-fetch` 检查这一点。
+ * 同源请求由浏览器带上 cookie；其他服务需要的凭证经 `headers` 或 `credentials` 传入。
  * HTTP 非 2xx 或 2xx 的响应体只有 `error` 对象时抛 `ApiError`，响应体校验失败抛 `SchemaValidationError`；
  * 网络错误和 `signal` 的中止原样抛出。
  */
@@ -122,11 +123,6 @@ export async function fetchApi<TSchema extends z.ZodType>({
   headers,
   ...init
 }: FetchApiConfig<TSchema>): Promise<z.output<TSchema>> {
-  if (typeof window === "undefined") {
-    throw new Error(
-      `fetchApi(${url}) runs in the browser only; on the server, call the feature's data layer instead`,
-    );
-  }
   const requestHeaders = new Headers(headers);
   const response = await fetch(
     queryString.stringifyUrl({ url, query: params }, paramsSerializer),
