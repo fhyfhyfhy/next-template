@@ -2,7 +2,7 @@
 
 // 中日韩文字和全角标点；英文里会用到的 → × “” 这类符号不算。
 const CJK =
-  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}　-〿＀-￯]+/gu;
+  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}\u3000-\u303f\uff00-\uffef]+/gu;
 
 /**
  * Markdown 里 inline code 和 code block 以外的 CJK 文字，每段连续的文字报告一次。frontmatter、HTML 注释和
