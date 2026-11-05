@@ -614,6 +614,47 @@ addCase("lib 子目录中的同名文件不能享有封装豁免", {
   rule: wrapperRule,
 });
 
+for (const source of [
+  "@base-ui/react",
+  "@base-ui/react/button",
+  "@base-ui/react/internals/useRenderElement",
+  "sonner",
+  "input-otp",
+]) {
+  addCase(`${source} 只能由 components/ui/ 的封装引用`, {
+    source,
+    rule: wrapperRule,
+    messageId: "uiLibrary",
+  });
+}
+for (const source of [
+  "@base-ui/react/merge-props",
+  "@base-ui/react/use-render",
+  "@base-ui/react/types",
+  "@base-ui/react/csp-provider",
+  "@base-ui/react/direction-provider",
+]) {
+  addCase(`不渲染 UI 的 ${source} 在封装之外也能引用`, { source });
+}
+addCase("components/ui/ 的封装可以引用 UI 库", {
+  from: "components/ui/CASE.ts",
+  source: "@base-ui/react/button",
+});
+addCase("components/ui/ 的组件目录也可以引用 UI 库", {
+  from: "components/ui/CASE/root.ts",
+  source: "sonner",
+});
+addCase("根目录 components/ 不算 UI 库的封装", {
+  from: "components/CASE.ts",
+  source: "@base-ui/react/button",
+  rule: wrapperRule,
+  messageId: "uiLibrary",
+});
+addCase("相似包名不被误认为 UI 库", {
+  from: "app/CASE.ts",
+  source: "@base-ui/react-native",
+});
+
 for (const extension of [
   "js",
   "jsx",
@@ -1617,6 +1658,7 @@ const RESTRICTION_NAMES = [
   ["Pass only the owner's namespace", "translator-namespace"],
   ["List public API", "component-entry"],
   ["Read environment variables", "env"],
+  ["Native <", "native-element"],
 ];
 
 // 每条 no-restricted-syntax 报告，按它来自哪条限制命名。file 用真实存在的路径：import/no-cycle 定位不了不在磁盘上的文件。
@@ -2017,4 +2059,81 @@ describe("agent 指令和 identifier 用英文写", () => {
       [2, 39],
     ]);
   });
+});
+
+describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染", () => {
+  const component = (jsx) => `export function Probe() {\n  return ${jsx};\n}\n`;
+  for (const { name, file, source, reported } of [
+    {
+      name: "每种有对应组件的原生元素都被拒绝",
+      file: "features/demo-task/components/feed-grid/feed-card.tsx",
+      source: component(`(
+    <>
+      <button />
+      <input />
+      <input type="checkbox" />
+      <select />
+      <progress />
+      <dialog />
+      <form />
+      <fieldset />
+      <meter />
+      <hr />
+    </>
+  )`),
+      reported: Array(10).fill("native-element"),
+    },
+    {
+      name: "render prop 里的原生元素也被拒绝",
+      file: "features/demo-task/components/feed-grid/feed-card.tsx",
+      source: `declare function Trigger(props: { render: unknown }): null;\n${component("<Trigger render={<button />} />")}`,
+      reported: ["native-element"],
+    },
+    {
+      name: "文件选择和隐藏字段的 input 保持原生",
+      file: "features/demo-task/components/feed-grid/feed-card.tsx",
+      source: component(`(
+    <>
+      <input type="file" />
+      <input type="hidden" />
+    </>
+  )`),
+      reported: [],
+    },
+    {
+      name: "同名组件和成员表达式不受影响",
+      file: "features/demo-task/components/feed-grid/feed-card.tsx",
+      source: `declare function Form(): null;
+declare const form: { Field: () => null };
+${component(`(
+    <>
+      <Form />
+      <form.Field />
+    </>
+  )`)}`,
+      reported: [],
+    },
+    {
+      name: "components/ui/ 的封装可以渲染，其他限制照旧",
+      file: "components/ui/badge.tsx",
+      source: `export const url = process.env.DEMO_DATABASE_URL;\n${component("<button />")}`,
+      reported: ["env"],
+    },
+    {
+      name: "components/ui/ 的组件入口可以渲染，入口限制照旧",
+      file: "components/ui/select/index.tsx",
+      source: `${component("<select />")}export * from "./value";\n`,
+      reported: ["component-entry"],
+    },
+    {
+      name: "根目录 components/ 的组件入口照样受限",
+      file: "components/locale-switcher/index.tsx",
+      source: `${component("<button />")}export * from "./locale-items";\n`,
+      reported: ["native-element", "component-entry"],
+    },
+  ]) {
+    test(name, async () => {
+      expect(await restricted(file, source)).toStrictEqual(reported);
+    });
+  }
 });

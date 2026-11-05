@@ -15,7 +15,7 @@ paths:
 
 This repo's picks. They take precedence over the pick-ui-library skill.
 
-UI libraries, used through their wrappers ([Wrap a UI library](components.md#wrap-a-ui-library)):
+UI libraries, used through their wrappers in `components/ui/`, which ESLint enforces ([Wrap a UI library](components.md#wrap-a-ui-library)):
 
 - UI primitives: `@base-ui/react`
 - Toasts: `sonner`
