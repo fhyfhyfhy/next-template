@@ -13,7 +13,7 @@ Which language the text written into files uses: code comments, test description
 
 ## English in agent instructions
 
-ESLint's `writing-style/english-only` reports Chinese, Japanese, and Korean text in agent instructions outside inline code and code blocks. Text that must stay in another language, such as UI copy, test data, or a template for a Chinese document, is literal: quote it as code. Write everything else in English, including domain terms, which take their English names from `GLOSSARY.md`.
+Text that must stay in another language, such as UI copy, test data, or a template for a Chinese document, is literal: quote it as inline code or a code block. Write everything else in English, including domain terms, which take their English names from `GLOSSARY.md`.
 
 ## Names and fixed terms
 
