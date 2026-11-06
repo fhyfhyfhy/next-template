@@ -1,6 +1,8 @@
-import { describe, expect, test } from "vitest";
+import { randomUUID } from "node:crypto";
+import { afterAll, describe, expect, test } from "vitest";
 
 import { SEED_KEY_PREFIX } from "../constants/storage-keys";
+import { getUploadStorage } from "./connection";
 import {
   clearUploadsBeforeEach,
   cover,
@@ -13,9 +15,18 @@ import { attachUpload } from "./uploads";
 
 clearUploadsBeforeEach();
 
+// 种子文件不在 clearUploads 清空的前缀下，test 数据集的 bucket 也不在运行之间清空：每次运行用自己的 key，
+// 上次留下的文件不会让读取的断言白过，运行结束时删掉。
+const RUN_PREFIX = `${SEED_KEY_PREFIX}test/${randomUUID()}/`;
+
+afterAll(async () => {
+  const storage = getUploadStorage();
+  await storage.delete(await storage.list(RUN_PREFIX));
+});
+
 const seedCover = (recordId: string): SeedUpload => ({
   id: `seed-test-cover-${recordId}`,
-  key: `${SEED_KEY_PREFIX}test/${recordId}.png`,
+  key: `${RUN_PREFIX}${recordId}.png`,
   purpose: "task-cover",
   contentType: "image/png",
   body: PNG,
@@ -27,7 +38,7 @@ describe("恢复种子上传", () => {
     await restoreSeedUploads([seedCover("n1")]);
 
     const url = (await coverUrl("n1")) ?? "";
-    expect(url).toContain(`/${SEED_KEY_PREFIX}test/n1.png`);
+    expect(url).toContain(`/${RUN_PREFIX}n1.png`);
     expect((await fetch(url)).status).toBe(200);
   });
 
@@ -36,7 +47,7 @@ describe("恢复种子上传", () => {
 
     await restoreSeedUploads([seedCover("n1")]);
 
-    expect(await coverUrl("n1")).toContain(`/${SEED_KEY_PREFIX}test/n1.png`);
+    expect(await coverUrl("n1")).toContain(`/${RUN_PREFIX}n1.png`);
   });
 });
 

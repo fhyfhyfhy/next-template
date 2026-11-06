@@ -435,14 +435,25 @@ test.describe("写入", () => {
     await delayRequests(page, isServerAction, 1000);
     const picker = page.getByLabel(/^(更换封面图|上传中…)$/);
     await picker.focus();
-
-    await picker.setInputFiles({
+    const chooser = page.waitForEvent("filechooser");
+    await page.keyboard.press("Space");
+    await (
+      await chooser
+    ).setFiles({
       name: "cover.png",
       mimeType: "image/png",
       buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]),
     });
-
     await expect(picker).toHaveAccessibleName("上传中…");
+
+    // 断言的是 500 ms 内没有打开文件选择，超时就是期望的结果。
+    const reopened = page
+      .waitForEvent("filechooser", { timeout: 500 })
+      .then(() => true)
+      .catch(() => false);
+    await page.keyboard.press("Space");
+
+    expect(await reopened, "上传中再按一次不应打开文件选择").toBe(false);
     await expect(picker).toHaveAttribute("aria-disabled", "true");
     await expect(picker).toBeFocused();
     await expect(picker).toHaveAccessibleName("更换封面图");

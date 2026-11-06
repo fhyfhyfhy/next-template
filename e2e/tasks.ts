@@ -308,7 +308,7 @@ export async function createTaskThroughForm(
   await page.getByLabel("名称").fill(name);
   await page.getByLabel("Prompt").fill(unique("e2e prompt"));
   await page.getByRole("button", { name: "创建任务" }).click();
-  const row = taskRows(page).filter({ hasText: name });
+  const row = taskRow(page, name);
   await expect(row).toBeVisible();
   const href = await row.getByRole("link").getAttribute("href");
   const id = href?.split("/").at(-1);

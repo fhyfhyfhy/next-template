@@ -12,7 +12,7 @@
 
 ## 账号与授权
 
-- [ ] 应用现在没有账号，所有访客共享同一批任务，Server Action 只校验输入、不做授权（ADR 0006）。加账号时补上任务归属、按用户收藏，并在每个 action 里授权写入；这时 data-flow.md 的 Signing out 和 refresh.md 的 Session changes 也有了实例。
+- [ ] 应用现在没有账号，所有访客共享同一批任务，Server Action 只校验输入、不做授权（ADR 0006）。加账号时补上任务归属、按用户收藏（作品广场的“我的收藏”已经按请求读取，不进共用的缓存快照），并在每个 action 里授权写入；这时 data-flow.md 的 Signing out 和 refresh.md 的 Session changes 也有了实例。
 
 ## 数据新鲜度
 

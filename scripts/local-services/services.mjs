@@ -25,7 +25,7 @@ const projectRoot = join(import.meta.dirname, "..", "..");
 
 /**
  * 浏览器直接读的前缀：用户上传的文件和种子文件，签发上传、下载模型仍要签名。值和
- * features/upload/constants/storage-keys.ts 的两个前缀一致；本地服务的脚本不依赖示例业务的 feature，所以另写一份，改的时候一起改。
+ * features/upload/constants/storage-keys.ts 的两个前缀一致，改的时候一起改。
  */
 const PUBLIC_PREFIXES = ["uploads/", "seed/"];
 

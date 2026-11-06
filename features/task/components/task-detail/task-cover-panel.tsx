@@ -46,8 +46,9 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
         <label
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
-            "w-full cursor-pointer has-focus-visible:ring-2 has-focus-visible:ring-ring has-aria-disabled:cursor-default has-aria-disabled:opacity-40",
+            "w-full cursor-pointer has-focus-visible:ring-2 has-focus-visible:ring-ring",
           )}
+          data-disabled={upload.isPending || undefined}
         >
           <IconPhotoUp aria-hidden />
           {upload.isPending

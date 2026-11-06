@@ -37,7 +37,7 @@ The sample product is everything that serves tasks and uploads: `features/task/`
 - The namespaces registered in `lib/i18n/messages.ts`; in `messages/*/app.json`, the route keys `tasks`, `taskDetail`, `feed`, `search`, and `recent`, `pageError` for `app/[locale]/(tasks)/error.tsx`, and `metadata.description`; and the sample product's terms in `messages/terms.json`.
 - The specs that test kept code through the sample product's pages: `e2e/home.spec.ts`, `e2e/locale.spec.ts`, and `e2e/date-time.spec.ts`. Point them at the project's own pages rather than deleting them.
 - The cases in `eslint.config.test.mjs` that lint real files under `features/task/`, which must exist on disk: point them at the project's own files.
-- Object storage, if the project has no uploads: the `STORAGE_*` variables in `lib/env.ts`, the `storage` service in `compose.yaml`, and the bucket setup and `PUBLIC_PREFIXES` in `scripts/local-services/services.mjs`.
+- Object storage, if the project has no uploads: the `STORAGE_*` variables in `lib/env.ts` and in `localEnv` in `scripts/local-services/datasets.mjs`, the `storage` service in `compose.yaml`, the bucket setup and `PUBLIC_PREFIXES` in `scripts/local-services/services.mjs`, and `connectE2eStorage` in `e2e/backend.ts`.
 
 A project replaces it with its own features, the same way: the rules in `.claude/rules/` describe the conventions without referring to the sample product, a project's own terms and features take the sample product's entries in the [Glossary](GLOSSARY.md) and [Feature boundaries](docs/features.md), and this repository stays the place to read working code for them.
 
