@@ -16,12 +16,12 @@ import {
 } from "@/features/demo-task";
 import {
   getTask,
-  isDemoBackendEnabled,
   isTaskMissing,
   listComments,
   listTasks,
   omitFunctionMeta,
 } from "@/features/demo-task/server";
+import { isDemoBackendEnabled } from "@/lib/demo-backend";
 import {
   defaultShouldDehydrateQuery,
   dehydrate,

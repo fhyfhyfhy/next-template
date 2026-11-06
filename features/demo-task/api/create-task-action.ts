@@ -5,11 +5,11 @@ import { getTranslations } from "next-intl/server";
 
 import type { ActionResult } from "@/lib/action-result";
 import { toActionResult } from "@/lib/action-result";
+import { assertDemoBackendEnabled } from "@/lib/demo-backend";
 import type { Locale } from "@/lib/i18n/routing";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
-import { assertDemoBackendEnabled } from "../server/connection";
 import { createTask } from "../server/tasks";
 import type { Task } from "../types/task";
 import {

@@ -2,10 +2,12 @@ import "server-only";
 
 import { attachUpload, saveServerUpload } from "@/features/demo-upload/server";
 import { startLeaderInterval } from "@/lib/db";
+import { demoDatabaseUrl } from "@/lib/demo-backend";
+import { badRequest } from "@/lib/domain-error";
 
 import { TASK_STEP_INTERVAL_MS } from "../constants/task-rules";
 import { nextTaskStep } from "../utils/task-progress";
-import { demoDatabaseUrl, getTaskDb } from "./connection";
+import { getTaskDb } from "./connection";
 import { cubeGlb } from "./generated-files";
 import { ensureDemoSeeded } from "./seed";
 import { notifyTaskChanged } from "./task-events";
@@ -71,7 +73,7 @@ export async function advanceActiveTasks() {
   await ensureDemoSeeded();
   const db = getTaskDb();
   const settings = await db
-    .selectFrom("demo_settings")
+    .selectFrom("task_settings")
     .select("clock_paused")
     .executeTakeFirstOrThrow();
   if (settings.clock_paused) return;
@@ -88,6 +90,18 @@ export async function advanceActiveTasks() {
       console.error(`Demo generator could not advance task ${id}`, error);
     }
   }
+}
+
+/** 暂停或恢复 Demo generator 的自动推进；控制入口的“推进一步”不受影响。 */
+export async function setClockPaused(paused: unknown) {
+  if (typeof paused !== "boolean") {
+    throw badRequest("paused must be a boolean", { param: "paused" });
+  }
+  await getTaskDb()
+    .updateTable("task_settings")
+    .set({ clock_paused: paused })
+    .execute();
+  return paused;
 }
 
 /** 在后台定期推进任务，同一个 Demo 数据库上只有一个进程在推进（`startLeaderInterval`）。返回停止函数。 */

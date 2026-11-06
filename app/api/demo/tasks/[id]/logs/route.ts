@@ -1,4 +1,5 @@
-import { demoRoute, streamTaskLogs } from "@/features/demo-task/server";
+import { demoRoute } from "@/features/demo-faults/server";
+import { streamTaskLogs } from "@/features/demo-task/server";
 
 /** 生成日志的 SSE 流，事件格式见 `streamTaskLogs`。客户端断开时 `request.signal` 中止，流随之结束。 */
 export const GET = demoRoute(

@@ -10,6 +10,7 @@ import pg from "pg";
 const MIGRATION_MODULES = [
   "features/demo-upload/server/migrations.mts",
   "features/demo-task/server/migrations.mts",
+  "features/demo-faults/server/migrations.mts",
 ];
 
 const projectRoot = join(import.meta.dirname, "..", "..");

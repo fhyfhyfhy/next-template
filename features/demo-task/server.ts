@@ -3,30 +3,15 @@ import "server-only";
 export { getCachedFeedSnapshot } from "./server/get-cached-feed-snapshot";
 export { getCachedTaskPage } from "./server/get-cached-task-page";
 export { createComment, deleteComment, listComments } from "./server/comments";
-export {
-  assertDemoBackendEnabled,
-  isDemoBackendEnabled,
-} from "./server/connection";
+export { TASK_LIST_TAG } from "./constants/cache-tags";
 export {
   advanceActiveTasks,
   advanceTask,
+  setClockPaused,
   startDemoGenerator,
 } from "./server/generator";
-export {
-  demoRoute,
-  integerParam,
-  parseTaskFilters,
-  readJsonBody,
-} from "./server/http";
-export {
-  getDefaultLatency,
-  listCalls,
-  listFaults,
-  replaceFaults,
-  resetDemo,
-  setClockPaused,
-  setDefaultLatency,
-} from "./server/lab";
+export { ensureDemoSeeded, lockDemoData, resetTasks } from "./server/seed";
+export { parseTaskFilters } from "./server/task-filter-params";
 export { streamTaskLogs } from "./server/task-logs";
 export {
   createTask,

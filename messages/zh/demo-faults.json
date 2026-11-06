@@ -1,0 +1,41 @@
+{
+  "faultPanel": {
+    "remove": "移除",
+    "clearAll": "清除全部",
+    "empty": "当前没有故障",
+    "reading": "读取故障配置…",
+    "faultRow": "{operation}：{effect}，{times}",
+    "effects": {
+      "status": "返回 {status}",
+      "errorBody": "2xx 但返回 error {code}",
+      "malformed": "响应体不符合 schema",
+      "latency": "再延迟 {latencyMs}ms",
+      "unexpected": "抛出意外错误",
+      "businessError": "按业务错误 {code} 拒绝"
+    },
+    "timesLeft": "还剩 {count} 次",
+    "updateFailed": "更新故障设置失败，请稍后重试"
+  },
+  "faultForm": {
+    "operation": "操作",
+    "kind": "故障",
+    "times": "次数",
+    "submit": "添加故障",
+    "kinds": {
+      "latency": "再延迟 2 秒",
+      "unexpected": "抛出意外错误",
+      "clientError": "返回 4xx",
+      "serverError": "返回 5xx",
+      "errorBody": "2xx 但返回 error",
+      "malformed": "响应体不符合 schema"
+    },
+    "nextTimes": "下 {count} 次",
+    "always": "一直生效"
+  },
+  "defaultLatency": {
+    "label": "默认延迟",
+    "readFailed": "读取默认延迟失败",
+    "reading": "读取默认延迟…",
+    "updateFailed": "修改默认延迟失败，请稍后重试"
+  }
+}

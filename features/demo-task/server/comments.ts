@@ -10,8 +10,8 @@ import { COMMENT_MAX_LENGTH } from "../constants/task-rules";
 import type { TaskComment } from "../types/task";
 import { requireText } from "../utils/text-rules";
 import { getTaskDb } from "./connection";
-import { demoOperation } from "./demo-controls";
 import type { TaskCommentsTable } from "./tables";
+import { taskOperation } from "./task-operation";
 import { findTaskRow } from "./tasks";
 
 function toComment(row: Selectable<TaskCommentsTable>): TaskComment {
@@ -25,7 +25,7 @@ function toComment(row: Selectable<TaskCommentsTable>): TaskComment {
 
 /** 任务的评论，按发表时间从早到晚；任务不存在时 404。 */
 export const listComments = cache(
-  demoOperation("comment.list", "read", async (taskId: string) => {
+  taskOperation("comment.list", "read", async (taskId: string) => {
     const db = getTaskDb();
     await findTaskRow(db, taskId);
     const rows = await db
@@ -40,7 +40,7 @@ export const listComments = cache(
 );
 
 /** 发表评论：内容去掉首尾空白后为 1 到 500 字，否则按 `COMMENT_CONTENT_INVALID` 拒绝。 */
-export const createComment = demoOperation(
+export const createComment = taskOperation(
   "comment.create",
   "write",
   async (taskId: string, input: { content: unknown }) => {
@@ -66,7 +66,7 @@ export const createComment = demoOperation(
   },
 );
 
-export const deleteComment = demoOperation(
+export const deleteComment = taskOperation(
   "comment.delete",
   "write",
   async (taskId: string, commentId: string) => {

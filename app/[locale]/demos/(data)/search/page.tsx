@@ -11,7 +11,8 @@ import {
   TaskSearch,
   TaskSearchSkeleton,
 } from "@/features/demo-task";
-import { isDemoBackendEnabled, searchTasks } from "@/features/demo-task/server";
+import { searchTasks } from "@/features/demo-task/server";
+import { isDemoBackendEnabled } from "@/lib/demo-backend";
 import {
   defaultShouldDehydrateQuery,
   dehydrate,

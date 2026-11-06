@@ -9,7 +9,8 @@ import {
   RunningTasksBadgeSkeleton,
   taskFiltersOf,
 } from "@/features/demo-task";
-import { isDemoBackendEnabled, listTasks } from "@/features/demo-task/server";
+import { listTasks } from "@/features/demo-task/server";
+import { isDemoBackendEnabled } from "@/lib/demo-backend";
 import { ClientMessages } from "@/lib/i18n/client-messages";
 import {
   dehydrate,

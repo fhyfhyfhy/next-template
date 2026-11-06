@@ -2,8 +2,9 @@ import "server-only";
 import { DatabaseError } from "pg";
 
 import { startLeaderInterval } from "@/lib/db";
+import { demoDatabaseUrl } from "@/lib/demo-backend";
 
-import { getUploadDb, getUploadStorage, uploadDatabaseUrl } from "./connection";
+import { getUploadDb, getUploadStorage } from "./connection";
 import { SEED_KEY_PREFIX } from "./uploads";
 
 /**
@@ -62,7 +63,7 @@ export async function cleanupUnattachedUploads(
 /** 在后台定期清理，同一个 Demo 数据库上只有一个进程在清理（`startLeaderInterval`）。返回停止函数。 */
 export function startUploadCleanup() {
   return startLeaderInterval({
-    connectionString: uploadDatabaseUrl(),
+    connectionString: demoDatabaseUrl(),
     lockKey: CLEANUP_LOCK_KEY,
     intervalMs: CLEANUP_INTERVAL_MS,
     run: async () => {

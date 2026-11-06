@@ -1,4 +1,4 @@
-import { demoRoute, listCalls } from "@/features/demo-task/server";
+import { demoRoute, listCalls } from "@/features/demo-faults/server";
 
 /** 重置以来的调用记录；`operation` 只看这个操作。 */
 export const GET = demoRoute(async (request) => ({

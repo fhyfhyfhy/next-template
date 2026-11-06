@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createDb } from "@/lib/db";
+import { demoDatabaseUrl } from "@/lib/demo-backend";
 import { env } from "@/lib/env";
 import {
   createObjectStorage,
@@ -12,19 +13,13 @@ import type { UploadTables } from "./tables";
 
 // Demo backend 的连接参数只由 demo:* 命令写进环境变量（scripts/demo-backend/datasets.mjs），值指向 compose.demo.yaml
 // 里的服务。Demo backend 没有启用时这里取不到参数、直接抛错：`createUploadAction` 靠它拒绝执行，demo-task 的页面、
-// Route Handler 和 Server Action 在调用这个 feature 之前已经检查过 DEMO_DATABASE_URL。
+// Route Handler 和 Server Action 在调用这个 feature 之前已经检查过 DEMO_DATABASE_URL（`lib/demo-backend.ts`）。
 
 const NOT_ENABLED =
   "The Demo backend is not enabled; run the Demo with pnpm demo:dev";
 
-export function uploadDatabaseUrl() {
-  const url = env.DEMO_DATABASE_URL;
-  if (url === undefined) throw new Error(NOT_ENABLED);
-  return url;
-}
-
 export function getUploadDb() {
-  return createDb<UploadTables>(uploadDatabaseUrl());
+  return createDb<UploadTables>(demoDatabaseUrl());
 }
 
 export function uploadStorageConfig(): ObjectStorageConfig {

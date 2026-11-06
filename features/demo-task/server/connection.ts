@@ -1,36 +1,22 @@
 import "server-only";
+import type { Kysely } from "kysely";
 
 import { createDb } from "@/lib/db";
-import { env } from "@/lib/env";
+import { demoDatabaseUrl } from "@/lib/demo-backend";
 
 import type { TaskTables } from "./tables";
 
-/**
- * Demo backend 是否启用：只有 demo:* 命令和数据层测试会设置 `DEMO_DATABASE_URL`（scripts/demo-backend/datasets.mjs），
- * 普通的 dev、build、start 和部署都没有它，这时 Data demo 页面只显示说明，`/api/demo` 全部返回 404，
- * Server Action 拒绝执行，也不会创建数据库连接。服务端每个入口都要先判断：Next 并行渲染 layout 和 page，
- * layout 只显示说明时 page 里的读取照样执行；Server Action 和 Route Handler 也能被直接请求。
- */
-export function isDemoBackendEnabled() {
-  return env.DEMO_DATABASE_URL !== undefined;
-}
-
-/** Demo 数据库的连接串，Demo backend 没有启用时抛错。 */
-export function demoDatabaseUrl() {
-  const url = env.DEMO_DATABASE_URL;
-  if (url === undefined) {
-    throw new Error(
-      "The Demo backend is not enabled; run the Demo with pnpm demo:dev",
-    );
-  }
-  return url;
-}
-
-/** Server Action 和控制入口先调用它，Demo backend 没有启用时拒绝执行。 */
-export function assertDemoBackendEnabled() {
-  demoDatabaseUrl();
-}
-
 export function getTaskDb() {
   return createDb<TaskTables>(demoDatabaseUrl());
+}
+
+/**
+ * 调用方的数据库连接或事务。多个 feature 共用 Demo 数据库，调用方传来的是它自己的表类型视图，
+ * 指向同一个连接，这里按本 feature 的表类型使用。
+ */
+export type Executor = Pick<Kysely<unknown>, "isTransaction">;
+
+export function taskDb(executor: Executor): Kysely<TaskTables> {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- 调用方的表类型视图和本 feature 的视图指向同一个连接或事务，Kysely 的类型参数只描述表，不影响运行时。
+  return executor as unknown as Kysely<TaskTables>;
 }

@@ -6,15 +6,16 @@ import { Suspense } from "react";
 
 import {
   DemoResetButton,
-  FaultPanel,
   LabConcurrentFailures,
   LabDraftMode,
+  LabFaults,
   LabQueryStates,
   LabRetry,
   LabSectionSkeleton,
   LabSuspenseReset,
-  PageIntro,
-} from "@/features/demo-task";
+} from "@/features/demo-lab";
+import { PageIntro } from "@/features/demo-task";
+import { ClientMessages } from "@/lib/i18n/client-messages";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("app");
@@ -24,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function LabPage() {
   const t = useTranslations("app");
   return (
-    <>
+    <ClientMessages namespaces={["demo-faults", "demo-lab"]}>
       <PageIntro title={t("demos.lab.title")}>
         <p>{t("demos.lab.intro")}</p>
       </PageIntro>
@@ -40,7 +41,7 @@ export default function LabPage() {
           ))}
         </Suspense>
         <Suspense fallback={<LabSectionSkeleton className="h-72" />}>
-          <FaultPanel />
+          <LabFaults />
         </Suspense>
         <div className="grid gap-6 lg:grid-cols-2">
           <Suspense fallback={<LabSectionSkeleton />}>
@@ -57,6 +58,6 @@ export default function LabPage() {
           </Suspense>
         </div>
       </div>
-    </>
+    </ClientMessages>
   );
 }

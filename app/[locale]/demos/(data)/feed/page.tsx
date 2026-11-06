@@ -19,9 +19,9 @@ import {
   buildHydrationState,
   firstPageData,
   getCachedFeedSnapshot,
-  isDemoBackendEnabled,
   listTasks,
 } from "@/features/demo-task/server";
+import { isDemoBackendEnabled } from "@/lib/demo-backend";
 import {
   dehydrate,
   HydrationBoundary,

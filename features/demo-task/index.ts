@@ -4,7 +4,6 @@ export {
   RunningTasksBadgeSkeleton,
 } from "./components/data-demo-header";
 export { DemoBackendNotice } from "./components/demo-backend-notice";
-export { DemoResetButton } from "./components/demo-reset-button";
 export { DemoNote } from "./components/demo-note";
 export { PageIntro } from "./components/page-intro";
 export { CreateTaskForm } from "./components/create-task-form";
@@ -21,19 +20,13 @@ export { TaskSearch } from "./components/task-search";
 export { TaskSearchSkeleton } from "./components/task-search-skeleton";
 export { RecentTasks } from "./components/recent-tasks";
 export { RecentTasksLoading } from "./components/recent-tasks-loading";
-export { FaultPanel } from "./components/fault-panel";
-export { LabConcurrentFailures } from "./components/lab-concurrent-failures";
-export { LabDraftMode } from "./components/lab-draft-mode";
-export { LabQueryStates } from "./components/lab-query-states";
-export { LabRetry } from "./components/lab-retry";
-export { LabSectionSkeleton } from "./components/lab-section-skeleton";
-export { LabSuspenseReset } from "./components/lab-suspense-reset";
 export {
   FavoritesPanel,
   FavoritesPanelSkeleton,
 } from "./components/favorites-panel";
 export { FeedGrid } from "./components/feed-grid";
 export { FeedSkeleton } from "./components/feed-skeleton";
+export { QueryErrorBoundary } from "./components/query-error-boundary";
 export { SeedHydrationBoundary } from "./components/seed-hydration-boundary";
 export { getFeedInfiniteQueryOptions } from "./api/get-feed";
 export { getCommentsQueryOptions } from "./api/get-comments";

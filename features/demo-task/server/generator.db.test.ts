@@ -4,9 +4,9 @@ import { advance, resetDemoBeforeEach } from "./db-test-helpers";
 import {
   advanceActiveTasks,
   advanceTask,
+  setClockPaused,
   startDemoGenerator,
 } from "./generator";
-import { setClockPaused } from "./lab";
 import { createTask, getTask } from "./tasks";
 
 resetDemoBeforeEach();

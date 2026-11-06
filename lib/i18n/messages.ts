@@ -1,6 +1,8 @@
 import type { AbstractIntlMessages } from "next-intl";
 
 import type app from "@/messages/zh/app.json";
+import type demoFaults from "@/messages/zh/demo-faults.json";
+import type demoLab from "@/messages/zh/demo-lab.json";
 import type demoTask from "@/messages/zh/demo-task.json";
 import type demoUi from "@/messages/zh/demo-ui.json";
 import type ui from "@/messages/zh/ui.json";
@@ -15,6 +17,8 @@ export interface Messages {
   app: typeof app;
   ui: typeof ui;
   "demo-task": typeof demoTask;
+  "demo-faults": typeof demoFaults;
+  "demo-lab": typeof demoLab;
   "demo-ui": typeof demoUi;
 }
 
@@ -25,6 +29,8 @@ export const NAMESPACES = [
   "app",
   "ui",
   "demo-task",
+  "demo-faults",
+  "demo-lab",
   "demo-ui",
 ] as const satisfies readonly Namespace[];
 

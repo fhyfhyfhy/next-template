@@ -5,10 +5,10 @@ import { z } from "zod";
 
 import type { ActionResult } from "@/lib/action-result";
 import { toActionResult } from "@/lib/action-result";
+import { assertDemoBackendEnabled } from "@/lib/demo-backend";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NOT_RETRYABLE } from "../constants/error-codes";
-import { assertDemoBackendEnabled } from "../server/connection";
 import { retryTask } from "../server/tasks";
 import type { Task } from "../types/task";
 

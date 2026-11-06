@@ -14,10 +14,8 @@ import {
   TaskListToolbar,
   toTaskFilters,
 } from "@/features/demo-task";
-import {
-  getCachedTaskPage,
-  isDemoBackendEnabled,
-} from "@/features/demo-task/server";
+import { getCachedTaskPage } from "@/features/demo-task/server";
+import { isDemoBackendEnabled } from "@/lib/demo-backend";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("app");
