@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t("app.metadata.titleTemplate", {
       page: t("app.globalNotFound.title"),
-      app: t("app.metadata.title"),
+      app: t("app.name"),
     }),
   };
 }

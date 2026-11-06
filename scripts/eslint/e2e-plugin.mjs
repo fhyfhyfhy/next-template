@@ -53,7 +53,7 @@ function baseIdentifier(node) {
 }
 
 /**
- * 整页加载之后，先确认页面能操作再操作：`expect(...)` 等到只在浏览器里渲染的内容，或者 `openTask` 这类
+ * 整页加载之后，先确认页面能操作再操作：`expect(...)` 等到只在浏览器里渲染的内容，或者 `openOrder` 这类
  * 不带对象的 helper 调用，都算确认过。确认之前出现的第一个操作会被报告。
  */
 const actAfterReady = {

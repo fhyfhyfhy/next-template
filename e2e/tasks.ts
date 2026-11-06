@@ -1,10 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import type { Page } from "@playwright/test";
+import { PutObjectCommand, type S3Client } from "@aws-sdk/client-s3";
+import type { Page, Request } from "@playwright/test";
 import type { Kysely } from "kysely";
 
-import { localEnv } from "../scripts/local-services/datasets.mjs";
-import { connectE2eDatabase, notify, unique } from "./backend";
+import {
+  connectE2eDatabase,
+  connectE2eStorage,
+  notify,
+  unique,
+} from "./backend";
 import { clickForClientNavigation } from "./browser";
 import { expect, test as base } from "./test";
 
@@ -67,18 +71,10 @@ export class TaskData {
   private readonly bucket: string;
 
   constructor() {
-    const env = localEnv("e2e");
     this.db = connectE2eDatabase<Tables>();
-    this.bucket = env.STORAGE_BUCKET;
-    this.storage = new S3Client({
-      endpoint: env.STORAGE_ENDPOINT,
-      region: "us-east-1",
-      credentials: {
-        accessKeyId: env.STORAGE_ACCESS_KEY_ID,
-        secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY,
-      },
-      forcePathStyle: true,
-    });
+    const { bucket, client } = connectE2eStorage();
+    this.bucket = bucket;
+    this.storage = client;
   }
 
   async close() {
@@ -201,7 +197,7 @@ export class TaskData {
     });
   }
 
-  /** 把模型文件写进存储，key 的格式和应用里服务端产出的文件一样（`uploads/` 加上传 id）。 */
+  /** 把模型文件写进存储，key 的格式和应用里服务端产出的文件一样：`UPLOAD_KEY_PREFIX`（features/upload/constants/storage-keys.ts）加上传 id。 */
   private async saveModel(id: string) {
     const key = `uploads/${id}`;
     await this.storage.send(
@@ -264,6 +260,24 @@ export async function navigateThroughHeader(
   );
 }
 
+export const taskRows = (page: Page) =>
+  page.getByRole("list", { name: "任务列表" }).getByRole("listitem");
+
+/** 列表里名称含 `name` 的那一行。 */
+export const taskRow = (page: Page, name: string) =>
+  taskRows(page).filter({ hasText: name });
+
+// 页面每 3 秒检查一次进行中的任务，发现变化后再重新读取列表，等列表跟上要比默认的 5 秒宽。
+export const untilPolled = { timeout: 10_000 };
+
+/**
+ * 换了筛选、排序或页码之后，等新列表到达：URL 先变，新列表随后才到，到达之前旧列表标记为 `aria-busy`。
+ * 读列表的内容之前先等它。
+ */
+export async function waitForTaskList(page: Page) {
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+}
+
 /** 在已经打开的全部任务页上点一个状态筛选，等新列表到达。 */
 export async function filterByStatus(page: Page, label: string, url: string) {
   await page
@@ -271,11 +285,14 @@ export async function filterByStatus(page: Page, label: string, url: string) {
     .getByRole("link", { name: label })
     .click();
   await expect(page).toHaveURL(url);
-  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+  await waitForTaskList(page);
 }
 
-export const taskRows = (page: Page) =>
-  page.getByRole("list", { name: "任务列表" }).getByRole("listitem");
+/** header 徽标轮询进行中任务的请求（带 status 参数）；相关任务、收藏也请求同一个路径，但不带它。 */
+export function isActiveTasksRequest(request: Request) {
+  const url = new URL(request.url());
+  return url.pathname === "/api/tasks" && url.searchParams.has("status");
+}
 
 /** 经导航栏进入全部任务页，等列表出现。 */
 export async function openTasksPage(page: Page) {

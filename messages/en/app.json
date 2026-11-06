@@ -1,6 +1,6 @@
 {
+  "name": "Next Template",
   "metadata": {
-    "title": "Next Template",
     "titleTemplate": "{page} · {app}",
     "description": "Generate 3D models from a prompt, follow their progress, and favorite and download the models."
   },
@@ -12,7 +12,7 @@
   },
   "pageError": {
     "title": "Couldn't load the page",
-    "description": "Something went wrong loading this page. Try again.",
+    "description": "The network or the server may be briefly unavailable. Please try again.",
     "retry": "Retry"
   },
   "tasks": {

@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { getTaskDb } from "./connection";
 import { resetBeforeEach } from "./db-test-helpers";
 import { seedIfEmpty } from "./seed";
-import { createTask, deleteTask, getTask } from "./tasks";
+import { createTask, deleteTask, getTask, getTaskModelUrl } from "./tasks";
 
 resetBeforeEach();
 
@@ -25,6 +25,7 @@ describe("写入种子数据", () => {
 
     expect(await taskIds()).toHaveLength(20);
     expect((await getTask("task-01")).coverUrl).toMatch(/\/seed\/covers\//);
+    expect(await getTaskModelUrl("task-01")).toMatch(/\/seed\/models\//);
   });
 
   test("库里还有任务时不写，不覆盖已有的数据", async () => {
@@ -36,7 +37,7 @@ describe("写入种子数据", () => {
     expect(await taskIds()).toStrictEqual([id]);
   });
 
-  test("两个进程同时写时只写入一份", async () => {
+  test("两个调用同时写时只写入一份", async () => {
     await deleteAllTasks();
 
     await Promise.all([seedIfEmpty(), seedIfEmpty()]);

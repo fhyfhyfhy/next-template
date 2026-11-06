@@ -8,7 +8,7 @@
     "start": "node scripts/run-next.mjs start",
     "build:local": "node scripts/run-next.mjs build --local",
     "start:local": "node scripts/run-next.mjs start --local",
-    "db:migrate": "node scripts/db/migrate.mjs",
+    "db:migrate": "node scripts/db/migrate-deployment.mjs",
     "db:reset": "node scripts/local-services/reset.mjs",
     "generate:examples": "node scripts/ui-catalog/index-generator.mjs",
     "format": "prettier --write .",

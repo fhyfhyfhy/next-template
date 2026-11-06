@@ -62,9 +62,14 @@ test("带 locale 前缀的地址记下选择，跳到不带前缀的地址，选
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
 
-test("不支持的 locale 前缀返回 404", async ({ request }) => {
-  const response = await request.get("/fr/tasks");
-  expect(response.status()).toBe(404);
+test("不支持的 locale 前缀返回 404，显示找不到页", async ({ page }) => {
+  const response = await page.goto("/fr/tasks");
+
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "页面不存在",
+  );
+  await expect(page).toHaveTitle("页面不存在 · Next Template");
 });
 
 test.describe("浏览器语言是英文", () => {

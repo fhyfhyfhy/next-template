@@ -1,20 +1,20 @@
 import { useTranslations } from "next-intl";
+import type { ReactNode } from "react";
 
 import { catalog, type ComponentId } from "../constants/catalog";
 import type { ExampleSources } from "../types/examples";
 import { ComponentNavigation } from "./component-navigation";
 import { previewsByComponent } from "./component-registry.generated";
 import { ExampleList } from "./example-list";
-import { UiCatalogHeader } from "./ui-catalog-header";
 
 /** 展示已验证的组件与对应源文件。 */
 export function UiCatalog({
-  brand,
+  header,
   component,
   sources,
 }: {
-  /** 应用名，显示在 header 里。 */
-  brand: string;
+  /** 页面顶部的 `UiCatalogHeader`，由调用方组合好。 */
+  header: ReactNode;
   component: ComponentId;
   sources: ExampleSources;
 }) {
@@ -29,7 +29,7 @@ export function UiCatalog({
       >
         {t("ui-catalog.skipToContent")}
       </a>
-      <UiCatalogHeader brand={brand} />
+      {header}
       <div className="mx-auto grid max-w-[1600px] md:min-h-[calc(100dvh-5rem)] md:grid-cols-[208px_minmax(0,1fr)] lg:grid-cols-[248px_minmax(0,1fr)]">
         <ComponentNavigation />
         <main id="main-content" className="min-w-0 px-5 py-8 sm:px-8 lg:p-12">

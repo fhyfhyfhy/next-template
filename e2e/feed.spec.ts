@@ -1,17 +1,17 @@
 import type { Page, Request } from "@playwright/test";
 
 import { unique } from "./backend";
-import { failRequests, isServerAction } from "./browser";
+import { failRequests, isServerAction, openWithoutScripts } from "./browser";
 import {
   createTaskThroughForm,
-  enterThroughHeader,
   expect,
   filterByStatus,
   navigateThroughHeader,
   openTasksPage,
   type TaskData,
-  taskRows,
+  taskRow,
   test,
+  untilPolled,
 } from "./tasks";
 
 // 作品广场：React Query 负责的无限滚动，第一页来自服务端缓存的快照。快照里是所有已完成的任务，别的用例完成的
@@ -28,11 +28,13 @@ const star = (page: Page, name: string) =>
   cards(page).filter({ hasText: name }).getByRole("button", { name: "收藏" });
 
 /**
- * 经导航栏进入作品广场，等第一页出现。第一页的卡片在静态 shell 里，整页打开后立即点收藏可能早于 hydration；
- * 客户端导航在浏览器里渲染整页，到达后就能操作。
+ * 先经页面写一次让快照重新读取（`refreshFeedSnapshot`），再经导航栏进入作品广场，等第一页出现。快照是新的，
+ * 浏览器不会因为它过期而重新请求第一页，不依赖前面的用例刚刷新过它。第一页的卡片在静态 shell 里，整页打开后立即
+ * 点收藏可能早于 hydration；客户端导航在浏览器里渲染整页，到达后就能操作。
  */
 async function openFeed(page: Page) {
-  await enterThroughHeader(page, "作品广场", "/feed");
+  await refreshFeedSnapshot(page);
+  await navigateThroughHeader(page, "作品广场", "/feed");
   await expect(cards(page)).toHaveCount(6);
 }
 
@@ -57,11 +59,7 @@ async function finishNewWork(page: Page, tasks: TaskData) {
     progress: 100,
     log: "生成完成",
   });
-  // 页面每 3 秒检查一次进行中的任务。
-  await expect(taskRows(page).filter({ hasText: task.name })).toContainText(
-    "已完成",
-    { timeout: 10_000 },
-  );
+  await expect(taskRow(page, task.name)).toContainText("已完成", untilPolled);
   return task.name;
 }
 
@@ -104,14 +102,8 @@ test("第一页的卡片在服务端返回的 HTML 里，浏览器不再请求�
   page,
 }) => {
   await refreshFeedSnapshot(page);
-  // 拦住应用的 JS 包，React 不会运行：卡片要是等浏览器渲染，这里只有骨架屏。
-  const htmlPage = await page.context().newPage();
-  await htmlPage.route("**/_next/static/**", (route) =>
-    route.request().resourceType() === "script"
-      ? route.abort()
-      : route.continue(),
-  );
-  await htmlPage.goto("/feed");
+  // React 不运行：卡片要是等浏览器渲染，这里只有骨架屏。
+  const htmlPage = await openWithoutScripts(page, "/feed");
   await expect(cards(htmlPage)).toHaveCount(6);
   await htmlPage.close();
 
@@ -221,7 +213,7 @@ test("在作品广场收藏后，列表页立即显示已收藏", async ({ page,
   const name = await finishNewWork(page, tasks);
   // 先让“已完成”筛选的缓存里有这个未收藏的作品：之后列表要靠收藏的 Server Action 失效才显示已收藏。
   await filterByStatus(page, "已完成", "/tasks?status=done");
-  const row = taskRows(page).filter({ hasText: name });
+  const row = taskRow(page, name);
   await expect(row.getByRole("button", { name: "收藏" })).toHaveAttribute(
     "aria-pressed",
     "false",
@@ -250,7 +242,7 @@ test("在全部任务页收藏后回到作品广场，卡片和“我的收藏�
   const name = await openFeedWithNewWork(page, tasks);
   const count = (await favoriteNames(page)).length;
   await navigateThroughHeader(page, "全部任务", "/tasks");
-  const row = taskRows(page).filter({ hasText: name });
+  const row = taskRow(page, name);
   const saved = page.waitForResponse((response) =>
     isServerAction(response.request()),
   );

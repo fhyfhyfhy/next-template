@@ -1,4 +1,4 @@
-import type { Page, Request } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 import { holdTable, unique } from "./backend";
 import {
@@ -6,15 +6,19 @@ import {
   failRequests,
   hasPath,
   isServerAction,
+  openWithoutScripts,
   returnToTab,
 } from "./browser";
 import {
   createTaskThroughForm,
   expect,
+  isActiveTasksRequest,
   openTasksPage,
   runningCount,
+  taskRow,
   taskRows,
   test,
+  untilPolled,
 } from "./tasks";
 
 // 任务详情：数据由 React Query 负责（任务会在用户停留时自己推进），首屏由服务端 prefetch。
@@ -24,18 +28,6 @@ const GLOBAL_ERROR_TOAST = "请求失败，请稍后重试";
 
 const comments = (page: Page) =>
   page.getByRole("list", { name: "评论" }).getByRole("listitem");
-
-const listRow = (page: Page, name: string) =>
-  taskRows(page).filter({ hasText: name });
-
-/** header 徽标轮询进行中任务的请求（带 status 参数）；相关任务、收藏也请求同一个路径，但不带它。 */
-function isActiveTasksRequest(request: Request) {
-  const url = new URL(request.url());
-  return url.pathname === "/api/tasks" && url.searchParams.has("status");
-}
-
-// 页面每 3 秒检查一次进行中的任务，发现变化后再重新读取列表，等列表跟上要比默认的 5 秒宽。
-const untilPolled = { timeout: 10_000 };
 
 /**
  * 打开详情并等 hydration 完成：首屏 HTML 先到，hydration 之前的点击和文件选择没有事件处理。
@@ -290,9 +282,9 @@ test.describe("写入", () => {
       log: "生成失败：材质计算出错",
     });
     // 列表页发现任务结束后重新读取列表，失败筛选里才有它。
-    await expect(listRow(page, task.name)).toContainText("失败", untilPolled);
+    await expect(taskRow(page, task.name)).toContainText("失败", untilPolled);
     await page.goto("/tasks?status=failed");
-    await expect(listRow(page, task.name)).toBeVisible();
+    await expect(taskRow(page, task.name)).toBeVisible();
 
     await openTask(page, task.id);
     const retried = page.waitForResponse((response) =>
@@ -310,9 +302,11 @@ test.describe("写入", () => {
     });
     await expect(page.getByTestId("task-status")).toHaveText("生成中");
 
-    await page.goto("/tasks?status=failed");
-    await expect(taskRows(page).first()).toBeVisible();
-    await expect(listRow(page, task.name)).toHaveCount(0);
+    // 不运行应用的 JS 看列表：列表页的变化信号发现任务重新进行中，也会让列表的缓存失效。
+    const list = await openWithoutScripts(page, "/tasks?status=failed");
+    await expect(taskRows(list).first()).toBeVisible();
+    await expect(taskRow(list, task.name)).toHaveCount(0);
+    await list.close();
   });
 
   test("任务已在别处重试过时就地提示并刷新详情", async ({ page, tasks }) => {
@@ -327,9 +321,19 @@ test.describe("写入", () => {
     await expect(page.getByText("重试任务失败，请稍后重试")).toHaveCount(0);
   });
 
-  test("删除任务后回到列表，任务不再出现，详情显示不存在", async ({ page }) => {
+  test("删除任务后回到列表，任务不再出现，详情显示不存在", async ({
+    page,
+    tasks,
+  }) => {
     await openTasksPage(page);
     const task = await createTaskThroughForm(page);
+    // 先让任务结束：列表的变化信号只看进行中的任务，删掉一个已结束的任务后，列表只能靠删除的 Server Action 刷新。
+    await tasks.reportProgress(task.id, {
+      status: "done",
+      progress: 100,
+      log: "生成完成",
+    });
+    await expect(taskRow(page, task.name)).toContainText("已完成", untilPolled);
     await openTask(page, task.id);
     await page.getByRole("button", { name: "删除任务" }).click();
     await page
@@ -339,7 +343,7 @@ test.describe("写入", () => {
 
     await expect(page).toHaveURL("/tasks");
     await expect(taskRows(page).first()).toBeVisible();
-    await expect(listRow(page, task.name)).toHaveCount(0);
+    await expect(taskRow(page, task.name)).toHaveCount(0);
     await page.goto(`/tasks/${task.id}`);
     await expectTaskNotFound(page);
   });
@@ -366,7 +370,7 @@ test.describe("写入", () => {
 
     // 新建的任务最晚创建，按创建时间倒序时在第一页。
     await page.goto("/tasks");
-    await expect(listRow(page, renamed)).toBeVisible();
+    await expect(taskRow(page, renamed)).toBeVisible();
   });
 
   test("取消重命名后恢复显示原名称", async ({ page }) => {
@@ -395,7 +399,7 @@ test.describe("写入", () => {
     });
     // 先让“生成中”筛选的缓存里有这个没有封面的任务，换封面后列表要靠 Server Action 的失效才更新。
     await page.goto("/tasks?status=running");
-    const row = listRow(page, task.name);
+    const row = taskRow(page, task.name);
     await expect(row).toBeVisible(untilPolled);
     await expect(row.locator("img")).toHaveCount(0);
 
@@ -419,6 +423,29 @@ test.describe("写入", () => {
       "src",
       /\/uploads\/[^/]+$/,
     );
+  });
+
+  test("上传封面期间不响应再次选择，键盘焦点留在选择按钮上", async ({
+    page,
+    tasks,
+  }) => {
+    const task = await tasks.createTask();
+    await openTask(page, task.id);
+    // 拖住签发上传和设置封面的 Server Action，上传一直进行中。
+    await delayRequests(page, isServerAction, 1000);
+    const picker = page.getByLabel(/^(更换封面图|上传中…)$/);
+    await picker.focus();
+
+    await picker.setInputFiles({
+      name: "cover.png",
+      mimeType: "image/png",
+      buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]),
+    });
+
+    await expect(picker).toHaveAccessibleName("上传中…");
+    await expect(picker).toHaveAttribute("aria-disabled", "true");
+    await expect(picker).toBeFocused();
+    await expect(picker).toHaveAccessibleName("更换封面图");
   });
 
   test("选中的不是图片时直接提示，不签发上传", async ({ page }) => {

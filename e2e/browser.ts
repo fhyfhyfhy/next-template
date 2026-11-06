@@ -52,7 +52,8 @@ export async function delayRequests(
  * 让之后匹配的请求失败，像服务端处理时遇到了意外错误，返回函数恢复正常。Server Action 按 Next 的约定回
  * `text/plain` 的 500，调用方拿到一个被拒绝的 promise；Route Handler 回 `lib/fetch.ts` 认得的失败响应体。
  * `delayMs` 让失败晚一些返回：用例能看到请求返回之前的乐观更新，失败后又不留下写入。
- * `status` 换成 4xx 时 `fetchApi` 不重试，失败立即可见；默认的 500 会先重试几次（lib/fetch.ts）。
+ * `status` 只用于 Route Handler：换成 4xx 时 query 不重试，失败立即可见；默认的 500 会先重试几次
+ * （lib/fetch.ts 的 `shouldRetryRequest`）。Server Action 总是回 500，mutation 不重试。
  */
 export async function failRequests(
   page: Page,
@@ -79,6 +80,22 @@ export async function failRequests(
   };
   await page.route("**/*", handler);
   return () => page.unroute("**/*", handler);
+}
+
+/**
+ * 在同一个 context 里另开一个页面打开 `url`，拦住应用的 JS 包：React 不运行，页面停在服务端返回的 HTML 上，
+ * Suspense 的片段照常由 HTML 里的内联脚本换上。浏览器里的刷新（轮询、变化信号）都不运行，看到的就是服务端渲染的
+ * 结果。用完调用方关闭它。
+ */
+export async function openWithoutScripts(page: Page, url: string) {
+  const htmlPage = await page.context().newPage();
+  await htmlPage.route("**/_next/static/**", (route) =>
+    route.request().resourceType() === "script"
+      ? route.abort()
+      : route.continue(),
+  );
+  await htmlPage.goto(url);
+  return htmlPage;
 }
 
 /**

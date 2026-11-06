@@ -14,10 +14,10 @@ export function Example() {
   return (
     <Badge
       variant="outline"
-      render={<Link href="/tasks?status=failed" />}
+      render={<Link href="/ui?component=dialog" />}
       className="hover:text-foreground"
     >
-      查看失败的任务
+      查看 Dialog
       <IconArrowUpRight aria-hidden />
     </Badge>
   );

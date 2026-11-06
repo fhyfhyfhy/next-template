@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { S3Client } from "@aws-sdk/client-s3";
 import {
   Kysely,
   PostgresDialect,
@@ -12,7 +13,8 @@ import { localEnv } from "../scripts/local-services/datasets.mjs";
 // 用例的测试数据直接写进 e2e 数据集（playwright.config.ts 的 webServer 用的同一个库），不经过应用。这里是和业务无关的
 // 部分；按项目的表写数据的 fixture 建在它上面。
 
-const E2E_DATABASE_URL = localEnv("e2e").DATABASE_URL;
+const E2E_ENV = localEnv("e2e");
+const E2E_DATABASE_URL = E2E_ENV.DATABASE_URL;
 
 /** 连到 e2e 数据集。`Tables` 只描述调用方用到的表和列；用完调用 `destroy()`。 */
 export function connectE2eDatabase<Tables>() {
@@ -21,6 +23,23 @@ export function connectE2eDatabase<Tables>() {
       pool: new pg.Pool({ connectionString: E2E_DATABASE_URL, max: 2 }),
     }),
   });
+}
+
+/** 连到 e2e 数据集的 bucket，选项和 scripts/local-services/services.mjs 连本地存储时一致；用完调用 `client.destroy()`。 */
+export function connectE2eStorage() {
+  return {
+    bucket: E2E_ENV.STORAGE_BUCKET,
+    client: new S3Client({
+      endpoint: E2E_ENV.STORAGE_ENDPOINT,
+      region: "us-east-1",
+      credentials: {
+        accessKeyId: E2E_ENV.STORAGE_ACCESS_KEY_ID,
+        secretAccessKey: E2E_ENV.STORAGE_SECRET_ACCESS_KEY,
+      },
+      forcePathStyle: true,
+      requestChecksumCalculation: "WHEN_REQUIRED",
+    }),
+  };
 }
 
 /** 在写入的事务里发一条 Postgres NOTIFY，和应用的后台任务写入时一样通知监听这个频道的连接。 */

@@ -99,7 +99,7 @@ Keys run from general to specific: `[feature, scope, ...params]`, with a resourc
 ["workspace", "member", "list", workspaceId]
 ```
 
-- Feature and resource names are singular. The scope is `"detail"` or `"list"`; an infinite list is a child of `"list"`, so invalidating `["order", "list"]` refreshes both list forms.
+- Feature and resource names are singular, such as `"order"` for the `orders` feature. The scope is `"detail"` or `"list"`; an infinite list is a child of `"list"`, so invalidating `["order", "list"]` refreshes both list forms.
 - Filters and pagination go in one object, which keeps every variant under the same prefix.
 - Take a single query's key from its factory, `getOrderQueryOptions(id).queryKey`. For a prefix shared by several factories, export one constant beside them that they build on, such as `orderListKey = ["order", "list"] as const`. A key retyped as a literal at the call site drifts from the factory without any error.
 

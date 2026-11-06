@@ -52,7 +52,8 @@ export default function FeedPage() {
 }
 
 /**
- * “我的收藏”由 React Query 负责，收藏时在浏览器里乐观更新，所以按请求读取最新的一份，不进作品广场的缓存快照。
+ * “我的收藏”按请求读取，不进作品广场的缓存快照：加上账号以后收藏按用户区分，不能放进所有访客共用的缓存
+ * （TODO.md「账号与授权」）。
  * 服务端预取后随页面送达，在自己的 Suspense 里，不挡作品广场。
  */
 async function FavoritesHydration() {

@@ -146,4 +146,4 @@ features/orders/components/
 
 Heavy dependencies, such as `three`, go through a sub-entry beside `index.ts`, such as `canvas.ts`: the main entry stays light, and callers can load the heavy part lazily.
 
-Code that runs in a plain Node process outside Next, such as a script that writes seed data, imports through a sub-entry beside `server.ts`, such as `seed.ts`, that re-exports only what it needs: `server.ts` also re-exports modules that import Next's runtime, which fails to load outside Next.
+Code that runs in a plain Node process outside Next, such as a script that writes seed data, imports through a sub-entry beside `server.ts`, such as `seed.ts`, that re-exports only what it needs: `server.ts` also re-exports modules that import Next's runtime, which fails to load outside Next. Operations that only seed data and tests call go through such a sub-entry too, which keeps them out of the production entry.

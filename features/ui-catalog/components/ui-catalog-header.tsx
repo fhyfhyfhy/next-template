@@ -6,14 +6,12 @@ import {
   IconChevronDown,
   IconDeviceDesktop,
   IconMoon,
-  IconStack2,
   IconSun,
 } from "@tabler/icons-react";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
+import type { ReactNode } from "react";
 
-import { LocaleSwitcher } from "@/components/locale-switcher";
 import {
   SelectIcon,
   SelectItem,
@@ -34,8 +32,15 @@ const themes = [
   { value: "dark", icon: IconMoon },
 ] as const;
 
-/** 品牌导航和系统、浅色、深色主题选择。 */
-export function UiCatalogHeader({ brand }: { brand: string }) {
+interface UiCatalogHeaderProps {
+  /** 应用的品牌链接，放在左侧。 */
+  brand: ReactNode;
+  /** 整个应用共用的操作，比如切换语言，放在主题选择之前。 */
+  actions: ReactNode;
+}
+
+/** 目录的 header：调用方给的品牌和操作，以及系统、浅色、深色主题选择。 */
+export function UiCatalogHeader({ brand, actions }: UiCatalogHeaderProps) {
   const t = useTranslations();
   const { theme, setTheme } = useTheme();
   // 服务端无法读取 localStorage；hydration 完成前不显示已选主题。
@@ -43,26 +48,13 @@ export function UiCatalogHeader({ brand }: { brand: string }) {
   return (
     <header className="border-b border-border bg-card text-card-foreground">
       <div className="mx-auto flex h-20 max-w-[1600px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
-        <Link
-          href="/ui"
-          className="flex items-center gap-3 rounded-control outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <span className="flex size-9 items-center justify-center rounded-control bg-primary text-primary-foreground">
-            <IconStack2 className="size-6" aria-hidden />
-          </span>
-          <span className="text-xl font-semibold tracking-tight">
-            {brand}
-            <span aria-hidden className="ml-1 text-primary">
-              .
-            </span>
-          </span>
-        </Link>
+        {brand}
         <div className="flex items-center gap-3 sm:gap-6">
           <span className="hidden font-mono text-[11px] tracking-widest text-muted-foreground sm:block">
             {t("ui-catalog.header.tagline")}
           </span>
           <span className="hidden h-5 w-px bg-border sm:block" />
-          <LocaleSwitcher />
+          {actions}
           <SelectRoot
             size="sm"
             items={themes.map(({ value }) => ({

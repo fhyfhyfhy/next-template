@@ -46,7 +46,7 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
         <label
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
-            "w-full cursor-pointer has-focus-visible:ring-2 has-focus-visible:ring-ring has-disabled:pointer-events-none has-disabled:opacity-40",
+            "w-full cursor-pointer has-focus-visible:ring-2 has-focus-visible:ring-ring has-aria-disabled:cursor-default has-aria-disabled:opacity-40",
           )}
         >
           <IconPhotoUp aria-hidden />
@@ -56,8 +56,12 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
           <input
             type="file"
             accept="image/*"
-            disabled={upload.isPending}
+            // 上传中保持可聚焦：disabled 会让键盘焦点掉回页面开头。
+            aria-disabled={upload.isPending}
             className="sr-only"
+            onClick={(event) => {
+              if (upload.isPending) event.preventDefault();
+            }}
             onChange={(event) => {
               const file = event.target.files?.[0];
               event.target.value = "";

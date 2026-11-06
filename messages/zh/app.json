@@ -1,6 +1,6 @@
 {
+  "name": "Next Template",
   "metadata": {
-    "title": "Next Template",
     "titleTemplate": "{page} · {app}",
     "description": "提交 prompt 生成 3D 模型，查看生成进度，收藏和下载作品。"
   },
@@ -12,7 +12,7 @@
   },
   "pageError": {
     "title": "页面加载失败",
-    "description": "页面没能加载出来，请重试。",
+    "description": "可能是网络或服务暂时不可用，可以重试一次。",
     "retry": "重试"
   },
   "tasks": {

@@ -28,7 +28,7 @@ When the assertion observes another Suspense boundary, that boundary must be hyd
 | To assert | Use |
 | --- | --- |
 | The static shell after `page.goto`, or the prefetched UI after a `<Link>` click | `instant()` from `@next/playwright` |
-| UI rendered into the server's HTML rather than by the browser | Abort the app's script requests and assert the UI. `instant()` lets browser rendering through, and disabling JavaScript also stops the inline scripts that place a Suspense boundary's content when it resolves after the shell |
+| UI rendered into the server's HTML rather than by the browser, or what the server renders while the browser's own refreshes would hide it | Open the page with `openWithoutScripts` in `e2e/browser.ts`, which aborts the app's script requests, and assert the UI. `instant()` lets browser rendering through, and disabling JavaScript also stops the inline scripts that place a Suspense boundary's content when it resolves after the shell |
 | One streamed section arriving before another | Lock the table the later section reads with `holdTable` in `e2e/backend.ts`, and `page.goto(url, { waitUntil: "commit" })`: `load` fires only after the stream ends |
 | The UI while a browser request or Server Action is in flight, or after it fails | `delayRequests` or `failRequests` in `e2e/browser.ts`. `failRequests` with `delayMs` shows an optimistic update before the server answers and leaves no write behind |
 

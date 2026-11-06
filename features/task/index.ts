@@ -27,7 +27,7 @@ export { FeedSkeleton } from "./components/feed-skeleton";
 export { SeedHydrationBoundary } from "./components/seed-hydration-boundary";
 export { getFeedInfiniteQueryOptions } from "./api/get-feed";
 export { getCommentsQueryOptions } from "./api/get-comments";
-export { getTaskQueryOptions, isTaskNotFound } from "./api/get-task";
+export { getTaskQueryOptions } from "./api/get-task";
 export {
   activeTasksQueryOptions,
   favoriteTasksQueryOptions,

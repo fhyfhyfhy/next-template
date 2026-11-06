@@ -25,19 +25,21 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `:local`
 
 `pnpm dev` always runs on local services. `pnpm build:local` and `pnpm start:local` do too, for checking production behavior on your machine. Each starts the services, creates and migrates the dataset `LOCAL_DATASET` names (`dev` by default), writes the seed data when it has no tasks, and passes its connection settings to Next as the environment variables in `lib/env.ts`. The data persists in Docker volumes across restarts. `pnpm db:reset` restores a dataset to the seed data, and `docker compose down -v` deletes all of them. Inside the app, the generator advances tasks in the background, as an outside generation service would.
 
-`pnpm build` and `pnpm start` are for deployments: they read the connection settings from the environment, and `lib/env.ts` fails the build when one is missing. See [Deployment](#deployment).
+`pnpm build` and `pnpm start` are for deployments: they read the connection settings from the environment. `lib/env.ts` fails the build when prerendering reads a missing one, and `pnpm start` checks them all before serving. See [Deployment](#deployment).
 
 ## Starting a project
 
 The sample product is everything that serves tasks and uploads: `features/task/`, `features/upload/`, the routes in `app/[locale]/(tasks)/` and `app/api/`, their namespaces in `messages/`, the specs and the fixture in `e2e/tasks.ts`, and their entries in `GLOSSARY.md` and `docs/features.md`. Replacing it also touches the places that wire it into the rest:
 
 - `app/[locale]/page.tsx`, whose home page redirects to `/tasks`. Typed routes are off, so nothing reports the redirect once `/tasks` is gone.
-- The background jobs in `instrumentation.ts`, and `TASK_GENERATOR_ENABLED` in `lib/env.ts` and `playwright.config.ts`.
+- The background jobs in `instrumentation.ts`, and `TASK_GENERATOR_ENABLED` in `lib/env.ts`, `lib/env.test.ts`, and `playwright.config.ts`.
 - The migration list in `scripts/db/migrate.mjs` and the seed entry in `scripts/local-services/seed.mjs`.
-- The namespaces registered in `lib/i18n/messages.ts`, and the route keys in `messages/*/app.json`: `tasks`, `taskDetail`, `feed`, `search`, and `recent`.
+- The namespaces registered in `lib/i18n/messages.ts`; in `messages/*/app.json`, the route keys `tasks`, `taskDetail`, `feed`, `search`, and `recent`, `pageError` for `app/[locale]/(tasks)/error.tsx`, and `metadata.description`; and the sample product's terms in `messages/terms.json`.
+- The specs that test kept code through the sample product's pages: `e2e/home.spec.ts`, `e2e/locale.spec.ts`, and `e2e/date-time.spec.ts`. Point them at the project's own pages rather than deleting them.
+- The cases in `eslint.config.test.mjs` that lint real files under `features/task/`, which must exist on disk: point them at the project's own files.
 - Object storage, if the project has no uploads: the `STORAGE_*` variables in `lib/env.ts`, the `storage` service in `compose.yaml`, and the bucket setup and `PUBLIC_PREFIXES` in `scripts/local-services/services.mjs`.
 
-A project replaces it with its own features, the same way: the [Glossary](GLOSSARY.md), [Feature boundaries](docs/features.md), and the rules in `.claude/rules/` describe the conventions without referring to the sample product, and this repository stays the place to read working code for them.
+A project replaces it with its own features, the same way: the rules in `.claude/rules/` describe the conventions without referring to the sample product, a project's own terms and features take the sample product's entries in the [Glossary](GLOSSARY.md) and [Feature boundaries](docs/features.md), and this repository stays the place to read working code for them.
 
 Keep the rest: the layers outside `features/`, `features/ui-catalog/` with the design system it documents, the app shell in `app/`, the scripts, and the e2e helpers in `e2e/test.ts`, `e2e/browser.ts`, and `e2e/backend.ts`, which a project's own fixtures build on.
 

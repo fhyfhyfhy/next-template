@@ -25,9 +25,7 @@ test("关键词随输入写进 URL 并显示结果，不新增历史记录", asy
   await expect(page).toHaveURL("/tasks");
 });
 
-test("hydration 之前搜索框不可用，输入不会被 hydration 清掉", async ({
-  page,
-}) => {
+test("hydration 之前搜索框不可用", async ({ page }) => {
   // 拦掉 JS bundle，页面停在 hydration 之前。
   await page.route(/\/_next\/static\/chunks\/.+\.js/, (route) => route.abort());
   await page.goto("/search");

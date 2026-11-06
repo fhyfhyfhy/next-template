@@ -5,8 +5,8 @@ import { Client, Pool } from "pg";
 import { env } from "./env";
 
 declare global {
-  // dev 热更新会重新执行模块，连接池挂在 globalThis 上，按连接串复用，不会越开越多。
-  var __kyselyPools: Map<string, Pool> | undefined;
+  // dev 热更新会重新执行模块，连接池挂在 globalThis 上复用，不会越开越多。
+  var __kyselyPool: Pool | undefined;
 }
 
 /**
@@ -17,13 +17,10 @@ declare global {
  * Kysely 实例本身不持有连接，每次调用新建一个开销很小。
  */
 export function getDb<TDatabase>(): Kysely<TDatabase> {
-  const connectionString = env.DATABASE_URL;
-  const pools = (globalThis.__kyselyPools ??= new Map());
-  let pool = pools.get(connectionString);
-  if (!pool) {
-    pool = new Pool({ connectionString, max: 10 });
-    pools.set(connectionString, pool);
-  }
+  const pool = (globalThis.__kyselyPool ??= new Pool({
+    connectionString: env.DATABASE_URL,
+    max: 10,
+  }));
   return new Kysely<TDatabase>({ dialect: new PostgresDialect({ pool }) });
 }
 

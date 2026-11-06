@@ -9,7 +9,7 @@ import type { TaskTables } from "./tables";
 // 任务的状态或日志变化后，经 Postgres 的 LISTEN/NOTIFY 通知正在推送这个任务日志的 SSE 连接。generator 可能
 // 在另一个进程里推进任务（advisory lock 决定谁推进），进程内的事件传不过去；NOTIFY 送达同一个库上的所有监听连接。
 
-// e2e/backend.ts 在库里直接改任务时也发这个通知，改名时一起改。
+// e2e/tasks.ts 的 `TASK_CHANGED_CHANNEL` 在库里直接改任务时也发这个通知，改名时一起改。
 const CHANNEL = "task_changed";
 
 /** 在写入的事务里调用：事务提交时 Postgres 才发出通知，回滚就不发，监听方不会读到没提交的数据。 */

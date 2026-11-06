@@ -119,7 +119,10 @@ function seedUploads(tasks: ReturnType<typeof seedTasks>): SeedUpload[] {
   ]);
 }
 
-/** 写入全部种子数据，调用方先清空了任务和上传。 */
+/**
+ * 写入全部种子数据。任务表是空的；上传记录可能还在（任务删光后，清理任务要过一段时间才删它们），
+ * `restoreSeedUploads` 跳过已有的记录。
+ */
 async function writeSeed(trx: Kysely<TaskTables>) {
   const tasks = seedTasks();
   await trx

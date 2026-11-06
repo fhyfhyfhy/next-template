@@ -39,7 +39,7 @@ export default function TaskPagesLayout({ children }: { children: ReactNode }) {
               <span className="flex size-8 items-center justify-center rounded-control bg-primary text-primary-foreground">
                 <IconStack2 className="size-5" aria-hidden />
               </span>
-              {t("app.metadata.title")}
+              {t("app.name")}
             </Link>
           }
           actions={<LocaleSwitcher />}

@@ -14,7 +14,6 @@ import {
   rejection,
   upload,
 } from "./db-test-helpers";
-import { clearUploads } from "./seed";
 import { attachUpload, createUpload } from "./uploads";
 
 clearUploadsBeforeEach();
@@ -113,20 +112,5 @@ describe("关联", () => {
     const after = await coverUrl("n1");
     expect(after).not.toBe(before);
     expect(after).toContain(second.id);
-  });
-});
-
-describe("重置", () => {
-  test("清空上传记录和 uploads/ 下的全部文件", async () => {
-    const { id } = await upload();
-    await attachUpload(cover("n1", id));
-    const url = (await coverUrl("n1")) ?? "";
-    expect((await fetch(url)).status).toBe(200);
-
-    const deleteFiles = await clearUploads();
-    await deleteFiles();
-
-    expect(await coverUrl("n1")).toBeUndefined();
-    expect((await fetch(url)).status).not.toBe(200);
   });
 });
