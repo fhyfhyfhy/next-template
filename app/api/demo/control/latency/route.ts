@@ -3,9 +3,9 @@ import { z } from "zod";
 import {
   demoRoute,
   getDefaultLatency,
-  readJsonBody,
   setDefaultLatency,
-} from "@/features/demo-task/server";
+} from "@/features/demo-faults/server";
+import { readJsonBody } from "@/lib/route-handler";
 
 export const GET = demoRoute(async () => ({
   latencyMs: await getDefaultLatency(),

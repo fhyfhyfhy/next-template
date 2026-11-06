@@ -108,21 +108,21 @@ Keys run from general to specific: `[feature, scope, ...params]`, with a resourc
 ```ts
 import { mutationOptions } from "@/lib/react-query";
 
-export const deleteTaskMutationOptions = (t: TaskTranslator) =>
+export const deleteTaskMutationOptions = (t: Translator) =>
   mutationOptions({
     mutationFn: deleteTaskAction,
     onSuccess: (_data, { taskId }, _onMutateResult, { client }) => {
       client.removeQueries({ queryKey: getTaskQueryOptions(taskId).queryKey });
       void client.invalidateQueries({ queryKey: taskListKey });
     },
-    meta: { errorMessage: t("deleteTask.failed") },
+    meta: { errorMessage: t("task.deleteTask.failed") },
   });
 ```
 
 At the call site:
 
 ```tsx
-const t = useTranslations("task");
+const t = useTranslations();
 const deleteTaskMutation = useMutation(deleteTaskMutationOptions(t));
 deleteTaskMutation.mutate({ taskId }, { onSuccess: () => onClose() });
 ```
@@ -133,7 +133,7 @@ deleteTaskMutation.mutate({ taskId }, { onSuccess: () => onClose() });
 - An optimistic update lives in the factory too. `onMutate` cancels the queries it writes, snapshots them, and writes the new value into every query that displays it, each in that query's own data shape; `onError` restores the snapshot, and the global toast reports the failure; `onSettled` invalidates them so the server's value wins. Insert into a list where its server order puts it, so the refetch does not move it.
 
   ```ts
-  export const pinTaskMutationOptions = (t: TaskTranslator) =>
+  export const pinTaskMutationOptions = (t: Translator) =>
     mutationOptions({
       mutationFn: pinTaskAction,
       onMutate: async ({ taskId, pinned }, { client }) => {
@@ -148,7 +148,7 @@ deleteTaskMutation.mutate({ taskId }, { onSuccess: () => onClose() });
       },
       onSettled: (_data, _error, { taskId }, _onMutateResult, { client }) =>
         client.invalidateQueries({ queryKey: getTaskQueryOptions(taskId).queryKey }),
-      meta: { errorMessage: t("pinTask.failed") },
+      meta: { errorMessage: t("task.pinTask.failed") },
     });
   ```
 

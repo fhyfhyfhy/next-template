@@ -41,11 +41,6 @@
     "why": "Data demo 读写的是模板自带的 Demo 后端，它的数据存在 Demo 专用的数据库和对象存储里，只由 Demo 专用的命令启动。用普通命令运行时，这些页面不读写任何数据。",
     "howToRun": "要查看 Data demo，先启动 Docker，再运行 <code>pnpm demo:dev</code>：它会启动 Demo 的数据库和对象存储，并启用 Demo 后端。"
   },
-  "demoReset": {
-    "button": "重置 Demo 数据",
-    "done": "已重置",
-    "failed": "重置 Demo 数据失败，请稍后重试"
-  },
   "demoNote": {
     "label": "这页演示什么"
   },
@@ -169,91 +164,6 @@
   },
   "queryErrorBoundary": {
     "retry": "重试"
-  },
-  "labRetry": {
-    "title": "重试规则",
-    "description": "每个按钮先给任务详情的读取注入故障，再在浏览器里重新请求。schema 不匹配说明前后端契约已经不一致，全局处理会在控制台留下 SchemaValidationError。",
-    "scenarios": {
-      "serverErrorRecovers": "5xx 两次后恢复",
-      "serverErrorPersists": "5xx 一直失败",
-      "clientError": "4xx",
-      "errorBody": "2xx 返回 error",
-      "malformed": "schema 不匹配"
-    },
-    "scenarioResult": "{scenario}：{result}",
-    "retrying": "第 {count} 次失败，正在重试…",
-    "succeededAfterRetry": "成功，失败 {count} 次后重试成功",
-    "succeeded": "成功",
-    "failedAfterRetry": "失败，重试了 {count} 次",
-    "failedWithoutRetry": "失败，没有重试",
-    "requesting": "请求中…"
-  },
-  "labConcurrentFailures": {
-    "title": "同时失败",
-    "description": "按钮给任务详情的读取注入 3 次失败，然后同时刷新下面 3 个任务。",
-    "refreshFailed": "（刷新失败）",
-    "refreshAll": "同时刷新（都会失败）"
-  },
-  "labDraftMode": {
-    "title": "跳过服务端缓存",
-    "description": "开启 Draft Mode 后，这个浏览器的每次请求都重新执行 use cache 函数，生产构建里也能立即看到后端的最新数据。结果不写入缓存，关掉后读到的仍是开启前缓存的数据。只影响当前浏览器，关闭浏览器后也会恢复。",
-    "switchLabel": "Draft Mode",
-    "switchFailed": "切换失败，请稍后重试"
-  },
-  "labQueryStates": {
-    "title": "首次加载和刷新失败",
-    "description": "渲染顺序是先看 data，再看 error，最后才是 loading：刷新失败时 error 和旧数据同时存在，先看 error 会把还能用的数据换掉。",
-    "firstLoadFails": "首次加载（会失败）",
-    "firstLoadSucceeds": "首次加载（会成功）",
-    "refreshFails": "刷新（会失败）",
-    "refreshFailed": "（刷新失败，仍显示旧数据）"
-  },
-  "labSuspenseReset": {
-    "title": "错误边界和重置",
-    "description": "按钮先清掉这个任务的缓存并注入一次失败，再挂载用 useSuspenseQuery 读取它的组件。",
-    "load": "加载（第一次会失败）",
-    "loadFailed": "任务加载失败"
-  },
-  "faultPanel": {
-    "title": "注入故障",
-    "description": "“默认延迟”对所有业务操作生效，故障里的延迟叠加在它之上。选一个数据层操作和故障类型，“次数”用完后故障自动消失。故障对服务端渲染、浏览器请求和 Server Action 都生效；“返回 4xx/5xx”“2xx 但返回 error”“响应体不符合 schema”只在浏览器请求时出现。注入后去其他页面操作，看页面怎么反应。",
-    "remove": "移除",
-    "clearAll": "清除全部",
-    "empty": "当前没有故障",
-    "reading": "读取故障配置…",
-    "faultRow": "{operation}：{effect}，{times}",
-    "effects": {
-      "status": "返回 {status}",
-      "errorBody": "2xx 但返回 error {code}",
-      "malformed": "响应体不符合 schema",
-      "latency": "再延迟 {latencyMs}ms",
-      "unexpected": "抛出意外错误",
-      "businessError": "按业务错误 {code} 拒绝"
-    },
-    "timesLeft": "还剩 {count} 次",
-    "updateFailed": "更新故障设置失败，请稍后重试"
-  },
-  "faultForm": {
-    "operation": "操作",
-    "kind": "故障",
-    "times": "次数",
-    "submit": "添加故障",
-    "kinds": {
-      "latency": "再延迟 2 秒",
-      "unexpected": "抛出意外错误",
-      "clientError": "返回 4xx",
-      "serverError": "返回 5xx",
-      "errorBody": "2xx 但返回 error",
-      "malformed": "响应体不符合 schema"
-    },
-    "nextTimes": "下 {count} 次",
-    "always": "一直生效"
-  },
-  "defaultLatency": {
-    "label": "默认延迟",
-    "readFailed": "读取默认延迟失败",
-    "reading": "读取默认延迟…",
-    "updateFailed": "修改默认延迟失败，请稍后重试"
   },
   "favorite": {
     "failed": "更新收藏失败，请稍后重试"

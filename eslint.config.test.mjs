@@ -1177,10 +1177,12 @@ describe("架构依赖和 feature、组件导入约定", () => {
     process.chdir(fixture);
     // 架构用例只验证依赖边界；import 排序由下方独立用例验证。
     // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
+    // fixture 没有 docs/features.md，feature 依赖图由 scripts/eslint/feature-dependencies.test.mjs 验证。
     eslint = new ESLint({
       cwd: fixture,
       overrideConfig: {
         rules: {
+          "architecture/feature-dependencies": "off",
           "simple-import-sort/imports": "off",
           "@typescript-eslint/consistent-type-definitions": "off",
           "@typescript-eslint/consistent-type-assertions": "off",
@@ -1655,7 +1657,10 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
 const restrictedSyntaxLinter = new ESLint({ cwd: project });
 const RESTRICTION_NAMES = [
   ["Show a date or time", "date-time"],
-  ["Pass only the owner's namespace", "translator-namespace"],
+  [
+    "Call useTranslations() and getTranslations() without a namespace",
+    "translator-namespace",
+  ],
   ["List public API", "component-entry"],
   ["Read environment variables", "env"],
   ["Native <", "native-element"],
@@ -1748,37 +1753,24 @@ export function Probe({ at, count }: { at: number; count: number }) {
   }
 });
 
-describe("翻译函数只按 owner 的 namespace 取", () => {
+describe("翻译函数不按 namespace 取", () => {
   for (const { name, file, source, reported } of [
     {
-      name: "useTranslations 带子路径时报错",
+      name: "useTranslations 传 namespace 时报错",
       file: "features/demo-task/components/task-list/index.tsx",
       source: `"use client";
 
 import { useTranslations } from "next-intl";
 
 export function Probe() {
-  const t = useTranslations("demo-task.comments");
-  return <p>{t("empty")}</p>;
+  const t = useTranslations("demo-task");
+  return <p>{t("comments.empty")}</p>;
 }
 `,
       reported: ["translator-namespace"],
     },
     {
-      name: "getTranslations 带子路径时报错，对象写法也一样",
-      file: "app/[locale]/page.tsx",
-      source: `import { getTranslations } from "next-intl/server";
-
-export async function probe(locale: string) {
-  const a = await getTranslations("app.home");
-  const b = await getTranslations({ locale, namespace: "app.home" });
-  return [a("title"), b("title")];
-}
-`,
-      reported: ["translator-namespace", "translator-namespace"],
-    },
-    {
-      name: "只用 namespace、key 写完整路径时不报",
+      name: "getTranslations 传 namespace 时报错，对象写法也一样",
       file: "app/[locale]/page.tsx",
       source: `import { getTranslations } from "next-intl/server";
 
@@ -1788,11 +1780,109 @@ export async function probe(locale: string) {
   return [a("home.title"), b("home.title")];
 }
 `,
+      reported: ["translator-namespace", "translator-namespace"],
+    },
+    {
+      name: "不传 namespace、key 写完整路径时不报",
+      file: "app/[locale]/page.tsx",
+      source: `import { getTranslations } from "next-intl/server";
+
+export async function probe(locale: string) {
+  const a = await getTranslations();
+  const b = await getTranslations({ locale });
+  return [a("app.home.title"), b("app.home.title")];
+}
+`,
       reported: [],
     },
   ]) {
     test(name, async () => {
       expect(await restricted(file, source)).toStrictEqual(reported);
+    });
+  }
+});
+
+describe("每个 key 的第一段是文件 owner 的 namespace", () => {
+  async function keyProblems(file, source) {
+    const [result] = await restrictedSyntaxLinter.lintText(source, {
+      filePath: join(project, file),
+    });
+    expect(result.fatalErrorCount).toBe(0);
+    return result.messages
+      .filter(({ ruleId }) => ruleId === "i18n/message-keys")
+      .map(({ messageId, line }) => [messageId, line]);
+  }
+
+  for (const { name, file, source, reported } of [
+    {
+      name: "feature 只读自己的 key；模板字面量和条件表达式的每个分支都按前缀查",
+      file: "features/demo-task/components/task-list/index.tsx",
+      source: `"use client";
+
+import { useTranslations } from "next-intl";
+
+export function Probe({ status, wide }: { status: string; wide: boolean }) {
+  const t = useTranslations();
+  return (
+    <p>
+      {t("demo-task.taskList.empty")}
+      {t(\`demo-task.taskStatus.\${status}\`)}
+      {t(wide ? "demo-task.taskList.empty" : "demo-lab.labRetry.title")}
+      {t.rich("app.demos.lab.title")}
+    </p>
+  );
+}
+`,
+      reported: [
+        ["owner", 11],
+        ["owner", 12],
+      ],
+    },
+    {
+      name: "接收 Translator 的函数按所在文件的 owner 查",
+      file: "features/demo-faults/api/update-demo-faults.ts",
+      source: `import type { Translator } from "@/lib/i18n/translator";
+
+export const probe = (t: Translator, key: string) => [
+  t("demo-faults.faultPanel.updateFailed"),
+  t("demo-task.queryState.loading"),
+  t(key),
+];
+`,
+      reported: [
+        ["owner", 5],
+        ["dynamic", 6],
+      ],
+    },
+    {
+      name: "app 读 app 的 key，components 读 ui 的 key",
+      file: "components/locale-switcher/index.tsx",
+      source: `"use client";
+
+import { useTranslations } from "next-intl";
+
+export function Probe() {
+  const t = useTranslations();
+  return <p>{t("ui.localeSwitcher.label")}{t("app.demos.lab.title")}</p>;
+}
+`,
+      reported: [["owner", 7]],
+    },
+    {
+      name: "没有 owner 的文件不读文案",
+      file: "lib/fetch.ts",
+      source: `import { getTranslations } from "next-intl/server";
+
+export async function probe() {
+  const t = await getTranslations();
+  return t("app.demos.lab.title");
+}
+`,
+      reported: [["noOwner", 5]],
+    },
+  ]) {
+    test(name, async () => {
+      expect(await keyProblems(file, source)).toStrictEqual(reported);
     });
   }
 });

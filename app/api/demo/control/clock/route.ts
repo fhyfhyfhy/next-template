@@ -1,10 +1,8 @@
 import { z } from "zod";
 
-import {
-  demoRoute,
-  readJsonBody,
-  setClockPaused,
-} from "@/features/demo-task/server";
+import { demoRoute } from "@/features/demo-faults/server";
+import { setClockPaused } from "@/features/demo-task/server";
+import { readJsonBody } from "@/lib/route-handler";
 
 /** 暂停或恢复 Demo generator 的自动推进，请求体为 `{ paused }`。 */
 export const POST = demoRoute(async (request) => {

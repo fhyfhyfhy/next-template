@@ -2,8 +2,9 @@
 
 import { updateTag } from "next/cache";
 
+import { assertDemoBackendEnabled } from "@/lib/demo-backend";
+
 import { TASK_LIST_TAG } from "../constants/cache-tags";
-import { assertDemoBackendEnabled } from "../server/connection";
 
 /**
  * 只让任务列表的服务端缓存失效，不写数据。给 Demo generator 推进的任务状态用：它不经过 Server Action，

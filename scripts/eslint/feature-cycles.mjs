@@ -146,6 +146,30 @@ function findPath(graph, start, end) {
 }
 
 /**
+ * 按磁盘内容读出 features/ 下每个 feature 实际依赖的 feature（含类型引用），供依赖图检查和代码对照。
+ * 每次调用重新扫描，不缓存：只在 lint docs/features.md 时调用一次。
+ */
+export function featureDependencies(projectRoot) {
+  const root = resolve(projectRoot);
+  const resolveImport = createProjectResolver(root);
+  const readStat = (path) => statSync(path, { throwIfNoEntry: false });
+  const graph = new Map();
+  for (const file of sourceFiles(join(root, "features"), new Map(), readStat)) {
+    const references = moduleReferences(file, readFileSync(file, "utf8"));
+    for (const { from, to } of crossFeatureReferences(
+      root,
+      file,
+      references,
+      resolveImport,
+    )) {
+      if (!graph.has(from)) graph.set(from, new Set());
+      graph.get(from).add(to);
+    }
+  }
+  return graph;
+}
+
+/**
  * 创建当前文件的 feature 循环检查器。filename 使用绝对路径，sourceText 可为未保存内容。
  * 返回参与循环的引用及循环路径，行列从 1 开始；其他文件以磁盘内容为准。
  */

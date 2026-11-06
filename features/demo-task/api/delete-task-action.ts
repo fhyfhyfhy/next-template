@@ -3,10 +3,10 @@
 import { updateTag } from "next/cache";
 import { z } from "zod";
 
+import { assertDemoBackendEnabled } from "@/lib/demo-backend";
 import { DomainError } from "@/lib/domain-error";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
-import { assertDemoBackendEnabled } from "../server/connection";
 import { deleteTask } from "../server/tasks";
 
 const inputSchema = z.object({ taskId: z.string().min(1) });

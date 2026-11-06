@@ -16,7 +16,7 @@ import { TASK_NOT_RETRYABLE } from "../../constants/error-codes";
 import { DeleteTaskDialog } from "../delete-task-dialog";
 
 export function TaskActions({ task }: { task: Task }) {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const retry = useMutation(retryTaskMutationOptions(t, task.id));
   const [downloading, setDownloading] = useState(false);
   return (
@@ -29,7 +29,7 @@ export function TaskActions({ task }: { task: Task }) {
             onClick={() => retry.mutate()}
           >
             <IconRefresh aria-hidden />
-            {t("taskActions.retry")}
+            {t("demo-task.taskActions.retry")}
           </Button>
         )}
         {task.status === "done" && (
@@ -42,21 +42,21 @@ export function TaskActions({ task }: { task: Task }) {
                 saveFile(await getTaskModel(task.id), `${task.name}.glb`);
               } catch {
                 // 下载不经过 React Query，失败提示由这里负责，不占用全局请求错误的 toast ID。
-                toast.error(t("taskActions.downloadFailed"));
+                toast.error(t("demo-task.taskActions.downloadFailed"));
               } finally {
                 setDownloading(false);
               }
             }}
           >
             <IconDownload aria-hidden />
-            {t("taskActions.download")}
+            {t("demo-task.taskActions.download")}
           </Button>
         )}
         <DeleteTaskDialog taskId={task.id} taskName={task.name} />
       </div>
       {isActionError(retry.error, TASK_NOT_RETRYABLE) && (
         <p role="status" className="text-sm text-muted-foreground">
-          {t("taskActions.notRetryable")}
+          {t("demo-task.taskActions.notRetryable")}
         </p>
       )}
     </div>

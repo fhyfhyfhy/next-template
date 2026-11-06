@@ -50,6 +50,10 @@ The five triage roles use their default label names. See `docs/agents/triage-lab
 
 Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+### Code review
+
+Project reviews that the `code-review` skill runs beside its Standards and Spec axes. See `docs/agents/code-review.md`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

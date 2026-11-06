@@ -19,9 +19,9 @@ import {
   buildHydrationState,
   firstPageData,
   getCachedFeedSnapshot,
-  isDemoBackendEnabled,
   listTasks,
 } from "@/features/demo-task/server";
+import { isDemoBackendEnabled } from "@/lib/demo-backend";
 import {
   dehydrate,
   HydrationBoundary,
@@ -30,17 +30,17 @@ import {
 } from "@/lib/react-query";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("app");
-  return { title: t("demos.feed.metadataTitle") };
+  const t = await getTranslations();
+  return { title: t("app.demos.feed.metadataTitle") };
 }
 
 export default function FeedPage() {
-  const t = useTranslations("app");
+  const t = useTranslations();
   return (
     <>
-      <PageIntro title={t("demos.feed.title")}>
-        <p>{t("demos.feed.intro.loading")}</p>
-        <p>{t("demos.feed.intro.favorites")}</p>
+      <PageIntro title={t("app.demos.feed.title")}>
+        <p>{t("app.demos.feed.intro.loading")}</p>
+        <p>{t("app.demos.feed.intro.favorites")}</p>
       </PageIntro>
       <div className="grid gap-8 lg:grid-cols-[1fr_240px]">
         {/* FeedHydration 要等缓存的快照：HTML 里先是骨架屏，第一页作为片段写在同一份 HTML 后面，由内联脚本换上，不用等应用的 JS。 */}

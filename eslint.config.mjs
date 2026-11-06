@@ -28,6 +28,8 @@ import { TAILWIND_PALETTES } from "./scripts/eslint/tailwind-palettes.mjs";
 import writingStylePlugin from "./scripts/eslint/writing-style-plugin.mjs";
 
 const PROJECT_ROOT = import.meta.dirname;
+// 源码和 docs/features.md 两组配置共用一个实例：同名插件在两个配置对象里必须是同一个对象。
+const architecturePlugin = createArchitecturePlugin(PROJECT_ROOT);
 const extensionGlob = `{${SOURCE_EXTENSIONS.join(",")}}`;
 const moduleExtensions = SOURCE_EXTENSIONS.map((extension) => `.${extension}`);
 
@@ -113,19 +115,24 @@ const DATE_TIME_FORMATTING = [
     message: DATE_TIME_MESSAGE,
   },
 ];
-// 翻译函数只按 owner 的 namespace 取，key 写完整路径：一个 feature 只有一种 t，组件、options 工厂和
-// schema 工厂之间可以直接传递。
+// 翻译函数不按 namespace 取，key 写完整路径：整个 app 只有一种 t，可以传给任何 owner 的 options 工厂和
+// schema 工厂，它们读自己的文案。key 归谁由 i18n/message-keys 检查。
 const TRANSLATOR_NAMESPACE_MESSAGE =
-  'Pass only the owner\'s namespace, such as "demo-task", and write the full key path at each call, such as t("comments.createFailed"). See .claude/rules/i18n.md.';
+  "Call useTranslations() and getTranslations() without a namespace, and write each key's full path, starting with the namespace of the file's owner, such as t(\"demo-task.comments.createFailed\"). See .claude/rules/i18n.md.";
 const TRANSLATOR_NAMESPACE = [
   {
     selector:
-      "CallExpression[callee.name=/^(useTranslations|getTranslations)$/] > Literal[value=/\\./]",
+      "CallExpression[callee.name='useTranslations'][arguments.length>0]",
     message: TRANSLATOR_NAMESPACE_MESSAGE,
   },
   {
     selector:
-      "CallExpression[callee.name='getTranslations'] > ObjectExpression > Property[key.name='namespace'] > Literal[value=/\\./]",
+      "CallExpression[callee.name='getTranslations'] > :matches(Literal, TemplateLiteral)",
+    message: TRANSLATOR_NAMESPACE_MESSAGE,
+  },
+  {
+    selector:
+      "CallExpression[callee.name='getTranslations'] > ObjectExpression > Property[key.name='namespace']",
     message: TRANSLATOR_NAMESPACE_MESSAGE,
   },
 ];
@@ -320,7 +327,7 @@ const eslintConfig = defineConfig([
     settings: { "import/ignore": ["node_modules"] },
     plugins: {
       "simple-import-sort": simpleImportSort,
-      architecture: createArchitecturePlugin(PROJECT_ROOT),
+      architecture: architecturePlugin,
       naming: createNamingPlugin(PROJECT_ROOT),
       "data-flow": createDataFlowPlugin(PROJECT_ROOT),
       "@tanstack/query": tanstackQueryPlugin,
@@ -333,6 +340,8 @@ const eslintConfig = defineConfig([
       "architecture/feature-imports": "error",
       // 按 feature 聚合依赖（含类型引用），捕获文件图无环但 feature 之间互相依赖的情况。
       "architecture/no-feature-cycle": "error",
+      // feature 之间的每个依赖（含类型引用）都要在 docs/features.md 的依赖图里有对应的边。
+      "architecture/feature-dependencies": "error",
       // 组件目录内用相对路径，对外只开放 index 入口，避免调用方依赖私有实现路径。
       "architecture/component-imports": "error",
       // 每个组件目录只保留一个实现入口，避免多个 index 扩展名产生解析歧义；允许声明文件并存。
@@ -429,7 +438,8 @@ const eslintConfig = defineConfig([
   // ---- i18n（.claude/rules/i18n.md）----
   // - i18next/no-literal-string：用户看得到的文案放进 messages/，用 t() 渲染。
   // - i18n/client-namespaces：每个 ClientMessages 下发的 namespace 和它包着的 Client Component 用到的一致。
-  // - TRANSLATOR_NAMESPACE：翻译函数只按 owner 的 namespace 取，随 RESTRICTED_SYNTAX 生效，没有例外。
+  // - i18n/message-keys：每个 key 的第一段是文件 owner 的 namespace。
+  // - TRANSLATOR_NAMESPACE：翻译函数不按 namespace 取，随 RESTRICTED_SYNTAX 生效，没有例外。
   // - INTL_PROVIDER_RESTRICTION、DATE_TIME_FORMATTING：前面随 RESTRICTED_IMPORTS、RESTRICTED_SYNTAX 生效，
   //   这里只放它们的例外，所以这一段要排在设置那两条规则的配置之后。
   {
@@ -490,6 +500,7 @@ const eslintConfig = defineConfig([
     rules: {
       // --fix 改写列表。分析整个项目，一个文件的结果取决于别的文件，lint 不能加 --cache。
       "i18n/client-namespaces": "error",
+      "i18n/message-keys": "error",
     },
   },
   {
@@ -629,6 +640,13 @@ const eslintConfig = defineConfig([
         },
       ],
     },
+  },
+  {
+    // feature 依赖图和代码对照：图里的节点对应 features/ 下的目录，每条边在代码里都有依赖。
+    files: ["docs/features.md"],
+    plugins: { markdown, architecture: architecturePlugin },
+    language: "markdown/gfm",
+    rules: { "architecture/feature-graph": "error" },
   },
   {
     files: AGENT_INSTRUCTIONS,

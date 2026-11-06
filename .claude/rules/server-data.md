@@ -55,4 +55,4 @@ Test each module in `server/` against a real database, in a `*.db.test.ts` file 
 
 ## Demo-only parts
 
-`demoOperation` in `features/demo-task/server/demo-controls.ts` adds the fault lab's latency, injected faults, and call log around the Demo's operations, and `features/demo-task/server/lab.ts` holds the fault lab's control functions. Project data layers need neither.
+`demoOperation` in `features/demo-faults/server/operations.ts` adds the fault lab's latency, injected faults, and call log around the Demo's operations, which `taskOperation` in `features/demo-task/server/task-operation.ts` applies to demo-task's; `features/demo-faults/server/faults.ts` holds the fault lab's control functions. Project data layers need neither.

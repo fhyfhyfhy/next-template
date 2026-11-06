@@ -10,16 +10,16 @@ import {
 } from "@/features/demo-task";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("app");
-  return { title: t("demos.recent.metadataTitle") };
+  const t = await getTranslations();
+  return { title: t("app.demos.recent.metadataTitle") };
 }
 
 export default function RecentPage() {
-  const t = useTranslations("app");
+  const t = useTranslations();
   return (
     <>
-      <PageIntro title={t("demos.recent.title")}>
-        <p>{t("demos.recent.intro")}</p>
+      <PageIntro title={t("app.demos.recent.title")}>
+        <p>{t("app.demos.recent.intro")}</p>
       </PageIntro>
       <Suspense fallback={<RecentTasksLoading />}>
         <RecentTasks />

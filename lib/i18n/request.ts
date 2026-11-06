@@ -11,7 +11,7 @@ const TIME_ZONE = "Asia/Shanghai";
 
 /**
  * next-intl 在服务端取 locale、文案和格式化配置时调用（next.config.ts 的 createNextIntlPlugin 指向这里）。
- * 显式传入的 locale（`getTranslations({ locale, namespace })`）不支持时抛错：Server Action 和 Route Handler
+ * 显式传入的 locale（`getTranslations({ locale })`）不支持时抛错：Server Action 和 Route Handler
  * 读不到 root param，用的是浏览器传来的值，类型约束不了它。没有传入时读 `[locale]` root param。
  */
 export default getRequestConfig(async ({ locale }) => {

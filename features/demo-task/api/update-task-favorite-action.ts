@@ -3,8 +3,9 @@
 import { updateTag } from "next/cache";
 import { z } from "zod";
 
+import { assertDemoBackendEnabled } from "@/lib/demo-backend";
+
 import { TASK_LIST_TAG } from "../constants/cache-tags";
-import { assertDemoBackendEnabled } from "../server/connection";
 import { setTaskFavorite } from "../server/tasks";
 import type { Task } from "../types/task";
 

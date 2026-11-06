@@ -48,15 +48,20 @@ export default function Layout({ children }: { children: ReactNode }) {
 }
 `;
 
-// Client Component：用 namespace 渲染一段文字，extra 放额外的 import 或代码。
+// Client Component：渲染 namespace 下的一段文字，extra 放额外的 import 或代码。它用到的 namespace 由文件所在的
+// owner 决定（features/<name> 是 <name>，app/ 是 app，components/ 是 ui），所以 namespace 要和放它的目录一致。
 const CLIENT = (name, namespace, extra = "") => `"use client";
 import { useTranslations } from "next-intl";
 ${extra}
 export function ${name}() {
-  const t = useTranslations("${namespace}");
-  return <p>{t("title")}</p>;
+  const t = useTranslations();
+  return <p>{t("${namespace}.title")}</p>;
 }
 `;
+
+// 没写指令的组件：被谁引入就在哪一端渲染。
+const SHARED = (name, namespace, extra = "") =>
+  CLIENT(name, namespace, extra).replace('"use client";\n', "");
 
 const PAGE = (imports, jsx) => `${imports}
 export default function Page() {
@@ -138,17 +143,41 @@ async function fix(root) {
 
 const read = (root, file) => readFileSync(join(root, file), "utf8");
 
-test("每层发全了就不报错；Server Component 里用到的 namespace 不需要下发", async () => {
+test("每层发全了就不报错；Server Component 里读的文案不需要下发", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(
-      `import { Greeting } from "@/components/greeting";
-import { useTranslations } from "next-intl";
-function Server() { const t = useTranslations("server-only"); return <p>{t("x")}</p>; }`,
+      `import { Greeting } from "./greeting";
+import { Server } from "@/features/server-only/server";`,
       "<Greeting /><Server />",
     ),
-    "components/greeting.tsx": CLIENT("Greeting", "app.greeting"),
+    "app/greeting.tsx": CLIENT("Greeting", "app"),
+    "features/server-only/server.tsx": SHARED("Server", "server-only"),
   });
   expect(await lint(root)).toStrictEqual({});
+});
+
+test("namespace 按读文案的模块所在的 owner 算：features/<name>、app、components 对应 ui；接收 Translator 的函数也算读文案", async () => {
+  const root = fixture({
+    "app/page.tsx": PAGE(`import { Panel } from "./panel";`, "<Panel />"),
+    "app/panel.tsx": CLIENT(
+      "Panel",
+      "app",
+      `import { Button } from "@/components/button";
+import { Badge } from "@/features/badge/badge";
+import { saveOptions } from "@/features/save/options";
+import { formatPrice } from "@/features/price/format";
+export const options = saveOptions;
+export const price = formatPrice;`,
+    ).replace("<p>", "<p><Button /><Badge />"),
+    "components/button.tsx": CLIENT("Button", "ui"),
+    "features/badge/badge.tsx": `export function Badge() { return <span />; }`,
+    "features/save/options.ts": `import type { Translator } from "@/lib/i18n/translator";
+export const saveOptions = (t: Translator) => ({ errorMessage: t("save.failed") });`,
+    "features/price/format.ts": `export const formatPrice = (value: number) => String(value);`,
+  });
+  expect(await lint(root)).toStrictEqual({
+    "app/layout.tsx": ["missing save", "missing ui"],
+  });
 });
 
 test("缺的 namespace 报在包着用到它的组件的那层 ClientMessages 上，--fix 补进那一层", async () => {
@@ -156,13 +185,12 @@ test("缺的 namespace 报在包着用到它的组件的那层 ClientMessages �
     "app/(shop)/layout.tsx": LAYOUT(["shop"]),
     "app/(shop)/cart/page.tsx": PAGE(
       `import { Cart } from "@/features/cart/cart";
-import { Shop } from "@/features/cart/shop";`,
+import { Shop } from "@/features/shop/shop";`,
       "<Cart /><Shop />",
     ),
     "features/cart/cart.tsx": CLIENT("Cart", "cart"),
-    "features/cart/shop.tsx": CLIENT("Shop", "shop"),
+    "features/shop/shop.tsx": CLIENT("Shop", "shop"),
     "app/page.tsx": PAGE("", ""),
-    "components/greeting.tsx": null,
   });
   expect(await lint(root)).toStrictEqual({
     "app/layout.tsx": ["unused app"],
@@ -180,11 +208,11 @@ test("外层已经发过的和没人用的 namespace 报错，--fix 删掉", asy
   const root = fixture({
     "app/(shop)/layout.tsx": LAYOUT(["app", "shop", "shop", "unused"]),
     "app/(shop)/page.tsx": PAGE(
-      `import { Shop } from "./shop";
+      `import { Shop } from "@/features/shop/shop";
 import { Header } from "./header";`,
       "<Shop /><Header />",
     ),
-    "app/(shop)/shop.tsx": CLIENT("Shop", "shop"),
+    "features/shop/shop.tsx": CLIENT("Shop", "shop"),
     "app/(shop)/header.tsx": CLIENT("Header", "app"),
   });
   expect(await lint(root)).toStrictEqual({
@@ -203,11 +231,11 @@ import { Header } from "./header";`,
 test("没写指令的组件：被 Server 文件引入时在服务端渲染，被 Client 文件引入时才要下发", async () => {
   const server = fixture({
     "app/page.tsx": PAGE(
-      `import { Shared } from "./shared";
+      `import { Shared } from "@/features/shared/shared";
 import { Greeting } from "./greeting";`,
       "<Shared /><Greeting />",
     ),
-    "app/shared.tsx": CLIENT("Shared", "shared").replace('"use client";', ""),
+    "features/shared/shared.tsx": SHARED("Shared", "shared"),
     "app/greeting.tsx": CLIENT("Greeting", "app"),
   });
   expect(await lint(server)).toStrictEqual({});
@@ -217,9 +245,9 @@ import { Greeting } from "./greeting";`,
     "app/panel.tsx": CLIENT(
       "Panel",
       "app",
-      'import { Shared } from "./shared";',
+      'import { Shared } from "@/features/shared/shared";',
     ).replace("<p>", "<p><Shared />"),
-    "app/shared.tsx": CLIENT("Shared", "shared").replace('"use client";', ""),
+    "features/shared/shared.tsx": SHARED("Shared", "shared"),
   });
   expect(await lint(client)).toStrictEqual({
     "app/layout.tsx": ["missing shared"],
@@ -231,19 +259,19 @@ test("动态 import 都算：next/dynamic、React.lazy、事件处理里的 impo
     "app/page.tsx": PAGE(
       `import dynamic from "next/dynamic";
 import { Panel } from "./panel";
-const Chart = dynamic(() => import("./chart"));`,
+const Chart = dynamic(() => import("@/features/chart/chart"));`,
       "<Chart /><Panel />",
     ),
-    "app/chart.tsx": CLIENT("Chart", "chart"),
+    "features/chart/chart.tsx": CLIENT("Chart", "chart"),
     "app/panel.tsx": CLIENT(
       "Panel",
       "app",
       `import { lazy } from "react";
-const Editor = lazy(() => import("./editor"));
-export async function load() { return import("./exporter"); }`,
+const Editor = lazy(() => import("@/features/editor/editor"));
+export async function load() { return import("@/features/exporter/exporter"); }`,
     ),
-    "app/editor.tsx": CLIENT("Editor", "editor"),
-    "app/exporter.tsx": CLIENT("Exporter", "exporter"),
+    "features/editor/editor.tsx": CLIENT("Editor", "editor"),
+    "features/exporter/exporter.tsx": CLIENT("Exporter", "exporter"),
   });
   expect(await lint(root)).toStrictEqual({
     "app/layout.tsx": ["missing chart", "missing editor", "missing exporter"],
@@ -256,11 +284,11 @@ test("带变量的动态 import 按 bundler 的做法展开成目录下所有匹
     "app/widgets.tsx": CLIENT(
       "Widgets",
       "app",
-      "export const load = (name: string) => import(`./widgets/${name}.tsx`);",
+      "export const load = (name: string) => import(`@/features/${name}.tsx`);",
     ),
-    "app/widgets/a.tsx": CLIENT("A", "a"),
-    "app/widgets/nested/b.tsx": CLIENT("B", "b"),
-    "app/widgets/c.ts": "export const c = 1;",
+    "features/a/widget.tsx": CLIENT("A", "a"),
+    "features/b/nested/widget.tsx": CLIENT("B", "b"),
+    "features/c/widget.ts": "export const c = 1;",
   });
   expect(await lint(root)).toStrictEqual({
     "app/layout.tsx": ["missing a", "missing b"],
@@ -276,20 +304,19 @@ import { useTranslations } from "next-intl";
 import * as intl from "next-intl";
 import { useExtracted } from "next-intl";
 import Doc from "./doc.mdx";
-export function Bad({ namespace, name }: { namespace: "app"; name: string }) {
-  const a = useTranslations(namespace);
+export function Bad({ name }: { name: string }) {
   const b = useTranslations();
-  const c = intl.useTranslations(namespace);
+  const c = intl.useTranslations();
   const alias = useTranslations;
   const { useTranslations: useT } = intl;
-  const d = intl["useTranslations"]("app");
+  const d = intl["useTranslations"]();
   void import(name);
   void import(\`\${name}/x\`);
   void require(name);
   void import("next-intl");
   void require.context("./widgets", true);
   void import.meta.glob("./widgets/*.tsx");
-  return <p>{a("x")}{b("app.x")}{c("x")}{d("x")}{String(alias)}{String(useT)}</p>;
+  return <p>{b("ui.x")}{c("ui.x")}{d("ui.x")}{String(alias)}{String(useT)}</p>;
 }
 `,
     "components/reexport.ts": `export { useTranslations } from "next-intl";`,
@@ -301,9 +328,6 @@ export function Bad({ namespace, name }: { namespace: "app"; name: string }) {
     "components/bad.tsx": [
       "unsupported",
       "mdx",
-      "literalNamespace",
-      "missingNamespace",
-      "literalNamespace",
       "indirectUse",
       "indirectUse",
       "indirectUse",
@@ -323,10 +347,10 @@ export function Bad({ namespace, name }: { namespace: "app"; name: string }) {
 test("从 use-intl 导入的 useTranslations 同样算", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(
-      `import { Greeting } from "./greeting";`,
+      `import { Greeting } from "@/features/greeting/greeting";`,
       "<Greeting />",
     ),
-    "app/greeting.tsx": CLIENT("Greeting", "greeting").replace(
+    "features/greeting/greeting.tsx": CLIENT("Greeting", "greeting").replace(
       'from "next-intl"',
       'from "use-intl"',
     ),
@@ -336,48 +360,49 @@ test("从 use-intl 导入的 useTranslations 同样算", async () => {
   });
 });
 
-test("经过 feature 入口时只沿用到的导出走，export * 也一样", async () => {
+test("经过入口时只沿用到的导出走，export * 也一样", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(
       `import { A } from "@/features/named";
 import { C } from "@/features/star";`,
       "<A /><C />",
     ),
-    "features/named/index.ts": `export { A } from "./a";
-export { B } from "./b";`,
-    "features/named/a.tsx": CLIENT("A", "a"),
-    "features/named/b.tsx": CLIENT("B", "b"),
-    "features/star/index.ts": `export * from "./c";
-export * from "./d";`,
-    "features/star/c.tsx": CLIENT("C", "c"),
-    "features/star/d.tsx": CLIENT("D", "d"),
+    "features/named/index.ts": `export { A } from "@/features/a/a";
+export { B } from "@/features/b/b";`,
+    "features/a/a.tsx": CLIENT("A", "a"),
+    "features/b/b.tsx": CLIENT("B", "b"),
+    "features/star/index.ts": `export * from "@/features/c/c";
+export * from "@/features/d/d";`,
+    "features/c/c.tsx": CLIENT("C", "c"),
+    "features/d/d.tsx": CLIENT("D", "d"),
   });
   expect(await lint(root)).toStrictEqual({
     "app/layout.tsx": ["unused app", "missing a", "missing c"],
   });
 });
 
-test("Client 端调用的 Server Action 按服务端继续走：它自己用的文案不算，它返回的 Client Component 算；类型 import 不往下走", async () => {
+test("Client 端调用的 Server Action 按服务端继续走：它自己读的文案不算，它返回的 Client Component 算；类型 import 不往下走", async () => {
   const root = fixture({
     "app/page.tsx": PAGE(`import { Form } from "./form";`, "<Form />"),
     "app/form.tsx": CLIENT(
       "Form",
       "app",
-      `import { save } from "./actions";
-import type { Props } from "./typed";
-import { type Other } from "./typed-too";
+      `import { save } from "@/features/action/actions";
+import type { Props } from "@/features/typed/typed";
+import { type Other } from "@/features/typed-too/typed-too";
 export const action = save;`,
     ),
-    "app/actions.tsx": `"use server";
+    "features/action/actions.tsx": `"use server";
 import { useTranslations } from "next-intl";
-import { Toast } from "./toast";
+import { Toast } from "@/features/toast/toast";
 export async function save() {
-  useTranslations("action");
+  useTranslations();
   return <Toast />;
 }`,
-    "app/toast.tsx": CLIENT("Toast", "toast"),
-    "app/typed.tsx": CLIENT("Typed", "typed") + "export type Props = {};",
-    "app/typed-too.tsx":
+    "features/toast/toast.tsx": CLIENT("Toast", "toast"),
+    "features/typed/typed.tsx":
+      CLIENT("Typed", "typed") + "export type Props = {};",
+    "features/typed-too/typed-too.tsx":
       CLIENT("TypedToo", "typed-too") + "export type Other = {};",
   });
   expect(await lint(root)).toStrictEqual({
@@ -388,8 +413,8 @@ export async function save() {
 test("ClientMessages 只管元素里面渲染的东西；同文件的组件按它被渲染的位置算", async () => {
   const root = fixture({
     "app/page.tsx": `import { ClientMessages } from "@/lib/i18n/client-messages";
-import { Inside } from "./inside";
-import { Outside } from "./outside";
+import { Inside } from "@/features/inside/inside";
+import { Outside } from "@/features/outside/outside";
 function Panel() { return <Inside />; }
 export default function Page() {
   return (
@@ -400,8 +425,8 @@ export default function Page() {
   );
 }
 `,
-    "app/inside.tsx": CLIENT("Inside", "inside"),
-    "app/outside.tsx": CLIENT("Outside", "outside"),
+    "features/inside/inside.tsx": CLIENT("Inside", "inside"),
+    "features/outside/outside.tsx": CLIENT("Outside", "outside"),
   });
   expect(await lint(root)).toStrictEqual({
     "app/layout.tsx": ["unused app", "missing outside"],
@@ -415,14 +440,14 @@ test("layout 把 children 渲染在 ClientMessages 外面时报错，不管 prop
     wrap = (body) => body,
   ) => `import type { ReactNode } from "react";
 import { ClientMessages } from "@/lib/i18n/client-messages";
-import { Header } from "@/components/header";
+import { Header } from "@/features/shop/header";
 const withTracking = <P,>(component: (props: P) => ReactNode) => component;
 export default ${wrap(`function Layout(${signature}) {
   return <><ClientMessages namespaces={["shop"]}><Header /></ClientMessages>${children}</>;
 }`)}
 `;
   const root = fixture({
-    "components/header.tsx": CLIENT("Header", "shop"),
+    "features/shop/header.tsx": CLIENT("Header", "shop"),
     "app/(destructured)/layout.tsx": layout(
       "{ children }: { children: ReactNode }",
       "{children}",
@@ -457,12 +482,12 @@ export default ${wrap(`function Layout(${signature}) {
 test("根 layout 要用 RootClientMessages，其他地方不能用；ClientMessages 只能放在 layout、template、page", async () => {
   const root = fixture({
     "app/layout.tsx": `import type { ReactNode } from "react";
-import { Theme } from "./theme";
+import { Theme } from "@/features/theme/theme";
 export default function RootLayout({ children }: { children: ReactNode }) {
   return <html><body><Theme />{children}</body></html>;
 }
 `,
-    "app/theme.tsx": CLIENT("Theme", "theme"),
+    "features/theme/theme.tsx": CLIENT("Theme", "theme"),
     "app/(shop)/layout.tsx": `import type { ReactNode } from "react";
 import { RootClientMessages } from "@/lib/i18n/client-messages";
 export default function Layout({ children }: { children: ReactNode }) {
@@ -490,15 +515,19 @@ const list = ["shop"] as const;`,
   });
 });
 
-test("error.tsx 这类 Client 文件的 namespace 算在所在 layout 上；global-error 在所有 ClientMessages 外面", async () => {
+test("error.tsx 这类 Client 文件渲染的 namespace 算在所在 layout 上；global-error 在所有 ClientMessages 外面", async () => {
   const root = fixture({
     "app/(shop)/layout.tsx": LAYOUT(["shop"]),
-    "app/(shop)/page.tsx": PAGE(`import { Shop } from "./shop";`, "<Shop />"),
-    "app/(shop)/shop.tsx": CLIENT("Shop", "shop"),
-    "app/(shop)/error.tsx": CLIENT("ShopError", "shop-error").replace(
-      "export function ShopError",
-      "export default function ShopError",
+    "app/(shop)/page.tsx": PAGE(
+      `import { Shop } from "@/features/shop/shop";`,
+      "<Shop />",
     ),
+    "features/shop/shop.tsx": CLIENT("Shop", "shop"),
+    "app/(shop)/error.tsx": `"use client";
+import { ShopError } from "@/features/shop-error/shop-error";
+export default function Error() { return <ShopError />; }
+`,
+    "features/shop-error/shop-error.tsx": CLIENT("ShopError", "shop-error"),
     "app/global-error.tsx": CLIENT("GlobalError", "app").replace(
       "export function GlobalError",
       "export default function GlobalError",
@@ -525,16 +554,16 @@ export default function Layout({ children, modal }: { children: ReactNode; modal
 `,
     "app/(shop)/template.tsx": LAYOUT(["cart"]).replace("Layout", "Template"),
     "app/(shop)/page.tsx": PAGE(
-      `import { Cart } from "./cart";
-import { Shop } from "./shop";`,
+      `import { Cart } from "@/features/cart/cart";
+import { Shop } from "@/features/shop/shop";`,
       "<Cart /><Shop />",
     ),
     "app/(shop)/@modal/page.tsx": PAGE(
-      `import { Cart } from "../cart";`,
+      `import { Cart } from "@/features/cart/cart";`,
       "<Cart />",
     ),
-    "app/(shop)/cart.tsx": CLIENT("Cart", "cart"),
-    "app/(shop)/shop.tsx": CLIENT("Shop", "shop"),
+    "features/cart/cart.tsx": CLIENT("Cart", "cart"),
+    "features/shop/shop.tsx": CLIENT("Shop", "shop"),
     "app/page.tsx": PAGE(
       `import { Greeting } from "./greeting";`,
       "<Greeting />",
@@ -544,7 +573,7 @@ import { Shop } from "./shop";`,
   expect(await lint(root)).toStrictEqual({});
 });
 
-test("workspace 包沿真实路径继续分析，第三方包不分析；只有类型声明、没有 JS 的包报错", async () => {
+test("workspace 包和第三方包里的模块不属于任何 owner，不算 namespace；只有类型声明、没有 JS 的包报错", async () => {
   const builtPackage = (name) =>
     JSON.stringify({
       name,
@@ -569,7 +598,7 @@ test("workspace 包沿真实路径继续分析，第三方包不分析；只有�
     "packages/built/dist/index.d.ts": "export declare function Built(): null;",
     "packages/built/dist/index.js": `"use client";
 import { useTranslations } from "next-intl";
-export function Built() { return useTranslations("built")("x"); }`,
+export function Built() { return useTranslations()("built.x"); }`,
     "packages/unbuilt/package.json": builtPackage("@acme/unbuilt"),
     "packages/unbuilt/dist/index.d.ts":
       "export declare function Unbuilt(): null;",
@@ -579,7 +608,7 @@ export function Built() { return useTranslations("built")("x"); }`,
     }),
     "node_modules/vendor/index.js": `"use client";
 import { useTranslations } from "next-intl";
-export function Vendor() { return useTranslations("vendor")("x"); }`,
+export function Vendor() { return useTranslations()("vendor.x"); }`,
     "app/page.tsx": PAGE(
       `import { Button } from "@acme/ui";
 import { Built } from "@acme/built";
@@ -598,30 +627,27 @@ import { Greeting } from "./greeting";`,
       "junction",
     );
   expect(await lint(root)).toStrictEqual({
-    "app/layout.tsx": ["missing built", "missing button", "missing local"],
     "app/page.tsx": ["unresolvedPackage @acme/unbuilt"],
   });
 });
 
 test("package.json imports：Client 端可能选中的分支都跟进去（包括 development），带 * 的 key 按 Node 的规则匹配", async () => {
-  const shared = (name, namespace) =>
-    CLIENT(name, namespace).replace('"use client";', "");
   const root = fixture({
     "package.json": JSON.stringify({
       name: "fixture",
       imports: {
         "#impl": {
-          "react-server": "./lib/impl-server.tsx",
-          development: "./lib/impl-dev.tsx",
-          default: "./lib/impl-browser.tsx",
+          "react-server": "./features/impl-server/impl.tsx",
+          development: "./features/impl-dev/impl.tsx",
+          default: "./features/impl-browser/impl.tsx",
         },
-        "#widgets/*": "./lib/widgets/*.tsx",
+        "#widgets/*": "./features/*/widget.tsx",
       },
     }),
-    "lib/impl-server.tsx": shared("Impl", "impl-server"),
-    "lib/impl-dev.tsx": shared("Impl", "impl-dev"),
-    "lib/impl-browser.tsx": shared("Impl", "impl-browser"),
-    "lib/widgets/star.tsx": shared("Star", "star"),
+    "features/impl-server/impl.tsx": SHARED("Impl", "impl-server"),
+    "features/impl-dev/impl.tsx": SHARED("Impl", "impl-dev"),
+    "features/impl-browser/impl.tsx": SHARED("Impl", "impl-browser"),
+    "features/star/widget.tsx": SHARED("Star", "star"),
     "app/page.tsx": PAGE(`import { Panel } from "./panel";`, "<Panel />"),
     "app/panel.tsx": CLIENT(
       "Panel",
@@ -643,20 +669,25 @@ test("依赖成环时也能走完；src/app 和多个根 layout 都适用", asyn
   const root = fixture({
     "app/layout.tsx": null,
     "src/app/(a)/layout.tsx": ROOT_LAYOUT([]),
-    "src/app/(a)/page.tsx": PAGE(`import { A } from "../../loop/a";`, "<A />"),
+    "src/app/(a)/page.tsx": PAGE(
+      `import { A } from "../../features/a/a";`,
+      "<A />",
+    ),
     "src/app/(b)/layout.tsx": `export default function Layout({ children }: { children: React.ReactNode }) {
   return <html><body>{children}</body></html>;
 }
 `,
     "src/app/(b)/b/page.tsx": PAGE("", ""),
-    "src/loop/a.tsx": CLIENT("A", "a", 'import { B } from "./b";').replace(
-      "<p>",
-      "<p><B />",
-    ),
-    "src/loop/b.tsx": CLIENT("B", "b", 'import { A } from "./a";').replace(
-      "<p>",
-      "<p><A />",
-    ),
+    "src/features/a/a.tsx": CLIENT(
+      "A",
+      "a",
+      'import { B } from "../b/b";',
+    ).replace("<p>", "<p><B />"),
+    "src/features/b/b.tsx": CLIENT(
+      "B",
+      "b",
+      'import { A } from "../a/a";',
+    ).replace("<p>", "<p><A />"),
   });
   expect(await lint(root)).toStrictEqual({
     "src/app/(a)/layout.tsx": ["missing a", "missing b"],
@@ -678,13 +709,18 @@ test("编辑器里未保存的内容参与分析，磁盘上的文件变了结�
   const [unsaved] = await eslint.lintText(
     PAGE(
       `import { Greeting } from "./greeting";
-import { Cart } from "./cart";`,
+import { Cart } from "@/features/cart/cart";`,
       "<Greeting /><Cart />",
     ),
     { filePath: join(root, "app/page.tsx") },
   );
   expect(unsaved.messages).toStrictEqual([]);
-  writeFileSync(join(root, "app/cart.tsx"), CLIENT("Cart", "cart"), "utf8");
+  mkdirSync(join(root, "features/cart"), { recursive: true });
+  writeFileSync(
+    join(root, "features/cart/cart.tsx"),
+    CLIENT("Cart", "cart"),
+    "utf8",
+  );
   const [layout] = await eslint.lintText(read(root, "app/layout.tsx"), {
     filePath: join(root, "app/layout.tsx"),
   });
@@ -693,10 +729,11 @@ import { Cart } from "./cart";`,
 
   writeFileSync(
     join(root, "app/greeting.tsx"),
-    CLIENT("Greeting", "app", 'import { Cart } from "./cart";').replace(
-      "<p>",
-      "<p><Cart />",
-    ),
+    CLIENT(
+      "Greeting",
+      "app",
+      'import { Cart } from "@/features/cart/cart";',
+    ).replace("<p>", "<p><Cart />"),
     "utf8",
   );
   expect(await lint(root, eslint)).toStrictEqual({

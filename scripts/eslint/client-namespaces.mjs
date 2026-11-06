@@ -3,9 +3,11 @@ import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import ts from "typescript";
 
 import { createProjectResolver, SOURCE_EXTENSIONS } from "./imports.mjs";
+import { messageNamespace } from "./message-owner.mjs";
 
 // 检查每个 ClientMessages 发的 namespace 和它包着的 Client Component 实际用到的是否一致，约定见
-// .claude/rules/i18n.md「Reading messages」。拿不准时多算不少算；分析不了的写法直接报错，不悄悄跳过。
+// .claude/rules/i18n.md「Reading messages」。用到的 namespace 是 Client 端可达、读文案的模块的 owner：
+// 一个模块只读它 owner 的文案，由 i18n/message-keys 保证。拿不准时多算不少算；分析不了的写法直接报错，不悄悄跳过。
 
 const ALL = "*";
 const CLIENT = "client";
@@ -16,6 +18,7 @@ const MDX = /\.mdx?$/;
 const CLIENT_MESSAGES_MODULE = "lib/i18n/client-messages";
 // Client 端的 useTranslations 来自这些入口：next-intl 从 use-intl 重新导出。
 const INTL_MODULES = new Set(["next-intl", "use-intl", "use-intl/react"]);
+const TRANSLATOR_MODULE = "@/lib/i18n/translator";
 const IGNORED_DIRECTORIES = new Set(["node_modules", ".git"]);
 // Next 的嵌套顺序是 layout > template > error > loading > not-found > page（文档 project-structure 的
 // Component hierarchy）；forbidden、unauthorized 和 not-found 同级。
@@ -166,6 +169,17 @@ function readTopLevel(context) {
       if (MDX.test(specifier ?? "")) problem(statement, "mdx");
       const at = range(statement.moduleSpecifier);
       const clause = statement.importClause;
+      // 接收 t 的函数（options 工厂、schema 工厂）用 Translator 类型声明参数，它们读的是所在 owner 的文案。
+      if (
+        specifier === TRANSLATOR_MODULE &&
+        clause?.namedBindings &&
+        ts.isNamedImports(clause.namedBindings) &&
+        clause.namedBindings.elements.some(
+          (element) =>
+            (element.propertyName ?? element.name).text === "Translator",
+        )
+      )
+        mod.messageReads.push(at);
       if (!clause) {
         mod.edges.push({ kind: "side-effect", specifier, symbols: ALL, ...at });
         continue;
@@ -348,20 +362,10 @@ function readUsage({ mod, range, problem, intl }) {
       )
         dynamicEdge(node, true);
       else if (isContextLoader(callee)) problem(node, "dynamicImport");
-      else if (isUseTranslations(callee)) {
-        const argument = node.arguments[0];
-        const namespace = stringValue(argument);
-        if (!argument) problem(node, "missingNamespace");
-        else if (namespace === null) problem(argument, "literalNamespace");
-        else
-          mod.namespaces.push({
-            namespace: namespace.split(".")[0],
-            ...range(argument),
-          });
-      }
+      else if (isUseTranslations(callee)) mod.messageReads.push(range(node));
     }
     // 只认直接调用 useTranslations，以及 next-intl 命名空间对象上的属性访问：赋值、解构、传参以后，
-    // 调用处的 namespace 就查不到了。
+    // 就认不出哪个模块读了文案。
     if (ts.isIdentifier(node) && isReference(node)) {
       const { parent } = node;
       const isCallee = (target) =>
@@ -413,7 +417,8 @@ export function parseModule(filename, text) {
     localExports: new Set(),
     exportAliases: new Map(),
     bindings: new Map(),
-    namespaces: [],
+    // 读文案的位置：useTranslations 的调用和 Translator 类型的 import。模块读的都是它 owner 的 namespace。
+    messageReads: [],
     problems: [],
     tags: new Map(),
     elements: [],
@@ -814,9 +819,10 @@ function createModuleGraph({
       const { ownCode, next } = usedEdges(mod, symbols);
       if (ownCode) {
         next.push(...mod.edges);
-        if (context === CLIENT)
-          for (const { namespace } of mod.namespaces)
-            if (!found.has(namespace)) found.set(namespace, file);
+        if (context === CLIENT && mod.messageReads.length) {
+          const namespace = messageNamespace(root, file);
+          if (namespace && !found.has(namespace)) found.set(namespace, file);
+        }
       }
       stack.push(...startStates(file, next, context));
     }

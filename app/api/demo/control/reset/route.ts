@@ -1,10 +1,8 @@
 import { z } from "zod";
 
-import {
-  demoRoute,
-  readJsonBody,
-  resetDemo,
-} from "@/features/demo-task/server";
+import { demoRoute } from "@/features/demo-faults/server";
+import { resetDemo } from "@/features/demo-lab/server";
+import { readJsonBody } from "@/lib/route-handler";
 
 // /api/demo/control/* 是故障实验室和 e2e 用的控制接口，只在 Demo backend 启用时存在；不加默认延迟，也不受注入的故障影响。
 

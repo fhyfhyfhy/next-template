@@ -42,7 +42,7 @@ const fields = [
 export function CreateTaskForm() {
   // 表单没有原生提交的目标：hydration 之前提交会退化成 GET 整页刷新，输入的文字也会在 hydration 后被清空，所以先不可用。
   const hydrated = useHydrated();
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const locale = useLocale();
   const schema = useMemo(() => createTaskInputSchema(t), [t]);
   const createTask = useMutation(createTaskMutationOptions(t, locale));
@@ -59,7 +59,9 @@ export function CreateTaskForm() {
           // 记在 onSubmit 下：改动后重新校验通过时，TanStack Form 会清掉它。
           formApi.setErrorMap({
             onSubmit: {
-              fields: { name: [{ message: t("validation.nameTaken") }] },
+              fields: {
+                name: [{ message: t("demo-task.validation.nameTaken") }],
+              },
             },
           });
         }
@@ -68,7 +70,7 @@ export function CreateTaskForm() {
   });
   return (
     <Form
-      aria-label={t("createTask.formLabel")}
+      aria-label={t("demo-task.createTask.formLabel")}
       className="mb-8 grid gap-3 rounded-panel border border-border bg-card p-4 sm:grid-cols-[1fr_2fr_auto] sm:items-start"
       onSubmit={(event) => {
         event.preventDefault();
@@ -85,10 +87,10 @@ export function CreateTaskForm() {
               dirty={field.state.meta.isDirty}
               touched={field.state.meta.isTouched}
             >
-              <FieldLabel>{t(`createTask.${labelKey}`)}</FieldLabel>
+              <FieldLabel>{t(`demo-task.createTask.${labelKey}`)}</FieldLabel>
               <Input
                 value={field.state.value}
-                placeholder={t(`createTask.${placeholderKey}`)}
+                placeholder={t(`demo-task.createTask.${placeholderKey}`)}
                 onValueChange={(value) => field.handleChange(value)}
                 onBlur={field.handleBlur}
               />
@@ -106,7 +108,9 @@ export function CreateTaskForm() {
             disabled={!hydrated || isSubmitting}
             className="sm:mt-5"
           >
-            {isSubmitting ? t("createTask.submitting") : t("createTask.submit")}
+            {isSubmitting
+              ? t("demo-task.createTask.submitting")
+              : t("demo-task.createTask.submit")}
           </Button>
         )}
       </form.Subscribe>

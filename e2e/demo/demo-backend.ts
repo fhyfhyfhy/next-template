@@ -6,7 +6,7 @@ import { expect, test as base } from "../test";
 // 控制接口和页面在同一个服务上，请求按 playwright.demo.config.ts 的 baseURL 发出；那个服务用 e2e 数据集，
 // 不会动到开着的 demo:dev 的数据。
 
-/** 故障配置，字段含义见 features/demo-task/types/demo-fault.ts；没写的字段按"不生效"补齐。 */
+/** 故障配置，字段含义见 features/demo-faults/types/demo-fault.ts；没写的字段按"不生效"补齐。 */
 export interface DemoFaultInput {
   /** 数据层操作名，比如 `task.get`、`comment.create`。 */
   operation: string;

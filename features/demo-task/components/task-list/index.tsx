@@ -22,7 +22,7 @@ interface TaskListProps {
 }
 
 export function TaskList({ tasksPromise }: TaskListProps) {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const { items, total } = use(tasksPromise);
   const [searchParams] = useTaskListSearchParams();
   // 翻页从当前选择的页码出发，而不是这次渲染的列表：导航进行中再点，渲染的还是旧页。页码按服务端读取列表时的
@@ -35,11 +35,11 @@ export function TaskList({ tasksPromise }: TaskListProps) {
       {mounted && <TaskListChangeSignal items={items} />}
       {items.length === 0 ? (
         <p className="rounded-panel border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-          {t("taskList.empty")}
+          {t("demo-task.taskList.empty")}
         </p>
       ) : (
         <ul
-          aria-label={t("taskList.label")}
+          aria-label={t("demo-task.taskList.label")}
           className="divide-y divide-border rounded-panel border border-border bg-card"
         >
           {items.map((task) => (
@@ -66,11 +66,11 @@ export function TaskList({ tasksPromise }: TaskListProps) {
         </ul>
       )}
       <nav
-        aria-label={t("taskList.pagination")}
+        aria-label={t("demo-task.taskList.pagination")}
         className="mt-4 flex items-center justify-between text-sm"
       >
         <span className="text-muted-foreground">
-          {t("taskList.total", { total })}
+          {t("demo-task.taskList.total", { total })}
         </span>
         <div className="flex gap-2">
           {page > 1 && (
@@ -78,7 +78,7 @@ export function TaskList({ tasksPromise }: TaskListProps) {
               values={{ page: page - 1 }}
               className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
             >
-              {t("taskList.previousPage")}
+              {t("demo-task.taskList.previousPage")}
             </TaskListLink>
           )}
           {hasNextPage && (
@@ -86,7 +86,7 @@ export function TaskList({ tasksPromise }: TaskListProps) {
               values={{ page: page + 1 }}
               className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
             >
-              {t("taskList.nextPage")}
+              {t("demo-task.taskList.nextPage")}
             </TaskListLink>
           )}
         </div>

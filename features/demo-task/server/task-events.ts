@@ -2,7 +2,8 @@ import "server-only";
 import { type Kysely, sql } from "kysely";
 import { Client } from "pg";
 
-import { demoDatabaseUrl } from "./connection";
+import { demoDatabaseUrl } from "@/lib/demo-backend";
+
 import type { TaskTables } from "./tables";
 
 // 任务的状态或日志变化后，经 Postgres 的 LISTEN/NOTIFY 通知正在推送这个任务日志的 SSE 连接。Demo generator 可能

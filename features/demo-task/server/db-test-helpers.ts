@@ -1,19 +1,38 @@
 import { beforeEach, expect } from "vitest";
 
+import {
+  demoRoute,
+  resetFaults,
+  setDefaultLatency,
+} from "@/features/demo-faults/server";
+import { clearUploads } from "@/features/demo-upload/server";
 import { DomainError } from "@/lib/domain-error";
 
+import { getTaskDb } from "./connection";
 import { advanceTask } from "./generator";
-import { demoRoute } from "./http";
-import { resetDemo, setDefaultLatency } from "./lab";
+import { ensureDemoSeeded, lockDemoData, resetTasks } from "./seed";
 import { streamTaskLogs } from "./task-logs";
 import { getTask } from "./tasks";
 
 // *.db.test.ts 共用的准备和断言。
 
-/** 每个测试从种子数据开始，时钟暂停，默认延迟为 0。在测试文件的顶层调用。 */
+/**
+ * 每个测试从种子数据开始，时钟暂停，默认延迟为 0。在测试文件的顶层调用。
+ * 重置的步骤和 demo-lab 的 `resetDemo` 相同；demo-lab 依赖 demo-task，所以这里不能调用它。
+ */
 export function resetDemoBeforeEach() {
   beforeEach(async () => {
-    await resetDemo({ paused: true });
+    await ensureDemoSeeded();
+    const deleteFiles = await getTaskDb()
+      .transaction()
+      .execute(async (trx) => {
+        await lockDemoData(trx);
+        await resetFaults(trx);
+        const deleteUploadFiles = await clearUploads(trx);
+        await resetTasks(trx, { paused: true });
+        return deleteUploadFiles;
+      });
+    await deleteFiles();
     await setDefaultLatency(0);
   });
 }

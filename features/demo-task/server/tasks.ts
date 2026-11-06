@@ -34,9 +34,9 @@ import type { TaskFilters } from "../types/task-filters";
 import { decodeFeedCursor, encodeFeedCursor } from "../utils/feed-cursor";
 import { containsPattern, requireText } from "../utils/text-rules";
 import { getTaskDb } from "./connection";
-import { demoOperation } from "./demo-controls";
 import type { TasksTable, TaskTables } from "./tables";
 import { notifyTaskChanged } from "./task-events";
+import { taskOperation } from "./task-operation";
 
 type TaskRow = Selectable<TasksTable>;
 
@@ -105,7 +105,7 @@ function nameTaken(name: string) {
 
 /** 任务列表：按状态（可多选）、收藏、prompt 过滤，可排除一个任务，页码从 1 开始，超出范围时返回空列表。 */
 export const listTasks = cache(
-  demoOperation(
+  taskOperation(
     "task.list",
     "read",
     async (filters: TaskFilters): Promise<TaskPage> => {
@@ -167,14 +167,14 @@ export const listTasks = cache(
 );
 
 export const getTask = cache(
-  demoOperation("task.get", "read", async (id: string) =>
+  taskOperation("task.get", "read", async (id: string) =>
     toTask(await findTaskRow(getTaskDb(), id)),
   ),
 );
 
 /** 名称或 prompt 包含关键词的任务，不区分大小写，按创建时间倒序，最多 20 条；关键词为空时返回空列表。 */
 export const searchTasks = cache(
-  demoOperation(
+  taskOperation(
     "task.search",
     "read",
     async (term: string): Promise<Task[]> => {
@@ -201,7 +201,7 @@ export const searchTasks = cache(
  * 插到前面，也不会让后面的页重复或漏掉。游标解析不了时从第一页开始。
  */
 export const listFeed = cache(
-  demoOperation(
+  taskOperation(
     "feed.list",
     "read",
     async (cursor: string | null, limit?: number): Promise<FeedPage> => {
@@ -239,7 +239,7 @@ export const listFeed = cache(
 
 /** done 任务的模型文件的短期下载地址，文件名是任务名；没完成的任务按 `TASK_NOT_DONE` 拒绝。 */
 export const getTaskModelUrl = cache(
-  demoOperation("task.model", "read", async (id: string) => {
+  taskOperation("task.model", "read", async (id: string) => {
     const task = await findTaskRow(getTaskDb(), id);
     const url =
       task.status === "done"
@@ -262,7 +262,7 @@ export const getTaskModelUrl = cache(
 
 // ---- 写 ----
 // 每个写操作有两份：`*Record` 直接改数据，故障实验室的控制入口用它模拟“别的客户端改了数据”，不受注入的
-// 延迟和故障影响；导出给页面、Route Handler 和 Server Action 的是 demoOperation 包装过的版本。
+// 延迟和故障影响；导出给页面、Route Handler 和 Server Action 的是 taskOperation 包装过的版本。
 
 export async function createTaskRecord(input: {
   name: unknown;
@@ -402,28 +402,28 @@ export async function setTaskCoverRecord(
   return toTask(row);
 }
 
-export const createTask = demoOperation(
+export const createTask = taskOperation(
   "task.create",
   "write",
   createTaskRecord,
 );
-export const renameTask = demoOperation(
+export const renameTask = taskOperation(
   "task.rename",
   "write",
   renameTaskRecord,
 );
-export const setTaskFavorite = demoOperation(
+export const setTaskFavorite = taskOperation(
   "task.setFavorite",
   "write",
   setTaskFavoriteRecord,
 );
-export const retryTask = demoOperation("task.retry", "write", retryTaskRecord);
-export const deleteTask = demoOperation(
+export const retryTask = taskOperation("task.retry", "write", retryTaskRecord);
+export const deleteTask = taskOperation(
   "task.delete",
   "write",
   deleteTaskRecord,
 );
-export const setTaskCover = demoOperation(
+export const setTaskCover = taskOperation(
   "task.setCover",
   "write",
   setTaskCoverRecord,

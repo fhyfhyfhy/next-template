@@ -21,11 +21,11 @@ import { useTaskListSearchParams } from "../task-list-navigation";
 
 /** 换排序时回到第一页。 */
 export function SortSelect() {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const [{ sort: selected }, setSearchParams] = useTaskListSearchParams();
   const items = TASK_SORTS.map((value) => ({
     value,
-    label: t(`taskSort.${TASK_SORT_MESSAGE_KEYS[value]}`),
+    label: t(`demo-task.taskSort.${TASK_SORT_MESSAGE_KEYS[value]}`),
   }));
   return (
     <SelectRoot
@@ -36,7 +36,10 @@ export function SortSelect() {
         if (sort) void setSearchParams({ sort, page: null });
       }}
     >
-      <SelectTrigger aria-label={t("taskListToolbar.sort")} className="w-32">
+      <SelectTrigger
+        aria-label={t("demo-task.taskListToolbar.sort")}
+        className="w-32"
+      >
         <SelectValue />
         <SelectIcon>
           <IconChevronDown className="size-4" aria-hidden />

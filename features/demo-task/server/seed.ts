@@ -6,9 +6,10 @@ import {
   SEED_KEY_PREFIX,
   type SeedUpload,
 } from "@/features/demo-upload/server";
+import { demoDatabaseUrl } from "@/lib/demo-backend";
 
 import type { TaskStatus } from "../types/task-filters";
-import { demoDatabaseUrl, getTaskDb } from "./connection";
+import { type Executor, getTaskDb, taskDb } from "./connection";
 import { cubeGlb, generatedCoverSvg } from "./generated-files";
 import type { TaskTables } from "./tables";
 
@@ -144,8 +145,31 @@ export async function writeSeed(trx: Kysely<TaskTables>) {
 }
 
 /** 在同一个事务里拿 advisory lock，多个进程同时写种子或重置时依次执行。 */
-export async function lockDemoData(trx: Kysely<TaskTables>) {
-  await sql`select pg_advisory_xact_lock(${SEED_LOCK_KEY})`.execute(trx);
+export async function lockDemoData(executor: Executor) {
+  await sql`select pg_advisory_xact_lock(${SEED_LOCK_KEY})`.execute(
+    taskDb(executor),
+  );
+}
+
+/**
+ * 任务、评论和日志恢复成种子数据，种子任务的封面和模型交给 demo-upload 恢复，所以调用方要先清空上传。
+ * 在调用方的事务里执行，调用方先拿 `lockDemoData`。传了 `paused` 时同时设置时钟，不传时保持当前状态。
+ */
+export async function resetTasks(
+  executor: Executor,
+  { paused }: { paused?: boolean } = {},
+) {
+  const trx = taskDb(executor);
+  // 评论和日志随外键删除。
+  await trx.deleteFrom("tasks").execute();
+  await writeSeed(trx);
+  await trx
+    .updateTable("task_settings")
+    .set({
+      seeded: true,
+      ...(paused === undefined ? {} : { clock_paused: paused }),
+    })
+    .execute();
 }
 
 // 每个进程、每个库只检查一次。失败时删掉，下次调用重试。
@@ -164,12 +188,12 @@ export function ensureDemoSeeded() {
       .execute(async (trx) => {
         await lockDemoData(trx);
         const settings = await trx
-          .selectFrom("demo_settings")
+          .selectFrom("task_settings")
           .select("seeded")
           .executeTakeFirstOrThrow();
         if (settings.seeded) return;
         await writeSeed(trx);
-        await trx.updateTable("demo_settings").set({ seeded: true }).execute();
+        await trx.updateTable("task_settings").set({ seeded: true }).execute();
       })
       .catch((error: unknown) => {
         seeded.delete(url);

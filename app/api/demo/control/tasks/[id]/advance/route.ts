@@ -1,4 +1,5 @@
-import { advanceTask, demoRoute } from "@/features/demo-task/server";
+import { demoRoute } from "@/features/demo-faults/server";
+import { advanceTask } from "@/features/demo-task/server";
 
 /** 把任务推进一步，时钟暂停时也推进；返回推进后的任务。 */
 export const POST = demoRoute(

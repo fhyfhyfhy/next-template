@@ -2,8 +2,9 @@
 
 import { z } from "zod";
 
+import { assertDemoBackendEnabled } from "@/lib/demo-backend";
+
 import { deleteComment } from "../server/comments";
-import { assertDemoBackendEnabled } from "../server/connection";
 
 const inputSchema = z.object({
   taskId: z.string().min(1),

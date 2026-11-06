@@ -1,4 +1,5 @@
-import { demoRoute, listComments } from "@/features/demo-task/server";
+import { demoRoute } from "@/features/demo-faults/server";
+import { listComments } from "@/features/demo-task/server";
 
 export const GET = demoRoute(
   async (

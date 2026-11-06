@@ -1,10 +1,8 @@
 import { z } from "zod";
 
-import {
-  demoRoute,
-  readJsonBody,
-  renameTaskRecord,
-} from "@/features/demo-task/server";
+import { demoRoute } from "@/features/demo-faults/server";
+import { renameTaskRecord } from "@/features/demo-task/server";
+import { readJsonBody } from "@/lib/route-handler";
 
 /**
  * 模拟别的客户端给任务改名，请求体为 `{ name }`：和页面上的改名走同一个数据层函数，但不让 Next 的缓存失效，

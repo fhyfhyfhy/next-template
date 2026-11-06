@@ -41,11 +41,6 @@
     "why": "The Data demo reads and writes the template's own Demo backend, which keeps its data in a Demo-only database and object storage and is started only by the Demo-specific commands. When you run the app with the regular commands, these pages read and write no data.",
     "howToRun": "To see the Data demo, start Docker and run <code>pnpm demo:dev</code>: it starts the Demo's database and object storage and enables the Demo backend."
   },
-  "demoReset": {
-    "button": "Reset Demo data",
-    "done": "Reset",
-    "failed": "Couldn't reset the Demo data. Please try again later."
-  },
   "demoNote": {
     "label": "What this page demonstrates"
   },
@@ -169,91 +164,6 @@
   },
   "queryErrorBoundary": {
     "retry": "Retry"
-  },
-  "labRetry": {
-    "title": "Retry rules",
-    "description": "Each button injects a fault into reading the task detail, then requests it again in the browser. A schema mismatch means the frontend and backend contracts have drifted apart, so the global handler logs a SchemaValidationError to the console.",
-    "scenarios": {
-      "serverErrorRecovers": "5xx, recovers after two",
-      "serverErrorPersists": "5xx, keeps failing",
-      "clientError": "4xx",
-      "errorBody": "2xx with error",
-      "malformed": "Schema mismatch"
-    },
-    "scenarioResult": "{scenario}: {result}",
-    "retrying": "Failure {count}, retrying…",
-    "succeededAfterRetry": "Succeeded on retry after {count, plural, one {# failure} other {# failures}}",
-    "succeeded": "Succeeded",
-    "failedAfterRetry": "Failed after {count, plural, one {# retry} other {# retries}}",
-    "failedWithoutRetry": "Failed without retrying",
-    "requesting": "Requesting…"
-  },
-  "labConcurrentFailures": {
-    "title": "Simultaneous failures",
-    "description": "The button injects 3 failures into reading the task detail, then refreshes the 3 tasks below at once.",
-    "refreshFailed": "(refresh failed)",
-    "refreshAll": "Refresh all at once (all fail)"
-  },
-  "labDraftMode": {
-    "title": "Bypass the server cache",
-    "description": "With Draft Mode on, every request from this browser runs use cache functions again, so even a production build shows the backend's latest data right away. Results aren't written to the cache: once you turn it off, you read the data cached before you turned it on. It affects only this browser and resets when the browser closes.",
-    "switchLabel": "Draft Mode",
-    "switchFailed": "Couldn't switch. Please try again later."
-  },
-  "labQueryStates": {
-    "title": "First load and refresh failures",
-    "description": "Render data first, then error, then loading: when a refresh fails, error and the old data exist together, and checking error first would replace data that is still usable.",
-    "firstLoadFails": "First load (fails)",
-    "firstLoadSucceeds": "First load (succeeds)",
-    "refreshFails": "Refresh (fails)",
-    "refreshFailed": "(refresh failed, still showing old data)"
-  },
-  "labSuspenseReset": {
-    "title": "Error boundary and reset",
-    "description": "The button clears this task's cache and injects one failure, then mounts a component that reads it with useSuspenseQuery.",
-    "load": "Load (first attempt fails)",
-    "loadFailed": "Couldn't load the task"
-  },
-  "faultPanel": {
-    "title": "Inject faults",
-    "description": "“Default latency” applies to every business operation, and a fault's latency adds to it. Pick a data-layer operation and a fault type; the fault disappears once its “times” run out. Faults apply to server rendering, browser requests, and Server Actions alike; “4xx/5xx”, “error on 2xx”, and “schema mismatch” show up only on browser requests. After injecting one, use other pages and watch how they react.",
-    "remove": "Remove",
-    "clearAll": "Clear all",
-    "empty": "No faults right now",
-    "reading": "Reading the fault config…",
-    "faultRow": "{operation}: {effect}, {times}",
-    "effects": {
-      "status": "return {status}",
-      "errorBody": "2xx with error {code}",
-      "malformed": "body doesn't match the schema",
-      "latency": "add {latencyMs}ms latency",
-      "unexpected": "throw an unexpected error",
-      "businessError": "reject with business error {code}"
-    },
-    "timesLeft": "{count} left",
-    "updateFailed": "Couldn't update the faults. Please try again later."
-  },
-  "faultForm": {
-    "operation": "Operation",
-    "kind": "Fault",
-    "times": "Times",
-    "submit": "Add fault",
-    "kinds": {
-      "latency": "Add 2 s latency",
-      "unexpected": "Throw an unexpected error",
-      "clientError": "Return 4xx",
-      "serverError": "Return 5xx",
-      "errorBody": "2xx with error",
-      "malformed": "Body doesn't match the schema"
-    },
-    "nextTimes": "{count, plural, one {Next time} other {Next # times}}",
-    "always": "Always"
-  },
-  "defaultLatency": {
-    "label": "Default latency",
-    "readFailed": "Couldn't read the default latency",
-    "reading": "Reading the default latency…",
-    "updateFailed": "Couldn't change the default latency. Please try again later."
   },
   "favorite": {
     "failed": "Couldn't update the favorite. Please try again later."

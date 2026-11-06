@@ -1,6 +1,6 @@
+import type { Translator } from "@/lib/i18n/translator";
 import { mutationOptions } from "@/lib/react-query";
 
-import type { DemoTaskTranslator } from "../types/translator";
 import { deleteCommentAction } from "./delete-comment-action";
 import { getCommentsQueryOptions } from "./get-comments";
 
@@ -8,10 +8,7 @@ interface DeleteCommentVariables {
   commentId: string;
 }
 
-export const deleteCommentMutationOptions = (
-  t: DemoTaskTranslator,
-  taskId: string,
-) => {
+export const deleteCommentMutationOptions = (t: Translator, taskId: string) => {
   const { queryKey } = getCommentsQueryOptions(taskId);
   return mutationOptions({
     mutationFn: ({ commentId }: DeleteCommentVariables) =>
@@ -29,6 +26,6 @@ export const deleteCommentMutationOptions = (
     },
     onSettled: (_data, _error, _variables, _onMutateResult, { client }) =>
       client.invalidateQueries({ queryKey }),
-    meta: { errorMessage: t("comments.deleteFailed") },
+    meta: { errorMessage: t("demo-task.comments.deleteFailed") },
   });
 };

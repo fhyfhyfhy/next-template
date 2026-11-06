@@ -14,21 +14,21 @@ import {
 } from "@/components/ui/field";
 import { Form } from "@/components/ui/form";
 import { useHydrated } from "@/hooks/use-hydrated";
+import type { Translator } from "@/lib/i18n/translator";
 import { useMutation } from "@/lib/react-query";
 
 import { createCommentMutationOptions } from "../../api/create-comment";
 import { COMMENT_MAX_LENGTH } from "../../constants/task-rules";
-import type { DemoTaskTranslator } from "../../types/translator";
 
-const createCommentSchema = (t: DemoTaskTranslator) =>
+const createCommentSchema = (t: Translator) =>
   z.object({
     content: z
       .string()
       .trim()
-      .min(1, t("validation.commentRequired"))
+      .min(1, t("demo-task.validation.commentRequired"))
       .max(
         COMMENT_MAX_LENGTH,
-        t("validation.commentTooLong", { max: COMMENT_MAX_LENGTH }),
+        t("demo-task.validation.commentTooLong", { max: COMMENT_MAX_LENGTH }),
       ),
   });
 
@@ -36,7 +36,7 @@ const createCommentSchema = (t: DemoTaskTranslator) =>
 export function CommentForm({ taskId }: { taskId: string }) {
   // hydration 之前不可用，原因同 `CreateTaskForm`。
   const hydrated = useHydrated();
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const commentSchema = useMemo(() => createCommentSchema(t), [t]);
   const createComment = useMutation(createCommentMutationOptions(t, taskId));
   const form = useForm({
@@ -53,7 +53,7 @@ export function CommentForm({ taskId }: { taskId: string }) {
   });
   return (
     <Form
-      aria-label={t("comments.formLabel")}
+      aria-label={t("demo-task.comments.formLabel")}
       className="mt-3 flex items-start gap-2"
       onSubmit={(event) => {
         event.preventDefault();
@@ -71,14 +71,14 @@ export function CommentForm({ taskId }: { taskId: string }) {
             className="flex-1"
           >
             <FieldLabel className="sr-only">
-              {t("comments.inputLabel")}
+              {t("demo-task.comments.inputLabel")}
             </FieldLabel>
             <FieldControl
               render={<textarea rows={2} />}
               value={field.state.value}
               onValueChange={(value) => field.handleChange(value)}
               onBlur={field.handleBlur}
-              placeholder={t("comments.placeholder")}
+              placeholder={t("demo-task.comments.placeholder")}
               className="w-full rounded-control border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 aria-invalid:border-destructive"
             />
             <FieldError match={!field.state.meta.isValid}>
@@ -88,7 +88,7 @@ export function CommentForm({ taskId }: { taskId: string }) {
         )}
       </form.Field>
       <Button type="submit" disabled={!hydrated}>
-        {t("comments.submit")}
+        {t("demo-task.comments.submit")}
       </Button>
     </Form>
   );

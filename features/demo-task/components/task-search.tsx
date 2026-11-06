@@ -21,7 +21,7 @@ const DEBOUNCE_MS = 300;
  * query key 来自 debounce 后的关键词，请求等输入停顿才发。换关键词时旧请求被中止，新结果到达前继续显示旧结果。
  */
 export function TaskSearch() {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const [{ q }, setSearchParams] = useQueryStates(taskSearchSearchParams);
   const [term] = useDebouncedValue(q.trim(), DEBOUNCE_MS);
   // 用户最后一次清空搜索框的时刻：清空之前的结果属于上一轮搜索，不拿来给新的一轮当占位。
@@ -47,13 +47,13 @@ export function TaskSearch() {
           aria-hidden
         />
         <label htmlFor="task-search" className="sr-only">
-          {t("taskSearch.label")}
+          {t("demo-task.taskSearch.label")}
         </label>
         <Input
           id="task-search"
           type="search"
           value={q}
-          placeholder={t("taskSearch.placeholder")}
+          placeholder={t("demo-task.taskSearch.placeholder")}
           className="pl-9"
           onChange={(event) => {
             const value = event.target.value;
@@ -68,20 +68,24 @@ export function TaskSearch() {
       >
         {searching && (
           <>
-            {search.isPlaceholderData && t("taskSearch.updating")}
+            {search.isPlaceholderData && t("demo-task.taskSearch.updating")}
             {!search.isPlaceholderData &&
               search.data &&
-              t("taskSearch.found", { count: search.data.length })}
+              t("demo-task.taskSearch.found", { count: search.data.length })}
             {!search.data && search.error && (
-              <span className="text-destructive">{t("taskSearch.failed")}</span>
+              <span className="text-destructive">
+                {t("demo-task.taskSearch.failed")}
+              </span>
             )}
-            {!search.data && search.isFetching && t("taskSearch.searching")}
+            {!search.data &&
+              search.isFetching &&
+              t("demo-task.taskSearch.searching")}
           </>
         )}
       </div>
       {searching && search.data && search.data.length > 0 && (
         <ul
-          aria-label={t("taskSearch.results")}
+          aria-label={t("demo-task.taskSearch.results")}
           className={cn(
             "mt-2 divide-y divide-border rounded-panel border border-border bg-card transition-opacity",
             search.isPlaceholderData && "opacity-50",

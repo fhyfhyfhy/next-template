@@ -6,9 +6,9 @@ import { z } from "zod";
 import { UPLOAD_ALREADY_USED, UPLOAD_NOT_READY } from "@/features/demo-upload";
 import type { ActionResult } from "@/lib/action-result";
 import { toActionResult } from "@/lib/action-result";
+import { assertDemoBackendEnabled } from "@/lib/demo-backend";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
-import { assertDemoBackendEnabled } from "../server/connection";
 import { setTaskCover } from "../server/tasks";
 import type { Task } from "../types/task";
 

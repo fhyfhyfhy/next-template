@@ -15,7 +15,7 @@ export function UiDemo({
   component: ComponentId;
   sources: ExampleSources;
 }) {
-  const t = useTranslations("demo-ui");
+  const t = useTranslations();
   const item = catalog.find((entry) => entry.id === component) ?? catalog[0];
   const Demo = demosByComponent[component];
   return (
@@ -24,7 +24,7 @@ export function UiDemo({
         href="#main-content"
         className="sr-only fixed top-4 left-4 z-50 rounded-control bg-card p-3 text-card-foreground focus:not-sr-only"
       >
-        {t("skipToContent")}
+        {t("demo-ui.skipToContent")}
       </a>
       <UiDemoHeader />
       <div className="mx-auto grid max-w-[1600px] md:min-h-[calc(100dvh-5rem)] md:grid-cols-[208px_minmax(0,1fr)] lg:grid-cols-[248px_minmax(0,1fr)]">
@@ -32,7 +32,7 @@ export function UiDemo({
         <main id="main-content" className="min-w-0 px-5 py-8 sm:px-8 lg:p-12">
           <div className="mb-9">
             <div className="flex items-center gap-3 font-mono text-[10px] tracking-[0.16em] text-muted-foreground">
-              <span>{t("page.eyebrow")}</span>
+              <span>{t("demo-ui.page.eyebrow")}</span>
               <span>/</span>
               <span className="text-primary">{item.title}</span>
             </div>
@@ -54,7 +54,7 @@ export function UiDemo({
           </div>
           <footer className="mt-12 flex justify-end border-t border-border pt-6 text-muted-foreground">
             <span className="font-mono text-[10px] tracking-wide">
-              {t("page.footer")}
+              {t("demo-ui.page.footer")}
             </span>
           </footer>
         </main>

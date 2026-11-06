@@ -5,9 +5,9 @@ import {
   uploadFile,
 } from "@/features/demo-upload";
 import { isActionError, unwrapActionResult } from "@/lib/action-result";
+import type { Translator } from "@/lib/i18n/translator";
 import { mutationOptions } from "@/lib/react-query";
 
-import type { DemoTaskTranslator } from "../types/translator";
 import { getTaskQueryOptions } from "./get-task";
 import { taskListKey } from "./get-tasks";
 import { updateTaskCoverAction } from "./update-task-cover-action";
@@ -33,7 +33,7 @@ const updateTaskCover = async ({ taskId, file }: UpdateTaskCoverVariables) => {
   );
 };
 
-export const updateTaskCoverMutationOptions = (t: DemoTaskTranslator) =>
+export const updateTaskCoverMutationOptions = (t: Translator) =>
   mutationOptions({
     mutationFn: updateTaskCover,
     onSuccess: (task, _variables, _onMutateResult, { client }) => {
@@ -41,7 +41,7 @@ export const updateTaskCoverMutationOptions = (t: DemoTaskTranslator) =>
       void client.invalidateQueries({ queryKey: taskListKey });
     },
     meta: {
-      errorMessage: t("taskCover.changeFailed"),
+      errorMessage: t("demo-task.taskCover.changeFailed"),
       // 关联时的预期失败由封面面板就地提示（TaskCoverPanel），其他失败仍走全局提示。
       suppressErrorToast: isCoverRejection,
     },

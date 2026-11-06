@@ -1,8 +1,8 @@
 import { nanoid } from "nanoid";
 
+import type { Translator } from "@/lib/i18n/translator";
 import { mutationOptions } from "@/lib/react-query";
 
-import type { DemoTaskTranslator } from "../types/translator";
 import { createCommentAction } from "./create-comment-action";
 import { type CommentListItem, getCommentsQueryOptions } from "./get-comments";
 
@@ -11,10 +11,7 @@ interface CreateCommentVariables {
 }
 
 /** `taskId` 只决定写到哪个任务、更新哪个评论 query，对这个 mutation 固定不变，所以是工厂参数。 */
-export const createCommentMutationOptions = (
-  t: DemoTaskTranslator,
-  taskId: string,
-) => {
+export const createCommentMutationOptions = (t: Translator, taskId: string) => {
   const { queryKey } = getCommentsQueryOptions(taskId);
   return mutationOptions({
     mutationFn: ({ content }: CreateCommentVariables) =>
@@ -38,6 +35,6 @@ export const createCommentMutationOptions = (
     },
     onSettled: (_data, _error, _variables, _onMutateResult, { client }) =>
       client.invalidateQueries({ queryKey }),
-    meta: { errorMessage: t("comments.createFailed") },
+    meta: { errorMessage: t("demo-task.comments.createFailed") },
   });
 };

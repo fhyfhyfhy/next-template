@@ -32,7 +32,7 @@ const MAX_COVER_MB = UPLOAD_PURPOSES["task-cover"].maxSize / 1024 / 1024;
  * 列表 query，Server Action 让列表页的服务端缓存失效。
  */
 export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const upload = useMutation(updateTaskCoverMutationOptions(t));
   const [problem, setProblem] = useState<UploadFileProblem | null>(null);
   return (
@@ -51,7 +51,9 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
           )}
         >
           <IconPhotoUp aria-hidden />
-          {upload.isPending ? t("taskCover.uploading") : t("taskCover.change")}
+          {upload.isPending
+            ? t("demo-task.taskCover.uploading")
+            : t("demo-task.taskCover.change")}
           <input
             type="file"
             accept="image/*"
@@ -70,13 +72,13 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
       {problem && (
         <p role="alert" className="text-sm text-destructive">
           {problem === "contentType"
-            ? t("taskCover.notAnImage")
-            : t("taskCover.tooLarge", { max: String(MAX_COVER_MB) })}
+            ? t("demo-task.taskCover.notAnImage")
+            : t("demo-task.taskCover.tooLarge", { max: String(MAX_COVER_MB) })}
         </p>
       )}
       {isCoverRejection(upload.error) && (
         <p role="alert" className="text-sm text-destructive">
-          {t("taskCover.rejected")}
+          {t("demo-task.taskCover.rejected")}
         </p>
       )}
     </div>

@@ -26,7 +26,7 @@ import { TaskProgress } from "./task-progress";
 
 /** 任务详情由 React Query 负责：任务会在用户停留时自己推进，pending、running 时轮询。首屏数据来自服务端 prefetch。 */
 export function TaskDetail({ taskId }: { taskId: string }) {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const task = useQuery(getTaskQueryOptions(taskId));
   const { record } = useRecentTaskIds();
   useRefreshListsWhenSettled(task.data?.status);
@@ -55,7 +55,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
               role="alert"
               className="rounded-panel border border-destructive/40 bg-destructive/10 p-4 text-sm"
             >
-              {t("taskDetail.deletedNotice")}
+              {t("demo-task.taskDetail.deletedNotice")}
             </p>
           )}
           <TaskHeading task={data} editable={!deleted} />
@@ -65,10 +65,12 @@ export function TaskDetail({ taskId }: { taskId: string }) {
             />
           )}
           <dl className="grid gap-3 text-sm sm:grid-cols-[96px_1fr]">
-            <dt className="text-muted-foreground">{t("taskDetail.prompt")}</dt>
+            <dt className="text-muted-foreground">
+              {t("demo-task.taskDetail.prompt")}
+            </dt>
             <dd>{data.prompt}</dd>
             <dt className="text-muted-foreground">
-              {t("taskDetail.createdAt")}
+              {t("demo-task.taskDetail.createdAt")}
             </dt>
             <dd>
               <DateTime value={data.createdAt} format={DATE_TIME_FORMAT} />
@@ -91,10 +93,14 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   }
   if (task.error) {
     return (
-      <p className="text-sm text-destructive">{t("queryState.loadFailed")}</p>
+      <p className="text-sm text-destructive">
+        {t("demo-task.queryState.loadFailed")}
+      </p>
     );
   }
   return (
-    <p className="text-sm text-muted-foreground">{t("queryState.loading")}</p>
+    <p className="text-sm text-muted-foreground">
+      {t("demo-task.queryState.loading")}
+    </p>
   );
 }

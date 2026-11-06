@@ -16,12 +16,12 @@ import {
 } from "@/features/demo-task";
 import {
   getTask,
-  isDemoBackendEnabled,
   isTaskMissing,
   listComments,
   listTasks,
   omitFunctionMeta,
 } from "@/features/demo-task/server";
+import { isDemoBackendEnabled } from "@/lib/demo-backend";
 import {
   defaultShouldDehydrateQuery,
   dehydrate,
@@ -33,9 +33,9 @@ import {
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/demos/tasks/[id]">): Promise<Metadata> {
-  const t = await getTranslations("app");
+  const t = await getTranslations();
   if (!isDemoBackendEnabled())
-    return { title: t("demos.taskDetail.demoBackendOffTitle") };
+    return { title: t("app.demos.taskDetail.demoBackendOffTitle") };
   const { id } = await params;
   // 和页面里的 prefetch 读的是同一个数据层函数，它用 React cache() 包过，一次渲染内只查一次库。connection()
   // 让读取只发生在真正响应请求的那次渲染里，原因见下面的 TaskDetailHydration。
@@ -47,8 +47,8 @@ export async function generateMetadata({
   // 标题里的任务名是服务端渲染时的值，不跟着详情 query 刷新：只在导航或 Server Action 失效页面时更新。
   // 别处改名后，标签页标题会比页面上的名字旧，Demo 接受这一点。
   return {
-    title: t("demos.taskDetail.metadataTitle", {
-      name: task?.name ?? t("demos.taskDetail.notFound.title"),
+    title: t("app.demos.taskDetail.metadataTitle", {
+      name: task?.name ?? t("app.demos.taskDetail.notFound.title"),
     }),
   };
 }
@@ -58,12 +58,12 @@ export async function generateMetadata({
 export default function TaskDetailPage({
   params,
 }: PageProps<"/[locale]/demos/tasks/[id]">) {
-  const t = useTranslations("app");
+  const t = useTranslations();
   return (
     <>
       <DemoNote>
-        <p>{t("demos.taskDetail.note.ownership")}</p>
-        <p>{t("demos.taskDetail.note.tryIt")}</p>
+        <p>{t("app.demos.taskDetail.note.ownership")}</p>
+        <p>{t("app.demos.taskDetail.note.tryIt")}</p>
       </DemoNote>
       <Suspense fallback={<TaskDetailSkeleton />}>
         {params.then(({ id }) => (

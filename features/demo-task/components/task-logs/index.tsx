@@ -20,7 +20,7 @@ export function TaskLogs({
   /** 推送结束时收到任务的终态。 */
   onEnd: (status: TaskStatus) => void;
 }) {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const [lines, setLines] = useState<string[]>([]);
   const [state, setState] = useState<StreamState>("streaming");
   const handleEnd = useEffectEvent(onEnd);
@@ -46,14 +46,16 @@ export function TaskLogs({
 
   return (
     <section>
-      <h2 className="mb-2 text-sm font-medium">{t("taskLogs.title")}</h2>
+      <h2 className="mb-2 text-sm font-medium">
+        {t("demo-task.taskLogs.title")}
+      </h2>
       <div
         role="log"
-        aria-label={t("taskLogs.title")}
+        aria-label={t("demo-task.taskLogs.title")}
         className="max-h-48 overflow-y-auto rounded-panel bg-secondary p-3 font-mono text-xs/5 text-secondary-foreground"
       >
         {lines.length === 0 && state === "streaming" && (
-          <p className="opacity-60">{t("taskLogs.waiting")}</p>
+          <p className="opacity-60">{t("demo-task.taskLogs.waiting")}</p>
         )}
         {lines.map((line, index) => (
           // 日志只追加不重排，下标就是稳定的 key。
@@ -61,7 +63,7 @@ export function TaskLogs({
         ))}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        {t(`taskLogs.${state}`)}
+        {t(`demo-task.taskLogs.${state}`)}
       </p>
     </section>
   );

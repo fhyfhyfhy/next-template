@@ -17,7 +17,7 @@ import { updateTaskFavoriteMutationOptions } from "../../api/update-task-favorit
  * 由工厂同步浏览器里缓存的那些副本。
  */
 export function FavoriteToggle({ task }: { task: Task }) {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const [optimisticFavorite, setOptimisticFavorite] = useOptimistic(
     task.favorite,
   );
@@ -26,7 +26,7 @@ export function FavoriteToggle({ task }: { task: Task }) {
     <Button
       variant="ghost"
       size="icon-sm"
-      aria-label={t("taskList.favorite")}
+      aria-label={t("demo-task.taskList.favorite")}
       aria-pressed={optimisticFavorite}
       className="text-muted-foreground not-data-disabled:hover:text-primary aria-pressed:text-primary"
       onClick={() => {

@@ -18,7 +18,7 @@ test("生产 build 对每个 Demo 页面都返回 404", async ({ request }) => {
   }
 });
 
-// 普通命令不设 DEMO_* 变量，Demo backend 没有启用（features/demo-task/server/connection.ts）。
+// 普通命令不设 DEMO_* 变量，Demo backend 没有启用（lib/demo-backend.ts）。
 test("生产 build 的 /api/demo 下的接口都返回 404", async ({ request }) => {
   for (const path of [
     "/api/demo/tasks",

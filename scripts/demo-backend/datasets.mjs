@@ -44,7 +44,7 @@ export function databaseUrl(database) {
 
 /**
  * 启动 Next 时写进环境变量的 Demo backend 配置。Demo backend 只在 `DEMO_DATABASE_URL` 存在时启用
- * （features/demo-task/server/connection.ts），所以只有 demo:* 命令和数据层测试会设置它们。
+ * （lib/demo-backend.ts），所以只有 demo:* 命令和数据层测试会设置它们。
  */
 export function demoEnv(name) {
   const { database, bucket } = DEMO_DATASETS[name];
