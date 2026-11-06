@@ -16,7 +16,6 @@ import {
   expectWireSafe,
   readLogs,
   rejection,
-  resetBeforeEach,
 } from "./db-test-helpers";
 import {
   createTask,
@@ -31,8 +30,6 @@ import {
   setTaskCover,
   setTaskFavorite,
 } from "./tasks";
-
-resetBeforeEach();
 
 /** 一个 1×1 的 PNG。 */
 const PNG = Uint8Array.from(

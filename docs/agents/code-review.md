@@ -12,7 +12,7 @@ Project reviews for the `code-review` skill, one per section.
   - **One-way dependencies**: when the change resolves a cycle or an upward import, the business code stays in its feature instead of moving into a root layer.
   - **Layers** and **Feature structure**: each file sits in the layer and feature subdirectory its responsibility belongs to.
   - **Component directories**: a single file or a directory, an `index` that exports only what callers need, one level deep, and a directory past about 5–7 files split into siblings.
-  - **Feature public API**: heavy dependencies, code that runs outside Next, and operations only seed data and tests call go through a sub-entry.
+  - **Feature public API**: heavy dependencies go through a sub-entry.
   - Each `eslint-disable` the diff adds for `architecture/*`, `import/no-restricted-paths`, or `import/no-cycle`: whether its description justifies the exception.
 
 ## Data flow

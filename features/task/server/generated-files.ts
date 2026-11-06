@@ -1,24 +1,10 @@
 import "server-only";
 
-// generator 和种子数据产出的文件内容：任务的封面图和 3D 模型。都按需生成，不放进仓库。
+// generator 产出的文件内容：任务完成时的 3D 模型。按需生成，不放进仓库。
 
 const GLB_MAGIC = 0x46546c67; // "glTF"
 const CHUNK_JSON = 0x4e4f534a;
 const CHUNK_BIN = 0x004e4942;
-
-/** 种子任务的封面图：色相由任务 id 决定，同一个任务每次生成的图片相同。 */
-export function generatedCoverSvg(taskId: string) {
-  let hash = 0;
-  for (const char of taskId) hash = (hash * 31 + char.charCodeAt(0)) % 360;
-  const from = `hsl(${hash} 70% 62%)`;
-  const to = `hsl(${(hash + 40) % 360} 65% 42%)`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 480 360">
-<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs>
-<rect width="480" height="360" fill="url(#g)"/>
-<g fill="none" stroke="rgb(255 255 255 / 85%)" stroke-width="6" stroke-linejoin="round">
-<path d="M240 90 330 140 330 230 240 280 150 230 150 140Z"/><path d="M150 140 240 190 330 140M240 190V280"/>
-</g></svg>`;
-}
 
 /** 一个边长为 1 的立方体，打包成最小的合法 glTF 2.0 二进制（.glb）。 */
 export function cubeGlb(): Uint8Array {

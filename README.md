@@ -33,7 +33,7 @@ The sample product is everything that serves tasks and uploads: `features/task/`
 
 - `app/[locale]/page.tsx`, whose home page redirects to `/tasks`. Typed routes are off, so nothing reports the redirect once `/tasks` is gone.
 - The background jobs in `instrumentation.ts`, and `TASK_GENERATOR_ENABLED` in `lib/env.ts`, `lib/env.test.ts`, and `playwright.config.ts`.
-- The migration list in `scripts/db/migrate.mjs` and the seed entry in `scripts/local-services/seed.mjs`.
+- The migration list in `scripts/db/migrate.mjs`, and the seed data: `scripts/local-services/seed.sql` and the files it references in `scripts/local-services/seed-files/`.
 - The namespaces registered in `lib/i18n/messages.ts`; in `messages/*/app.json`, the route keys `tasks`, `taskDetail`, `feed`, `search`, and `recent`, `pageError` for `app/[locale]/(tasks)/error.tsx`, and `metadata.description`; and the sample product's terms in `messages/terms.json`.
 - The specs that test kept code through the sample product's pages: `e2e/home.spec.ts`, `e2e/locale.spec.ts`, and `e2e/date-time.spec.ts`. Point them at the project's own pages rather than deleting them.
 - The cases in `eslint.config.test.mjs` that lint real files under `features/task/`, which must exist on disk: point them at the project's own files.

@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { join } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { extname, join, relative, sep } from "node:path";
 import {
   BucketAlreadyOwnedByYou,
   CreateBucketCommand,
@@ -8,6 +9,7 @@ import {
   NoSuchBucket,
   PutBucketCorsCommand,
   PutBucketPolicyCommand,
+  PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import pg from "pg";
@@ -23,11 +25,20 @@ import {
 
 const projectRoot = join(import.meta.dirname, "..", "..");
 
+const SEED_SQL = readFileSync(join(import.meta.dirname, "seed.sql"), "utf8");
+const SEED_FILES = join(import.meta.dirname, "seed-files");
+/** seed-files/ 下的文件传到 bucket 的这个前缀下，路径不变；seed.sql 里上传记录的 key 指向它们。 */
+const SEED_PREFIX = "seed/";
+const SEED_CONTENT_TYPES = {
+  ".svg": "image/svg+xml",
+  ".glb": "model/gltf-binary",
+};
+
 /**
- * 浏览器直接读的前缀：用户上传的文件和种子文件，签发上传、下载模型仍要签名。值和
- * features/upload/constants/storage-keys.ts 的两个前缀一致，改的时候一起改。
+ * 浏览器直接读的前缀：用户上传的文件和种子文件，签发上传、下载模型仍要签名。`uploads/` 和
+ * features/upload/constants/storage-keys.ts 的 `UPLOAD_KEY_PREFIX` 一致，改的时候一起改。
  */
-const PUBLIC_PREFIXES = ["uploads/", "seed/"];
+const PUBLIC_PREFIXES = ["uploads/", SEED_PREFIX];
 
 /**
  * 启动 compose.yaml 里的 Postgres 和对象存储，等它们就绪；已经在运行时什么也不做。
@@ -48,21 +59,44 @@ export function startLocalServices() {
 }
 
 /**
- * 准备一个数据集：库不存在就创建，执行 migration，初始化 bucket，库里还没有任务时写入种子数据。可以重复执行。
- * `reset` 先删掉库、清空 bucket，数据集回到只有种子数据的状态。
+ * 准备一个数据集：库不存在就创建，执行 migration，初始化 bucket，写入种子数据（seed.sql 在库里已有任务时跳过）。
+ * 可以重复执行。`reset` 先删掉库、清空 bucket，数据集回到只有种子数据的状态。
  * @returns {Record<string, string>} 连到这个数据集的环境变量
  */
-export async function prepareDataset(
-  name,
-  { reset = false, seed = true } = {},
-) {
+export async function prepareDataset(name, { reset = false } = {}) {
   const { database, bucket } = DATASETS[name];
-  const env = localEnv(name);
   await createDatabase(database, { reset });
   await migrateDatabase(databaseUrl(database));
   await prepareBucket(bucket, { reset });
-  if (seed) seedDataset(env);
-  return env;
+  const client = new pg.Client({ connectionString: databaseUrl(database) });
+  await client.connect();
+  try {
+    await writeSeedRows(client);
+  } finally {
+    await client.end();
+  }
+  await uploadSeedFiles(bucket);
+  return localEnv(name);
+}
+
+/** 执行 seed.sql：库里还没有任务时写入种子数据，已有任务时跳过；几个连接同时执行时只写入一份。 */
+export async function writeSeedRows(client) {
+  await client.query(SEED_SQL);
+}
+
+/**
+ * 清空数据集的所有表（migration 的记录除外），再写入种子数据，在一个事务里完成。数据库测试在每个测试之前调用；
+ * 种子文件已经由 prepareDataset 传好。
+ * @param {pg.Client} client 连到这个数据集的连接
+ */
+export async function restoreSeedRows(client) {
+  const { rows } = await client.query(
+    "select tablename from pg_tables where schemaname = 'public' and tablename not like 'kysely\\_%'",
+  );
+  const tables = rows.map(({ tablename }) => pg.escapeIdentifier(tablename));
+  await client.query(
+    `truncate ${tables.join(", ")} restart identity cascade;\n${SEED_SQL}`,
+  );
 }
 
 async function createDatabase(database, { reset }) {
@@ -81,35 +115,44 @@ async function createDatabase(database, { reset }) {
     );
     if (rowCount === 0) await client.query(`create database ${name}`);
   } catch (error) {
-    // 两个进程同时准备同一个数据集（比如两份 checkout 同时跑 pnpm test），后到的建库会撞上唯一约束。
+    // 两个进程同时准备同一个数据集（比如两份 checkout 同时启动 pnpm dev），后到的建库会撞上唯一约束。
     if (error.code !== "42P04" && error.code !== "23505") throw error;
   } finally {
     await client.end();
   }
 }
 
-/**
- * 写入种子数据（features/task/server/seed.ts）。种子要用应用自己的数据层写，那些模块是 TypeScript、带 `@/` 别名和
- * `import "server-only"`，所以在子进程里用 tsx 加载，并打开 react-server 条件，让 server-only 解析成空模块。
- */
-function seedDataset(env) {
-  const result = spawnSync(
-    process.execPath,
-    [
-      "--conditions=react-server",
-      "--import",
-      "tsx",
-      join(import.meta.dirname, "seed.mjs"),
-    ],
-    { cwd: projectRoot, stdio: "inherit", env: { ...process.env, ...env } },
-  );
-  if (result.error || result.status !== 0) {
-    throw new Error("Could not write the seed data", { cause: result.error });
+/** 把 seed-files/ 下的文件传到 bucket 的 `SEED_PREFIX` 下。内容固定，每次都覆盖写。 */
+async function uploadSeedFiles(bucket) {
+  const files = readdirSync(SEED_FILES, {
+    recursive: true,
+    withFileTypes: true,
+  }).filter((entry) => entry.isFile());
+  const client = storageClient();
+  try {
+    await Promise.all(
+      files.map((file) => {
+        const path = join(file.parentPath, file.name);
+        const contentType = SEED_CONTENT_TYPES[extname(path)];
+        if (!contentType)
+          throw new Error(`No content type for the seed file ${path}`);
+        return client.send(
+          new PutObjectCommand({
+            Bucket: bucket,
+            Key: SEED_PREFIX + relative(SEED_FILES, path).split(sep).join("/"),
+            Body: readFileSync(path),
+            ContentType: contentType,
+          }),
+        );
+      }),
+    );
+  } finally {
+    client.destroy();
   }
 }
 
-async function prepareBucket(bucket, { reset }) {
-  const client = new S3Client({
+function storageClient() {
+  return new S3Client({
     endpoint: STORAGE.endpoint,
     region: "us-east-1",
     credentials: {
@@ -119,6 +162,10 @@ async function prepareBucket(bucket, { reset }) {
     forcePathStyle: true,
     requestChecksumCalculation: "WHEN_REQUIRED",
   });
+}
+
+async function prepareBucket(bucket, { reset }) {
+  const client = storageClient();
   try {
     if (reset) await emptyBucket(client, bucket);
     try {

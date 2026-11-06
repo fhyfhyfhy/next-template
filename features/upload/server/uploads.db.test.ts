@@ -6,17 +6,8 @@ import {
   UPLOAD_ALREADY_USED,
   UPLOAD_NOT_READY,
 } from "../constants/error-codes";
-import {
-  clearUploadsBeforeEach,
-  cover,
-  coverUrl,
-  PNG,
-  rejection,
-  upload,
-} from "./db-test-helpers";
+import { cover, coverUrl, PNG, rejection, upload } from "./db-test-helpers";
 import { attachUpload, createUpload } from "./uploads";
-
-clearUploadsBeforeEach();
 
 describe("签发上传", () => {
   test("按用途的规则校验声明的类型和大小，不合格时按参数错误拒绝", async () => {

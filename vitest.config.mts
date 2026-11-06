@@ -41,8 +41,9 @@ export default defineConfig({
           include: [DB_TEST_FILES],
           exclude: EXCLUDE,
           globalSetup: "./scripts/local-services/test-setup.mjs",
+          setupFiles: ["./scripts/local-services/test-reset.mjs"],
           env: localEnv("test"),
-          // 所有测试共用一个库和 bucket，每个测试都先重置，只能串行。
+          // 所有测试共用一个库和 bucket，每个测试都先恢复成种子数据，只能串行。
           fileParallelism: false,
           testTimeout: 30_000,
         },

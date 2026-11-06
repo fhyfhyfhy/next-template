@@ -3,11 +3,9 @@ import { describe, expect, test } from "vitest";
 
 import { getDb } from "@/lib/db";
 
-import { readLogs, rejection, resetBeforeEach } from "./db-test-helpers";
+import { readLogs, rejection } from "./db-test-helpers";
 import { advanceTask } from "./generator";
 import { streamTaskLogs } from "./task-logs";
-
-resetBeforeEach();
 
 /**
  * 打开 task-03 的日志流、读完已有的 3 条，再模拟数据库断开 LISTEN 连接（比如数据库重启），

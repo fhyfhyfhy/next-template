@@ -1,16 +1,8 @@
 import { describe, expect, test } from "vitest";
 
 import { cleanupUnattachedUploads } from "./cleanup";
-import {
-  clearUploadsBeforeEach,
-  cover,
-  coverUrl,
-  rejection,
-  upload,
-} from "./db-test-helpers";
+import { cover, coverUrl, rejection, upload } from "./db-test-helpers";
 import { attachUpload, detachRecordUploads } from "./uploads";
-
-clearUploadsBeforeEach();
 
 describe("清理没被使用的上传", () => {
   test("删除过了等待时间、没被任何记录使用的上传和文件，正在使用的保留", async () => {

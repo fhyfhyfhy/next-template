@@ -3,7 +3,6 @@ import { DatabaseError } from "pg";
 
 import { startLeaderInterval } from "@/lib/db";
 
-import { SEED_KEY_PREFIX } from "../constants/storage-keys";
 import { getUploadDb, getUploadStorage } from "./connection";
 
 /**
@@ -17,8 +16,7 @@ const CLEANUP_LOCK_KEY = 2_026_110_202;
 
 /**
  * 删除创建超过 `olderThanMs`、而且没有被任何记录使用的上传：先删记录，再删存储里的对象。这是删除上传文件的
- * 唯一路径：上传了没用上的、换下来的旧封面、被删除任务的文件，都等到这里删。种子文件的对象保留
- * （见 SEED_KEY_PREFIX）。返回删除的上传数。
+ * 唯一路径：上传了没用上的、换下来的旧封面、被删除任务的文件，都等到这里删。返回删除的上传数。
  */
 export async function cleanupUnattachedUploads(
   olderThanMs = UNATTACHED_UPLOAD_TTL_MS,
@@ -53,9 +51,7 @@ export async function cleanupUnattachedUploads(
       }
     }
   }
-  await getUploadStorage().delete(
-    deletedKeys.filter((key) => !key.startsWith(SEED_KEY_PREFIX)),
-  );
+  await getUploadStorage().delete(deletedKeys);
   return deletedKeys.length;
 }
 

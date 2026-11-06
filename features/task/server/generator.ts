@@ -12,7 +12,7 @@ import { findTaskRow, toTask } from "./tasks";
 
 // generator：模拟一个外部的生成服务，只有它推进任务。业务读写的代码不碰推进逻辑。
 
-// 和上传清理、写种子数据的 advisory lock 用不同的 key。
+// 和上传清理的 advisory lock 用不同的 key：两个后台任务各自选出运行的进程。
 const GENERATOR_LOCK_KEY = 2_026_110_201;
 
 /**

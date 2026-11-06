@@ -6,8 +6,8 @@ import { z } from "zod";
  * 给浏览器用的 `NEXT_PUBLIC_` 变量要另放一个模块。
  */
 const VARIABLES = {
-  // 数据库和对象存储的连接参数：部署时由平台设置；本地由 scripts/run-next.mjs、vitest.config.mts 和写种子数据的
-  // 子进程（scripts/local-services/services.mjs）按数据集设置（scripts/local-services/datasets.mjs 的 localEnv()）。
+  // 数据库和对象存储的连接参数：部署时由平台设置；本地由 scripts/run-next.mjs 和 vitest.config.mts 按数据集设置
+  // （scripts/local-services/datasets.mjs 的 localEnv()）。
   DATABASE_URL: z.url(),
   /** 服务端调用 S3 API 的地址。 */
   STORAGE_ENDPOINT: z.url(),

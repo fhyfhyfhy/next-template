@@ -1,19 +1,10 @@
-import { beforeEach, expect } from "vitest";
+import { expect } from "vitest";
 
 import { DomainError } from "@/lib/domain-error";
 
-import { clearUploads } from "./seed";
 import { createUpload, getAttachedUploadUrls } from "./uploads";
 
 // *.db.test.ts 共用的准备和断言。
-
-/** 每个测试从没有任何上传开始。在测试文件的顶层调用。 */
-export function clearUploadsBeforeEach() {
-  beforeEach(async () => {
-    const deleteFiles = await clearUploads();
-    await deleteFiles();
-  });
-}
 
 export const PNG = Uint8Array.from(
   atob(

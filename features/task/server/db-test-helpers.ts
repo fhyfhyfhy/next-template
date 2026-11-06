@@ -1,28 +1,11 @@
-import { beforeEach, expect } from "vitest";
+import { expect } from "vitest";
 
-import { clearUploads } from "@/features/upload/seed";
 import { DomainError } from "@/lib/domain-error";
 
-import { getTaskDb } from "./connection";
 import { advanceTask } from "./generator";
-import { resetTasks } from "./seed";
 import { streamTaskLogs } from "./task-logs";
 
 // *.db.test.ts 共用的准备和断言。
-
-/** 每个测试从种子数据开始。在测试文件的顶层调用。 */
-export function resetBeforeEach() {
-  beforeEach(async () => {
-    const deleteFiles = await getTaskDb()
-      .transaction()
-      .execute(async (trx) => {
-        const deleteUploadFiles = await clearUploads(trx);
-        await resetTasks(trx);
-        return deleteUploadFiles;
-      });
-    await deleteFiles();
-  });
-}
 
 /** 读函数的返回值要符合对外的 schema，并且经过一次 JSON 往返后不变：浏览器 refetch 拿到的就是这个值。 */
 export function expectWireSafe<T>(

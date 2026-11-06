@@ -3,9 +3,7 @@ import { describe, expect, test } from "vitest";
 import { COMMENT_CONTENT_INVALID } from "../constants/error-codes";
 import { taskCommentSchema } from "../types/task";
 import { createComment, deleteComment, listComments } from "./comments";
-import { expectWireSafe, rejection, resetBeforeEach } from "./db-test-helpers";
-
-resetBeforeEach();
+import { expectWireSafe, rejection } from "./db-test-helpers";
 
 describe("评论", () => {
   test("按发表时间从早到晚排列", async () => {

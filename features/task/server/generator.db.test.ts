@@ -1,14 +1,12 @@
 import { describe, expect, test } from "vitest";
 
-import { advance, resetBeforeEach } from "./db-test-helpers";
+import { advance } from "./db-test-helpers";
 import {
   advanceActiveTasks,
   advanceTask,
   startTaskGenerator,
 } from "./generator";
 import { createTask, getTask } from "./tasks";
-
-resetBeforeEach();
 
 describe("Generator 推进任务", () => {
   test("一步步把任务从 pending 推进到 done，之后不再变化", async () => {
