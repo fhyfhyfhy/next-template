@@ -6,7 +6,7 @@ Each check names when it applies, what passes, what happens otherwise, how to ob
 
 Search the source and config for:
 
-- **Route rendering**: the route table `pnpm build` prints: `○` static, `◐` partially prerendered (static shell plus streamed parts), `ƒ` dynamic.
+- **Route rendering**: the route table the production build prints (`pnpm build:local` locally): `○` static, `◐` partially prerendered (static shell plus streamed parts), `ƒ` dynamic.
 - **Caching**: `"use cache"`, `"use cache: remote"`, `"use cache: private"`, `cacheLife(`, `cacheTag(`.
 - **On-demand revalidation**: `updateTag(`, `revalidateTag(`, `revalidatePath(`.
 - **Server Actions**: `"use server"`.

@@ -6,7 +6,10 @@ import { GLOBAL_ERROR_TOAST } from "./test";
 
 // 最近查看：任务 id 存在 localStorage 里，只有浏览器能读，请求要等 hydration 之后才发。
 
-/** 打开详情并等到浏览记录写入：写入在 hydration 后的 effect 里，日志流结束说明页面已经 hydrate。 */
+/**
+ * 打开详情并等到浏览记录写入：写入在 hydration 后的 effect 里，日志流结束说明页面已经 hydrate。只对终态的任务有效：
+ * 别的任务的日志流不会结束。
+ */
 async function visitTask(page: Page, taskId: string) {
   await page.goto(`/tasks/${taskId}`);
   await expect(page.getByText("日志已结束")).toBeVisible();
@@ -39,7 +42,6 @@ test("看过但已被删除的任务显示为已删除，不弹通用提示", as
   page,
   tasks,
 }) => {
-  // 已完成的任务打开后日志流立即结束，visitTask 才等得到。
   const task = await tasks.createTask({ status: "done" });
   await visitTask(page, task.id);
   await tasks.deleteTask(task.id);

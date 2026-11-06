@@ -29,7 +29,10 @@ export function mergeMigrations(modules) {
   return merged;
 }
 
-/** 把 `connectionString` 指向的库迁移到最新结构；任何一条失败都抛出，已经成功的保留。 */
+/**
+ * 把 `connectionString` 指向的库迁移到最新结构。Kysely 在 Postgres 上把这一次要执行的 migration 放进一个事务：
+ * 任何一条失败都抛出，这一次已经执行的一起回滚。
+ */
 export async function migrateDatabase(connectionString) {
   const modules = [];
   for (const path of globSync(MIGRATION_GLOB, { cwd: projectRoot }).sort()) {

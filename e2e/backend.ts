@@ -1,10 +1,10 @@
-import { randomUUID } from "node:crypto";
 import {
   Kysely,
   PostgresDialect,
   type QueryExecutorProvider,
   sql,
 } from "kysely";
+import { nanoid } from "nanoid";
 import pg from "pg";
 
 import { localEnv } from "../scripts/local-services/datasets.mjs";
@@ -59,5 +59,5 @@ export async function holdTable(table: string) {
 
 /** 名称后面接一段随机串：用例之间、复用服务多跑几轮时都不会撞名，也不会被别的用例的搜索搜到。 */
 export function unique(label: string) {
-  return `${label} ${randomUUID().slice(0, 6)}`;
+  return `${label} ${nanoid(6)}`;
 }

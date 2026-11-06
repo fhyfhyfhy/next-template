@@ -2,7 +2,7 @@
   "name": "Next Template",
   "metadata": {
     "titleTemplate": "{page} · {app}",
-    "description": "Generate 3D models from a prompt, follow their progress, and favorite and download the models."
+    "description": "Generate 3D models from a prompt, follow their progress, and favorite and download them."
   },
   "requestError": "Request failed. Please try again later.",
   "globalNotFound": {
@@ -12,7 +12,7 @@
   },
   "pageError": {
     "title": "Couldn't load the page",
-    "description": "The network or the server may be briefly unavailable. Please try again.",
+    "description": "The network or the service may be briefly unavailable. Please try again later.",
     "retry": "Retry"
   },
   "tasks": {

@@ -63,7 +63,7 @@
       "description": "A native input element that works with Field automatically when placed inside it."
     },
     "progress": {
-      "description": "Shows how far a long-running operation has progressed."
+      "description": "Shows the progress of a long-running operation."
     },
     "select": {
       "description": "A form control for choosing a predefined value from a dropdown menu."

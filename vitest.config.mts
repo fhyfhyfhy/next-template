@@ -10,7 +10,7 @@ const EXCLUDE = [...configDefaults.exclude, ".claude/worktrees/**"];
 
 // pnpm test 跑两个项目，e2e/ 下的 *.spec.ts 由 Playwright 运行（playwright.config.ts）：
 // - unit：数据库测试以外的所有测试，不需要 Docker；提交时 lint-staged 只跑暂存文件相关的这部分（lint-staged.config.mjs）。
-// - db：数据层的测试（*.db.test.*），连接 compose.yaml 里真实的 Postgres 和对象存储，用 test 数据集，
+// - db：连接 compose.yaml 里真实的 Postgres 和对象存储的测试（*.db.test.*），比如数据层和种子数据，用 test 数据集，
 //   和 pnpm dev、e2e 的数据互不影响。
 export default defineConfig({
   resolve: {

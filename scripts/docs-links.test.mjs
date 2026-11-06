@@ -2,7 +2,8 @@ import { existsSync, globSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { describe, expect, test } from "vitest";
 
-// agent 读的文档靠相对链接互相引用；移动或改名文件时，这里会指出失效的链接。外部链接和 node_modules 里的安装文档不检查。
+// agent 读的文档靠相对链接互相引用；移动或改名文件时，这里会指出失效的链接。指向本仓库 GitHub 的链接另外检查
+// （见 SAMPLE_PRODUCT），其他外部链接和 node_modules 里的安装文档不检查。
 
 const projectRoot = join(import.meta.dirname, "..");
 const read = (file) =>
@@ -86,9 +87,11 @@ test("检查本身能发现失效的链接和锚点", () => {
   ).toStrictEqual(["missing.md", "e2e.md#no-such-heading"]);
 });
 
-// 示例业务的代码，派生项目会删掉它（README 的 Starting a project）。agent 读的文档引用它时链接到模板在 GitHub
+// Sample product 的代码，派生项目会删掉它（README 的 Starting a project）。agent 读的文档引用它时链接到模板在 GitHub
 // 上的版本，链接文字是从仓库根开始的路径（.agents/skills/skills-and-rules/SKILL.md 的 Citing code）。
-// 派生项目删掉示例业务时清空 SAMPLE_PRODUCT：链接指向模板的仓库，本地已经没有对应的文件。
+// 派生项目删掉 Sample product 时清空 SAMPLE_PRODUCT：链接指向模板的仓库，本地已经没有对应的文件。
+// 列表对应 README 那一节的第一段；`app/api/` 只列 Sample product 自己的目录，因为 rules 用 `app/api/` 泛指
+// Route Handler 的位置。
 const GITHUB_LINK =
   /^https:\/\/github\.com\/fhyfhyfhy\/next-template\/(?:blob|tree)\/main\/([^#?]+)/;
 const SAMPLE_PRODUCT = [
@@ -137,25 +140,25 @@ function brokenGithubLinks(file, text = read(file)) {
   return broken;
 }
 
-/** 链接之外出现的示例业务路径。 */
+/** 链接之外出现的 Sample product 路径。 */
 function unlinkedSamplePaths(file, text = read(file)) {
   const rest = withoutCodeBlocks(text).replace(MARKDOWN_LINK, "");
   return SAMPLE_PRODUCT.filter((path) => rest.includes(path));
 }
 
-describe("指向本仓库 GitHub 的链接都能打开", () => {
+describe("指向本仓库 GitHub 的链接：路径在仓库里存在，链接文字和路径一致", () => {
   test.each(docs)("%s", (file) => {
     expect(brokenGithubLinks(file)).toStrictEqual([]);
   });
 });
 
-describe("agent 读的文档引用示例业务时都带 GitHub 链接", () => {
+describe("agent 读的文档引用 Sample product 时都带 GitHub 链接", () => {
   test.each(agentDocs)("%s", (file) => {
     expect(unlinkedSamplePaths(file)).toStrictEqual([]);
   });
 });
 
-test("检查本身能发现失效的 GitHub 链接和没带链接的示例业务路径", () => {
+test("检查本身能发现失效的 GitHub 链接和没带链接的 Sample product 路径", () => {
   const base = "https://github.com/fhyfhyfhy/next-template";
   expect(
     brokenGithubLinks(

@@ -1,4 +1,4 @@
-# 本地开发和测试用的 Postgres 和对象存储，由 scripts/local-services/services.mjs 启动，连接参数写在同一个目录的 datasets.mjs 里。
+# 本地开发和测试用的 Postgres 和对象存储，由 scripts/local-services/services.mjs 启动，连接参数写在 scripts/local-services/datasets.mjs 里。
 # 固定 project 名：同一台机器上的每份 checkout 共用这两个容器和它们的数据，不各起一份去抢端口。
 # 都挂 named volume：数据库里记着对象的 key，只清掉一边会让封面和模型失效；docker compose down -v 会把两边一起清空。
 name: next-template

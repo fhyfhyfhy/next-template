@@ -2,7 +2,7 @@
   "name": "Next Template",
   "metadata": {
     "titleTemplate": "{page} · {app}",
-    "description": "提交 prompt 生成 3D 模型，查看生成进度，收藏和下载作品。"
+    "description": "提交 prompt 生成 3D 模型，查看生成进度，收藏和下载生成的模型。"
   },
   "requestError": "请求失败，请稍后重试",
   "globalNotFound": {
@@ -12,7 +12,7 @@
   },
   "pageError": {
     "title": "页面加载失败",
-    "description": "可能是网络或服务暂时不可用，可以重试一次。",
+    "description": "可能是网络或服务暂时不可用，请稍后重试。",
     "retry": "重试"
   },
   "tasks": {

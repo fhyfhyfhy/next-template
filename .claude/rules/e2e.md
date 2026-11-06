@@ -7,7 +7,7 @@ paths:
 
 Specs observe the app through the browser and import no application code. The data they need goes straight into the e2e database through a fixture that the feature's specs share, in a module beside them, as [`e2e/tasks.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/e2e/tasks.ts) is for the sample product's specs, built on `connectE2eDatabase` in `e2e/backend.ts`. That module also holds the page helpers its specs share.
 
-Use `test` and `expect` in `e2e/test.ts`, or in the feature's fixture module, which extends it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (`playwright.config.ts`); a test that needs another one sets `test.use({ locale })`. `DateTime` in `components/date-time.tsx` renders dates and times in the browser's time zone after hydration: a spec that asserts one also sets `test.use({ timezoneId })`.
+Use `test` and `expect` in `e2e/test.ts`, or in the feature's fixture module, which extends it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (`playwright.config.ts`); a test that needs another one sets `test.use({ locale })`, as `e2e/locale.spec.ts` does. `DateTime` in `components/date-time.tsx` renders dates and times in the browser's time zone after hydration: a spec that asserts one also sets `test.use({ timezoneId })`, as `e2e/date-time.spec.ts` does.
 
 ## Test data
 

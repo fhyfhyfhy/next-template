@@ -5,6 +5,7 @@ import {
   delayRequests,
   failRequests,
   hasPath,
+  holdRequests,
   isServerAction,
   openWithoutScripts,
   recordRequests,
@@ -279,10 +280,12 @@ test.describe("写入", () => {
     await expect(taskRow(page, task.name)).toBeVisible();
 
     await openTask(page, task.id);
-    const retried = waitForServerAction(page);
+    // 重试的 Server Action 放行之前，排队中只能来自乐观更新；等 action 返回后再推进，任务才已经回到 pending。
+    const release = await holdRequests(page, isServerAction);
     await page.getByRole("button", { name: "重试" }).click();
-    // 重试是乐观更新：服务端处理之前就显示排队中，等 action 返回后再推进，任务才已经回到 pending。
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
+    const retried = waitForServerAction(page);
+    release();
     await retried;
 
     await tasks.reportProgress(task.id, {
@@ -297,6 +300,20 @@ test.describe("写入", () => {
     await expect(taskRows(list).first()).toBeVisible();
     await expect(taskRow(list, task.name)).toHaveCount(0);
     await list.close();
+  });
+
+  test("重试失败时恢复为失败，只弹一个全局提示", async ({ page, tasks }) => {
+    const task = await tasks.createTask({ status: "failed" });
+    await openTask(page, task.id);
+    await failRequests(page, isServerAction);
+    const release = await holdRequests(page, isServerAction);
+
+    await page.getByRole("button", { name: "重试" }).click();
+    await expect(page.getByTestId("task-status")).toHaveText("排队中");
+    release();
+
+    await expect(page.getByText("重试任务失败，请稍后重试")).toHaveCount(1);
+    await expect(page.getByTestId("task-status")).toHaveText("失败");
   });
 
   test("任务已在别处重试过时就地提示并刷新详情", async ({ page, tasks }) => {
@@ -421,7 +438,7 @@ test.describe("写入", () => {
   }) => {
     const task = await tasks.createTask();
     await openTask(page, task.id);
-    // 拖住签发上传和设置封面的 Server Action，上传一直进行中。
+    // 签发上传和设置封面的 Server Action 晚 1 秒返回，这期间上传保持进行中。
     await delayRequests(page, isServerAction, 1000);
     const picker = page.getByLabel(/^(更换封面图|上传中…)$/);
     await picker.focus();
@@ -550,23 +567,46 @@ test.describe("评论", () => {
     await expect(page.getByLabel("写评论")).toHaveValue("发不出去的评论");
   });
 
-  test("删除评论立即消失，失败时恢复原位", async ({ page, tasks }) => {
+  test("删除评论立即消失", async ({ page, tasks }) => {
     const task = await tasks.createTask({ status: "done" });
     await tasks.addComments(task.id, ["第一条评论", "第二条评论"]);
     await openTask(page, task.id);
-    await comments(page)
-      .first()
-      .getByRole("button", { name: "删除评论" })
-      .click();
-    await expect(comments(page)).toHaveCount(1);
+    // 删除的 Server Action 放行之前，评论只能是乐观更新拿掉的。
+    const release = await holdRequests(page, isServerAction);
 
-    await failRequests(page, isServerAction);
     await comments(page)
       .first()
       .getByRole("button", { name: "删除评论" })
       .click();
-    await expect(page.getByText("删除评论失败，请稍后重试")).toBeVisible();
-    await expect(comments(page)).toHaveCount(1);
+
+    await expect(comments(page)).toHaveText([/第二条评论/]);
+    release();
+  });
+
+  test("删除评论失败时恢复原位，只弹一个全局提示", async ({ page, tasks }) => {
+    const task = await tasks.createTask({ status: "done" });
+    await tasks.addComments(task.id, [
+      "第一条评论",
+      "第二条评论",
+      "第三条评论",
+    ]);
+    await openTask(page, task.id);
+    await failRequests(page, isServerAction);
+    const release = await holdRequests(page, isServerAction);
+
+    await comments(page)
+      .nth(1)
+      .getByRole("button", { name: "删除评论" })
+      .click();
+    await expect(comments(page)).toHaveCount(2);
+    release();
+
+    await expect(page.getByText("删除评论失败，请稍后重试")).toHaveCount(1);
+    await expect(comments(page)).toHaveText([
+      /第一条评论/,
+      /第二条评论/,
+      /第三条评论/,
+    ]);
   });
 
   test("空评论和超过 500 字的评论不能提交", async ({ page }) => {
@@ -582,13 +622,10 @@ test.describe("评论", () => {
   });
 
   test("hydration 之前评论表单不可用", async ({ page }) => {
-    // 拦掉 JS bundle，页面停在 hydration 之前。
-    await page.route(/\/_next\/static\/chunks\/.+\.js/, (route) =>
-      route.abort(),
-    );
-    await page.goto("/tasks/task-01");
+    const htmlPage = await openWithoutScripts(page, "/tasks/task-01");
 
-    await expect(page.getByLabel("写评论")).toBeDisabled();
-    await expect(page.getByRole("button", { name: "发表" })).toBeDisabled();
+    await expect(htmlPage.getByLabel("写评论")).toBeDisabled();
+    await expect(htmlPage.getByRole("button", { name: "发表" })).toBeDisabled();
+    await htmlPage.close();
   });
 });

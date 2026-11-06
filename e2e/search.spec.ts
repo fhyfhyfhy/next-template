@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { delayRequests, hasPath } from "./browser";
+import { delayRequests, hasPath, openWithoutScripts } from "./browser";
 import { expect, test } from "./test";
 
 // 搜索：边输入边请求，数据由 React Query 负责；关键词只做 shallow URL 更新。
@@ -26,11 +26,10 @@ test("关键词随输入写进 URL 并显示结果，不新增历史记录", asy
 });
 
 test("hydration 之前搜索框不可用", async ({ page }) => {
-  // 拦掉 JS bundle，页面停在 hydration 之前。
-  await page.route(/\/_next\/static\/chunks\/.+\.js/, (route) => route.abort());
-  await page.goto("/search");
+  const htmlPage = await openWithoutScripts(page, "/search");
 
-  await expect(page.getByLabel("搜索任务")).toBeDisabled();
+  await expect(htmlPage.getByLabel("搜索任务")).toBeDisabled();
+  await htmlPage.close();
 });
 
 test("带关键词的链接打开时还原输入框和结果", async ({ page }) => {

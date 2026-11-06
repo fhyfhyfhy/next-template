@@ -63,13 +63,13 @@
       "description": "原生 input 元素，放在 Field 里自动和它配合。"
     },
     "progress": {
-      "description": "显示耗时较长的操作进行到哪一步。"
+      "description": "显示耗时较长的操作的进度。"
     },
     "select": {
       "description": "从下拉菜单里选择预设值的表单控件。"
     },
     "skeleton": {
-      "description": "内容加载时显示的占位。"
+      "description": "内容加载时显示的占位元素。"
     },
     "switch": {
       "description": "表示某项设置开启还是关闭的控件。"

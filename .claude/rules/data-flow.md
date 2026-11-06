@@ -106,7 +106,7 @@ The global handler in `app/providers.tsx` shows request failures as toasts. A qu
 
 ### Query states
 
-Render a query's states in this order, data first: a failed refresh keeps its data, and checking `error` first would replace data the user can still use. The error state shows the feature's own copy, chosen from `error.code` or `error.status` when it needs to vary; `ApiError.message` in `lib/fetch.ts` is written for developers and logs.
+Render a query's states in this order, data first: a failed refresh keeps its data, and checking `error` first would replace data the user can still use. The error state shows the feature's own copy, chosen from `error.code` or `error.status` when it needs to vary; `ApiError.message` in `lib/fetch.ts` is written for developers and logs. `RecentTasks` in [`features/task/components/recent-tasks.tsx`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/components/recent-tasks.tsx) renders each row this way.
 
 ```tsx
 const todos = useQuery(getTodosQueryOptions());
@@ -121,7 +121,7 @@ if (todos.error) {
 return "Loading...";
 ```
 
-A `useSuspenseQuery` failure reaches the nearest error boundary, such as `error.tsx`, when the query has no cached data. A failed background refetch keeps displaying cached data and follows "Toasts" above. When retrying from the error boundary, call `reset()` from `useQueryErrorResetBoundary` first: until that boundary is reset, a remounted suspense query keeps its error instead of fetching again.
+A `useSuspenseQuery` failure reaches the nearest error boundary, such as `error.tsx`, when the query has no cached data. A failed background refetch keeps displaying cached data and follows "Toasts" above. When retrying from the error boundary, call `reset()` from `useQueryErrorResetBoundary` first: until that boundary is reset, a remounted suspense query keeps its error instead of fetching again. `QueryErrorBoundary` in [`features/task/components/query-error-boundary/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/query-error-boundary) does this for the comments.
 
 ```tsx
 const { reset } = useQueryErrorResetBoundary();

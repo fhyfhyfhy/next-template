@@ -5,10 +5,11 @@ import { unique } from "./backend";
 import {
   delayRequests,
   failRequests,
+  holdRequests,
   isNavigation,
   isServerAction,
+  openWithoutScripts,
   recordRequests,
-  waitForServerAction,
 } from "./browser";
 import {
   createTaskThroughForm as createTask,
@@ -229,13 +230,14 @@ test("停在「已完成」筛选上，别处的任务结束后出现在列表�
 });
 
 test("hydration 之前创建表单不可用", async ({ page }) => {
-  // 拦掉 JS bundle，页面停在 hydration 之前。
-  await page.route(/\/_next\/static\/chunks\/.+\.js/, (route) => route.abort());
-  await page.goto("/tasks");
+  const htmlPage = await openWithoutScripts(page, "/tasks");
 
-  await expect(page.getByLabel("名称")).toBeDisabled();
-  await expect(page.getByLabel("Prompt")).toBeDisabled();
-  await expect(page.getByRole("button", { name: "创建任务" })).toBeDisabled();
+  await expect(htmlPage.getByLabel("名称")).toBeDisabled();
+  await expect(htmlPage.getByLabel("Prompt")).toBeDisabled();
+  await expect(
+    htmlPage.getByRole("button", { name: "创建任务" }),
+  ).toBeDisabled();
+  await htmlPage.close();
 });
 
 test("创建时名称被占用，错误显示在名称字段下，不弹全局提示", async ({
@@ -325,21 +327,19 @@ test("创建出错时弹全局提示，填的内容还在，重试能成功", as
   await expect(taskRow(page, name)).toBeVisible();
 });
 
-test("收藏立即生效，请求完成前就显示已收藏", async ({ page }) => {
+test("收藏立即生效，请求完成前就显示已收藏", async ({ page, tasks }) => {
   await openTasksPage(page);
-  const { name } = await createTask(page);
-  await delayRequests(page, isServerAction, 1500);
+  const { id, name } = await createTask(page);
+  // 收藏的 Server Action 放行之前，星标只能来自乐观更新。
+  const release = await holdRequests(page, isServerAction);
   const star = taskRow(page, name).getByRole("button", { name: "收藏" });
-  // 收藏走 Server Action，它返回时后端已经写入。
-  const saved = waitForServerAction(page);
 
   await star.click();
-  // 超时短于请求的延迟：只有乐观更新能让星标在请求返回之前变成已收藏。
-  await expect(star).toHaveAttribute("aria-pressed", "true", {
-    timeout: 1000,
-  });
+  await expect(star).toHaveAttribute("aria-pressed", "true");
 
-  await saved;
+  release();
+  // 等库里真的写入：列表的变化信号也会调 Server Action，等响应分不出是哪一个。
+  await expect.poll(() => tasks.isFavorite(id)).toBe(true);
   await page.reload();
   await expect(
     taskRow(page, name).getByRole("button", { name: "收藏" }),

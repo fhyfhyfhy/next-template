@@ -78,8 +78,22 @@ describe("种子数据", () => {
   test("两个连接同时对空库执行时只写入一份", async () => {
     const [first, second] = [await connect(), await connect()];
     await first.query("truncate tasks, uploads restart identity cascade");
-
-    await Promise.all([writeSeedRows(first), writeSeedRows(second)]);
+    // 第一个连接写完先不提交，等第二个开始执行、被挡住以后再提交：两次执行一定交错。
+    await first.query("begin");
+    await writeSeedRows(first);
+    const { rows } = await second.query("select pg_backend_pid() as pid");
+    const secondWrite = writeSeedRows(second);
+    await expect
+      .poll(async () => {
+        const result = await first.query(
+          "select wait_event_type from pg_stat_activity where pid = $1",
+          [rows[0].pid],
+        );
+        return result.rows[0]?.wait_event_type;
+      })
+      .toBe("Lock");
+    await first.query("commit");
+    await secondWrite;
 
     expect(await counts(first)).toStrictEqual(seeded);
   });

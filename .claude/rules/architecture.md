@@ -126,6 +126,8 @@ export { DialogBackdrop } from "./backdrop";
 export { DialogContext } from "./context";
 ```
 
+In the sample product, [`features/task/components/task-detail/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-detail) is a main component with private subcomponents, and [`features/task/components/task-list-navigation/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-navigation) a compound component whose parts share a context.
+
 - Code outside the directory imports only through its `index`.
 - The `index` exports by name each component, context, hook, and type that callers need.
 - Keep component-specific contexts, hooks, helpers, and types alongside its parts. Keep implementation-only symbols private. Extract them to the appropriate layer within their owner when they acquire an independent reuse role; business ownership remains unchanged.
@@ -141,6 +143,8 @@ features/orders/components/
     index.tsx
     format-button.tsx
 ```
+
+The sample product's task list sits beside its toolbar and navigation this way: [`features/task/components/task-list/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list), [`features/task/components/task-list-toolbar/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-toolbar), and [`features/task/components/task-list-navigation/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-navigation).
 
 ### Feature public API
 

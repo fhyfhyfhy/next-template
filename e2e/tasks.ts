@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto";
 import { PutObjectCommand, type S3Client } from "@aws-sdk/client-s3";
 import type { Page, Request } from "@playwright/test";
 import type { Kysely } from "kysely";
+import { nanoid } from "nanoid";
 
 import {
   connectE2eDatabase,
@@ -98,7 +98,7 @@ export class TaskData {
     favorite?: boolean;
     createdAt?: Date;
   } = {}): Promise<CreatedTask> {
-    const id = `e2e-${randomUUID()}`;
+    const id = `e2e-${nanoid()}`;
     await this.db
       .insertInto("tasks")
       .values({
@@ -125,6 +125,16 @@ export class TaskData {
     return new Map(rows.map((row) => [row.name, row.created_at.getTime()]));
   }
 
+  /** 库里这个任务是否已收藏。 */
+  async isFavorite(taskId: string) {
+    const row = await this.db
+      .selectFrom("tasks")
+      .select("favorite")
+      .where("id", "=", taskId)
+      .executeTakeFirstOrThrow();
+    return row.favorite;
+  }
+
   /** 库里已完成的任务数，别的用例完成的也算在内。 */
   async countDone() {
     const { total } = await this.db
@@ -141,7 +151,7 @@ export class TaskData {
       .insertInto("task_comments")
       .values(
         contents.map((content, index) => ({
-          id: `e2e-${randomUUID()}`,
+          id: `e2e-${nanoid()}`,
           task_id: taskId,
           content,
           created_at: new Date(now + index),
@@ -163,7 +173,7 @@ export class TaskData {
     }: { status: TaskStatus; progress: number; log: string },
   ) {
     const model =
-      status === "done" ? await this.saveModel(`e2e-${randomUUID()}`) : null;
+      status === "done" ? await this.saveModel(`e2e-${nanoid()}`) : null;
     await this.db.transaction().execute(async (trx) => {
       await trx
         .updateTable("tasks")
@@ -213,7 +223,12 @@ export class TaskData {
 
   async deleteTask(taskId: string) {
     await this.db.transaction().execute(async (trx) => {
-      // 评论和日志随外键删除。
+      // 评论和日志随外键删除；上传关联像应用的 deleteTask（features/task/server/tasks.ts）一样解除，上传记录留给清理任务。
+      await trx
+        .deleteFrom("upload_attachments")
+        .where("record_type", "=", "task")
+        .where("record_id", "=", taskId)
+        .execute();
       await trx.deleteFrom("tasks").where("id", "=", taskId).execute();
       await notify(trx, TASK_CHANGED_CHANNEL, taskId);
     });

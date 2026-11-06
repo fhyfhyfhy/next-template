@@ -16,11 +16,15 @@ declare global {
  * 在数据层的映射里转换。
  * Kysely 实例本身不持有连接，每次调用新建一个开销很小。
  */
+function createPool() {
+  const pool = new Pool({ connectionString: env.DATABASE_URL, max: 10 });
+  // 闲置的连接断开时连接池发出 error，不监听的话在 Next 之外是未捕获的异常；连接池会丢掉这条连接，下次查询新建。
+  pool.on("error", (error) => console.error("Database pool error", error));
+  return pool;
+}
+
 export function getDb<TDatabase>(): Kysely<TDatabase> {
-  const pool = (globalThis.__kyselyPool ??= new Pool({
-    connectionString: env.DATABASE_URL,
-    max: 10,
-  }));
+  const pool = (globalThis.__kyselyPool ??= createPool());
   return new Kysely<TDatabase>({ dialect: new PostgresDialect({ pool }) });
 }
 

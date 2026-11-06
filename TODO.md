@@ -14,6 +14,10 @@
 
 - [ ] 应用现在没有账号，所有访客共享同一批任务，Server Action 只校验输入、不做授权（ADR 0006）。加账号时补上任务归属、按用户收藏（作品广场的“我的收藏”已经按请求读取，不进共用的缓存快照），并在每个 action 里授权写入；这时 data-flow.md 的 Signing out 和 refresh.md 的 Session changes 也有了实例。
 
+## 可访问性
+
+- [ ] 进行中任务徽标的 `aria-label` 挂在没有角色的 span 上（features/task/components/task-header/running-tasks-badge.tsx），读屏多半读可见文字，英文的复数说法听不到；换成可见文字或合适的角色，e2e 用 `getByLabel` 找它，要一起改。
+
 ## 数据新鲜度
 
 - [ ] 进行中任务的集合每变一次，每个打开着的全部任务页都会调用一次 `expireTaskListAction`。refresh.md 的 Changes made elsewhere 建议改由后端事件失效缓存：generator（真实系统里是外部生成服务）推进任务时调用应用的 Route Handler 做 `revalidateTag`，浏览器只 `router.refresh()`。等部署成多实例、或者同时在线的访客多起来时再做，和共享的缓存 handler 一起考虑（README 的 Deployment 一节）。

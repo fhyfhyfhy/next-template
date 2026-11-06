@@ -68,6 +68,25 @@ export async function delayRequests(
 }
 
 /**
+ * 让之后匹配的请求停在浏览器里，直到调用返回的函数才发出：放行之前界面上只有乐观更新，断言不用和时间赛跑。
+ * 放行后交给先注册的拦截处理，比如 `failRequests`，没有就照常发出；放行之后的请求不再停。
+ */
+export async function holdRequests(
+  page: Page,
+  match: (request: Request) => boolean,
+) {
+  let release = () => {};
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/*", async (route) => {
+    if (match(route.request())) await released;
+    await route.fallback();
+  });
+  return release;
+}
+
+/**
  * 让之后匹配的请求失败，像服务端处理时遇到了意外错误，返回函数恢复正常。Server Action 按 Next 的约定回
  * `text/plain` 的 500，调用方拿到一个被拒绝的 promise；Route Handler 回 `lib/fetch.ts` 认得的失败响应体。
  * `delayMs` 让失败晚一些返回：用例能看到请求返回之前的乐观更新，失败后又不留下写入。

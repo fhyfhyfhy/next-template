@@ -41,7 +41,8 @@ export function TaskHeader({ brand, badge, actions }: TaskHeaderProps) {
           className="flex flex-1 flex-wrap gap-1"
         >
           {links.map((link) => {
-            const current = pathname.startsWith(link.href);
+            const current =
+              pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Link
                 key={link.href}

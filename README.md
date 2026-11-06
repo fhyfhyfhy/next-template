@@ -31,9 +31,9 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `:local`
 
 The sample product is everything that serves tasks and uploads: `features/task/`, `features/upload/`, the routes in `app/[locale]/(tasks)/` and `app/api/`, their namespaces in `messages/`, the specs and the fixture in `e2e/tasks.ts`, and their entries in `GLOSSARY.md` and `docs/features.md`. Replacing it also touches the places that wire it into the rest:
 
-- `app/[locale]/page.tsx`, whose home page redirects to `/tasks`. Typed routes are off, so nothing reports the redirect once `/tasks` is gone.
+- `app/[locale]/page.tsx`, whose home page redirects to the task list through `TASK_LIST_HREF`.
 - The background jobs in `instrumentation.ts`, and their switches `TASK_GENERATOR_ENABLED` and `UPLOAD_CLEANUP_ENABLED` in `lib/env.ts`, `lib/env.test.ts`, and `playwright.config.ts`.
-- The seed data: `scripts/local-services/seed.sql` and the files it references in `scripts/local-services/seed-files/`.
+- The seed data: `scripts/local-services/seed.sql`, the files it references in `scripts/local-services/seed-files/`, their content types in `SEED_CONTENT_TYPES` in `scripts/local-services/services.mjs`, and the tables `scripts/local-services/seed.db.test.mjs` counts.
 - The namespaces registered in `lib/i18n/messages.ts`; in `messages/*/app.json`, the route keys `tasks`, `taskDetail`, `feed`, `search`, and `recent`, `pageError` for `app/[locale]/(tasks)/error.tsx`, and `metadata.description`; and the sample product's terms in `messages/terms.json`.
 - The specs that test kept code through the sample product's pages: `e2e/home.spec.ts`, `e2e/locale.spec.ts`, and `e2e/date-time.spec.ts`. Point them at the project's own pages rather than deleting them.
 - The cases in `eslint.config.test.mjs` that lint real files under `features/task/`, which must exist on disk: point them at the project's own files.
@@ -72,7 +72,7 @@ Vitest runs every `*.test.*` file, kept next to the code it tests, in one of two
 
 `pnpm test` runs both.
 
-`pnpm test:e2e` runs the Playwright specs in `e2e/` against a production build on port 3998 (`E2E_PORT`), on the `e2e` dataset. Install the browser once with `pnpm exec playwright install chromium`. Before building, it resets the dataset to the seed data, so the prerendered pages match the database; the specs then add their own data straight to that database through fixtures built on `e2e/backend.ts` ([.claude/rules/e2e.md](.claude/rules/e2e.md)). The server runs with the generator off (`TASK_GENERATOR_ENABLED=false`), so tasks advance only when a spec advances them. Two checkouts share the `e2e` dataset, so run the specs from one at a time.
+`pnpm test:e2e` runs the Playwright specs in `e2e/` against a production build on port 3998 (`E2E_PORT`), on the `e2e` dataset. Install the browser once with `pnpm exec playwright install chromium`. Before building, it resets the dataset to the seed data, so the prerendered pages match the database; the specs then add their own data straight to that database through fixtures built on `e2e/backend.ts` ([.claude/rules/e2e.md](.claude/rules/e2e.md)). The server runs with the background jobs off (`TASK_GENERATOR_ENABLED=false`, `UPLOAD_CLEANUP_ENABLED=false`), so tasks advance only when a spec advances them. Two checkouts share the `e2e` dataset, so run the specs from one at a time.
 
 The e2e build turns on the testing API that `instant()` from `@next/playwright` needs to hold back streamed content: its `webServer` sets `EXPOSE_TESTING_API=1`, which `next.config.ts` reads. Keep that variable out of deployment builds. The build goes to `.next-e2e`, so a running `pnpm start` keeps its own output. ESLint applies `eslint-plugin-playwright`'s recommended rules to `e2e/`.
 

@@ -4,6 +4,7 @@ import { unique } from "./backend";
 import {
   failRequests,
   hasPath,
+  holdRequests,
   isServerAction,
   openWithoutScripts,
   recordRequests,
@@ -128,9 +129,9 @@ test("翻页期间有任务完成、排进第一页的范围，下一页也不�
   await openFeed(page);
   // 在第一页前两个作品之间插入一个生成中的任务，再让它完成：按页码翻页的话，下一页会重复第一页最后一个作品。
   const shown = await cards(page).allTextContents();
-  const [newer = 0, older = 0] = [
-    ...(await tasks.createdAt(shown.slice(0, 2))).values(),
-  ].sort((a, b) => b - a);
+  const createdAt = await tasks.createdAt(shown.slice(0, 2));
+  expect(createdAt.size, "第一页前两个作品的创建时间").toBe(2);
+  const [newer = 0, older = 0] = [...createdAt.values()].sort((a, b) => b - a);
   const task = await tasks.createTask({
     status: "running",
     progress: 75,
@@ -211,15 +212,15 @@ test("取消收藏时卡片和“我的收藏”立即更新，失败后一起�
   await openFeed(page);
   await expect(cards(page).first()).toContainText(name);
   const count = (await favoriteNames(page)).length;
-  // 让请求晚 1.5 秒才失败：先看到返回之前的乐观更新，再看到失败后的回滚，不留下写入。
-  await failRequests(page, isServerAction, { delayMs: 1500 });
+  // 请求放行之前只能看到乐观更新；放行后请求失败，收藏回滚，不留下写入。
+  await failRequests(page, isServerAction);
+  const release = await holdRequests(page, isServerAction);
 
   await star(page, name).click();
 
-  await expect(star(page, name)).toHaveAttribute("aria-pressed", "false", {
-    timeout: 1000,
-  });
-  await expect(favorites(page)).toHaveCount(count - 1, { timeout: 1000 });
+  await expect(star(page, name)).toHaveAttribute("aria-pressed", "false");
+  await expect(favorites(page)).toHaveCount(count - 1);
+  release();
   await expect(page.getByText("更新收藏失败，请稍后重试")).toHaveCount(1);
   await expect(star(page, name)).toHaveAttribute("aria-pressed", "true");
   await expect(favorites(page)).toHaveCount(count);
@@ -311,10 +312,12 @@ test("收藏一个较早的作品，“我的收藏”里它直接出现在按�
     (a, b) => (createdAt.get(b) ?? 0) - (createdAt.get(a) ?? 0),
   );
   expect(expected.indexOf(name)).toBeGreaterThan(0);
-  // 让收藏请求晚 3 秒才失败：断言的是返回之前乐观更新时的顺序，失败后收藏回滚，不留下数据。
-  await failRequests(page, isServerAction, { delayMs: 3000 });
+  // 请求放行之前只能看到乐观更新时的顺序；放行后请求失败，收藏回滚，不留下写入。
+  await failRequests(page, isServerAction);
+  const release = await holdRequests(page, isServerAction);
 
   await star(page, name).click();
 
-  await expect(favorites(page)).toHaveText(expected, { timeout: 1000 });
+  await expect(favorites(page)).toHaveText(expected);
+  release();
 });
