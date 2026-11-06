@@ -28,6 +28,8 @@ import { TAILWIND_PALETTES } from "./scripts/eslint/tailwind-palettes.mjs";
 import writingStylePlugin from "./scripts/eslint/writing-style-plugin.mjs";
 
 const PROJECT_ROOT = import.meta.dirname;
+// 源码和 docs/features.md 两组配置共用一个实例：同名插件在两个配置对象里必须是同一个对象。
+const architecturePlugin = createArchitecturePlugin(PROJECT_ROOT);
 const extensionGlob = `{${SOURCE_EXTENSIONS.join(",")}}`;
 const moduleExtensions = SOURCE_EXTENSIONS.map((extension) => `.${extension}`);
 
@@ -320,7 +322,7 @@ const eslintConfig = defineConfig([
     settings: { "import/ignore": ["node_modules"] },
     plugins: {
       "simple-import-sort": simpleImportSort,
-      architecture: createArchitecturePlugin(PROJECT_ROOT),
+      architecture: architecturePlugin,
       naming: createNamingPlugin(PROJECT_ROOT),
       "data-flow": createDataFlowPlugin(PROJECT_ROOT),
       "@tanstack/query": tanstackQueryPlugin,
@@ -333,6 +335,8 @@ const eslintConfig = defineConfig([
       "architecture/feature-imports": "error",
       // 按 feature 聚合依赖（含类型引用），捕获文件图无环但 feature 之间互相依赖的情况。
       "architecture/no-feature-cycle": "error",
+      // feature 之间的每个依赖（含类型引用）都要在 docs/features.md 的依赖图里有对应的边。
+      "architecture/feature-dependencies": "error",
       // 组件目录内用相对路径，对外只开放 index 入口，避免调用方依赖私有实现路径。
       "architecture/component-imports": "error",
       // 每个组件目录只保留一个实现入口，避免多个 index 扩展名产生解析歧义；允许声明文件并存。
@@ -629,6 +633,13 @@ const eslintConfig = defineConfig([
         },
       ],
     },
+  },
+  {
+    // feature 依赖图和代码对照：图里的节点对应 features/ 下的目录，每条边在代码里都有依赖。
+    files: ["docs/features.md"],
+    plugins: { markdown, architecture: architecturePlugin },
+    language: "markdown/gfm",
+    rules: { "architecture/feature-graph": "error" },
   },
   {
     files: AGENT_INSTRUCTIONS,

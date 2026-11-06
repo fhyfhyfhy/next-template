@@ -1,7 +1,13 @@
-import { existsSync, statSync } from "node:fs";
-import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import componentExportsRule from "./component-exports.mjs";
+import { featureDependencies } from "./feature-cycles.mjs";
+import {
+  createFeatureGraphLoader,
+  FEATURE_GRAPH_FILE,
+  parseFeatureGraph,
+} from "./feature-graph.mjs";
 import {
   createProjectResolver,
   featurePath,
@@ -222,6 +228,124 @@ export default function createArchitecturePlugin(projectRoot) {
     },
   };
 
+  const loadFeatureGraph = createFeatureGraphLoader(projectRoot);
+
+  const featureDependenciesRule = {
+    meta: {
+      type: "problem",
+      schema: [],
+      messages: {
+        missing:
+          'Feature {{from}} depends on {{to}}, but the dependency graph in docs/features.md has no {{from}} --> {{to}} edge. Add the edge, labelled with what {{from}} uses {{to}} for, or remove the import. See "Feature boundaries" in .claude/rules/architecture.md.',
+        graph: "Can't check this dependency between features: {{problem}}.",
+      },
+    },
+    create(context) {
+      const filename = context.filename;
+      const sourceFeature = featurePath(projectRoot, filename)?.[0];
+      if (!sourceFeature) return {};
+
+      return importVisitors((source) => {
+        const imported = projectImport(filename, source);
+        if (!imported) return;
+        const targetFeature = featurePath(projectRoot, imported.target)?.[0];
+        if (!targetFeature || targetFeature === sourceFeature) return;
+
+        const { graph, error } = loadFeatureGraph();
+        if (error) {
+          context.report({
+            node: source,
+            messageId: "graph",
+            data: { problem: error },
+          });
+        } else if (!graph.get(sourceFeature)?.has(targetFeature)) {
+          context.report({
+            node: source,
+            messageId: "missing",
+            data: { from: sourceFeature, to: targetFeature },
+          });
+        }
+      });
+    },
+  };
+
+  // 检查 docs/features.md 本身：图里的节点和 features/ 下的目录一一对应，每条边在代码里都有依赖。
+  // 代码里有、图里没有的依赖由 feature-dependencies 在 import 处报告。
+  const featureGraphRule = {
+    meta: {
+      type: "problem",
+      schema: [],
+      messages: {
+        unreadable: "The dependency graph can't be read: {{problem}}.",
+        missingNode:
+          "features/{{feature}} has no node in the dependency graph. Add it, with an edge to each feature it depends on.",
+        missingDirectory:
+          "Node {{feature}} has no directory under features/. Remove the node, or create the feature.",
+        staleEdge:
+          "No file in features/{{from}} depends on {{to}}. Remove the {{from}} --> {{to}} edge.",
+      },
+    },
+    create(context) {
+      // markdown 语言的行列都从 1 开始。
+      const file = relative(projectRoot, context.filename).split(sep).join("/");
+      if (file !== FEATURE_GRAPH_FILE) return {};
+
+      return {
+        root() {
+          let parsed;
+          try {
+            parsed = parseFeatureGraph(context.sourceCode.text);
+          } catch (error) {
+            context.report({
+              loc: { line: 1, column: 1 },
+              messageId: "unreadable",
+              data: { problem: error.message },
+            });
+            return;
+          }
+          const featuresDirectory = join(projectRoot, "features");
+          const directories = existsSync(featuresDirectory)
+            ? readdirSync(featuresDirectory, { withFileTypes: true })
+                .filter((entry) => entry.isDirectory())
+                .map((entry) => entry.name)
+            : [];
+          const firstNodeLine = Math.min(...parsed.nodes.values(), Infinity);
+          for (const feature of directories) {
+            if (!parsed.nodes.has(feature)) {
+              context.report({
+                loc: {
+                  line: Number.isFinite(firstNodeLine) ? firstNodeLine : 1,
+                  column: 1,
+                },
+                messageId: "missingNode",
+                data: { feature },
+              });
+            }
+          }
+          for (const [feature, line] of parsed.nodes) {
+            if (!directories.includes(feature)) {
+              context.report({
+                loc: { line, column: 1 },
+                messageId: "missingDirectory",
+                data: { feature },
+              });
+            }
+          }
+          const actual = featureDependencies(projectRoot);
+          for (const { from, to, line } of parsed.edges) {
+            if (!actual.get(from)?.has(to)) {
+              context.report({
+                loc: { line, column: 1 },
+                messageId: "staleEdge",
+                data: { from, to },
+              });
+            }
+          }
+        },
+      };
+    },
+  };
+
   const rootImportsRule = {
     meta: {
       type: "problem",
@@ -339,6 +463,8 @@ export default function createArchitecturePlugin(projectRoot) {
   return {
     rules: {
       "feature-imports": featureImportsRule,
+      "feature-dependencies": featureDependenciesRule,
+      "feature-graph": featureGraphRule,
       "root-imports": rootImportsRule,
       "no-feature-cycle": createFeatureCycleRule(projectRoot),
       "component-imports": componentImportsRule,

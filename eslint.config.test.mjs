@@ -1177,10 +1177,12 @@ describe("架构依赖和 feature、组件导入约定", () => {
     process.chdir(fixture);
     // 架构用例只验证依赖边界；import 排序由下方独立用例验证。
     // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
+    // fixture 没有 docs/features.md，feature 依赖图由 scripts/eslint/feature-dependencies.test.mjs 验证。
     eslint = new ESLint({
       cwd: fixture,
       overrideConfig: {
         rules: {
+          "architecture/feature-dependencies": "off",
           "simple-import-sort/imports": "off",
           "@typescript-eslint/consistent-type-definitions": "off",
           "@typescript-eslint/consistent-type-assertions": "off",
