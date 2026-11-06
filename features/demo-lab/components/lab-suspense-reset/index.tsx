@@ -17,14 +17,14 @@ const TASK_ID = "task-04";
 
 /** 没有缓存数据的 `useSuspenseQuery` 失败时进入最近的错误边界；重试前要先重置 React Query 的错误边界状态。 */
 export function LabSuspenseReset() {
-  const t = useTranslations("demo-lab");
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const injectFault = useInjectDemoFault();
   const [mounted, setMounted] = useState(false);
   return (
     <LabSection
-      title={t("labSuspenseReset.title")}
-      description={t("labSuspenseReset.description")}
+      title={t("demo-lab.labSuspenseReset.title")}
+      description={t("demo-lab.labSuspenseReset.description")}
     >
       <Button
         variant="outline"
@@ -45,14 +45,14 @@ export function LabSuspenseReset() {
           setMounted(true);
         }}
       >
-        {t("labSuspenseReset.load")}
+        {t("demo-lab.labSuspenseReset.load")}
       </Button>
       {mounted && (
-        <QueryErrorBoundary message={t("labSuspenseReset.loadFailed")}>
+        <QueryErrorBoundary message={t("demo-lab.labSuspenseReset.loadFailed")}>
           <Suspense
             fallback={
               <p className="text-sm text-muted-foreground">
-                {t("queryState.loading")}
+                {t("demo-lab.queryState.loading")}
               </p>
             }
           >

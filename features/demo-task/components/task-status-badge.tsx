@@ -12,6 +12,10 @@ const variants: Record<TaskStatus, BadgeProps["variant"]> = {
 };
 
 export function TaskStatusBadge({ status }: { status: TaskStatus }) {
-  const t = useTranslations("demo-task");
-  return <Badge variant={variants[status]}>{t(`taskStatus.${status}`)}</Badge>;
+  const t = useTranslations();
+  return (
+    <Badge variant={variants[status]}>
+      {t(`demo-task.taskStatus.${status}`)}
+    </Badge>
+  );
 }

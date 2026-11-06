@@ -22,19 +22,19 @@ import {
 } from "@/lib/react-query";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("app");
-  return { title: t("demos.search.metadataTitle") };
+  const t = await getTranslations();
+  return { title: t("app.demos.search.metadataTitle") };
 }
 
 export default function SearchPage({
   searchParams,
 }: PageProps<"/[locale]/demos/search">) {
-  const t = useTranslations("app");
+  const t = useTranslations();
   return (
     <>
-      <PageIntro title={t("demos.search.title")}>
-        <p>{t("demos.search.intro.typing")}</p>
-        <p>{t("demos.search.intro.tryIt")}</p>
+      <PageIntro title={t("app.demos.search.title")}>
+        <p>{t("app.demos.search.intro.typing")}</p>
+        <p>{t("app.demos.search.intro.tryIt")}</p>
       </PageIntro>
       {/* 关键词在 URL 里，预渲染时没有值：搜索框和结果在请求时渲染，页面其他部分进静态 shell。 */}
       <Suspense fallback={<TaskSearchSkeleton />}>

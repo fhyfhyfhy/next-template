@@ -11,21 +11,25 @@ import { RunningTasksBadgeSkeleton } from "./running-tasks-badge-skeleton";
 
 /** 进行中（排队中和生成中）的任务数。轮询间隔由 `activeTasksQueryOptions` 决定。 */
 export function RunningTasksBadge() {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const { data, error } = useQuery(activeTasksQueryOptions());
   if (data) {
     return (
       <Badge
         variant={data.total > 0 ? "primary" : "muted"}
-        aria-label={t("runningTasksBadge.label", { total: data.total })}
+        aria-label={t("demo-task.runningTasksBadge.label", {
+          total: data.total,
+        })}
       >
         {data.total > 0 && <IconLoader2 className="animate-spin" aria-hidden />}
-        {t("runningTasksBadge.text", { total: data.total })}
+        {t("demo-task.runningTasksBadge.text", { total: data.total })}
       </Badge>
     );
   }
   if (error) {
-    return <Badge variant="outline">{t("queryState.loadFailed")}</Badge>;
+    return (
+      <Badge variant="outline">{t("demo-task.queryState.loadFailed")}</Badge>
+    );
   }
   return <RunningTasksBadgeSkeleton />;
 }

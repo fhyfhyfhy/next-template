@@ -18,16 +18,16 @@ import { PageIntro } from "@/features/demo-task";
 import { ClientMessages } from "@/lib/i18n/client-messages";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("app");
-  return { title: t("demos.lab.metadataTitle") };
+  const t = await getTranslations();
+  return { title: t("app.demos.lab.metadataTitle") };
 }
 
 export default function LabPage() {
-  const t = useTranslations("app");
+  const t = useTranslations();
   return (
     <ClientMessages namespaces={["demo-faults", "demo-lab"]}>
-      <PageIntro title={t("demos.lab.title")}>
-        <p>{t("demos.lab.intro")}</p>
+      <PageIntro title={t("app.demos.lab.title")}>
+        <p>{t("app.demos.lab.intro")}</p>
       </PageIntro>
       <div className="mb-6">
         <DemoResetButton />

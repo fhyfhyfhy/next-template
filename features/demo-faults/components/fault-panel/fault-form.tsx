@@ -19,7 +19,7 @@ const TIMES = ["1", "3", "always"] as const;
 type Times = (typeof TIMES)[number];
 
 export function FaultForm() {
-  const t = useTranslations("demo-faults");
+  const t = useTranslations();
   const injectFault = useInjectDemoFault();
   const [operation, setOperation] = useState<DemoOperation>("task.get");
   const [kind, setKind] = useState<FaultKindOption>("latency");
@@ -28,29 +28,29 @@ export function FaultForm() {
   return (
     <div className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr_auto] sm:items-end">
       <OptionSelect
-        label={t("faultForm.operation")}
+        label={t("demo-faults.faultForm.operation")}
         value={operation}
         options={OPERATIONS.map((value) => ({ value, label: value }))}
         onChange={setOperation}
       />
       <OptionSelect
-        label={t("faultForm.kind")}
+        label={t("demo-faults.faultForm.kind")}
         value={kind}
         options={FAULT_KINDS.map(({ value, labelKey }) => ({
           value,
-          label: t(`faultForm.kinds.${labelKey}`),
+          label: t(`demo-faults.faultForm.kinds.${labelKey}`),
         }))}
         onChange={setKind}
       />
       <OptionSelect
-        label={t("faultForm.times")}
+        label={t("demo-faults.faultForm.times")}
         value={times}
         options={TIMES.map((value) => ({
           value,
           label:
             value === "always"
-              ? t("faultForm.always")
-              : t("faultForm.nextTimes", { count: Number(value) }),
+              ? t("demo-faults.faultForm.always")
+              : t("demo-faults.faultForm.nextTimes", { count: Number(value) }),
         }))}
         onChange={setTimes}
       />
@@ -66,7 +66,7 @@ export function FaultForm() {
           setPending(false);
         }}
       >
-        {t("faultForm.submit")}
+        {t("demo-faults.faultForm.submit")}
       </Button>
     </div>
   );

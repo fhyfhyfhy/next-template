@@ -14,23 +14,23 @@ const TASK_IDS = ["task-10", "task-12", "task-13"];
 
 /** 几个已有数据的 query 同时刷新失败：它们是不同的请求，各弹一个提示；同一个 query 再次失败只更新它自己的那个。 */
 export function LabConcurrentFailures() {
-  const t = useTranslations("demo-lab");
+  const t = useTranslations();
   const injectFault = useInjectDemoFault();
   const tasks = useQueries({
     queries: TASK_IDS.map((id) => getTaskQueryOptions(id)),
   });
   return (
     <LabSection
-      title={t("labConcurrentFailures.title")}
-      description={t("labConcurrentFailures.description")}
+      title={t("demo-lab.labConcurrentFailures.title")}
+      description={t("demo-lab.labConcurrentFailures.description")}
     >
       <ul className="mb-4 space-y-1 text-sm">
         {tasks.map((task, index) => (
           <li key={TASK_IDS[index]}>
-            {task.data?.name ?? t("queryState.loading")}
+            {task.data?.name ?? t("demo-lab.queryState.loading")}
             {task.data && task.error && (
               <span className="ml-2 text-muted-foreground">
-                {t("labConcurrentFailures.refreshFailed")}
+                {t("demo-lab.labConcurrentFailures.refreshFailed")}
               </span>
             )}
           </li>
@@ -51,7 +51,7 @@ export function LabConcurrentFailures() {
           await Promise.all(tasks.map((task) => task.refetch()));
         }}
       >
-        {t("labConcurrentFailures.refreshAll")}
+        {t("demo-lab.labConcurrentFailures.refreshAll")}
       </Button>
     </LabSection>
   );

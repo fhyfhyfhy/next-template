@@ -25,7 +25,7 @@ const links = [
  * 导航不用等这次读取。
  */
 export function DataDemoHeader({ badge }: { badge: ReactNode }) {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const pathname = usePathname();
   return (
     <header className="border-b border-border bg-card text-card-foreground">
@@ -37,10 +37,10 @@ export function DataDemoHeader({ badge }: { badge: ReactNode }) {
           <span className="flex size-8 items-center justify-center rounded-control bg-primary text-primary-foreground">
             <IconStack2 className="size-5" aria-hidden />
           </span>
-          {t("nav.home")}
+          {t("demo-task.nav.home")}
         </Link>
         <nav
-          aria-label={t("nav.label")}
+          aria-label={t("demo-task.nav.label")}
           className="flex flex-1 flex-wrap gap-1"
         >
           {links.map((link) => {
@@ -57,7 +57,7 @@ export function DataDemoHeader({ badge }: { badge: ReactNode }) {
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                 )}
               >
-                {t(`nav.${link.key}`)}
+                {t(`demo-task.nav.${link.key}`)}
               </Link>
             );
           })}

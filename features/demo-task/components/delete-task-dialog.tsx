@@ -25,23 +25,27 @@ interface DeleteTaskDialogProps {
 }
 
 export function DeleteTaskDialog({ taskId, taskName }: DeleteTaskDialogProps) {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const router = useRouter();
   const deleteTask = useMutation(deleteTaskMutationOptions(t));
   return (
     <DialogRoot>
       <DialogTrigger render={<Button variant="ghost" />}>
         <IconTrash aria-hidden />
-        {t("deleteTask.trigger")}
+        {t("demo-task.deleteTask.trigger")}
       </DialogTrigger>
       <DialogPortal>
         <DialogBackdrop />
         <DialogPopup>
-          <DialogTitle>{t("deleteTask.title", { name: taskName })}</DialogTitle>
-          <DialogDescription>{t("deleteTask.description")}</DialogDescription>
+          <DialogTitle>
+            {t("demo-task.deleteTask.title", { name: taskName })}
+          </DialogTitle>
+          <DialogDescription>
+            {t("demo-task.deleteTask.description")}
+          </DialogDescription>
           <div className="mt-6 flex justify-end gap-2">
             <DialogClose render={<Button variant="ghost" />}>
-              {t("deleteTask.cancel")}
+              {t("demo-task.deleteTask.cancel")}
             </DialogClose>
             <Button
               variant="danger"
@@ -54,7 +58,7 @@ export function DeleteTaskDialog({ taskId, taskName }: DeleteTaskDialogProps) {
                 )
               }
             >
-              {t("deleteTask.confirm")}
+              {t("demo-task.deleteTask.confirm")}
             </Button>
           </div>
         </DialogPopup>

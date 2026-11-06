@@ -15,12 +15,12 @@ const statusTabs = [null, ...TASK_STATUSES];
  * 新列表到达前先显示新的选择；换筛选时回到第一页。
  */
 export function TaskListToolbar() {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const [{ status: selected }] = useTaskListSearchParams();
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
       <nav
-        aria-label={t("taskListToolbar.statusFilter")}
+        aria-label={t("demo-task.taskListToolbar.statusFilter")}
         className="flex flex-wrap gap-1"
       >
         {statusTabs.map((status) => (
@@ -36,8 +36,8 @@ export function TaskListToolbar() {
             )}
           >
             {status
-              ? t(`taskStatus.${status}`)
-              : t("taskListToolbar.allStatuses")}
+              ? t(`demo-task.taskStatus.${status}`)
+              : t("demo-task.taskListToolbar.allStatuses")}
           </TaskListLink>
         ))}
       </nav>

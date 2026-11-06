@@ -13,7 +13,7 @@ import { TaskLinkRow } from "./task-link-row";
  * 详情页在服务端拿到任务后就预取它，首屏不用等浏览器再请求一轮。
  */
 export function RelatedTasks({ taskId }: { taskId: string }) {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const { data: prompt } = useQuery({
     ...getTaskQueryOptions(taskId),
     select: (task) => task.prompt,
@@ -24,14 +24,19 @@ export function RelatedTasks({ taskId }: { taskId: string }) {
   });
   return (
     <section>
-      <h2 className="mb-2 text-sm font-medium">{t("relatedTasks.title")}</h2>
+      <h2 className="mb-2 text-sm font-medium">
+        {t("demo-task.relatedTasks.title")}
+      </h2>
       {related.data ? (
         related.data.items.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            {t("relatedTasks.empty")}
+            {t("demo-task.relatedTasks.empty")}
           </p>
         ) : (
-          <ul aria-label={t("relatedTasks.title")} className="space-y-2">
+          <ul
+            aria-label={t("demo-task.relatedTasks.title")}
+            className="space-y-2"
+          >
             {related.data.items.map((item) => (
               <li key={item.id}>
                 <TaskLinkRow task={item} />
@@ -40,10 +45,12 @@ export function RelatedTasks({ taskId }: { taskId: string }) {
           </ul>
         )
       ) : related.error ? (
-        <p className="text-sm text-destructive">{t("queryState.loadFailed")}</p>
+        <p className="text-sm text-destructive">
+          {t("demo-task.queryState.loadFailed")}
+        </p>
       ) : (
         <p className="text-sm text-muted-foreground">
-          {t("queryState.loading")}
+          {t("demo-task.queryState.loading")}
         </p>
       )}
     </section>

@@ -115,19 +115,24 @@ const DATE_TIME_FORMATTING = [
     message: DATE_TIME_MESSAGE,
   },
 ];
-// 翻译函数只按 owner 的 namespace 取，key 写完整路径：一个 feature 只有一种 t，组件、options 工厂和
-// schema 工厂之间可以直接传递。
+// 翻译函数不按 namespace 取，key 写完整路径：整个 app 只有一种 t，可以传给任何 owner 的 options 工厂和
+// schema 工厂，它们读自己的文案。key 归谁由 i18n/message-keys 检查。
 const TRANSLATOR_NAMESPACE_MESSAGE =
-  'Pass only the owner\'s namespace, such as "demo-task", and write the full key path at each call, such as t("comments.createFailed"). See .claude/rules/i18n.md.';
+  "Call useTranslations() and getTranslations() without a namespace, and write each key's full path, starting with the namespace of the file's owner, such as t(\"demo-task.comments.createFailed\"). See .claude/rules/i18n.md.";
 const TRANSLATOR_NAMESPACE = [
   {
     selector:
-      "CallExpression[callee.name=/^(useTranslations|getTranslations)$/] > Literal[value=/\\./]",
+      "CallExpression[callee.name='useTranslations'][arguments.length>0]",
     message: TRANSLATOR_NAMESPACE_MESSAGE,
   },
   {
     selector:
-      "CallExpression[callee.name='getTranslations'] > ObjectExpression > Property[key.name='namespace'] > Literal[value=/\\./]",
+      "CallExpression[callee.name='getTranslations'] > :matches(Literal, TemplateLiteral)",
+    message: TRANSLATOR_NAMESPACE_MESSAGE,
+  },
+  {
+    selector:
+      "CallExpression[callee.name='getTranslations'] > ObjectExpression > Property[key.name='namespace']",
     message: TRANSLATOR_NAMESPACE_MESSAGE,
   },
 ];
@@ -433,7 +438,8 @@ const eslintConfig = defineConfig([
   // ---- i18n（.claude/rules/i18n.md）----
   // - i18next/no-literal-string：用户看得到的文案放进 messages/，用 t() 渲染。
   // - i18n/client-namespaces：每个 ClientMessages 下发的 namespace 和它包着的 Client Component 用到的一致。
-  // - TRANSLATOR_NAMESPACE：翻译函数只按 owner 的 namespace 取，随 RESTRICTED_SYNTAX 生效，没有例外。
+  // - i18n/message-keys：每个 key 的第一段是文件 owner 的 namespace。
+  // - TRANSLATOR_NAMESPACE：翻译函数不按 namespace 取，随 RESTRICTED_SYNTAX 生效，没有例外。
   // - INTL_PROVIDER_RESTRICTION、DATE_TIME_FORMATTING：前面随 RESTRICTED_IMPORTS、RESTRICTED_SYNTAX 生效，
   //   这里只放它们的例外，所以这一段要排在设置那两条规则的配置之后。
   {
@@ -494,6 +500,7 @@ const eslintConfig = defineConfig([
     rules: {
       // --fix 改写列表。分析整个项目，一个文件的结果取决于别的文件，lint 不能加 --cache。
       "i18n/client-namespaces": "error",
+      "i18n/message-keys": "error",
     },
   },
   {

@@ -49,7 +49,7 @@ type ScenarioKey = (typeof scenarios)[number]["key"];
 
 /** `shouldRetryRequest`：5xx 和网络错误最多重试 3 次；4xx、2xx 上的 error、schema 不匹配重试也不会成功，直接失败。 */
 export function LabRetry() {
-  const t = useTranslations("demo-lab");
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const injectFault = useInjectDemoFault();
   const options = getTaskQueryOptions(TASK_ID);
@@ -62,18 +62,18 @@ export function LabRetry() {
   function describeResult() {
     if (task.isFetching) {
       return task.failureCount > 0
-        ? t("labRetry.retrying", { count: task.failureCount })
-        : t("labRetry.requesting");
+        ? t("demo-lab.labRetry.retrying", { count: task.failureCount })
+        : t("demo-lab.labRetry.requesting");
     }
     if (task.status === "success") {
       return failures > 0
-        ? t("labRetry.succeededAfterRetry", { count: failures })
-        : t("labRetry.succeeded");
+        ? t("demo-lab.labRetry.succeededAfterRetry", { count: failures })
+        : t("demo-lab.labRetry.succeeded");
     }
     if (task.status === "error") {
       return failures > 1
-        ? t("labRetry.failedAfterRetry", { count: failures - 1 })
-        : t("labRetry.failedWithoutRetry");
+        ? t("demo-lab.labRetry.failedAfterRetry", { count: failures - 1 })
+        : t("demo-lab.labRetry.failedWithoutRetry");
     }
     return null;
   }
@@ -81,8 +81,8 @@ export function LabRetry() {
 
   return (
     <LabSection
-      title={t("labRetry.title")}
-      description={t("labRetry.description")}
+      title={t("demo-lab.labRetry.title")}
+      description={t("demo-lab.labRetry.description")}
     >
       <div className="mb-4 flex flex-wrap gap-2">
         {scenarios.map(({ key, fault }) => (
@@ -97,14 +97,14 @@ export function LabRetry() {
               await queryClient.resetQueries({ queryKey: options.queryKey });
             }}
           >
-            {t(`labRetry.scenarios.${key}`)}
+            {t(`demo-lab.labRetry.scenarios.${key}`)}
           </Button>
         ))}
       </div>
       <p className="rounded-control bg-muted p-3 text-sm" aria-live="polite">
         {scenario && result
-          ? t("labRetry.scenarioResult", {
-              scenario: t(`labRetry.scenarios.${scenario}`),
+          ? t("demo-lab.labRetry.scenarioResult", {
+              scenario: t(`demo-lab.labRetry.scenarios.${scenario}`),
               result,
             })
           : result}

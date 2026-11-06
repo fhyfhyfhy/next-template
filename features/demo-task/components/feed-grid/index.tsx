@@ -11,7 +11,7 @@ import { FeedCard } from "./feed-card";
 
 /** 作品广场由 React Query 负责：滚到底部时追加下一页。第一页来自服务端缓存的 hydration state。 */
 export function FeedGrid() {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const feed = useInfiniteQuery({
     ...getFeedInfiniteQueryOptions(),
     // 预渲染时读当前时间会让 Next 把这块推迟到浏览器渲染。hydrate 进来的数据判断过期时会读时间，
@@ -33,7 +33,7 @@ export function FeedGrid() {
     return (
       <div>
         <ul
-          aria-label={t("feed.label")}
+          aria-label={t("demo-task.feed.label")}
           className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
         >
           {tasks.map((task) => (
@@ -49,19 +49,23 @@ export function FeedGrid() {
           data-testid="feed-end"
           className="py-6 text-center text-sm text-muted-foreground"
         >
-          {feed.isFetchingNextPage && t("queryState.loading")}
-          {!feed.hasNextPage && t("feed.noMore")}
-          {feed.isFetchNextPageError && t("feed.loadMoreFailed")}
+          {feed.isFetchingNextPage && t("demo-task.queryState.loading")}
+          {!feed.hasNextPage && t("demo-task.feed.noMore")}
+          {feed.isFetchNextPageError && t("demo-task.feed.loadMoreFailed")}
         </div>
       </div>
     );
   }
   if (feed.error) {
     return (
-      <p className="text-sm text-destructive">{t("queryState.loadFailed")}</p>
+      <p className="text-sm text-destructive">
+        {t("demo-task.queryState.loadFailed")}
+      </p>
     );
   }
   return (
-    <p className="text-sm text-muted-foreground">{t("queryState.loading")}</p>
+    <p className="text-sm text-muted-foreground">
+      {t("demo-task.queryState.loading")}
+    </p>
   );
 }

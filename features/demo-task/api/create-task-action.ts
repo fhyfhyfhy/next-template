@@ -27,7 +27,7 @@ export async function createTaskAction(
   input: CreateTaskInput,
 ): Promise<ActionResult<Task>> {
   assertDemoBackendEnabled();
-  const t = await getTranslations({ locale, namespace: "demo-task" });
+  const t = await getTranslations({ locale });
   const data = createTaskInputSchema(t).parse(input);
   const result = await toActionResult(
     () => createTask(data),

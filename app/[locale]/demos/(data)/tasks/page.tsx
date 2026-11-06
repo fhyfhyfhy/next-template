@@ -18,19 +18,19 @@ import { getCachedTaskPage } from "@/features/demo-task/server";
 import { isDemoBackendEnabled } from "@/lib/demo-backend";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("app");
-  return { title: t("demos.tasks.metadataTitle") };
+  const t = await getTranslations();
+  return { title: t("app.demos.tasks.metadataTitle") };
 }
 
 export default function TasksPage({
   searchParams,
 }: PageProps<"/[locale]/demos/tasks">) {
-  const t = useTranslations("app");
+  const t = useTranslations();
   return (
     <>
-      <PageIntro title={t("demos.tasks.title")}>
-        <p>{t("demos.tasks.intro.ownership")}</p>
-        <p>{t("demos.tasks.intro.tryIt")}</p>
+      <PageIntro title={t("app.demos.tasks.title")}>
+        <p>{t("app.demos.tasks.intro.ownership")}</p>
+        <p>{t("app.demos.tasks.intro.tryIt")}</p>
       </PageIntro>
       <CreateTaskForm />
       {/* page 保持同步，只在 Suspense 里读 URL：工具栏和列表以外的部分都能进静态 shell。 */}

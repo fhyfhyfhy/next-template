@@ -12,7 +12,7 @@ const PRESETS_MS = [0, 200, 500, 1000, 2000, 3000];
 
 /** 业务操作的默认延迟，选中后立即生效。 */
 export function DefaultLatencySelect() {
-  const t = useTranslations("demo-faults");
+  const t = useTranslations();
   const latency = useQuery(getDemoLatencyQueryOptions());
   const update = useMutation(updateDemoLatencyMutationOptions(t));
 
@@ -24,7 +24,7 @@ export function DefaultLatencySelect() {
     return (
       <div className="mb-4 max-w-40">
         <OptionSelect
-          label={t("defaultLatency.label")}
+          label={t("demo-faults.defaultLatency.label")}
           value={String(latency.data)}
           options={values.map((value) => ({
             value: String(value),
@@ -38,8 +38,8 @@ export function DefaultLatencySelect() {
   return (
     <p className="mb-4 text-sm text-muted-foreground">
       {latency.error
-        ? t("defaultLatency.readFailed")
-        : t("defaultLatency.reading")}
+        ? t("demo-faults.defaultLatency.readFailed")
+        : t("demo-faults.defaultLatency.reading")}
     </p>
   );
 }

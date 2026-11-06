@@ -24,17 +24,17 @@ export function Playground({
   source: string;
   onReset: () => void;
 }) {
-  const t = useTranslations("demo-ui");
+  const t = useTranslations();
   const [showCode, setShowCode] = useState(false);
   return (
     <section
-      aria-label={t("playground.label")}
+      aria-label={t("demo-ui.playground.label")}
       className="min-w-0 overflow-hidden rounded-panel border border-border bg-card text-card-foreground"
     >
       <div className="flex items-center justify-between gap-2 border-b border-border px-5 py-3">
         <span className="flex items-center gap-2 text-sm font-medium">
           <span className="size-1.5 rounded-full bg-primary" />
-          {t("playground.preview")}
+          {t("demo-ui.playground.preview")}
         </span>
         <Button
           variant="ghost"
@@ -43,7 +43,9 @@ export function Playground({
           onClick={() => setShowCode(!showCode)}
         >
           <IconCode aria-hidden />
-          {showCode ? t("playground.hideCode") : t("playground.showCode")}
+          {showCode
+            ? t("demo-ui.playground.hideCode")
+            : t("demo-ui.playground.showCode")}
         </Button>
       </div>
       <div className="grid lg:grid-cols-[minmax(0,1fr)_264px]">
@@ -56,25 +58,25 @@ export function Playground({
           }}
         >
           <span className="absolute top-5 left-5 font-mono text-[10px] tracking-widest text-muted-foreground">
-            {t("playground.canvas")}
+            {t("demo-ui.playground.canvas")}
           </span>
           <div className="w-full max-w-sm">{children}</div>
           <span className="absolute bottom-5 left-5 text-xs text-muted-foreground">
-            {t("playground.hint")}
+            {t("demo-ui.playground.hint")}
           </span>
         </div>
         <aside
-          aria-label={t("playground.panelLabel")}
+          aria-label={t("demo-ui.playground.panelLabel")}
           className="border-t border-border bg-background/60 lg:border-t-0 lg:border-l"
         >
           <div className="flex items-center justify-between border-b border-border px-5 py-3">
             <span className="flex items-center gap-2 text-xs font-medium">
               <IconAdjustmentsHorizontal className="size-4" aria-hidden />
-              {t("playground.panelTitle")}
+              {t("demo-ui.playground.panelTitle")}
             </span>
             <Button variant="ghost" size="sm" onClick={onReset}>
               <IconRefresh aria-hidden />
-              {t("playground.reset")}
+              {t("demo-ui.playground.reset")}
             </Button>
           </div>
           <div className="grid gap-5 p-5 sm:grid-cols-2 lg:max-h-130 lg:grid-cols-1 lg:overflow-y-auto">

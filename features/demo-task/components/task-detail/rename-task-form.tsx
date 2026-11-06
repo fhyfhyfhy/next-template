@@ -24,7 +24,7 @@ interface RenameTaskFormProps {
 
 /** 编辑中的名称是一份草稿：从当前数据开始，保存时走写入，取消就丢弃。 */
 export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const locale = useLocale();
   const renameSchema = useMemo(
     () => z.object({ name: createTaskNameSchema(t) }),
@@ -47,7 +47,9 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
         if (isActionError(error, TASK_NAME_TAKEN)) {
           formApi.setErrorMap({
             onSubmit: {
-              fields: { name: [{ message: t("validation.nameTaken") }] },
+              fields: {
+                name: [{ message: t("demo-task.validation.nameTaken") }],
+              },
             },
           });
         }
@@ -56,7 +58,7 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
   });
   return (
     <Form
-      aria-label={t("renameTask.formLabel")}
+      aria-label={t("demo-task.renameTask.formLabel")}
       className="flex flex-wrap items-start gap-2"
       onSubmit={(event) => {
         event.preventDefault();
@@ -73,7 +75,7 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
             className="min-w-60 flex-1"
           >
             <FieldLabel className="sr-only">
-              {t("renameTask.nameLabel")}
+              {t("demo-task.renameTask.nameLabel")}
             </FieldLabel>
             <Input
               autoFocus
@@ -88,10 +90,10 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
         )}
       </form.Field>
       <Button type="submit" disabled={rename.isPending}>
-        {t("renameTask.save")}
+        {t("demo-task.renameTask.save")}
       </Button>
       <Button type="button" variant="ghost" onClick={onDone}>
-        {t("renameTask.cancel")}
+        {t("demo-task.renameTask.cancel")}
       </Button>
     </Form>
   );

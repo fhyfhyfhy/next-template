@@ -8,15 +8,15 @@ import type { ActionResult } from "@/lib/action-result";
 import { toActionResult } from "@/lib/action-result";
 import { assertDemoBackendEnabled } from "@/lib/demo-backend";
 import type { Locale } from "@/lib/i18n/routing";
+import type { Translator } from "@/lib/i18n/translator";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";
 import { renameTask } from "../server/tasks";
 import type { Task } from "../types/task";
-import type { DemoTaskTranslator } from "../types/translator";
 import { createTaskNameSchema } from "./task-name-schema";
 
-const createRenameInputSchema = (t: DemoTaskTranslator) =>
+const createRenameInputSchema = (t: Translator) =>
   z.object({
     taskId: z.string().min(1),
     name: createTaskNameSchema(t),
@@ -31,7 +31,7 @@ export async function updateTaskAction(
   input: z.input<ReturnType<typeof createRenameInputSchema>>,
 ): Promise<ActionResult<Task>> {
   assertDemoBackendEnabled();
-  const t = await getTranslations({ locale, namespace: "demo-task" });
+  const t = await getTranslations({ locale });
   const { taskId, name } = createRenameInputSchema(t).parse(input);
   const result = await toActionResult(
     () => renameTask(taskId, { name }),

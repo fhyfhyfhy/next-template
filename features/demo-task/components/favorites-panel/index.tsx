@@ -14,12 +14,14 @@ export { FavoritesPanelSkeleton } from "./skeleton";
 
 /** 和作品广场的卡片显示同一批任务的收藏状态；收藏的乐观更新会同时改这里。 */
 export function FavoritesPanel() {
-  const t = useTranslations("demo-task");
+  const t = useTranslations();
   const favorites = useQuery(favoriteTasksQueryOptions());
   if (!favorites.data) {
     return favorites.error ? (
       <FavoritesPanelFrame>
-        <p className="text-sm text-destructive">{t("queryState.loadFailed")}</p>
+        <p className="text-sm text-destructive">
+          {t("demo-task.queryState.loadFailed")}
+        </p>
       </FavoritesPanelFrame>
     ) : (
       <FavoritesPanelSkeleton />
@@ -29,11 +31,11 @@ export function FavoritesPanel() {
     <FavoritesPanelFrame>
       {favorites.data.items.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          {t("favoritesPanel.empty")}
+          {t("demo-task.favoritesPanel.empty")}
         </p>
       ) : (
         <ul
-          aria-label={t("favoritesPanel.title")}
+          aria-label={t("demo-task.favoritesPanel.title")}
           className="space-y-2 text-sm"
         >
           {favorites.data.items.map((task) => (

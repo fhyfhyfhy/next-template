@@ -18,7 +18,7 @@ const FAULTS_FRESHNESS_MS = 2000;
  * 只渲染面板内容，标题和说明由放置它的页面提供。
  */
 export function FaultPanel() {
-  const t = useTranslations("demo-faults");
+  const t = useTranslations();
   // 有故障时定期刷新：其他页面的请求会消耗故障次数，这里要跟着显示剩余次数。按剩余次数的 freshness bound
   // 轮询，没有故障时停。
   const faults = useQuery({
@@ -52,7 +52,7 @@ export function FaultPanel() {
                       )
                     }
                   >
-                    {t("faultPanel.remove")}
+                    {t("demo-faults.faultPanel.remove")}
                   </Button>
                 </li>
               ))}
@@ -63,12 +63,14 @@ export function FaultPanel() {
               className="mt-3"
               onClick={() => update.mutate([])}
             >
-              {t("faultPanel.clearAll")}
+              {t("demo-faults.faultPanel.clearAll")}
             </Button>
           </>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {faults.data ? t("faultPanel.empty") : t("faultPanel.reading")}
+            {faults.data
+              ? t("demo-faults.faultPanel.empty")
+              : t("demo-faults.faultPanel.reading")}
           </p>
         )}
       </div>

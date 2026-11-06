@@ -1,6 +1,6 @@
+import type { Translator } from "@/lib/i18n/translator";
 import { mutationOptions } from "@/lib/react-query";
 
-import type { DemoTaskTranslator } from "../types/translator";
 import {
   removeTaskFromLists,
   restoreTaskLists,
@@ -16,7 +16,7 @@ import { taskListKey } from "./get-tasks";
  * header 徽标读的进行中任务数随之减一，失败时回滚。详情和评论等成功后再清掉：调用方成功后才离开详情页，
  * 提前清掉会让还显示着的详情重新请求。
  */
-export const deleteTaskMutationOptions = (t: DemoTaskTranslator) =>
+export const deleteTaskMutationOptions = (t: Translator) =>
   mutationOptions({
     mutationFn: deleteTaskAction,
     onMutate: async ({ taskId }, { client }) => {
@@ -37,5 +37,5 @@ export const deleteTaskMutationOptions = (t: DemoTaskTranslator) =>
     onSettled: (_data, _error, _variables, _onMutateResult, { client }) => {
       void client.invalidateQueries({ queryKey: taskListKey });
     },
-    meta: { errorMessage: t("deleteTask.failed") },
+    meta: { errorMessage: t("demo-task.deleteTask.failed") },
   });

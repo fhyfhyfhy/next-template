@@ -38,8 +38,8 @@ function handleRequestError(
 
 // 这个 handler 在 React 之外调用，取不到翻译；通用文案在 <Toaster /> 里渲染，那里能用 hook。
 function RequestErrorMessage() {
-  const t = useTranslations("app");
-  return t("requestError");
+  const t = useTranslations();
+  return t("app.requestError");
 }
 
 function makeQueryClient() {

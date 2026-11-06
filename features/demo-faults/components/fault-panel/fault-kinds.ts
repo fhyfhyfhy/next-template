@@ -1,7 +1,8 @@
+import type { Translator } from "@/lib/i18n/translator";
+
 import { INJECTED_FAILURE_CODE } from "../../constants/demo-faults";
 import type { DemoFaultInput } from "../../hooks/use-inject-demo-fault";
 import type { DemoFault, DemoOperation } from "../../types/demo-fault";
-import type { DemoFaultsTranslator } from "../../types/translator";
 
 /**
  * 故障表单能添加的故障类型，以及它们写进故障配置的字段（各类型的效果见 types/demo-fault.ts）。加一种类型时在这里
@@ -57,30 +58,32 @@ export function toFault(
  * 故障列表里的一行说明。配置也可能来自 e2e 等其他来源，所以按字段判断，不按表单的类型。
  * 状态码、错误码和毫秒数按字符串传给 `t()`：按数字传会被格式化成带千分位的写法。
  */
-export function describeFault(fault: DemoFault, t: DemoFaultsTranslator) {
+export function describeFault(fault: DemoFault, t: Translator) {
   const effect =
     fault.kind === "httpStatus"
-      ? t("faultPanel.effects.status", { status: String(fault.status) })
+      ? t("demo-faults.faultPanel.effects.status", {
+          status: String(fault.status),
+        })
       : fault.kind === "errorOnSuccess"
-        ? t("faultPanel.effects.errorBody", {
+        ? t("demo-faults.faultPanel.effects.errorBody", {
             code: String(fault.code ?? INJECTED_FAILURE_CODE),
           })
         : fault.kind === "malformed"
-          ? t("faultPanel.effects.malformed")
+          ? t("demo-faults.faultPanel.effects.malformed")
           : fault.kind === "unexpected"
-            ? t("faultPanel.effects.unexpected")
+            ? t("demo-faults.faultPanel.effects.unexpected")
             : fault.kind === "businessError"
-              ? t("faultPanel.effects.businessError", {
+              ? t("demo-faults.faultPanel.effects.businessError", {
                   code: String(fault.code),
                 })
-              : t("faultPanel.effects.latency", {
+              : t("demo-faults.faultPanel.effects.latency", {
                   latencyMs: String(fault.latencyMs),
                 });
   const times =
     fault.times === null
-      ? t("faultForm.always")
-      : t("faultPanel.timesLeft", { count: fault.times });
-  return t("faultPanel.faultRow", {
+      ? t("demo-faults.faultForm.always")
+      : t("demo-faults.faultPanel.timesLeft", { count: fault.times });
+  return t("demo-faults.faultPanel.faultRow", {
     operation: fault.operation,
     effect,
     times,

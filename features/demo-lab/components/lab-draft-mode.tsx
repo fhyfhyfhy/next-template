@@ -16,13 +16,13 @@ interface LabDraftModeProps {
 
 /** 状态存在 cookie 里，由服务端读出后传进来；切换时先显示新状态，失败时 transition 结束，回到服务端给的值。 */
 export function LabDraftMode({ enabled }: LabDraftModeProps) {
-  const t = useTranslations("demo-lab");
+  const t = useTranslations();
   const [optimisticEnabled, setOptimisticEnabled] = useOptimistic(enabled);
   const setDraftMode = useMutation(setDraftModeMutationOptions(t));
   return (
     <LabSection
-      title={t("labDraftMode.title")}
-      description={t("labDraftMode.description")}
+      title={t("demo-lab.labDraftMode.title")}
+      description={t("demo-lab.labDraftMode.description")}
     >
       <label className="flex items-center gap-3 text-sm">
         <SwitchRoot
@@ -40,7 +40,7 @@ export function LabDraftMode({ enabled }: LabDraftModeProps) {
         >
           <SwitchThumb />
         </SwitchRoot>
-        {t("labDraftMode.switchLabel")}
+        {t("demo-lab.labDraftMode.switchLabel")}
       </label>
     </LabSection>
   );

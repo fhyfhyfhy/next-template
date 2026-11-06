@@ -21,7 +21,7 @@ const FAULT = {
 
 /** 首次加载失败时没有数据可显示，组件渲染错误；已有数据时刷新失败，组件继续显示数据，靠全局提示告知。 */
 export function LabQueryStates() {
-  const t = useTranslations("demo-lab");
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const injectFault = useInjectDemoFault();
   const options = getTaskQueryOptions(TASK_ID);
@@ -35,15 +35,15 @@ export function LabQueryStates() {
 
   return (
     <LabSection
-      title={t("labQueryStates.title")}
-      description={t("labQueryStates.description")}
+      title={t("demo-lab.labQueryStates.title")}
+      description={t("demo-lab.labQueryStates.description")}
     >
       <div className="mb-4 flex flex-wrap gap-2">
         <Button variant="outline" size="sm" onClick={() => firstLoad(true)}>
-          {t("labQueryStates.firstLoadFails")}
+          {t("demo-lab.labQueryStates.firstLoadFails")}
         </Button>
         <Button variant="outline" size="sm" onClick={() => firstLoad(false)}>
-          {t("labQueryStates.firstLoadSucceeds")}
+          {t("demo-lab.labQueryStates.firstLoadSucceeds")}
         </Button>
         <Button
           variant="outline"
@@ -53,7 +53,7 @@ export function LabQueryStates() {
             if (await injectFault(FAULT)) await task.refetch();
           }}
         >
-          {t("labQueryStates.refreshFails")}
+          {t("demo-lab.labQueryStates.refreshFails")}
         </Button>
       </div>
       <div className="rounded-control bg-muted p-3 text-sm">
@@ -62,14 +62,18 @@ export function LabQueryStates() {
             {task.data.name}
             {task.error && (
               <span className="ml-2 text-muted-foreground">
-                {t("labQueryStates.refreshFailed")}
+                {t("demo-lab.labQueryStates.refreshFailed")}
               </span>
             )}
           </p>
         ) : task.error ? (
-          <p className="text-destructive">{t("queryState.loadFailed")}</p>
+          <p className="text-destructive">
+            {t("demo-lab.queryState.loadFailed")}
+          </p>
         ) : (
-          <p className="text-muted-foreground">{t("queryState.loading")}</p>
+          <p className="text-muted-foreground">
+            {t("demo-lab.queryState.loading")}
+          </p>
         )}
       </div>
     </LabSection>

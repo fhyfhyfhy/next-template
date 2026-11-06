@@ -20,7 +20,7 @@ export function SourceCode({
   source: string;
   filename: string;
 }) {
-  const t = useTranslations("demo-ui");
+  const t = useTranslations();
   const [status, setStatus] = useState<keyof typeof copyStatusKeys>("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -47,13 +47,13 @@ export function SourceCode({
             <IconCopy aria-hidden />
           )}
           <span aria-live="polite">
-            {t(`sourceCode.${copyStatusKeys[status]}`)}
+            {t(`demo-ui.sourceCode.${copyStatusKeys[status]}`)}
           </span>
         </Button>
       </div>
       <pre
         tabIndex={0}
-        aria-label={t("sourceCode.label", { filename })}
+        aria-label={t("demo-ui.sourceCode.label", { filename })}
         className="max-h-96 overflow-auto p-5 font-mono text-xs/6 outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <code>{source}</code>

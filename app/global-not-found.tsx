@@ -12,27 +12,27 @@ import "./globals.css";
 const locale = routing.defaultLocale;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations({ locale, namespace: "app" });
-  return { title: t("globalNotFound.title") };
+  const t = await getTranslations({ locale });
+  return { title: t("app.globalNotFound.title") };
 }
 
 export default async function GlobalNotFound() {
-  const t = await getTranslations({ locale, namespace: "app" });
+  const t = await getTranslations({ locale });
   return (
     <html lang={locale} className={`${fontVariables} h-full antialiased`}>
       <body className="min-h-full">
         <main className="mx-auto max-w-xl px-5 py-24 text-center">
           <h1 className="text-3xl font-medium tracking-tight">
-            {t("globalNotFound.title")}
+            {t("app.globalNotFound.title")}
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            {t("globalNotFound.description")}
+            {t("app.globalNotFound.description")}
           </p>
           <Link
             href="/"
             className="mt-6 inline-block text-sm text-primary hover:underline"
           >
-            {t("globalNotFound.home")}
+            {t("app.globalNotFound.home")}
           </Link>
         </main>
       </body>

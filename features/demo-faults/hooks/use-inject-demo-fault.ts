@@ -18,7 +18,7 @@ export type DemoFaultInput = Pick<DemoFault, "operation" | "kind"> &
  */
 export function useInjectDemoFault() {
   const queryClient = useQueryClient();
-  const t = useTranslations("demo-faults");
+  const t = useTranslations();
   const update = useMutation(updateDemoFaultsMutationOptions(t));
   return async (fault: DemoFaultInput): Promise<boolean> => {
     try {

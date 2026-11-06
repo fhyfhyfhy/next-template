@@ -1,8 +1,8 @@
 import { isActionError, unwrapActionResult } from "@/lib/action-result";
+import type { Translator } from "@/lib/i18n/translator";
 import { mutationOptions } from "@/lib/react-query";
 
 import { TASK_NOT_RETRYABLE } from "../constants/error-codes";
-import type { DemoTaskTranslator } from "../types/translator";
 import {
   insertTaskIntoPage,
   restoreTaskLists,
@@ -28,10 +28,7 @@ export const retryTaskMutationKey = (taskId: string) =>
  * 重试失败的任务：详情和每份缓存列表先乐观改成 pending，任务按列表顺序插进进行中的任务，失败时回滚。
  * `taskId` 对这个 mutation 固定不变，所以是工厂参数。
  */
-export const retryTaskMutationOptions = (
-  t: DemoTaskTranslator,
-  taskId: string,
-) => {
+export const retryTaskMutationOptions = (t: Translator, taskId: string) => {
   const { queryKey } = getTaskQueryOptions(taskId);
   return mutationOptions({
     mutationKey: retryTaskMutationKey(taskId),
@@ -63,7 +60,7 @@ export const retryTaskMutationOptions = (
       void client.invalidateQueries({ queryKey: taskListKey });
     },
     meta: {
-      errorMessage: t("taskActions.retryFailed"),
+      errorMessage: t("demo-task.taskActions.retryFailed"),
       suppressErrorToast: (error) => isActionError(error, TASK_NOT_RETRYABLE),
     },
   });

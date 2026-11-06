@@ -8,7 +8,7 @@ import { useMutation } from "@/lib/react-query";
 import { resetDemoMutationOptions } from "../api/reset-demo";
 
 export function DemoResetButton() {
-  const t = useTranslations("demo-lab");
+  const t = useTranslations();
   const reset = useMutation(resetDemoMutationOptions(t));
   return (
     <div className="flex items-center gap-3">
@@ -17,11 +17,11 @@ export function DemoResetButton() {
         disabled={reset.isPending}
         onClick={() => reset.mutate()}
       >
-        {t("demoReset.button")}
+        {t("demo-lab.demoReset.button")}
       </Button>
       {reset.isSuccess && (
         <span role="status" className="text-sm text-muted-foreground">
-          {t("demoReset.done")}
+          {t("demo-lab.demoReset.done")}
         </span>
       )}
     </div>
