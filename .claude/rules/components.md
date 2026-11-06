@@ -26,7 +26,7 @@ Every UI task starts at [Reuse, compose, extend, or add](#reuse-compose-extend-o
 ## Use a component
 
 - Choose the appearance with the component's existing `variant` and `size`. The caller owns placement, surrounding spacing, and layout, and sets them through `className`, along with local adjustments such as a color for a state only this caller has. When a third caller repeats the same visual override, extend the component's variants or defaults instead; UI catalog examples do not count as callers.
-- Give each trigger or control exactly one interactive DOM element. To make a trigger look like a project button, pass the button as its `render` prop, as in `<DialogTrigger render={<Button variant="ghost" />}>`; a button nested in another button or a link is invalid HTML.
+- Give each trigger or control exactly one interactive DOM element. To make a trigger look like a project button, pass the button as its `render` prop, as `DeleteTaskDialog` in [`features/task/components/delete-task-dialog.tsx`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/components/delete-task-dialog.tsx) does with `<DialogTrigger render={<Button variant="ghost" />}>`; a button nested in another button or a link is invalid HTML.
 
 ## Write a component
 

@@ -25,6 +25,25 @@ export function hasPath(path: string) {
   return (request: Request) => new URL(request.url()).pathname === path;
 }
 
+/**
+ * 从现在起记下浏览器发出的、符合 `match` 的请求。断言“没有发请求”时，在操作之前开始记录，等界面回应之后再检查。
+ */
+export function recordRequests(
+  page: Page,
+  match: (request: Request) => boolean,
+) {
+  const requests: Request[] = [];
+  page.on("request", (request) => {
+    if (match(request)) requests.push(request);
+  });
+  return requests;
+}
+
+/** 等下一个 Server Action 的响应。Server Action 返回时，服务端已经写入。 */
+export function waitForServerAction(page: Page) {
+  return page.waitForResponse((response) => isServerAction(response.request()));
+}
+
 /** 客户端导航向服务端要新页面的请求（RSC 请求），不包括预取。 */
 export function isNavigation(request: Request) {
   const headers = request.headers();

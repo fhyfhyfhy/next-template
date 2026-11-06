@@ -11,6 +11,9 @@ export function toTaskFilters({ status, sort, page }: TaskListSearchParams) {
   };
 }
 
+/** 全部任务页的地址。 */
+export const TASK_LIST_HREF = "/tasks";
+
 export function taskDetailHref(taskId: string) {
-  return `/tasks/${taskId}`;
+  return `${TASK_LIST_HREF}/${taskId}`;
 }

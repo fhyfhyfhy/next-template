@@ -1,16 +1,13 @@
+import { globSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { Kysely, PostgresDialect } from "kysely";
 import { Migrator } from "kysely/migration";
 import pg from "pg";
 
-// 每个 feature 在自己的 server/migrations.mts 里导出 `migrations`，这里把它们合成一条序列，按名称（时间戳前缀）
-// 排序执行。那些文件由 Node 的类型剥离直接加载，只能依赖 kysely（见文件开头的说明）。
-// 新增拥有表的 feature 时，把它的 migration 文件加进这个列表。
-const MIGRATION_MODULES = [
-  "features/upload/server/migrations.mts",
-  "features/task/server/migrations.mts",
-];
+// 每个 feature 在自己的 server/migrations.mts 里导出 `migrations`，这里找出全部文件，合成一条序列，按名称
+// （时间戳前缀）排序执行。那些文件由 Node 的类型剥离直接加载，只能依赖 kysely（见文件开头的说明）。
+const MIGRATION_GLOB = "features/*/server/migrations.mts";
 
 const projectRoot = join(import.meta.dirname, "..", "..");
 
@@ -35,7 +32,7 @@ export function mergeMigrations(modules) {
 /** 把 `connectionString` 指向的库迁移到最新结构；任何一条失败都抛出，已经成功的保留。 */
 export async function migrateDatabase(connectionString) {
   const modules = [];
-  for (const path of MIGRATION_MODULES) {
+  for (const path of globSync(MIGRATION_GLOB, { cwd: projectRoot }).sort()) {
     const imported = await import(pathToFileURL(join(projectRoot, path)).href);
     modules.push({ path, migrations: imported.migrations });
   }

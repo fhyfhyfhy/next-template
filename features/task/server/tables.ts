@@ -2,7 +2,7 @@ import type { Generated } from "kysely";
 
 import type { TaskStatus } from "../types/task-filters";
 
-// task 拥有的表，结构由同目录的 migrations.mts 创建。上传和附件属于 upload，不在这里：
+// task 拥有的表，结构由同目录的 migrations.mts 创建。Upload 和它的关联（`uploads`、`upload_attachments`）属于 upload，不在这里：
 // 需要封面或模型时调用 upload 的服务端入口。
 
 export interface TasksTable {

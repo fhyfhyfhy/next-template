@@ -32,14 +32,16 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `:local`
 The sample product is everything that serves tasks and uploads: `features/task/`, `features/upload/`, the routes in `app/[locale]/(tasks)/` and `app/api/`, their namespaces in `messages/`, the specs and the fixture in `e2e/tasks.ts`, and their entries in `GLOSSARY.md` and `docs/features.md`. Replacing it also touches the places that wire it into the rest:
 
 - `app/[locale]/page.tsx`, whose home page redirects to `/tasks`. Typed routes are off, so nothing reports the redirect once `/tasks` is gone.
-- The background jobs in `instrumentation.ts`, and `TASK_GENERATOR_ENABLED` in `lib/env.ts`, `lib/env.test.ts`, and `playwright.config.ts`.
-- The migration list in `scripts/db/migrate.mjs`, and the seed data: `scripts/local-services/seed.sql` and the files it references in `scripts/local-services/seed-files/`.
+- The background jobs in `instrumentation.ts`, and their switches `TASK_GENERATOR_ENABLED` and `UPLOAD_CLEANUP_ENABLED` in `lib/env.ts`, `lib/env.test.ts`, and `playwright.config.ts`.
+- The seed data: `scripts/local-services/seed.sql` and the files it references in `scripts/local-services/seed-files/`.
 - The namespaces registered in `lib/i18n/messages.ts`; in `messages/*/app.json`, the route keys `tasks`, `taskDetail`, `feed`, `search`, and `recent`, `pageError` for `app/[locale]/(tasks)/error.tsx`, and `metadata.description`; and the sample product's terms in `messages/terms.json`.
 - The specs that test kept code through the sample product's pages: `e2e/home.spec.ts`, `e2e/locale.spec.ts`, and `e2e/date-time.spec.ts`. Point them at the project's own pages rather than deleting them.
 - The cases in `eslint.config.test.mjs` that lint real files under `features/task/`, which must exist on disk: point them at the project's own files.
+- Text in kept files that describes the sample product: the introductions of `README.md` and `GLOSSARY.md`, the items in `TODO.md`, and comments that use its pages or tables as examples. Search the kept files for its words, such as task, upload, 任务, and 上传.
+- `SAMPLE_PRODUCT` in `scripts/docs-links.test.mjs`: empty it. The rules' links to the sample product then open on GitHub only, and the test stops looking for their files here.
 - Object storage, if the project has no uploads: the `STORAGE_*` variables in `lib/env.ts` and in `localEnv` in `scripts/local-services/datasets.mjs`, the `storage` service in `compose.yaml`, the bucket setup and `PUBLIC_PREFIXES` in `scripts/local-services/services.mjs`, and `connectE2eStorage` in `e2e/backend.ts`.
 
-A project replaces it with its own features, the same way: the rules in `.claude/rules/` describe the conventions without referring to the sample product, a project's own terms and features take the sample product's entries in the [Glossary](GLOSSARY.md) and [Feature boundaries](docs/features.md), and this repository stays the place to read working code for them.
+A project replaces it with its own features, the same way: the rules in `.claude/rules/` and the skills link to the sample product's code on this repository's GitHub, so their examples still open once it is gone (they point at `main`; to keep them at the version the project started from, replace `/blob/main/` and `/tree/main/` with that commit), a project's own terms and features take the sample product's entries in the [Glossary](GLOSSARY.md) and [Feature boundaries](docs/features.md), and this repository stays the place to read working code for them.
 
 Keep the rest: the layers outside `features/`, `features/ui-catalog/` with the design system it documents, the app shell in `app/`, the scripts, and the e2e helpers in `e2e/test.ts`, `e2e/browser.ts`, and `e2e/backend.ts`, which a project's own fixtures build on.
 
@@ -77,14 +79,14 @@ The e2e build turns on the testing API that `instant()` from `@next/playwright` 
 While debugging, `E2E_REUSE_SERVER=1` makes the specs reuse a server you started on the port. Reset the dataset with `pnpm db:reset e2e`, start a dev server on it, and run the specs against it:
 
 ```bash
-LOCAL_DATASET=e2e TASK_GENERATOR_ENABLED=false pnpm dev --port 3998
+LOCAL_DATASET=e2e TASK_GENERATOR_ENABLED=false UPLOAD_CLEANUP_ENABLED=false pnpm dev --port 3998
 E2E_REUSE_SERVER=1 pnpm test:e2e
 ```
 
 In PowerShell:
 
 ```powershell
-$env:LOCAL_DATASET = "e2e"; $env:TASK_GENERATOR_ENABLED = "false"; pnpm dev --port 3998
+$env:LOCAL_DATASET = "e2e"; $env:TASK_GENERATOR_ENABLED = "false"; $env:UPLOAD_CLEANUP_ENABLED = "false"; pnpm dev --port 3998
 $env:E2E_REUSE_SERVER = "1"; pnpm test:e2e
 ```
 

@@ -18,6 +18,8 @@ const VARIABLES = {
   STORAGE_SECRET_ACCESS_KEY: z.string().min(1),
   /** 是否在这个进程里运行 generator（instrumentation.ts）。e2e 关掉它，由用例自己推进任务。 */
   TASK_GENERATOR_ENABLED: z.stringbool().default(true),
+  /** 是否在这个进程里运行上传清理（instrumentation.ts）。e2e 关掉它：会改数据的后台任务在 e2e 里都不运行。 */
+  UPLOAD_CLEANUP_ENABLED: z.stringbool().default(true),
 } satisfies Record<string, z.ZodType>;
 
 type Variables = typeof VARIABLES;

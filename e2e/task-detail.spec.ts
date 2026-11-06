@@ -7,7 +7,9 @@ import {
   hasPath,
   isServerAction,
   openWithoutScripts,
+  recordRequests,
   returnToTab,
+  waitForServerAction,
 } from "./browser";
 import {
   createTaskThroughForm,
@@ -20,11 +22,10 @@ import {
   test,
   untilPolled,
 } from "./tasks";
+import { GLOBAL_ERROR_TOAST } from "./test";
 
 // 任务详情：数据由 React Query 负责（任务会在用户停留时自己推进），首屏由服务端 prefetch。
 // 只读的用例看种子数据里的任务；要改数据的用例各自建一个任务，不动种子数据。
-
-const GLOBAL_ERROR_TOAST = "请求失败，请稍后重试";
 
 const comments = (page: Page) =>
   page.getByRole("list", { name: "评论" }).getByRole("listitem");
@@ -48,15 +49,6 @@ async function expectTaskNotFound(page: Page) {
   await expect(
     page.locator('meta[name="robots"][content*="noindex"]'),
   ).not.toHaveCount(0);
-}
-
-/** 记下浏览器发出的 Server Action 请求，断言“没有发请求”时用。 */
-function serverActions(page: Page) {
-  const requests: string[] = [];
-  page.on("request", (request) => {
-    if (isServerAction(request)) requests.push(request.url());
-  });
-  return requests;
 }
 
 test.describe("首屏和 404", () => {
@@ -95,12 +87,9 @@ test.describe("首屏和 404", () => {
     const html = await (await request.get("/tasks/task-01")).text();
     expect(html).toContain("一只低多边形风格的狐狸");
 
-    const detailRequests: string[] = [];
-    page.on("request", (sent) => {
-      if (hasPath("/api/tasks/task-01")(sent)) detailRequests.push(sent.url());
-    });
-    await page.goto("/tasks/task-01");
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const detailRequests = recordRequests(page, hasPath("/api/tasks/task-01"));
+    // openTask 等到只在浏览器里渲染的内容出现，计时从 hydration 之后开始。
+    await openTask(page, "task-01");
     // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言 hydration 后一段时间内没有再请求详情，等待是断言的一部分。
     await page.waitForTimeout(1000);
     expect(detailRequests).toStrictEqual([]);
@@ -164,7 +153,7 @@ test.describe("任务推进", () => {
   test("回到标签页时徽标立即刷新", async ({ page, tasks }) => {
     const task = await tasks.createTask({ status: "running", progress: 50 });
     await openTask(page, "task-01");
-    // 等一次轮询返回：下一次轮询在 3 秒后，1 秒内的更新只能来自回到标签页时的刷新。
+    // 等一次轮询返回：有进行中的任务时（种子数据里一直有）下一次轮询在 3 秒后，1 秒内的更新只能来自回到标签页时的刷新。
     await page.waitForResponse((response) =>
       isActiveTasksRequest(response.request()),
     );
@@ -265,6 +254,9 @@ test.describe("请求失败", () => {
         hasPath(`/api/tasks/${task.id}`)(response.request()) &&
         response.status() === 400,
     );
+    // 提示在响应之后才更新：再等一会儿，去重坏掉时多出来的提示有时间出现。
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言这段时间里没有多出提示，等待是断言的一部分。
+    await page.waitForTimeout(500);
     await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(2);
   });
 });
@@ -287,9 +279,7 @@ test.describe("写入", () => {
     await expect(taskRow(page, task.name)).toBeVisible();
 
     await openTask(page, task.id);
-    const retried = page.waitForResponse((response) =>
-      isServerAction(response.request()),
-    );
+    const retried = waitForServerAction(page);
     await page.getByRole("button", { name: "重试" }).click();
     // 重试是乐观更新：服务端处理之前就显示排队中，等 action 返回后再推进，任务才已经回到 pending。
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
@@ -461,7 +451,7 @@ test.describe("写入", () => {
 
   test("选中的不是图片时直接提示，不签发上传", async ({ page }) => {
     await openTask(page, "task-03");
-    const actions = serverActions(page);
+    const actions = recordRequests(page, isServerAction);
 
     await page.getByLabel("更换封面图").setInputFiles({
       name: "notes.txt",
@@ -479,7 +469,7 @@ test.describe("写入", () => {
 
   test("选中的图片超过 5 MB 时直接提示，不签发上传", async ({ page }) => {
     await openTask(page, "task-03");
-    const actions = serverActions(page);
+    const actions = recordRequests(page, isServerAction);
 
     await page.getByLabel("更换封面图").setInputFiles({
       name: "huge.png",
@@ -581,7 +571,7 @@ test.describe("评论", () => {
 
   test("空评论和超过 500 字的评论不能提交", async ({ page }) => {
     await openTask(page, "task-01");
-    const actions = serverActions(page);
+    const actions = recordRequests(page, isServerAction);
     await page.getByRole("button", { name: "发表" }).click();
     await expect(page.getByText("请输入评论")).toBeVisible();
 

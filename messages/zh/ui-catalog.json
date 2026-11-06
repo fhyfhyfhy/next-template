@@ -57,7 +57,7 @@
       "description": "把标签、控件和错误信息组合在一起，状态由 TanStack Form 提供。"
     },
     "form": {
-      "description": "提交时校验各个字段，并聚焦第一个无效字段的表单。"
+      "description": "提交时校验各个字段、聚焦第一个无效字段的表单。"
     },
     "input": {
       "description": "原生 input 元素，放在 Field 里自动和它配合。"

@@ -8,7 +8,7 @@ import { exampleFiles } from "../constants/example-files.generated";
 import type { ExampleSources } from "../types/examples";
 
 /** 按生成索引读取预览对应的源码；生产部署需包含这些源文件。 */
-export async function readExampleSources(
+export async function getCachedExampleSources(
   component: ComponentId,
 ): Promise<ExampleSources> {
   "use cache";

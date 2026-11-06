@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { S3Client } from "@aws-sdk/client-s3";
 import {
   Kysely,
   PostgresDialect,
@@ -9,6 +8,7 @@ import {
 import pg from "pg";
 
 import { localEnv } from "../scripts/local-services/datasets.mjs";
+import { createLocalStorageClient } from "../scripts/local-services/storage.mjs";
 
 // 用例的测试数据直接写进 e2e 数据集（playwright.config.ts 的 webServer 用的同一个库），不经过应用。这里是和业务无关的
 // 部分；按项目的表写数据的 fixture 建在它上面。
@@ -25,20 +25,11 @@ export function connectE2eDatabase<Tables>() {
   });
 }
 
-/** 连到 e2e 数据集的 bucket，选项和 scripts/local-services/services.mjs 连本地存储时一致；用完调用 `client.destroy()`。 */
+/** 连到 e2e 数据集的 bucket；用完调用 `client.destroy()`。 */
 export function connectE2eStorage() {
   return {
     bucket: E2E_ENV.STORAGE_BUCKET,
-    client: new S3Client({
-      endpoint: E2E_ENV.STORAGE_ENDPOINT,
-      region: "us-east-1",
-      credentials: {
-        accessKeyId: E2E_ENV.STORAGE_ACCESS_KEY_ID,
-        secretAccessKey: E2E_ENV.STORAGE_SECRET_ACCESS_KEY,
-      },
-      forcePathStyle: true,
-      requestChecksumCalculation: "WHEN_REQUIRED",
-    }),
+    client: createLocalStorageClient(),
   };
 }
 

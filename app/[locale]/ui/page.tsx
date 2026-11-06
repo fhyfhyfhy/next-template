@@ -11,7 +11,7 @@ import {
   UiCatalog,
   UiCatalogHeader,
 } from "@/features/ui-catalog";
-import { readExampleSources } from "@/features/ui-catalog/server";
+import { getCachedExampleSources } from "@/features/ui-catalog/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
@@ -57,6 +57,6 @@ async function UiCatalogContent({
   searchParams,
 }: { header: ReactNode } & Pick<PageProps<"/[locale]/ui">, "searchParams">) {
   const { component } = await loadUiCatalogSearchParams(searchParams);
-  const sources = await readExampleSources(component);
+  const sources = await getCachedExampleSources(component);
   return <UiCatalog header={header} component={component} sources={sources} />;
 }

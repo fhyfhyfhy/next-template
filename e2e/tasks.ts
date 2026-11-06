@@ -12,7 +12,7 @@ import {
 import { clickForClientNavigation } from "./browser";
 import { expect, test as base } from "./test";
 
-// 任务和上传这套示例业务的 e2e 数据和页面 helper。写入直接进 e2e 数据集，对应用来说就是“别处改了数据”：不让 Next
+// Sample product（任务和上传）的 e2e 数据和页面 helper。写入直接进 e2e 数据集，对应用来说就是“别处改了数据”：不让 Next
 // 的服务端缓存失效，页面按自己的新鲜度规则才看到变化。
 // 只描述用到的列；表结构以各 feature 的 server/migrations.mts 为准，改了结构要同步这里。
 
@@ -66,7 +66,7 @@ export interface CreatedTask {
 }
 
 export class TaskData {
-  readonly db: Kysely<Tables>;
+  private readonly db: Kysely<Tables>;
   private readonly storage: S3Client;
   private readonly bucket: string;
 
@@ -82,18 +82,20 @@ export class TaskData {
     await this.db.destroy();
   }
 
-  /** 新建一个任务，默认排队中、没有封面。`createdAt` 决定它在按创建时间排序的列表里的位置。 */
+  /** 新建一个任务，默认排队中、没收藏、没有封面。`createdAt` 决定它在按创建时间排序的列表里的位置。 */
   async createTask({
     name = unique("e2e 任务"),
     prompt = unique("e2e prompt"),
     status = "pending",
     progress = status === "done" || status === "failed" ? 100 : 0,
+    favorite = false,
     createdAt = new Date(),
   }: {
     name?: string;
     prompt?: string;
     status?: TaskStatus;
     progress?: number;
+    favorite?: boolean;
     createdAt?: Date;
   } = {}): Promise<CreatedTask> {
     const id = `e2e-${randomUUID()}`;
@@ -105,12 +107,32 @@ export class TaskData {
         prompt,
         status,
         progress,
-        favorite: false,
+        favorite,
         created_at: createdAt,
         updated_at: createdAt,
       })
       .execute();
     return { id, name, prompt };
+  }
+
+  /** 这些名称的任务的创建时间（毫秒），按名称取。 */
+  async createdAt(names: string[]) {
+    const rows = await this.db
+      .selectFrom("tasks")
+      .select(["name", "created_at"])
+      .where("name", "in", names)
+      .execute();
+    return new Map(rows.map((row) => [row.name, row.created_at.getTime()]));
+  }
+
+  /** 库里已完成的任务数，别的用例完成的也算在内。 */
+  async countDone() {
+    const { total } = await this.db
+      .selectFrom("tasks")
+      .select((eb) => eb.fn.countAll<string>().as("total"))
+      .where("status", "=", "done")
+      .executeTakeFirstOrThrow();
+    return Number(total);
   }
 
   async addComments(taskId: string, contents: string[]) {
@@ -267,7 +289,8 @@ export const taskRows = (page: Page) =>
 export const taskRow = (page: Page, name: string) =>
   taskRows(page).filter({ hasText: name });
 
-// 页面每 3 秒检查一次进行中的任务，发现变化后再重新读取列表，等列表跟上要比默认的 5 秒宽。
+// 有进行中的任务时页面每 3 秒检查一次（种子数据里一直有：e2e 里 generator 关着，排队和生成中的种子任务不会结束），
+// 发现变化后再重新读取列表，等列表跟上要比默认的 5 秒宽。
 export const untilPolled = { timeout: 10_000 };
 
 /**

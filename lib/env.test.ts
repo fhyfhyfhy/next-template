@@ -42,9 +42,13 @@ describe("应用的环境变量", () => {
     expect(env.TASK_GENERATOR_ENABLED).toBe(true);
   });
 
-  test("TASK_GENERATOR_ENABLED 设为 false 时关闭 generator", () => {
-    stubRequired({ TASK_GENERATOR_ENABLED: "false" });
+  test("后台任务的开关设为 false 时读出 false", () => {
+    stubRequired({
+      TASK_GENERATOR_ENABLED: "false",
+      UPLOAD_CLEANUP_ENABLED: "false",
+    });
 
     expect(env.TASK_GENERATOR_ENABLED).toBe(false);
+    expect(env.UPLOAD_CLEANUP_ENABLED).toBe(false);
   });
 });

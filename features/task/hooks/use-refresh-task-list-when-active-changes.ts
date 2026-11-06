@@ -9,7 +9,7 @@ import { isTaskActive, type Task } from "../api/get-task";
 import { activeTasksQueryOptions, type TaskPage } from "../api/get-tasks";
 
 /**
- * 列表是服务端缓存的快照，任务状态却由后端自己推进，不经过 Next 服务端。这里轮询进行中的任务，
+ * 列表是服务端缓存的快照，任务状态却由后端自己推进，不经过 Server Action。这里轮询进行中的任务，
  * 有变化（新增、开始生成、结束）就经 action 让列表缓存失效，action 的响应带回重新读取的当前页。
  * 和 header 徽标共用一个 query 和它的轮询间隔，两者在同一次轮询后更新。
  */

@@ -1,3 +1,3 @@
 import "server-only";
 
-export { readExampleSources } from "./utils/read-example-sources";
+export { getCachedExampleSources } from "./server/get-cached-example-sources";

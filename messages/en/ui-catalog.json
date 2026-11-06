@@ -48,7 +48,7 @@
       "description": "A button that can be rendered as another element, or stay focusable while disabled."
     },
     "checkbox": {
-      "description": "An easily stylable checkbox component."
+      "description": "An easily stylable checkbox."
     },
     "dialog": {
       "description": "A popup that opens on top of the entire page."

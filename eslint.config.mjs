@@ -118,7 +118,7 @@ const DATE_TIME_FORMATTING = [
 // 翻译函数不按 namespace 取，key 写完整路径：整个 app 只有一种 t，可以传给任何 owner 的 options 工厂和
 // schema 工厂，它们读自己的文案。key 归谁由 i18n/message-keys 检查。
 const TRANSLATOR_NAMESPACE_MESSAGE =
-  "Call useTranslations() and getTranslations() without a namespace, and write each key's full path, starting with the namespace of the file's owner, such as t(\"orders.comments.createFailed\"). See .claude/rules/i18n.md.";
+  "Call useTranslations() and getTranslations() without a namespace, and write each key's full path, starting with the namespace of the file's owner, such as t(\"task.comments.createFailed\"). See .claude/rules/i18n.md.";
 const TRANSLATOR_NAMESPACE = [
   {
     selector:

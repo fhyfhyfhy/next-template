@@ -34,6 +34,12 @@ describe("评论", () => {
     ).toBe(COMMENT_CONTENT_INVALID);
   });
 
+  test("任务不存在时发表评论 404", async () => {
+    expect(
+      (await rejection(createComment("task-404", { content: "评论" }))).status,
+    ).toBe(404);
+  });
+
   test("删除评论，评论不属于这个任务时 404", async () => {
     await deleteComment("task-01", "comment-01");
     expect(await listComments("task-01")).toHaveLength(1);

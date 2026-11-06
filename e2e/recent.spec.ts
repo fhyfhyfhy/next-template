@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 
 import { failRequests, hasPath } from "./browser";
 import { expect, test } from "./tasks";
+import { GLOBAL_ERROR_TOAST } from "./test";
 
 // 最近查看：任务 id 存在 localStorage 里，只有浏览器能读，请求要等 hydration 之后才发。
 
@@ -31,7 +32,7 @@ test("首次加载失败时显示加载失败，不弹全局提示", async ({ pa
   await page.goto("/recent");
 
   await expect(items(page).first()).toContainText("加载失败（task-01）");
-  await expect(page.getByText("请求失败，请稍后重试")).toHaveCount(0);
+  await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(0);
 });
 
 test("看过但已被删除的任务显示为已删除，不弹通用提示", async ({
@@ -46,7 +47,7 @@ test("看过但已被删除的任务显示为已删除，不弹通用提示", as
   await page.goto("/recent");
 
   await expect(items(page).first()).toContainText("任务已被删除");
-  await expect(page.getByText("请求失败，请稍后重试")).toHaveCount(0);
+  await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(0);
 });
 
 test("没有看过任务时显示空状态", async ({ page }) => {

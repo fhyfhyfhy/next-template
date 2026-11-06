@@ -35,8 +35,10 @@ export default defineConfig({
       // 打开 instant() 依赖的测试 API，产物也因此放进单独的目录，不覆盖正在运行的 start（next.config.ts）。
       EXPOSE_TESTING_API: "1",
       LOCAL_DATASET: "e2e",
-      // 任务只按用例的安排推进（e2e/tasks.ts 的 `reportProgress`），不由后台的 generator 推进。
+      // 会改数据的后台任务都关掉（.claude/rules/e2e.md）：任务只按用例的安排推进（e2e/tasks.ts 的
+      // `reportProgress`），没被使用的上传也不在用例运行时被清理。
       TASK_GENERATOR_ENABLED: "false",
+      UPLOAD_CLEANUP_ENABLED: "false",
     },
     url: BASE_URL,
     reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",

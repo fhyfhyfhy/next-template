@@ -1,6 +1,7 @@
 import "server-only";
 import type { Selectable } from "kysely";
 import { nanoid } from "nanoid";
+import { DatabaseError } from "pg";
 import { cache } from "react";
 
 import { notFound } from "@/lib/domain-error";
@@ -47,19 +48,25 @@ export async function createComment(
     COMMENT_MAX_LENGTH,
     COMMENT_CONTENT_INVALID,
   );
-  const db = getTaskDb();
-  await findTaskRow(db, taskId);
-  const row = await db
-    .insertInto("task_comments")
-    .values({
-      id: nanoid(),
-      task_id: taskId,
-      content,
-      created_at: new Date(),
-    })
-    .returningAll()
-    .executeTakeFirstOrThrow();
-  return toComment(row);
+  try {
+    const row = await getTaskDb()
+      .insertInto("task_comments")
+      .values({
+        id: nanoid(),
+        task_id: taskId,
+        content,
+        created_at: new Date(),
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    return toComment(row);
+  } catch (error) {
+    // 外键保证任务存在：任务不存在，或者在这之前刚被删除，都按任务不存在拒绝。
+    if (error instanceof DatabaseError && error.code === "23503") {
+      throw notFound(`Task ${taskId} not found`);
+    }
+    throw error;
+  }
 }
 
 export async function deleteComment(taskId: string, commentId: string) {

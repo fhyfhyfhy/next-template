@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
-/** 首页就是全部任务。 */
+import { TASK_LIST_HREF } from "@/features/task";
+
 export default function Home() {
-  redirect("/tasks");
+  redirect(TASK_LIST_HREF);
 }

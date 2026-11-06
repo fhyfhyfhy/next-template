@@ -5,7 +5,7 @@ paths:
 
 # E2E specs
 
-Specs observe the app through the browser and import no application code. The data they need goes straight into the e2e database through a fixture that the feature's specs share, in a module beside them such as `e2e/orders.ts`, built on `connectE2eDatabase` in `e2e/backend.ts`.
+Specs observe the app through the browser and import no application code. The data they need goes straight into the e2e database through a fixture that the feature's specs share, in a module beside them, as [`e2e/tasks.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/e2e/tasks.ts) is for the sample product's specs, built on `connectE2eDatabase` in `e2e/backend.ts`. That module also holds the page helpers its specs share.
 
 Use `test` and `expect` in `e2e/test.ts`, or in the feature's fixture module, which extends it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (`playwright.config.ts`); a test that needs another one sets `test.use({ locale })`. `DateTime` in `components/date-time.tsx` renders dates and times in the browser's time zone after hydration: a spec that asserts one also sets `test.use({ timezoneId })`.
 
@@ -19,7 +19,7 @@ Use `test` and `expect` in `e2e/test.ts`, or in the feature's fixture module, wh
 
 ## Hydration
 
-Actionability checks pass on server-rendered HTML before React attaches its handlers, so a click or `setInputFiles` sent before hydration can be lost without an error. Before acting on a page, wait for a readiness signal: something only the browser renders, inside the same Suspense boundary as the control, such as data from a browser-only query. Wrap the navigation and that wait in a per-page helper, such as an `openOrder(page, id)` that waits for a list only the browser requests. ESLint's `e2e/act-after-ready` reports an action that follows `page.goto` or `reload` before any `expect` or bare helper call; a control that only the browser renders, so finding it proves hydration, takes an `eslint-disable-next-line` comment that says so.
+Actionability checks pass on server-rendered HTML before React attaches its handlers, so a click or `setInputFiles` sent before hydration can be lost without an error. Before acting on a page, wait for a readiness signal: something only the browser renders, inside the same Suspense boundary as the control, such as data from a browser-only query. Wrap the navigation and that wait in a per-page helper, such as `openTask` in [`e2e/task-detail.spec.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/e2e/task-detail.spec.ts), which waits for a list only the browser renders. ESLint's `e2e/act-after-ready` reports an action that follows `page.goto` or `reload` before any `expect` or bare helper call; a control that only the browser renders, so finding it proves hydration, takes an `eslint-disable-next-line` comment that says so.
 
 When the assertion observes another Suspense boundary, that boundary must be hydrated as well. An update that reaches a boundary before it hydrates discards its server-rendered content and shows the fallback, so a navigation can replace a list with its skeleton instead of keeping it on screen. Wait for a browser-only signal inside that boundary, or enter the page through a client-side navigation from another page, which renders every boundary in the browser. For that entry, wait for a browser-only signal on the starting page, then click with `clickForClientNavigation` in `e2e/browser.ts`: a link clicked before hydration loads the whole page from the server, and the helper fails instead of letting the spec continue on server-rendered boundaries.
 
@@ -27,8 +27,8 @@ When the assertion observes another Suspense boundary, that boundary must be hyd
 
 | To assert | Use |
 | --- | --- |
-| The static shell after `page.goto`, or the prefetched UI after a `<Link>` click | `instant()` from `@next/playwright` |
-| UI rendered into the server's HTML rather than by the browser, or what the server renders while the browser's own refreshes would hide it | Open the page with `openWithoutScripts` in `e2e/browser.ts`, which aborts the app's script requests, and assert the UI. `instant()` lets browser rendering through, and disabling JavaScript also stops the inline scripts that place a Suspense boundary's content when it resolves after the shell |
+| The static shell after `page.goto`, or the prefetched UI after a `<Link>` click | `instant()` from `@next/playwright`, as in [`e2e/tasks.spec.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/e2e/tasks.spec.ts) |
+| UI rendered into the server's HTML rather than by the browser, or what the server renders while the browser's own refreshes would hide it | Open the page with `openWithoutScripts` in `e2e/browser.ts`, which aborts the app's script requests, and assert the UI, as in [`e2e/feed.spec.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/e2e/feed.spec.ts). `instant()` lets browser rendering through, and disabling JavaScript also stops the inline scripts that place a Suspense boundary's content when it resolves after the shell |
 | One streamed section arriving before another | Lock the table the later section reads with `holdTable` in `e2e/backend.ts`, and `page.goto(url, { waitUntil: "commit" })`: `load` fires only after the stream ends |
 | The UI while a browser request or Server Action is in flight, or after it fails | `delayRequests` or `failRequests` in `e2e/browser.ts`. `failRequests` with `delayMs` shows an optimistic update before the server answers and leaves no write behind |
 
@@ -39,8 +39,8 @@ Playwright pages stay in the foreground, so a return to the tab is simulated: us
 ## Waiting
 
 - Data changes only when the test changes it: see [Test data](#test-data).
-- End each wait on the event that completes it, such as `page.waitForResponse` for a Server Action (`isServerAction` in `e2e/browser.ts`). A fixed wait fits only a negative assertion, "nothing else happens within N ms", and its `eslint-disable` comment gives that reason.
-- To assert that the browser sent no request, record the requests with `page.on("request")` before the action and check the list once the UI has answered.
+- End each wait on the event that completes it, such as `waitForServerAction` in `e2e/browser.ts` for a Server Action. A fixed wait fits only a negative assertion, "nothing else happens within N ms", and its `eslint-disable` comment gives that reason.
+- To assert that the browser sent no request, record the requests with `recordRequests` in `e2e/browser.ts` before the action and check the list once the UI has answered.
 
 ## Regression specs
 

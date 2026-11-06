@@ -7,11 +7,13 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
+import { TASK_LIST_HREF } from "../../utils/task-urls";
+
 export { RunningTasksBadge } from "./running-tasks-badge";
 export { RunningTasksBadgeSkeleton } from "./running-tasks-badge-skeleton";
 
 const links = [
-  { href: "/tasks", key: "tasks" },
+  { href: TASK_LIST_HREF, key: "tasks" },
   { href: "/feed", key: "feed" },
   { href: "/search", key: "search" },
   { href: "/recent", key: "recent" },
@@ -20,7 +22,7 @@ const links = [
 interface TaskHeaderProps {
   /** 左侧的品牌和首页链接，属于整个应用，由 app 的 layout 传入。 */
   brand: ReactNode;
-  /** 右侧的进行中任务数，由 layout 在自己的 Suspense 里预取后传入，导航不用等这次读取。 */
+  /** 右侧的进行中任务数。它要读数据：传入时包在自己的 Suspense 里，导航不用等这次读取。 */
   badge: ReactNode;
   /** 最右侧的全局操作，比如切换语言。 */
   actions: ReactNode;

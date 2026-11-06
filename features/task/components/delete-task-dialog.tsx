@@ -18,6 +18,7 @@ import {
 import { useMutation } from "@/lib/react-query";
 
 import { deleteTaskMutationOptions } from "../api/delete-task";
+import { TASK_LIST_HREF } from "../utils/task-urls";
 
 interface DeleteTaskDialogProps {
   taskId: string;
@@ -54,7 +55,7 @@ export function DeleteTaskDialog({ taskId, taskName }: DeleteTaskDialogProps) {
                 deleteTask.mutate(
                   { taskId },
                   // 工厂已经清理了缓存，这里只负责这个页面自己的反应：离开已删除任务的详情页。
-                  { onSuccess: () => router.push("/tasks") },
+                  { onSuccess: () => router.push(TASK_LIST_HREF) },
                 )
               }
             >

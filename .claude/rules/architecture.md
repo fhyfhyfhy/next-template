@@ -76,8 +76,8 @@ Ordered top to bottom, like "Layers".
 
 [docs/features.md](../../docs/features.md) records which features depend on which, what each one is responsible for, and what sits next to it but belongs elsewhere. Put new code in the feature responsible for the business concept it serves. When no feature is, decide by how the concept exists:
 
-- A concept that exists only as part of another joins that concept's feature. In the database, its rows are deleted with the other's, as an order's line items are.
-- A concept that exists on its own gets a feature of its own. In the database, it has its own tables and lifecycle, and other features reach it through its `server.ts`, as an order looks up its customer through the customers feature's `server.ts`.
+- A concept that exists only as part of another joins that concept's feature. In the database, its rows are deleted with the other's, as a task's comments are in [`features/task/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task).
+- A concept that exists on its own gets a feature of its own. In the database, it has its own tables and lifecycle, and other features reach it through its `server.ts`, as the task feature attaches a cover through `attachUpload` from [`features/upload/server.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/upload/server.ts).
 
 Creating, merging, or splitting a feature, changing what one is responsible for, or adding or removing a dependency between features updates `docs/features.md` in the same change.
 

@@ -10,18 +10,12 @@ import {
   PutBucketCorsCommand,
   PutBucketPolicyCommand,
   PutObjectCommand,
-  S3Client,
 } from "@aws-sdk/client-s3";
 import pg from "pg";
 
 import { migrateDatabase } from "../db/migrate.mjs";
-import {
-  databaseUrl,
-  DATASETS,
-  localEnv,
-  POSTGRES,
-  STORAGE,
-} from "./datasets.mjs";
+import { databaseUrl, DATASETS, localEnv, POSTGRES } from "./datasets.mjs";
+import { createLocalStorageClient } from "./storage.mjs";
 
 const projectRoot = join(import.meta.dirname, "..", "..");
 
@@ -128,7 +122,7 @@ async function uploadSeedFiles(bucket) {
     recursive: true,
     withFileTypes: true,
   }).filter((entry) => entry.isFile());
-  const client = storageClient();
+  const client = createLocalStorageClient();
   try {
     await Promise.all(
       files.map((file) => {
@@ -151,21 +145,8 @@ async function uploadSeedFiles(bucket) {
   }
 }
 
-function storageClient() {
-  return new S3Client({
-    endpoint: STORAGE.endpoint,
-    region: "us-east-1",
-    credentials: {
-      accessKeyId: STORAGE.accessKeyId,
-      secretAccessKey: STORAGE.secretAccessKey,
-    },
-    forcePathStyle: true,
-    requestChecksumCalculation: "WHEN_REQUIRED",
-  });
-}
-
 async function prepareBucket(bucket, { reset }) {
-  const client = storageClient();
+  const client = createLocalStorageClient();
   try {
     if (reset) await emptyBucket(client, bucket);
     try {

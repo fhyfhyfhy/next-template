@@ -28,14 +28,14 @@ File: rig-template.md
 @@ ### Test command and base URL @@
 -EXPOSE_TESTING_API=1 pnpm build
 -BASE_URL=http://localhost:3000 pnpm playwright test tests/prefetch-optimization.spec.ts
-+EXPOSE_TESTING_API=1 pnpm build && BASE_URL=http://localhost:3000 pnpm playwright test tests/prefetch-optimization.spec.ts
++EXPOSE_TESTING_API=1 pnpm build:local && BASE_URL=http://localhost:3000 pnpm playwright test tests/prefetch-optimization.spec.ts
 +```
 +
 +PowerShell (stop if the build fails):
 +
 +```powershell
 +$env:EXPOSE_TESTING_API = '1'
-+pnpm build
++pnpm build:local
 +$instantBuildExitCode = $LASTEXITCODE
 +Remove-Item Env:EXPOSE_TESTING_API
 +if ($instantBuildExitCode -ne 0) { throw 'Production test build failed' }
@@ -47,7 +47,7 @@ File: rig-template.md
 
 ## Start the testing build in this project
 
-This project's `next.config.ts` sends a build made with `EXPOSE_TESTING_API=1` to `.next-e2e`, so a server started without the variable serves `.next`, which lacks the testing API.
+This project's `next.config.ts` sends a build made with `EXPOSE_TESTING_API=1` to `.next-e2e`, so a server started without the variable serves `.next`, which lacks the testing API. Locally the production build and server are `pnpm build:local` and `pnpm start:local`, which start the local services and pass their connection settings: `pnpm build` and `pnpm start` read them from the environment, as a deployment sets them (README).
 
 File: rig-template.md
 
@@ -59,8 +59,8 @@ File: rig-template.md
 -separate terminal after the build, keep it running during the test command,
 -and stop it afterward. Use only one server lifecycle for the measured app.
 +If the rig does not use `webServer`, start the server with the same variable
-+after the build, `EXPOSE_TESTING_API=1 pnpm start --port 3000` (PowerShell:
-+`$env:EXPOSE_TESTING_API = '1'; pnpm start --port 3000`), in a separate
++after the build, `EXPOSE_TESTING_API=1 pnpm start:local --port 3000` (PowerShell:
++`$env:EXPOSE_TESTING_API = '1'; pnpm start:local --port 3000`), in a separate
 +terminal, keep it running during the test command, and stop it afterward.
 +This project's `next.config.ts` puts a build made with the variable in
 +`.next-e2e`, and `start` serves that directory only while the variable is set.

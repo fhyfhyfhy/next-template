@@ -24,4 +24,7 @@ export const test = base.extend<{ failOnMissingMessage: void }>({
   ],
 });
 
+/** 全局错误处理弹出的通用提示（app/providers.tsx，messages/zh/app.json 的 `requestError`）。 */
+export const GLOBAL_ERROR_TOAST = "请求失败，请稍后重试";
+
 export { expect };

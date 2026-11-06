@@ -8,6 +8,7 @@ import {
   serializeTaskListSearchParams,
   type TaskListSearchParams,
 } from "../../utils/task-list-search-params";
+import { TASK_LIST_HREF } from "../../utils/task-urls";
 import { useTaskListSearchParams } from "./use-task-list-search-params";
 
 type TaskListLinkProps = Omit<
@@ -25,7 +26,7 @@ export function TaskListLink({ values, ...props }: TaskListLinkProps) {
   return (
     <Link
       {...props}
-      href={serializeTaskListSearchParams("/tasks", target)}
+      href={serializeTaskListSearchParams(TASK_LIST_HREF, target)}
       // 用 onNavigate 而不是 onClick：Ctrl/Cmd 点击在新标签页打开时不触发它，交给浏览器处理。
       onNavigate={(event) => {
         event.preventDefault();

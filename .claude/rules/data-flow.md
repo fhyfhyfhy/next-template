@@ -15,11 +15,12 @@ paths:
 - When writing or changing code that displays backend data, or a write that changes data a page displays, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md).
 - When adding or changing code that reads or writes data on the server (the data layer, a Server Action, a `use cache` read, or a Route Handler), read [server-data.md](server-data.md).
 - When adding or changing a browser request or a React Query options factory, read [tanstack-query.md](tanstack-query.md).
+- When you need a working example of a data rule, here or in those two, read the [sample product's scenarios](../../.agents/skills/next-data-flow/examples.md), which map each rule to its code and e2e spec.
 
 ## Transport
 
 - Server code (Server Components, `generateMetadata`, `use cache` reads, Server Actions, Route Handlers, and background jobs started from `instrumentation.ts`) calls the feature's server data layer directly. Route Handlers exist for the browser: a prerender at build time has no server to answer a request to them, and at request time it adds a round trip (`node_modules/next/dist/docs/01-app/02-guides/backend-for-frontend.md`, Caveats).
-- A Server Component or `generateMetadata` that reads data that differs per request awaits `connection()` from `next/server` before calling the data layer. Without it, the read also runs while Next prerenders the route, and one request queries the database twice. A read inside `use cache` is cached across renders and skips `connection()`; calling it there is an error.
+- A Server Component or `generateMetadata` that reads data that differs per request awaits `connection()` from `next/server` before calling the data layer. Without it, the read also runs while Next prerenders the route, and one request queries the database twice. A read inside `use cache` is cached across renders and skips `connection()`; calling it there is an error. [`app/[locale]/(tasks)/tasks/[id]/page.tsx`](https://github.com/fhyfhyfhy/next-template/blob/main/app/%5Blocale%5D/%28tasks%29/tasks/%5Bid%5D/page.tsx) awaits it for the task detail.
 - The browser reads through `fetchApi` in `lib/fetch.ts`, against the app's Route Handlers under `/api`, and writes through Server Actions. The client dispatches Server Actions one at a time (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, Sequential dispatch on the client), so reads that poll, stream, run in parallel, or may be aborted midway stay on Route Handlers.
 - Raw `fetch` is for what `fetchApi` does not cover: streaming or SSE responses and binary bodies, such as a file sent to a presigned object-storage URL or a model file downloaded.
 
@@ -27,7 +28,7 @@ paths:
 
 A page's state that belongs in the URL, such as its filters, sorting, pagination, or search term, goes through nuqs. [URL changes](../../.agents/skills/next-data-flow/refresh.md#url-changes) decides which updates navigate, push history, or wait for a pause; this section turns them into code.
 
-- Define a page's parsers once, in the owning feature's `utils/<page>-search-params.ts`, such as `order-list-search-params.ts`, and export from the same module a loader (`createLoader`) and a serializer (`createSerializer`) built on them. Import these from `nuqs/server`: the `nuqs` entry is a client module, and Server Components use them too.
+- Define a page's parsers once, in the owning feature's `utils/<page>-search-params.ts`, such as [`features/task/utils/task-list-search-params.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/utils/task-list-search-params.ts), and export from the same module a loader (`createLoader`) and a serializer (`createSerializer`) built on them. Import these from `nuqs/server`: the `nuqs` entry is a client module, and Server Components use them too.
 - A Server Component reads the state with the loader, inside the `<Suspense>` that awaits `searchParams`. A Client Component reads and sets it with `useQueryStates` from `nuqs` and the same parsers, rendered inside `<Suspense>`, since the hook reads `useSearchParams`. A link to another state of the page takes its `href` from the serializer.
 - Express the decisions through the setter's options:
 
@@ -46,11 +47,11 @@ A page's state that belongs in the URL, such as its filters, sorting, pagination
 When a Server Component prefetches a read that React Query owns, follow the installed guide `node_modules/next/dist/docs/01-app/02-guides/client-side-data-fetching/tanstack-query.md`, adapted as below.
 
 - Create a `QueryClient` in `lib/react-query.ts` per render on the server; the browser reuses the one in `app/providers.tsx`.
-- Prefetch with the feature's options factory, swapping only `queryFn` for the data layer, which returns the data that key holds: `queryClient.query({ ...getOrderItemsQueryOptions(id), queryFn: () => listOrderItems(id) })`. `query()` replaces the guide's deprecated `prefetchQuery`: add `.catch(noop)` (`noop` in `lib/react-query.ts`) to ignore a failure as `prefetchQuery` did, and leave it unawaited to stream a pending query.
-- Pick the guide's pattern per hydration site: **Provide initial data from a Server Component** for prefetch and pending streaming, or **Build a prerenderable hydration state** for cached data. Read a prerenderable state's timestamp in the same `use cache` function as its data, which returns both, such as `{ page, fetchedAt }`: the two then expire and refresh together, and hydration relies on that timestamp to tell whether the data is newer than the browser's.
+- Prefetch with the feature's options factory, swapping only `queryFn` for the data layer, which returns the data that key holds: `queryClient.query({ ...getCommentsQueryOptions(id), queryFn: () => listComments(id) })` in [`app/[locale]/(tasks)/tasks/[id]/page.tsx`](https://github.com/fhyfhyfhy/next-template/blob/main/app/%5Blocale%5D/%28tasks%29/tasks/%5Bid%5D/page.tsx). `query()` replaces the guide's deprecated `prefetchQuery`: add `.catch(noop)` (`noop` in `lib/react-query.ts`) to ignore a failure as `prefetchQuery` did, and leave it unawaited to stream a pending query.
+- Pick the guide's pattern per hydration site: **Provide initial data from a Server Component** for prefetch and pending streaming, or **Build a prerenderable hydration state** for cached data. Read a prerenderable state's timestamp in the same `use cache` function as its data, which returns both, as `getCachedFeedSnapshot` in [`features/task/server/get-cached-feed-snapshot.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/server/get-cached-feed-snapshot.ts) returns `{ page, fetchedAt }`: the two then expire and refresh together, and hydration relies on that timestamp to tell whether the data is newer than the browser's.
 - Behind the guide's Suspense boundary, a prerenderable state reaches the HTML while its UI renders only in the browser. To render that UI on the server too, give the consuming query `staleTime: "static"` while `environmentManager.isServer()`, keeping the browser's `staleTime`.
-- A prerenderable infinite query carries only its first page: pass it to `HydrationBoundary` only for queries the browser has no data for, so it never replaces pages already loaded. Filter in a Client Component, against the browser's cache: keep the state's queries whose `useQueryClient().getQueryCache().get(queryHash)?.state.data` is `undefined`.
-- Function values in `meta`, such as a `suppressErrorToast` predicate, cannot cross to a Client Component: omit them from the `meta` of each dehydrated query and mutation at the hydration site, copying the entries rather than changing the factory's options.
+- A prerenderable infinite query carries only its first page: pass it to `HydrationBoundary` only for queries the browser has no data for, so it never replaces pages already loaded. Filter in a Client Component, against the browser's cache: keep the state's queries whose `useQueryClient().getQueryCache().get(queryHash)?.state.data` is `undefined`, as `SeedHydrationBoundary` in [`features/task/components/seed-hydration-boundary.tsx`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/components/seed-hydration-boundary.tsx) does.
+- Function values in `meta`, such as a `suppressErrorToast` predicate, cannot cross to a Client Component: omit them from the `meta` of each dehydrated query and mutation at the hydration site, copying the entries rather than changing the factory's options, as `omitFunctionMeta` in [`features/task/utils/hydration-state.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/utils/hydration-state.ts) does.
 
 ## Copies
 
@@ -79,6 +80,8 @@ Render server data from its owner: props or a promise from a Server Component, o
     });
   }
   ```
+
+  `FavoriteToggle` in [`features/task/components/task-list/favorite-toggle.tsx`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/components/task-list/favorite-toggle.tsx) is a working version.
 
   When React Query also displays the value, such as in a detail query or a list cached for another page, the factory's `onMutate` updates it there as well ([Mutations](tanstack-query.md#mutations)).
 

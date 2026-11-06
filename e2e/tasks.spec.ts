@@ -7,6 +7,8 @@ import {
   failRequests,
   isNavigation,
   isServerAction,
+  recordRequests,
+  waitForServerAction,
 } from "./browser";
 import {
   createTaskThroughForm as createTask,
@@ -41,6 +43,7 @@ test("全部任务默认显示第一页", async ({ page }) => {
 
   await expect(rows(page)).toHaveCount(8);
   await expect(page.getByRole("link", { name: "下一页" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "上一页" })).toHaveCount(0);
 });
 
 test("按状态筛选写进 URL，Back 回到上一个筛选", async ({ page }) => {
@@ -296,15 +299,12 @@ test("名称被占用后改了名字，离开再返回，改过的名字不会�
 
 test("名称为空时在浏览器里就拦下，不发请求", async ({ page }) => {
   await openTasksPage(page);
-  let created = false;
-  page.on("request", (request) => {
-    if (isServerAction(request)) created = true;
-  });
+  const actions = recordRequests(page, isServerAction);
   await page.getByLabel("Prompt").fill(unique("e2e prompt"));
   await page.getByRole("button", { name: "创建任务" }).click();
 
   await expect(page.getByText("请输入名称")).toBeVisible();
-  expect(created).toBe(false);
+  expect(actions).toStrictEqual([]);
 });
 
 test("创建出错时弹全局提示，填的内容还在，重试能成功", async ({ page }) => {
@@ -331,12 +331,13 @@ test("收藏立即生效，请求完成前就显示已收藏", async ({ page }) 
   await delayRequests(page, isServerAction, 1500);
   const star = taskRow(page, name).getByRole("button", { name: "收藏" });
   // 收藏走 Server Action，它返回时后端已经写入。
-  const saved = page.waitForResponse((response) =>
-    isServerAction(response.request()),
-  );
+  const saved = waitForServerAction(page);
 
   await star.click();
-  await expect(star).toHaveAttribute("aria-pressed", "true");
+  // 超时短于请求的延迟：只有乐观更新能让星标在请求返回之前变成已收藏。
+  await expect(star).toHaveAttribute("aria-pressed", "true", {
+    timeout: 1000,
+  });
 
   await saved;
   await page.reload();
@@ -359,15 +360,18 @@ test("收藏失败时星标恢复原状，只弹一个全局提示", async ({ pa
 
 test("详情链接进入视口后就被预取", async ({ page }) => {
   // 生产构建里 Link 进入视口时预取目标路由；开发服务器不预取。
-  const prefetchedPaths: string[] = [];
-  page.on("request", (request) => {
-    if (request.headers()["next-router-prefetch"] === "1")
-      prefetchedPaths.push(new URL(request.url()).pathname);
-  });
+  const prefetches = recordRequests(
+    page,
+    (request) => request.headers()["next-router-prefetch"] === "1",
+  );
   await page.goto("/tasks");
 
   await expect
-    .poll(() => prefetchedPaths.some((path) => path.startsWith("/tasks/")))
+    .poll(() =>
+      prefetches.some((request) =>
+        new URL(request.url()).pathname.startsWith("/tasks/"),
+      ),
+    )
     .toBe(true);
 });
 

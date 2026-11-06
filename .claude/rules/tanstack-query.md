@@ -17,11 +17,13 @@ Define the browser's requests and the React Query options factories that use the
 
 ## Requests
 
-- `fetchApi` in `lib/fetch.ts` requests JSON over HTTP, in the browser or on the server: the app's own Route Handlers by a same-origin path such as `/api/orders`, another service's API by its full URL.
+- `fetchApi` in `lib/fetch.ts` requests JSON over HTTP, in the browser or on the server: the app's own Route Handlers by a same-origin path such as `/api/tasks`, another service's API by its full URL.
 - Read `FetchApiConfig` in `lib/fetch.ts` before calling `fetchApi`. In particular, query parameters go in `params`, not in the `url` string.
 - Types come from `z.infer` of the schema in `types/`, never a parallel hand-written interface. The schema describes JSON-native values only ([Results](server-data.md#results)).
 
 ## Queries
+
+The snippets below use a generic `orders` feature. Working versions in the sample product: [`features/task/api/get-task.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/get-task.ts) for a query that polls, [`features/task/api/search-tasks.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/search-tasks.ts) with `signal`, and [`features/task/api/get-feed.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/get-feed.ts) for an infinite list.
 
 ```ts
 import { z } from "zod";
@@ -100,10 +102,13 @@ Keys run from general to specific: `[feature, scope, ...params]`, with a resourc
 ```
 
 - Feature and resource names are singular, such as `"order"` for the `orders` feature. The scope is `"detail"` or `"list"`; an infinite list is a child of `"list"`, so invalidating `["order", "list"]` refreshes both list forms.
+- The sample product's task feature holds two resources, so its keys carry the resource segment, such as `["task", "comment", "list", taskId]` in [`features/task/api/get-comments.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/get-comments.ts).
 - Filters and pagination go in one object, which keeps every variant under the same prefix.
 - Take a single query's key from its factory, `getOrderQueryOptions(id).queryKey`. For a prefix shared by several factories, export one constant beside them that they build on, such as `orderListKey = ["order", "list"] as const`. A key retyped as a literal at the call site drifts from the factory without any error.
 
 ## Mutations
+
+Working versions in the sample product: [`features/task/api/delete-task.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/delete-task.ts), and [`features/task/api/update-task-favorite.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/update-task-favorite.ts), whose optimistic update writes every list that shows the task.
 
 ```ts
 import { mutationOptions } from "@/lib/react-query";
@@ -127,7 +132,7 @@ const deleteOrderMutation = useMutation(deleteOrderMutationOptions(t));
 deleteOrderMutation.mutate({ orderId }, { onSuccess: () => onClose() });
 ```
 
-- A write's `mutationFn` calls its Server Action ([Server Actions](server-data.md#server-actions)). The factory lives in an ordinary module, such as `api/create-order.ts`, which imports the action. When the action returns an `ActionResult`, the factory unwraps it with `unwrapActionResult`, which throws an `ActionError` for `{ ok: false }`, all in `lib/action-result.ts`: React Query treats every resolved value as success, so without it a failed write would run `onSuccess`. Otherwise the factory passes the result on as is.
+- A write's `mutationFn` calls its Server Action ([Server Actions](server-data.md#server-actions)). The factory lives in an ordinary module, such as [`features/task/api/create-task.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/create-task.ts), which imports the action. When the action returns an `ActionResult`, the factory unwraps it with `unwrapActionResult`, which throws an `ActionError` for `{ ok: false }`, all in `lib/action-result.ts`: React Query treats every resolved value as success, so without it a failed write would run `onSuccess`. Otherwise the factory passes the result on as is.
 - A Client Component triggers a write through its factory, also when no query displays the data: the factory holds the pending state, the failure toast, and any cache updates.
 - The factory's callbacks update the cache for every caller, reaching the `QueryClient` through the callbacks' last argument. A caller's own reaction, such as closing a dialog or navigating, stays at the call site, never in the factory. Put it in the second argument of `mutate`, whose callbacks run after the factory's and only while the component is mounted, or after `await mutateAsync(...)` when the caller needs the promise, such as a form's `onSubmit` that keeps the form submitting until the write settles.
 - An optimistic update lives in the factory too. `onMutate` cancels the queries it writes, snapshots them, and writes the new value into every query that displays it, each in that query's own data shape; `onError` restores the snapshot, and the global toast reports the failure; `onSettled` invalidates them so the server's value wins. Insert into a list where its server order puts it, so the refetch does not move it.
