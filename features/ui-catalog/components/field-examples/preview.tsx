@@ -10,8 +10,6 @@ import { FieldPlayground, initialConfig } from "./playground";
 
 export const metadata = {
   title: "Field",
-  description:
-    "Groups a label, control, and error message; TanStack Form supplies the state.",
   icon: "IconClipboardCheck",
 } satisfies ComponentMetadata;
 

@@ -10,8 +10,6 @@ import { ButtonPlayground, initialConfig } from "./playground";
 
 export const metadata = {
   title: "Button",
-  description:
-    "A button component that can be rendered as another tag or focusable when disabled.",
   icon: "IconClick",
 } satisfies ComponentMetadata;
 

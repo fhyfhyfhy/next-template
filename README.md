@@ -127,6 +127,9 @@ for minimal usage.
 Keep the component and its `metadata` export in the same TSX file; the
 [metadata types](features/ui-catalog/types/examples.ts) define the fields.
 Metadata uses literal values because generation reads it without executing TSX.
+A component's description follows the interface language: write it in every
+`messages/<locale>/ui-catalog.json` under `components.<component-id>.description`.
+Text inside `*-examples/` stays literal, in the source locale, so each file stays copyable.
 `order` defaults to `0`, with component ID or example filename breaking ties.
 
 Keep playgrounds and usage examples independently copyable; displayed code comes

@@ -10,7 +10,6 @@ import { initialConfig, InputPlayground } from "./playground";
 
 export const metadata = {
   title: "Input",
-  description: "A native input element that automatically works with Field.",
   icon: "IconForms",
 } satisfies ComponentMetadata;
 

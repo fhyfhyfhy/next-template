@@ -10,8 +10,6 @@ import { initialConfig, SelectPlayground } from "./playground";
 
 export const metadata = {
   title: "Select",
-  description:
-    "A common form component for choosing a predefined value in a dropdown menu.",
   icon: "IconSelector",
 } satisfies ComponentMetadata;
 

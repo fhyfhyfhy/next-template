@@ -14,11 +14,16 @@ const statusTabs = [null, ...TASK_STATUSES];
  * 状态筛选和排序。每次选择都写进 URL：分享、刷新和前进后退都能还原，Server Component 按新 URL 重新读取。
  * 新列表到达前先显示新的选择；换筛选时回到第一页。
  */
-export function TaskListToolbar() {
+export function TaskListToolbar({ className }: { className?: string }) {
   const t = useTranslations();
   const [{ status: selected }] = useTaskListSearchParams();
   return (
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div
+      className={cn(
+        "flex flex-wrap items-center justify-between gap-3",
+        className,
+      )}
+    >
       <nav
         aria-label={t("task.taskListToolbar.statusFilter")}
         className="flex flex-wrap gap-1"

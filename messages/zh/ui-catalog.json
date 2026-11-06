@@ -39,5 +39,43 @@
     "copy": "复制代码",
     "copied": "已复制",
     "copyFailed": "复制失败，请手动选择"
+  },
+  "components": {
+    "badge": {
+      "description": "标注状态或分类的小标签。"
+    },
+    "button": {
+      "description": "按钮，可以渲染成别的元素，禁用时也可以保持可聚焦。"
+    },
+    "checkbox": {
+      "description": "样式容易定制的复选框。"
+    },
+    "dialog": {
+      "description": "在整个页面之上打开的弹窗。"
+    },
+    "field": {
+      "description": "把标签、控件和错误信息组合在一起，状态由 TanStack Form 提供。"
+    },
+    "form": {
+      "description": "提交时校验各个字段，并聚焦第一个无效字段的表单。"
+    },
+    "input": {
+      "description": "原生 input 元素，放在 Field 里自动和它配合。"
+    },
+    "progress": {
+      "description": "显示耗时较长的操作进行到哪一步。"
+    },
+    "select": {
+      "description": "从下拉菜单里选择预设值的表单控件。"
+    },
+    "skeleton": {
+      "description": "内容加载时显示的占位。"
+    },
+    "switch": {
+      "description": "表示某项设置开启还是关闭的控件。"
+    },
+    "toaster": {
+      "description": "短暂出现、和其他提示叠放的简短消息。"
+    }
   }
 }

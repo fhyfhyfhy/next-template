@@ -10,7 +10,6 @@ import { DialogPlayground, initialConfig } from "./playground";
 
 export const metadata = {
   title: "Dialog",
-  description: "A popup that opens on top of the entire page.",
   icon: "IconAppWindow",
 } satisfies ComponentMetadata;
 

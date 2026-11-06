@@ -46,7 +46,7 @@ export function UiCatalog({
               </span>
             </h1>
             <p className="mt-5 max-w-2xl text-base/7 text-muted-foreground">
-              {item.description}
+              {t(`ui-catalog.components.${item.id}.description`)}
             </p>
           </div>
           <div className="space-y-10">

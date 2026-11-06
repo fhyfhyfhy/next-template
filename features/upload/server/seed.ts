@@ -1,14 +1,14 @@
 import "server-only";
 
-import { UPLOAD_KEY_PREFIX } from "../constants/storage-keys";
+import { SEED_KEY_PREFIX, UPLOAD_KEY_PREFIX } from "../constants/storage-keys";
 import { type Executor, getUploadStorage, uploadDb } from "./connection";
 
 // 种子数据和数据库测试的重置用到的上传操作，生产代码不调用它们。经 features/upload/seed.ts 导出。
 
 export interface SeedUpload {
   id: string;
-  /** 以 `SEED_KEY_PREFIX` 开头。 */
-  key: string;
+  /** 文件在 `SEED_KEY_PREFIX` 下的路径，如 `covers/task-01.svg`。 */
+  path: string;
   purpose: string;
   contentType: string;
   body: Uint8Array;
@@ -32,7 +32,7 @@ export async function restoreSeedUploads(
     const storage = getUploadStorage();
     await Promise.all(
       uploads.map((upload) =>
-        storage.put(upload.key, upload.body, upload.contentType),
+        storage.put(seedKey(upload), upload.body, upload.contentType),
       ),
     );
     seedFilesWritten = true;
@@ -44,7 +44,7 @@ export async function restoreSeedUploads(
     .values(
       uploads.map((upload) => ({
         id: upload.id,
-        key: upload.key,
+        key: seedKey(upload),
         purpose: upload.purpose,
         content_type: upload.contentType,
         size: upload.body.byteLength,
@@ -64,6 +64,10 @@ export async function restoreSeedUploads(
     )
     .onConflict((conflict) => conflict.doNothing())
     .execute();
+}
+
+function seedKey(upload: SeedUpload) {
+  return `${SEED_KEY_PREFIX}${upload.path}`;
 }
 
 /**

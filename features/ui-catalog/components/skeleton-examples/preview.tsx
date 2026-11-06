@@ -10,7 +10,6 @@ import { initialConfig, SkeletonPlayground } from "./playground";
 
 export const metadata = {
   title: "Skeleton",
-  description: "A placeholder shown while content is loading.",
   icon: "IconSquareDashed",
 } satisfies ComponentMetadata;
 

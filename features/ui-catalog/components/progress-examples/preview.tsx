@@ -10,7 +10,6 @@ import { initialConfig, ProgressPlayground } from "./playground";
 
 export const metadata = {
   title: "Progress",
-  description: "Displays the status of a task that takes a long time.",
   icon: "IconProgress",
 } satisfies ComponentMetadata;
 

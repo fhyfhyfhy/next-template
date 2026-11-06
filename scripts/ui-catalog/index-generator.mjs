@@ -122,16 +122,14 @@ function readMetadata(directory) {
         `Expected non-computed metadata property assignments in ${filename}`,
       );
     const field = property.name.text;
-    if (!["title", "description", "icon", "order"].includes(field))
+    if (!["title", "icon", "order"].includes(field))
       throw new Error(`Unknown metadata property "${field}" in ${filename}`);
     if (Object.hasOwn(metadata, field))
       throw new Error(`Duplicate metadata property "${field}" in ${filename}`);
     metadata[field] = metadataLiteral(property.initializer, filename);
   }
-  for (const field of ["title", "description"]) {
-    if (typeof metadata[field] !== "string" || !metadata[field].trim())
-      throw new Error(`Expected a non-empty ${field} in ${filename}`);
-  }
+  if (typeof metadata.title !== "string" || !metadata.title.trim())
+    throw new Error(`Expected a non-empty title in ${filename}`);
   if (typeof metadata.icon !== "string" || !iconName.test(metadata.icon))
     throw new Error(`Expected a Tabler icon export name in ${filename}`);
   if (metadata.order !== undefined && !Number.isFinite(metadata.order))
@@ -255,11 +253,7 @@ function componentCatalog(components) {
         (left.metadata.order ?? 0) - (right.metadata.order ?? 0) ||
         compare(left.id, right.id),
     )
-    .map(({ id, metadata: { title, description } }) => ({
-      id,
-      title,
-      description,
-    }));
+    .map(({ id, metadata: { title } }) => ({ id, title }));
   return `${generatedHeader}
 export const catalog = ${JSON.stringify(catalog)} as const;
 `;

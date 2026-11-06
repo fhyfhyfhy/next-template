@@ -10,8 +10,6 @@ import { FormPlayground, initialConfig } from "./playground";
 
 export const metadata = {
   title: "Form",
-  description:
-    "A form that validates its fields on submit and focuses the first invalid one.",
   icon: "IconForms",
 } satisfies ComponentMetadata;
 

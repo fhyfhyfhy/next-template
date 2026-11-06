@@ -10,7 +10,6 @@ import { initialConfig, SwitchPlayground } from "./playground";
 
 export const metadata = {
   title: "Switch",
-  description: "A control that indicates whether a setting is on or off.",
   icon: "IconToggleRight",
 } satisfies ComponentMetadata;
 

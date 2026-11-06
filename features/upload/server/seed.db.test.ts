@@ -15,9 +15,10 @@ import { attachUpload } from "./uploads";
 
 clearUploadsBeforeEach();
 
-// 种子文件不在 clearUploads 清空的前缀下，test 数据集的 bucket 也不在运行之间清空：每次运行用自己的 key，
+// 种子文件不在 clearUploads 清空的前缀下，test 数据集的 bucket 也不在运行之间清空：每次运行用自己的路径，
 // 上次留下的文件不会让读取的断言白过，运行结束时删掉。
-const RUN_PREFIX = `${SEED_KEY_PREFIX}test/${randomUUID()}/`;
+const RUN_PATH = `test/${randomUUID()}/`;
+const RUN_PREFIX = `${SEED_KEY_PREFIX}${RUN_PATH}`;
 
 afterAll(async () => {
   const storage = getUploadStorage();
@@ -26,7 +27,7 @@ afterAll(async () => {
 
 const seedCover = (recordId: string): SeedUpload => ({
   id: `seed-test-cover-${recordId}`,
-  key: `${RUN_PREFIX}${recordId}.png`,
+  path: `${RUN_PATH}${recordId}.png`,
   purpose: "task-cover",
   contentType: "image/png",
   body: PNG,

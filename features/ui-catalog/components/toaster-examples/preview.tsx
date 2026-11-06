@@ -10,8 +10,6 @@ import { initialConfig, ToasterPlayground } from "./playground";
 
 export const metadata = {
   title: "Toaster",
-  description:
-    "A brief message that appears temporarily and stacks with others.",
   icon: "IconBell",
 } satisfies ComponentMetadata;
 

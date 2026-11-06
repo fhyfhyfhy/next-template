@@ -1,11 +1,7 @@
 import "server-only";
 import { type Kysely, sql } from "kysely";
 
-import {
-  restoreSeedUploads,
-  SEED_KEY_PREFIX,
-  type SeedUpload,
-} from "@/features/upload/seed";
+import { restoreSeedUploads, type SeedUpload } from "@/features/upload/seed";
 
 import type { TaskStatus } from "../types/task-filters";
 import { type Executor, getTaskDb, taskDb } from "./connection";
@@ -88,7 +84,7 @@ function seedLogs(status: TaskStatus) {
   return logs;
 }
 
-/** 有封面的种子任务用生成的封面图，done 的种子任务带模型文件；都放在 `SEED_KEY_PREFIX` 前缀下，清理任务不删它们。 */
+/** 有封面的种子任务用生成的封面图，done 的种子任务带模型文件。 */
 function seedUploads(tasks: ReturnType<typeof seedTasks>): SeedUpload[] {
   const model = cubeGlb();
   return tasks.flatMap(({ row, hasCover }) => [
@@ -96,7 +92,7 @@ function seedUploads(tasks: ReturnType<typeof seedTasks>): SeedUpload[] {
       ? [
           {
             id: `seed-cover-${row.id}`,
-            key: `${SEED_KEY_PREFIX}covers/${row.id}.svg`,
+            path: `covers/${row.id}.svg`,
             purpose: "task-cover",
             contentType: "image/svg+xml",
             body: new TextEncoder().encode(generatedCoverSvg(row.id)),
@@ -108,7 +104,7 @@ function seedUploads(tasks: ReturnType<typeof seedTasks>): SeedUpload[] {
       ? [
           {
             id: `seed-model-${row.id}`,
-            key: `${SEED_KEY_PREFIX}models/${row.id}.glb`,
+            path: `models/${row.id}.glb`,
             purpose: "task-model",
             contentType: "model/gltf-binary",
             body: model,

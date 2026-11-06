@@ -10,7 +10,6 @@ import { BadgePlayground, initialConfig } from "./playground";
 
 export const metadata = {
   title: "Badge",
-  description: "A small label for a status or category.",
   icon: "IconTag",
 } satisfies ComponentMetadata;
 

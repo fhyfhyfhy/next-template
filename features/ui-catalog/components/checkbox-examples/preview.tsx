@@ -10,7 +10,6 @@ import { CheckboxPlayground, initialConfig } from "./playground";
 
 export const metadata = {
   title: "Checkbox",
-  description: "An easily stylable checkbox component.",
   icon: "IconCheckbox",
 } satisfies ComponentMetadata;
 

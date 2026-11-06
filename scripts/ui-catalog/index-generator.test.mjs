@@ -53,7 +53,6 @@ function write(
 function metadata(overrides = {}) {
   return {
     title: "Example",
-    description: "Example component",
     icon: "IconCheck",
     ...overrides,
   };
@@ -160,7 +159,6 @@ test("组件目录按 order 和 id 排序，Preview 与去重的图标使用静�
   const root = fixture();
   component(root, "zebra", {
     title: "Last",
-    description: "Last component",
     order: 2,
     icon: "IconZoom",
   });
@@ -176,11 +174,7 @@ test("组件目录按 order 和 id 排序，Preview 与去重的图标使用静�
     "beta",
     "zebra",
   ]);
-  expect(catalog.at(-1)).toStrictEqual({
-    id: "zebra",
-    title: "Last",
-    description: "Last component",
-  });
+  expect(catalog.at(-1)).toStrictEqual({ id: "zebra", title: "Last" });
   const registry = componentRegistrySource(root);
   expect(registry).toMatch(
     /import \{ IconCheck, IconZoom \} from "@tabler\/icons-react";/,
@@ -207,8 +201,7 @@ throw new Error("This module must never execute");
 export const metadata = (({
   // metadata 始终来自本文件的字面量。
   "title": ("Wrapped" as const),
-  description: \`Template description\`,
-  icon: "IconCheck",
+  icon: \`IconCheck\`,
   order: -(2),
 } as const) satisfies ComponentMetadata);
 export function Preview() { return <div>{unknownRuntimeValue}</div>; }
@@ -220,7 +213,6 @@ export function Preview() { return <div>{unknownRuntimeValue}</div>; }
     "preview.tsx",
     `export const metadata = {
       title: "Plain",
-      description: "Plain description",
       icon: "IconPlus",
       order: +2,
     };
@@ -229,8 +221,8 @@ export function Preview() { return <div>{unknownRuntimeValue}</div>; }
 
   await generateExampleIndexes(root);
   expect((await readCatalog(root)).catalog).toStrictEqual([
-    { id: "wrapped", title: "Wrapped", description: "Template description" },
-    { id: "plain", title: "Plain", description: "Plain description" },
+    { id: "wrapped", title: "Wrapped" },
+    { id: "plain", title: "Plain" },
   ]);
 });
 
@@ -246,7 +238,10 @@ test("metadata 无效或缺少必需文件时保留所有旧生成物", async ()
     ["export const metadata = [];", /Expected a metadata object literal/],
     ["export const metadata = null;", /Expected a metadata object literal/],
     [preview({ title: "  " }), /Expected a non-empty title/],
-    [preview({ description: 1 }), /Expected a non-empty description/],
+    [
+      preview({ description: "Now in messages" }),
+      /Unknown metadata property "description"/,
+    ],
     [
       preview({ icon: 'IconCheck } from "unsafe"' }),
       /Expected a Tabler icon export name/,
