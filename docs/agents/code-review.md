@@ -29,7 +29,7 @@ Project reviews for the `code-review` skill, one per section.
 ## UI
 
 - **Runs when:** the diff changes a `.tsx` or `.jsx` file, a file under any `components/`, or a `.css` file.
-- **Standards:** `.claude/rules/components.md`, `.claude/rules/react.md`, `.agents/skills/vercel-composition-patterns/` (`SKILL.md` and its `rules/`), and "UI demo examples" in `README.md`
+- **Standards:** `.claude/rules/components.md`, `.claude/rules/react.md`, `.agents/skills/vercel-composition-patterns/` (`SKILL.md` and its `rules/`), and "UI catalog examples" in `README.md`
 - **Brief:** Review the components the diff adds or changes, and how it renders others; ESLint checks component entries and imports, that UI libraries and native controls stay in `components/ui/`, Tailwind classes and tokens, the legacy React forms, and the Rules of React. Where a component lives is the Architecture review's.
   - **Reuse, compose, extend, or add**: search `components/ui/`, `components/`, the feature's components, and other features' entries for a candidate, and check that the change took the least invasive action that covers the need.
   - **Using a component**: appearance through its `variant` and `size`, placement and layout through `className`; a visual override a third caller repeats belongs in the component; one interactive element per trigger, with a project button passed as `render`.
@@ -37,7 +37,7 @@ Project reviews for the `code-review` skill, one per section.
   - **Styles**: variants with `cva` beside the component; `cn` with the caller's `className` last; a new shared design value as a token, registered in `lib/cn.ts` when `cn` can't merge it otherwise; interaction states from data attributes.
   - **Wrappers**: a library's parts wrapped one by one, props derived from its types, props both sides set merged with a known winner, and the library's own interactions left to it.
   - **React**: no new `useMemo`, `useCallback`, or `memo`, and none of the existing ones removed; a ref callback that sets something up returns its cleanup.
-  - **Accessibility and examples**: each control has an accessible name and works from the keyboard; a public component in `components/ui/` changes together with its UI demo examples; a component past the size warning is split by responsibility.
+  - **Accessibility and examples**: each control has an accessible name and works from the keyboard; a public component in `components/ui/` changes together with its UI catalog examples; a component past the size warning is split by responsibility.
 
 ## i18n
 
@@ -61,8 +61,8 @@ Project reviews for the `code-review` skill, one per section.
   - **Fails for the right reason**: break the behavior in your head and find the assertion that notices. Watch for assertions that pass either way, such as on text shown elsewhere on the page, a loading state the broken version shows too, or a value the fixture already had. A regression spec fails on the commit before its fix (`pnpm e2e:at`).
   - **Outcomes, not implementation**: assertions on what users see, what callers receive, or what is stored, through the public interface; none on internal calls or private state, and no test of a mock's own behavior. In the browser, find elements by role and accessible name.
   - **Cases**: the cases that matter for the behavior, such as empty and boundary values, invalid input, a failing dependency, and concurrent writes the code guards against; one behavior per test, named by what it checks.
-  - **Determinism**: nothing depends on the wall clock, randomness, test order, or a fixed wait; time and data come from fixtures, such as the paused Demo generator and the seed data, and each wait ends on the event that completes it.
-  - **Stand-ins**: real dependencies where the repo provides them, such as the Demo database; a stand-in only at a boundary the tests can't run, intercepted rather than written into the app, and behaving as the real one does.
+  - **Determinism**: nothing depends on the wall clock, randomness, test order, or a fixed wait; time and data come from fixtures, such as the read-only seed data, records a test creates for itself, and background jobs the fixture stands in for, and each wait ends on the event that completes it.
+  - **Stand-ins**: real dependencies where the repo provides them, such as the local database and object storage; a stand-in only at a boundary the tests can't run, intercepted rather than written into the app, and behaving as the real one does.
   - **Fit**: existing fixtures, helpers, and test entries reused, and setup shared rather than copied.
 
 ## Comments
