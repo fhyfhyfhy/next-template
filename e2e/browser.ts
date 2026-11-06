@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, Request, Route } from "@playwright/test";
 
 /**
  * 模拟用户切回这个标签页。Playwright 的页面始终在前台，没有切换可见性的 API，只能派发事件；
@@ -8,4 +8,72 @@ export async function returnToTab(page: Page) {
   await page.evaluate(() =>
     document.dispatchEvent(new Event("visibilitychange", { bubbles: true })),
   );
+}
+
+/** 浏览器调用 Server Action 的请求：POST 到当前页面的地址，带 `Next-Action` 头。 */
+export function isServerAction(request: Request) {
+  return (
+    request.method() === "POST" &&
+    request.headers()["next-action"] !== undefined
+  );
+}
+
+/** 请求的是应用自己的这个路径（不含 query）。 */
+export function hasPath(path: string) {
+  return (request: Request) => new URL(request.url()).pathname === path;
+}
+
+/** 客户端导航向服务端要新页面的请求（RSC 请求），不包括预取。 */
+export function isNavigation(request: Request) {
+  const headers = request.headers();
+  return headers.rsc === "1" && headers["next-router-prefetch"] === undefined;
+}
+
+/**
+ * 让之后匹配的请求晚 `ms` 毫秒才发到服务端，模拟慢网络或慢服务：用来看到响应返回之前的界面。
+ * 只影响浏览器发出的请求；服务端渲染时读数据库的耗时，用 `Backend.holdTable` 拖慢。
+ */
+export async function delayRequests(
+  page: Page,
+  match: (request: Request) => boolean,
+  ms: number,
+) {
+  await page.route("**/*", async (route) => {
+    if (match(route.request())) {
+      await new Promise((resolve) => setTimeout(resolve, ms));
+    }
+    await route.fallback();
+  });
+}
+
+/**
+ * 让之后匹配的请求失败，像服务端处理时遇到了意外错误，返回函数恢复正常。Server Action 按 Next 的约定回
+ * `text/plain` 的 500，调用方拿到一个被拒绝的 promise；Route Handler 回 `lib/fetch.ts` 认得的失败响应体。
+ * `delayMs` 让失败晚一些返回：用例能看到请求返回之前的乐观更新，失败后又不留下写入。
+ */
+export async function failRequests(
+  page: Page,
+  match: (request: Request) => boolean,
+  { delayMs = 0 } = {},
+) {
+  const handler = async (route: Route) => {
+    const request = route.request();
+    if (!match(request)) return route.fallback();
+    if (delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+    if (isServerAction(request)) {
+      return route.fulfill({
+        status: 500,
+        contentType: "text/plain",
+        body: "Injected failure",
+      });
+    }
+    return route.fulfill({
+      status: 500,
+      json: { error: { code: 50000, message: "Injected failure" } },
+    });
+  };
+  await page.route("**/*", handler);
+  return () => page.unroute("**/*", handler);
 }

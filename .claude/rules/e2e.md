@@ -5,24 +5,32 @@ paths:
 
 # E2E specs
 
-Specs observe the app through the browser and import no application code.
+Specs observe the app through the browser and import no application code. The data they need goes straight into the e2e database through the `backend` fixture in `e2e/backend.ts`.
 
-Use `test` and `expect` in `e2e/test.ts`, or in `e2e/demo/demo-backend.ts` for the demos' specs, which builds on it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (the Playwright configs); a test that needs another one sets `test.use({ locale })`, as `e2e/demo/locale.spec.ts` does. `DateTime` in `components/date-time.tsx` renders dates and times in the browser's time zone after hydration: a spec that asserts one sets `timezoneId`, as `e2e/demo/date-time.spec.ts` does.
+Use `test` and `expect` in `e2e/test.ts`, or in `e2e/backend.ts` for specs that use the fixture, which builds on it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (`playwright.config.ts`); a test that needs another one sets `test.use({ locale })`. `DateTime` in `components/date-time.tsx` renders dates and times in the browser's time zone after hydration: a spec that asserts one also sets `test.use({ timezoneId })`.
+
+## Test data
+
+`pnpm test:e2e` resets the `e2e` dataset to the seed data before it builds, so the static shell and the database start out the same. Every spec then shares that database and the server's cache, one test at a time:
+
+- Treat the seed data as read-only. A test that writes creates its own records, named with `unique` from `e2e/backend.ts`, and asserts on those. On a view every test adds to, such as a paginated list or a count, assert what holds whatever else is there, or compare the value before and after.
+- A record the fixture writes is a change made outside the app: a page that reads through `use cache` shows it only within its freshness bound. Create what such a page must show through the page's own UI, whose Server Action expires the cache, or let the app's refresh path for outside changes pick it up; the fixture's records suit pages that read per request.
+- Background jobs that change data stay off in the e2e server (`webServer.env` in `playwright.config.ts`), and the fixture writes what they would. Each fixture write notifies the app the way the job does.
 
 ## Hydration
 
-Actionability checks pass on server-rendered HTML before React attaches its handlers, so a click or `setInputFiles` sent before hydration can be lost without an error. Before acting on a page, wait for a readiness signal: something only the browser renders, inside the same Suspense boundary as the control, such as data from a browser-only query. Wrap the navigation and that wait in a per-page helper, like `openTask` in `e2e/demo/task-detail.spec.ts`. ESLint's `e2e/act-after-ready` reports an action that follows `page.goto` or `reload` before any `expect` or bare helper call; a control that only the browser renders, so finding it proves hydration, takes an `eslint-disable-next-line` comment that says so.
+Actionability checks pass on server-rendered HTML before React attaches its handlers, so a click or `setInputFiles` sent before hydration can be lost without an error. Before acting on a page, wait for a readiness signal: something only the browser renders, inside the same Suspense boundary as the control, such as data from a browser-only query. Wrap the navigation and that wait in a per-page helper, such as an `openTask(page, id)` that waits for a list only the browser requests. ESLint's `e2e/act-after-ready` reports an action that follows `page.goto` or `reload` before any `expect` or bare helper call; a control that only the browser renders, so finding it proves hydration, takes an `eslint-disable-next-line` comment that says so.
 
-When the assertion observes another Suspense boundary, that boundary must be hydrated as well. An update that reaches a boundary before it hydrates discards its server-rendered content and shows the fallback, so a navigation can replace a list with its skeleton instead of keeping it on screen. Wait for a browser-only signal inside that boundary, or enter the page through a client-side navigation, which renders every boundary in the browser, as `openTasksPage` in `e2e/demo/tasks.spec.ts` does.
+When the assertion observes another Suspense boundary, that boundary must be hydrated as well. An update that reaches a boundary before it hydrates discards its server-rendered content and shows the fallback, so a navigation can replace a list with its skeleton instead of keeping it on screen. Wait for a browser-only signal inside that boundary, or enter the page through a client-side navigation from another page, which renders every boundary in the browser.
 
 ## Loading UI
 
 | To assert | Use |
 | --- | --- |
-| The static shell after `page.goto`, or the prefetched UI after a `<Link>` click | `instant()` from `@next/playwright`, as in `e2e/demo/tasks.spec.ts` |
-| UI rendered into the server's HTML rather than by the browser | Abort the app's script requests and assert the UI, as in `e2e/demo/feed.spec.ts`. `instant()` lets browser rendering through, and disabling JavaScript also stops the inline scripts that place a Suspense boundary's content when it resolves after the shell |
-| One streamed section arriving before another | A `latency` fault on the later one's data-layer operation, and `page.goto(url, { waitUntil: "commit" })`: `load` fires only after the stream ends |
-| A browser-side query's loading state | A `latency` fault on the operation its Route Handler calls; `instant()` holds back only server-rendered content |
+| The static shell after `page.goto`, or the prefetched UI after a `<Link>` click | `instant()` from `@next/playwright` |
+| UI rendered into the server's HTML rather than by the browser | Abort the app's script requests and assert the UI. `instant()` lets browser rendering through, and disabling JavaScript also stops the inline scripts that place a Suspense boundary's content when it resolves after the shell |
+| One streamed section arriving before another | Lock the table the later section reads with the fixture's `holdTable`, and `page.goto(url, { waitUntil: "commit" })`: `load` fires only after the stream ends |
+| The UI while a browser request or Server Action is in flight, or after it fails | `delayRequests` or `failRequests` in `e2e/browser.ts`. `failRequests` with `delayMs` shows an optimistic update before the server answers and leaves no write behind |
 
 ## Browser events
 
@@ -30,10 +38,10 @@ Playwright pages stay in the foreground, so a return to the tab is simulated: us
 
 ## Waiting
 
-- Task state changes only through `demoBackend.advance()`: the `demoBackend` fixture pauses the Demo generator's clock.
-- End each wait on the event that completes it, such as `page.waitForResponse` for a Server Action. A fixed wait fits only a negative assertion, "nothing else happens within N ms", and its `eslint-disable` comment gives that reason.
-- `demoBackend.calls()` reads the data-layer call log once. Poll it with `expect.poll` when the browser sends the request; read it directly for calls made while the server renders, which finish before the HTML arrives.
+- Data changes only when the test changes it: see [Test data](#test-data).
+- End each wait on the event that completes it, such as `page.waitForResponse` for a Server Action (`isServerAction` in `e2e/browser.ts`). A fixed wait fits only a negative assertion, "nothing else happens within N ms", and its `eslint-disable` comment gives that reason.
+- To assert that the browser sent no request, record the requests with `page.on("request")` before the action and check the list once the UI has answered.
 
 ## Regression specs
 
-A spec added for a bug goes red on the commit before the fix. Run it there with `pnpm e2e:at <commit> [playwright test args]`, which tests that commit's app code with this checkout's `e2e/` and Playwright configs, and keep the spec once it fails there and passes on the fix.
+A spec added for a bug goes red on the commit before the fix. Run it there with `pnpm e2e:at <commit> [playwright test args]`, which tests that commit's app code with this checkout's `e2e/` and Playwright config, and keep the spec once it fails there and passes on the fix.

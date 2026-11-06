@@ -2,8 +2,7 @@ import { existsSync, globSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { describe, expect, test } from "vitest";
 
-// agent 读的文档靠相对链接互相引用，demos.md 还按场景列出代码和 spec 的路径；移动或改名文件时，
-// 这里会指出失效的引用。外部链接和 node_modules 里的安装文档不检查。
+// agent 读的文档靠相对链接互相引用；移动或改名文件时，这里会指出失效的链接。外部链接和 node_modules 里的安装文档不检查。
 
 const projectRoot = join(import.meta.dirname, "..");
 const read = (file) =>
@@ -78,41 +77,11 @@ describe("文档里的相对链接和锚点都能打开", () => {
   });
 });
 
-function missingDemoPaths(text) {
-  const missing = [];
-  for (const row of text.matchAll(/^\| \d+ \|.*$/gm)) {
-    // 列依次是 #、Scenario、Rules、Code、Spec。
-    const [, , , code, spec] = row[0].split(" | ");
-    for (const [, path] of `${code} ${spec}`.matchAll(/`([^`]+)`/g)) {
-      if (!path.includes("/")) continue;
-      const full = /^(app|e2e|features|lib|scripts)\//.test(path)
-        ? path
-        : `features/demo-task/${path}`;
-      const found = path.includes("*")
-        ? globSync(full, { cwd: projectRoot }).length > 0
-        : existsSync(join(projectRoot, full));
-      if (!found) missing.push(path);
-    }
-  }
-  return missing;
-}
-
-test("demos.md 场景表列出的代码和 spec 都存在", () => {
-  expect(
-    missingDemoPaths(read(".agents/skills/next-data-flow/demos.md")),
-  ).toStrictEqual([]);
-});
-
-test("检查本身能发现失效的链接、锚点和路径", () => {
+test("检查本身能发现失效的链接和锚点", () => {
   expect(
     brokenLinks(
       ".claude/rules/example.md",
       "[a](e2e.md#hydration) [b](missing.md) [c](e2e.md#no-such-heading) `[d](missing.md)`",
     ),
   ).toStrictEqual(["missing.md", "e2e.md#no-such-heading"]);
-  expect(
-    missingDemoPaths(
-      "| 1 | x | y | `api/get-task.ts`, `api/missing.ts`, `api/*-nothing.ts` | `e2e/demo/feed.spec.ts` |",
-    ),
-  ).toStrictEqual(["api/missing.ts", "api/*-nothing.ts"]);
 });

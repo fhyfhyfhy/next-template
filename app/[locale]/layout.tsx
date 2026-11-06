@@ -15,8 +15,10 @@ export function generateStaticParams() {
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
+  const name = t("app.metadata.title");
   return {
-    title: t("app.metadata.title"),
+    // 子页面只给出自己的标题，比如任务名，后面统一接上应用名。
+    title: { default: name, template: `%s · ${name}` },
     description: t("app.metadata.description"),
   };
 }

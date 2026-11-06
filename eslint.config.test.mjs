@@ -1140,7 +1140,9 @@ describe("架构依赖和 feature、组件导入约定", () => {
 
   beforeAll(() => {
     previousCwd = process.cwd();
-    fixture = realpathSync(mkdtempSync(join(tmpdir(), "next-demo-eslint-")));
+    fixture = realpathSync(
+      mkdtempSync(join(tmpdir(), "next-template-eslint-")),
+    );
     copyFileSync(
       join(project, "eslint.config.mjs"),
       join(fixture, "eslint.config.mjs"),
@@ -1488,25 +1490,25 @@ describe("服务端代码不用 fetchApi 请求本 app 自己的接口", () => {
     {
       name: "Route Handler 请求同源路径时报错",
       file: "app/api/probe/route.ts",
-      url: `"/api/demo/tasks"`,
+      url: `"/api/tasks"`,
       reported: 1,
     },
     {
       name: "Server Component 用模板字符串拼的同源路径也报错",
       file: "app/[locale]/probe/page.tsx",
-      url: "`/api/demo/tasks/${id}`",
+      url: "`/api/tasks/${id}`",
       reported: 1,
     },
     {
       name: "数据层和 Server Action 请求同源路径时报错",
-      file: "features/demo-task/api/probe-action.ts",
+      file: "features/task/api/probe-action.ts",
       directive: `"use server";\n\n`,
-      url: `"/api/demo/tasks"`,
+      url: `"/api/tasks"`,
       reported: 1,
     },
     {
       name: "服务端请求其他服务的完整 URL 不报",
-      file: "features/demo-task/server/probe.ts",
+      file: "features/task/server/probe.ts",
       url: `"https://api.example.com/v1/items"`,
       reported: 0,
     },
@@ -1514,13 +1516,13 @@ describe("服务端代码不用 fetchApi 请求本 app 自己的接口", () => {
       name: "Client Component 请求同源路径不报",
       file: "app/[locale]/probe/client.tsx",
       directive: `"use client";\n\n`,
-      url: `"/api/demo/tasks"`,
+      url: `"/api/tasks"`,
       reported: 0,
     },
     {
       name: "feature 的浏览器请求模块不报",
-      file: "features/demo-task/api/get-probe.ts",
-      url: `"/api/demo/tasks"`,
+      file: "features/task/api/get-probe.ts",
+      url: `"/api/tasks"`,
       reported: 0,
     },
   ]) {
@@ -1694,7 +1696,7 @@ export function Probe({ at }: { at: number }) {
   for (const { name, file, source, reported } of [
     {
       name: "format.dateTime in a Client Component is reported",
-      file: "features/demo-task/components/task-list/index.tsx",
+      file: "features/task/components/task-list/index.tsx",
       source: clientDateTime,
       reported: ["date-time"],
     },
@@ -1724,7 +1726,7 @@ export default async function Probe() {
     },
     {
       name: "relative times and numbers still format anywhere",
-      file: "features/demo-task/components/task-list/index.tsx",
+      file: "features/task/components/task-list/index.tsx",
       source: `"use client";
 
 import { useFormatter } from "next-intl";
@@ -1757,13 +1759,13 @@ describe("翻译函数不按 namespace 取", () => {
   for (const { name, file, source, reported } of [
     {
       name: "useTranslations 传 namespace 时报错",
-      file: "features/demo-task/components/task-list/index.tsx",
+      file: "features/task/components/task-list/index.tsx",
       source: `"use client";
 
 import { useTranslations } from "next-intl";
 
 export function Probe() {
-  const t = useTranslations("demo-task");
+  const t = useTranslations("task");
   return <p>{t("comments.empty")}</p>;
 }
 `,
@@ -1816,7 +1818,7 @@ describe("每个 key 的第一段是文件 owner 的 namespace", () => {
   for (const { name, file, source, reported } of [
     {
       name: "feature 只读自己的 key；模板字面量和条件表达式的每个分支都按前缀查",
-      file: "features/demo-task/components/task-list/index.tsx",
+      file: "features/task/components/task-list/index.tsx",
       source: `"use client";
 
 import { useTranslations } from "next-intl";
@@ -1825,10 +1827,10 @@ export function Probe({ status, wide }: { status: string; wide: boolean }) {
   const t = useTranslations();
   return (
     <p>
-      {t("demo-task.taskList.empty")}
-      {t(\`demo-task.taskStatus.\${status}\`)}
-      {t(wide ? "demo-task.taskList.empty" : "demo-lab.labRetry.title")}
-      {t.rich("app.demos.lab.title")}
+      {t("task.taskList.empty")}
+      {t(\`task.taskStatus.\${status}\`)}
+      {t(wide ? "task.taskList.empty" : "ui-catalog.header.brand")}
+      {t.rich("app.tasks.title")}
     </p>
   );
 }
@@ -1840,12 +1842,12 @@ export function Probe({ status, wide }: { status: string; wide: boolean }) {
     },
     {
       name: "接收 Translator 的函数按所在文件的 owner 查",
-      file: "features/demo-faults/api/update-demo-faults.ts",
+      file: "features/ui-catalog/utils/example-source.ts",
       source: `import type { Translator } from "@/lib/i18n/translator";
 
 export const probe = (t: Translator, key: string) => [
-  t("demo-faults.faultPanel.updateFailed"),
-  t("demo-task.queryState.loading"),
+  t("ui-catalog.header.brand"),
+  t("task.queryState.loading"),
   t(key),
 ];
 `,
@@ -1863,7 +1865,7 @@ import { useTranslations } from "next-intl";
 
 export function Probe() {
   const t = useTranslations();
-  return <p>{t("ui.localeSwitcher.label")}{t("app.demos.lab.title")}</p>;
+  return <p>{t("ui.localeSwitcher.label")}{t("app.tasks.title")}</p>;
 }
 `,
       reported: [["owner", 7]],
@@ -1875,7 +1877,7 @@ export function Probe() {
 
 export async function probe() {
   const t = await getTranslations();
-  return t("app.demos.lab.title");
+  return t("app.tasks.title");
 }
 `,
       reported: [["noOwner", 5]],
@@ -1891,23 +1893,23 @@ describe("应用的环境变量只通过 lib/env.ts 读", () => {
   for (const { name, file, source, reported } of [
     {
       name: "feature 的服务端代码直接读应用的变量时报错",
-      file: "features/demo-task/server/connection.ts",
-      source: `export const url = process.env.DEMO_DATABASE_URL;\n`,
+      file: "features/task/server/connection.ts",
+      source: `export const url = process.env.DATABASE_URL;\n`,
       reported: ["env"],
     },
     {
       name: "按变量名取、解构、整个传出去都报错",
-      file: "features/demo-task/server/connection.ts",
-      source: `const name = "DEMO_DATABASE_URL";
+      file: "features/task/server/connection.ts",
+      source: `const name = "DATABASE_URL";
 export const byName = process.env[name];
-export const { DEMO_STORAGE_BUCKET } = process.env;
+export const { STORAGE_BUCKET } = process.env;
 export const all = Object.keys(process.env);
 `,
       reported: ["env", "env", "env"],
     },
     {
       name: "Node 和 Next 定义的变量可以直接读，NEXT_PUBLIC_ 除外",
-      file: "features/demo-ui/components/example-list/index.tsx",
+      file: "features/ui-catalog/components/example-list/index.tsx",
       source: `export const dev = process.env.NODE_ENV === "development";
 export const node = process.env.NEXT_RUNTIME === "nodejs";
 export const devServer = Boolean(process.env.__NEXT_DEV_SERVER);
@@ -1918,13 +1920,13 @@ export const publicId = process.env.NEXT_PUBLIC_ANALYTICS_ID;
     ...["proxy.ts", "instrumentation.ts"].map((file) => ({
       name: `根目录的 ${file} 也受限制`,
       file,
-      source: `export const url = process.env.DEMO_DATABASE_URL;\n`,
+      source: `export const url = process.env.DATABASE_URL;\n`,
       reported: ["env"],
     })),
     {
       name: "lib/env.ts 可以读，其他限制照旧",
       file: "lib/env.ts",
-      source: `export const url = process.env.DEMO_DATABASE_URL;
+      source: `export const url = process.env.DATABASE_URL;
 export const probe = (at: number) => new Intl.DateTimeFormat("en").format(at);
 `,
       reported: ["date-time"],
@@ -1932,7 +1934,7 @@ export const probe = (at: number) => new Intl.DateTimeFormat("en").format(at);
     {
       name: "components/date-time.tsx 仍然不能直接读",
       file: "components/date-time.tsx",
-      source: `export const url = process.env.DEMO_DATABASE_URL;\n`,
+      source: `export const url = process.env.DATABASE_URL;\n`,
       reported: ["env"],
     },
   ]) {
@@ -1946,10 +1948,7 @@ describe("React 19 写法和 effect 清理由 @eslint-react 检查", () => {
   // 报告的 @eslint-react 规则，去掉前缀。file 用真实存在的路径，原因同 restricted。
   async function reactRules(source) {
     const [result] = await restrictedSyntaxLinter.lintText(source, {
-      filePath: join(
-        project,
-        "features/demo-task/components/task-list/index.tsx",
-      ),
+      filePath: join(project, "features/task/components/task-list/index.tsx"),
     });
     expect(result.fatalErrorCount).toBe(0);
     return result.messages
@@ -2099,7 +2098,7 @@ describe("agent 指令和 identifier 用英文写", () => {
     "description: 中文描述",
     "---",
     "",
-    "Quote `王秀英` as test data, and name the Demo 生成器.",
+    "Quote `王秀英` as test data, and name the 生成器.",
     "",
     "```md",
     "## 问题",
@@ -2116,7 +2115,7 @@ describe("agent 指令和 identifier 用英文写", () => {
   test("code 以外的中文都报告，包括 frontmatter、HTML 注释和表格", async () => {
     expect(await englishOnly(".claude/rules/case.md", markdown)).toStrictEqual([
       [3, 14, "中文描述"],
-      [6, 45, "生成器"],
+      [6, 40, "生成器"],
       [12, 6, "注释"],
       [16, 7, "表格，含标点"],
     ]);
@@ -2156,7 +2155,7 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
   for (const { name, file, source, reported } of [
     {
       name: "每种有对应组件的原生元素都被拒绝",
-      file: "features/demo-task/components/feed-grid/feed-card.tsx",
+      file: "features/task/components/feed-grid/feed-card.tsx",
       source: component(`(
     <>
       <button />
@@ -2175,13 +2174,13 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
     },
     {
       name: "render prop 里的原生元素也被拒绝",
-      file: "features/demo-task/components/feed-grid/feed-card.tsx",
+      file: "features/task/components/feed-grid/feed-card.tsx",
       source: `declare function Trigger(props: { render: unknown }): null;\n${component("<Trigger render={<button />} />")}`,
       reported: ["native-element"],
     },
     {
       name: "文件选择和隐藏字段的 input 保持原生",
-      file: "features/demo-task/components/feed-grid/feed-card.tsx",
+      file: "features/task/components/feed-grid/feed-card.tsx",
       source: component(`(
     <>
       <input type="file" />
@@ -2192,7 +2191,7 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
     },
     {
       name: "同名组件和成员表达式不受影响",
-      file: "features/demo-task/components/feed-grid/feed-card.tsx",
+      file: "features/task/components/feed-grid/feed-card.tsx",
       source: `declare function Form(): null;
 declare const form: { Field: () => null };
 ${component(`(
@@ -2206,7 +2205,7 @@ ${component(`(
     {
       name: "components/ui/ 的封装可以渲染，其他限制照旧",
       file: "components/ui/badge.tsx",
-      source: `export const url = process.env.DEMO_DATABASE_URL;\n${component("<button />")}`,
+      source: `export const url = process.env.DATABASE_URL;\n${component("<button />")}`,
       reported: ["env"],
     },
     {

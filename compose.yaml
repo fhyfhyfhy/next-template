@@ -1,0 +1,38 @@
+# 本地开发和测试用的 Postgres 和对象存储，由 scripts/local-services/services.mjs 启动，连接参数写在同一个目录的 datasets.mjs 里。
+# 固定 project 名：同一台机器上的每份 checkout 共用这两个容器和它们的数据，不各起一份去抢端口。
+# 都挂 named volume：数据库里记着对象的 key，只清掉一边会让封面和模型失效；docker compose down -v 会把两边一起清空。
+name: next-template
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  storage:
+    image: versity/versitygw:v1.10.0
+    environment:
+      ROOT_ACCESS_KEY: local-access-key
+      ROOT_SECRET_KEY: local-secret-key
+      VGW_BACKEND: posix
+      VGW_BACKEND_ARG: /data
+    ports:
+      - "127.0.0.1:7070:7070"
+    # posix 后端把对象的元数据存在 xattr 里，所以要用 named volume（在 Docker 的 Linux VM 里），不能 bind mount 到宿主机目录。
+    volumes:
+      - storage:/data
+
+volumes:
+  postgres:
+  storage:

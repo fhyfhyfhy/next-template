@@ -4,7 +4,7 @@ import queryString, {
 } from "query-string";
 import { z } from "zod";
 
-/** 接口地址：本 app 的接口用同源路径，比如 `/api/demo/tasks`；其他服务的接口用完整 URL。 */
+/** 接口地址：本 app 的接口用同源路径，比如 `/api/tasks`；其他服务的接口用完整 URL。 */
 export type ApiPath = `/${string}` | `https://${string}` | `http://${string}`;
 
 // 失败响应体 `{ error: { code, message, param?, params? } }` 里的错误对象。`message` 面向开发者，

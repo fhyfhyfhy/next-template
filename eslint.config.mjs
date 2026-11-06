@@ -118,7 +118,7 @@ const DATE_TIME_FORMATTING = [
 // 翻译函数不按 namespace 取，key 写完整路径：整个 app 只有一种 t，可以传给任何 owner 的 options 工厂和
 // schema 工厂，它们读自己的文案。key 归谁由 i18n/message-keys 检查。
 const TRANSLATOR_NAMESPACE_MESSAGE =
-  "Call useTranslations() and getTranslations() without a namespace, and write each key's full path, starting with the namespace of the file's owner, such as t(\"demo-task.comments.createFailed\"). See .claude/rules/i18n.md.";
+  "Call useTranslations() and getTranslations() without a namespace, and write each key's full path, starting with the namespace of the file's owner, such as t(\"task.comments.createFailed\"). See .claude/rules/i18n.md.";
 const TRANSLATOR_NAMESPACE = [
   {
     selector:
@@ -371,7 +371,7 @@ const eslintConfig = defineConfig([
               target: ["e2e/**"],
               from: ROOT_LAYERS.flatMap((layer) => layer.files),
               message:
-                "e2e/ observes the app only through the browser and the Demo backend's control endpoints, so it imports no application code. See .claude/rules/e2e.md.",
+                "e2e/ observes the app through the browser and writes its test data straight to the e2e database, so it imports no application code. See .claude/rules/e2e.md.",
             },
           ],
         },
@@ -448,7 +448,7 @@ const eslintConfig = defineConfig([
     // 组件 metadata 由生成脚本直接读取字面值。
     files: ["{app,features,components}/**/*.{jsx,tsx}"],
     ignores: [
-      "features/demo-ui/components/*-examples/**",
+      "features/ui-catalog/components/*-examples/**",
       "**/*.{test,spec}.{jsx,tsx}",
     ],
     plugins: { i18next },
@@ -657,7 +657,7 @@ const eslintConfig = defineConfig([
   },
   // 项目级忽略项在 Next 默认项上加入 worktree，避免重复检查其他 checkout。
   globalIgnores([
-    // 保留 Next 默认排除的构建产物与生成类型；其余 .next-* 是 demo:* 命令和 e2e 的产物目录（scripts/build-dirs.mjs）。
+    // 保留 Next 默认排除的构建产物与生成类型；.next-e2e 是 e2e 的产物目录（scripts/build-dirs.mjs）。
     ...BUILD_DIRS.map((dir) => `${dir}/**`),
     "out/**",
     "build/**",

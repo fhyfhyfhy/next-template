@@ -15,12 +15,11 @@ paths:
 - When writing or changing code that displays backend data, or a write that changes data a page displays, use [next-data-flow](../../.agents/skills/next-data-flow/SKILL.md).
 - When adding or changing code that reads or writes data on the server (the data layer, a Server Action, a `use cache` read, or a Route Handler), read [server-data.md](server-data.md).
 - When adding or changing a browser request or a React Query options factory, read [tanstack-query.md](tanstack-query.md).
-- When you need a working example of a data rule, here or in those two, read the [Data demo](../../.agents/skills/next-data-flow/demos.md), which maps each rule to its code and e2e spec.
 
 ## Transport
 
 - Server code (Server Components, `generateMetadata`, `use cache` reads, Server Actions, Route Handlers, and background jobs started from `instrumentation.ts`) calls the feature's server data layer directly. Route Handlers exist for the browser: a prerender at build time has no server to answer a request to them, and at request time it adds a round trip (`node_modules/next/dist/docs/01-app/02-guides/backend-for-frontend.md`, Caveats).
-- A Server Component or `generateMetadata` that reads data that differs per request awaits `connection()` from `next/server` before calling the data layer. Without it, the read also runs while Next prerenders the route, and one request queries the database twice. A read inside `use cache` is cached across renders and skips `connection()`; calling it there is an error. The reference is `app/[locale]/demos/(data)/tasks/[id]/page.tsx`.
+- A Server Component or `generateMetadata` that reads data that differs per request awaits `connection()` from `next/server` before calling the data layer. Without it, the read also runs while Next prerenders the route, and one request queries the database twice. A read inside `use cache` is cached across renders and skips `connection()`; calling it there is an error.
 - The browser reads through `fetchApi` in `lib/fetch.ts`, against the app's Route Handlers under `/api`, and writes through Server Actions. The client dispatches Server Actions one at a time (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, Sequential dispatch on the client), so reads that poll, stream, run in parallel, or may be aborted midway stay on Route Handlers.
 - Raw `fetch` is for what `fetchApi` does not cover: streaming or SSE responses and binary bodies, such as a file sent to a presigned object-storage URL or a model file downloaded.
 
@@ -48,10 +47,10 @@ When a Server Component prefetches a read that React Query owns, follow the inst
 
 - Create a `QueryClient` in `lib/react-query.ts` per render on the server; the browser reuses the one in `app/providers.tsx`.
 - Prefetch with the feature's options factory, swapping only `queryFn` for the data layer, which returns the data that key holds: `queryClient.query({ ...getCommentsQueryOptions(id), queryFn: () => listComments(id) })`. `query()` replaces the guide's deprecated `prefetchQuery`: add `.catch(noop)` (`noop` in `lib/react-query.ts`) to ignore a failure as `prefetchQuery` did, and leave it unawaited to stream a pending query.
-- Pick the guide's pattern per hydration site: **Provide initial data from a Server Component** for prefetch and pending streaming, or **Build a prerenderable hydration state** for cached data. Read a prerenderable state's timestamp in the same `use cache` function as its data, as `getCachedFeedSnapshot` in `features/demo-task/server/get-cached-feed-snapshot.ts` returns `{ page, fetchedAt }`: the two then expire and refresh together, and hydration relies on that timestamp to tell whether the data is newer than the browser's.
+- Pick the guide's pattern per hydration site: **Provide initial data from a Server Component** for prefetch and pending streaming, or **Build a prerenderable hydration state** for cached data. Read a prerenderable state's timestamp in the same `use cache` function as its data, which returns both, such as `{ page, fetchedAt }`: the two then expire and refresh together, and hydration relies on that timestamp to tell whether the data is newer than the browser's.
 - Behind the guide's Suspense boundary, a prerenderable state reaches the HTML while its UI renders only in the browser. To render that UI on the server too, give the consuming query `staleTime: "static"` while `environmentManager.isServer()`, keeping the browser's `staleTime`.
-- A prerenderable infinite query carries only its first page: pass it only for queries the browser has no data for, as `SeedHydrationBoundary` in `features/demo-task/components/seed-hydration-boundary.tsx` does, so it never replaces pages already loaded.
-- Function values in `meta`, such as a `suppressErrorToast` predicate, cannot cross to a Client Component: omit them from the dehydrated queries and mutations at the hydration site without changing the factory's options, as `omitFunctionMeta` in `features/demo-task/utils/hydration-state.ts` does.
+- A prerenderable infinite query carries only its first page: pass it to `HydrationBoundary` only for queries the browser has no data for, keeping the state's queries whose `queryClient.getQueryCache().get(queryHash)` has no `data`, so it never replaces pages already loaded.
+- Function values in `meta`, such as a `suppressErrorToast` predicate, cannot cross to a Client Component: omit them from the `meta` of each dehydrated query and mutation at the hydration site, copying the entries rather than changing the factory's options.
 
 ## Copies
 

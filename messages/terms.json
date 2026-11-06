@@ -1,8 +1,7 @@
 {
   "keep": [
-    "Next Demo",
+    "Next Template",
     "Next.js",
-    "Demo",
     "prompt",
     "GLB",
     "Server Component",
@@ -33,9 +32,6 @@
     },
     "最近查看": {
       "en": "recently viewed"
-    },
-    "故障实验室": {
-      "en": "fault lab"
     }
   }
 }

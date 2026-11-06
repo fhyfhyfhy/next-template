@@ -6,13 +6,17 @@ import { z } from "zod";
  * 给浏览器用的 `NEXT_PUBLIC_` 变量要另放一个模块。
  */
 const VARIABLES = {
-  // Demo backend：只有 demo:* 命令和数据层测试会设置，值来自 scripts/demo-backend/datasets.mjs 的 demoEnv()。
-  DEMO_DATABASE_URL: z.url().optional(),
-  DEMO_STORAGE_ENDPOINT: z.url().optional(),
-  DEMO_STORAGE_PUBLIC_URL: z.url().optional(),
-  DEMO_STORAGE_BUCKET: z.string().optional(),
-  DEMO_STORAGE_ACCESS_KEY_ID: z.string().optional(),
-  DEMO_STORAGE_SECRET_ACCESS_KEY: z.string().optional(),
+  // 本地运行时由 scripts/run-next.mjs 按数据集设置（scripts/local-services/datasets.mjs 的 localEnv()），部署时由平台设置。
+  DATABASE_URL: z.url(),
+  /** 服务端调用 S3 API 的地址。 */
+  STORAGE_ENDPOINT: z.url(),
+  /** 浏览器直接读取对象的地址前缀，通常是 CDN 或存储的公开域名。 */
+  STORAGE_PUBLIC_URL: z.url(),
+  STORAGE_BUCKET: z.string().min(1),
+  STORAGE_ACCESS_KEY_ID: z.string().min(1),
+  STORAGE_SECRET_ACCESS_KEY: z.string().min(1),
+  /** 是否在这个进程里运行 generator（instrumentation.ts）。e2e 关掉它，由用例自己推进任务。 */
+  TASK_GENERATOR_ENABLED: z.stringbool().default(true),
 } satisfies Record<string, z.ZodType>;
 
 type Variables = typeof VARIABLES;

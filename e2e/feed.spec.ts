@@ -1,0 +1,280 @@
+import type { Page, Request } from "@playwright/test";
+
+import {
+  type Backend,
+  expect,
+  navigateThroughHeader,
+  test,
+  unique,
+} from "./backend";
+import { failRequests, isServerAction } from "./browser";
+
+// 作品广场：React Query 负责的无限滚动，第一页来自服务端缓存的快照。快照里是所有已完成的任务，别的用例完成的
+// 任务也会排在前面：断言只看自己的任务，或者不依赖具体是哪些作品。
+
+// 第一页要高过一屏：滚动之前看不到底部的哨兵，下一页等用例滚到底才加载。
+test.use({ viewport: { width: 1280, height: 600 } });
+
+const cards = (page: Page) =>
+  page.getByRole("list", { name: "作品" }).getByRole("listitem");
+const favorites = (page: Page) =>
+  page.getByRole("list", { name: "我的收藏" }).getByRole("listitem");
+const star = (page: Page, name: string) =>
+  cards(page).filter({ hasText: name }).getByRole("button", { name: "收藏" });
+
+/**
+ * 经导航栏进入作品广场，等第一页出现。第一页的卡片在静态 shell 里，整页打开后立即点收藏可能早于 hydration；
+ * 客户端导航（`navigateThroughHeader`）在浏览器里渲染整页，到达后就能操作。
+ */
+async function openFeed(page: Page) {
+  await page.goto("/search");
+  await navigateThroughHeader(page, "作品广场", "/feed");
+  await expect(cards(page)).toHaveCount(6);
+}
+
+/**
+ * 在全部任务页建一个任务，停在页面上等它生成完成，再进作品广场。页面发现任务结束后让列表缓存失效，作品广场的
+ * 快照也随之重新读取，这个任务作为最新完成的作品排在第一页。
+ */
+async function openFeedWithNewWork(page: Page, backend: Backend) {
+  await page.goto("/search");
+  await navigateThroughHeader(page, "全部任务", "/tasks");
+  const name = unique("新作品");
+  await page.getByLabel("名称").fill(name);
+  await page.getByLabel("Prompt").fill(unique("e2e prompt"));
+  await page.getByRole("button", { name: "创建任务" }).click();
+  const row = page
+    .getByRole("list", { name: "任务列表" })
+    .getByRole("listitem")
+    .filter({ hasText: name });
+  const href = await row.getByRole("link").getAttribute("href");
+  await backend.reportProgress(href?.split("/").at(-1) ?? "", {
+    status: "done",
+    progress: 100,
+    log: "生成完成",
+  });
+  // 页面每 3 秒检查一次进行中的任务。
+  await expect(row).toContainText("已完成", { timeout: 10_000 });
+  await navigateThroughHeader(page, "作品广场", "/feed");
+  await expect(cards(page).first()).toContainText(name);
+  return name;
+}
+
+/** “我的收藏”加载完之后列出的作品名。它在自己的 Suspense 里，可能比作品晚到；种子数据里就有收藏，列表不会是空的。 */
+async function favoriteNames(page: Page) {
+  await expect(favorites(page).first()).toBeVisible();
+  return favorites(page).allTextContents();
+}
+
+/** 第一页里一个还没收藏的作品。 */
+async function unfavoritedCard(page: Page) {
+  const card = cards(page)
+    .filter({ has: page.locator('button[aria-pressed="false"]') })
+    .last();
+  return (await card.getByRole("link").textContent()) ?? "";
+}
+
+function feedRequests(page: Page) {
+  const requests: Request[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/feed") requests.push(request);
+  });
+  return requests;
+}
+
+test("第一页的卡片在服务端返回的 HTML 里，浏览器不再请求第一页", async ({
+  page,
+}) => {
+  // 拦住应用的 JS 包，React 不会运行：卡片要是等浏览器渲染，这里只有骨架屏。
+  const htmlPage = await page.context().newPage();
+  await htmlPage.route("**/_next/static/**", (route) =>
+    route.request().resourceType() === "script"
+      ? route.abort()
+      : route.continue(),
+  );
+  await htmlPage.goto("/feed");
+  await expect(cards(htmlPage)).toHaveCount(6);
+  await htmlPage.close();
+
+  const requests = feedRequests(page);
+  await page.goto("/feed");
+  await expect(cards(page)).toHaveCount(6);
+  // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言一段时间内没有请求第一页，等待是断言的一部分。
+  await page.waitForTimeout(500);
+
+  // 第一页的请求不带游标。
+  expect(
+    requests.filter((item) => !new URL(item.url()).searchParams.has("cursor")),
+  ).toStrictEqual([]);
+});
+
+test("翻页期间有任务完成、排进第一页的范围，下一页也不重复已显示的作品", async ({
+  page,
+  backend,
+}) => {
+  await openFeed(page);
+  // 在第一页前两个作品之间插入一个生成中的任务，再让它完成：按页码翻页的话，下一页会重复第一页最后一个作品。
+  // 卡片的文字就是任务名。
+  const shown = await cards(page).allTextContents();
+  const times = await backend.db
+    .selectFrom("tasks")
+    .select("created_at")
+    .where("name", "in", shown.slice(0, 2))
+    .orderBy("created_at", "desc")
+    .execute();
+  const [newer, older] = times.map((row) => row.created_at.getTime());
+  const task = await backend.createTask({
+    status: "running",
+    progress: 75,
+    createdAt: new Date((newer + older) / 2),
+  });
+  await backend.reportProgress(task.id, {
+    status: "done",
+    progress: 100,
+    log: "生成完成",
+  });
+
+  await page.getByTestId("feed-end").scrollIntoViewIfNeeded();
+  await expect(cards(page)).toHaveCount(12);
+  const names = await cards(page).allTextContents();
+  expect(names.slice(0, 6)).toStrictEqual(shown);
+  expect(new Set(names).size).toBe(names.length);
+});
+
+test("滚动到底部时逐页加载，直到没有更多", async ({ page }) => {
+  await openFeed(page);
+  const end = page.getByText("没有更多作品了");
+
+  await page.getByTestId("feed-end").scrollIntoViewIfNeeded();
+  await expect(cards(page)).toHaveCount(12);
+  // 种子数据里有 13 个已完成的任务，别的用例完成的任务还会更多，一页 6 个，一直滚到最后一页。
+  await expect(async () => {
+    await page.getByTestId("feed-end").scrollIntoViewIfNeeded();
+    await expect(end).toBeVisible({ timeout: 1000 });
+  }).toPass();
+
+  const names = await cards(page).allTextContents();
+  expect(names.length).toBeGreaterThan(12);
+  expect(new Set(names).size).toBe(names.length);
+});
+
+test("收藏时卡片和“我的收藏”同时立即更新", async ({ page }) => {
+  await openFeed(page);
+  const count = (await favoriteNames(page)).length;
+  const name = await unfavoritedCard(page);
+  // 让收藏请求晚 1.5 秒才失败：断言的是返回之前的乐观更新，失败后收藏回滚，不留下数据。
+  await failRequests(page, isServerAction, { delayMs: 1500 });
+
+  await star(page, name).click();
+
+  await expect(star(page, name)).toHaveAttribute("aria-pressed", "true");
+  await expect(favorites(page)).toHaveCount(count + 1);
+  await expect(favorites(page).filter({ hasText: name })).toHaveCount(1);
+});
+
+test("收藏失败时卡片和“我的收藏”一起回滚，只弹一个全局提示", async ({
+  page,
+}) => {
+  await openFeed(page);
+  const count = (await favoriteNames(page)).length;
+  const name = await unfavoritedCard(page);
+  await failRequests(page, isServerAction);
+
+  await star(page, name).click();
+
+  await expect(page.getByText("更新收藏失败，请稍后重试")).toHaveCount(1);
+  await expect(star(page, name)).toHaveAttribute("aria-pressed", "false");
+  await expect(favorites(page)).toHaveCount(count);
+});
+
+test("在作品广场收藏后，列表页立即显示已收藏", async ({ page, backend }) => {
+  const name = await openFeedWithNewWork(page, backend);
+  const saved = page.waitForResponse((response) =>
+    isServerAction(response.request()),
+  );
+  await star(page, name).click();
+  await expect(favorites(page).first()).toContainText(name);
+  await saved;
+
+  await page.goto("/tasks?status=done");
+  const row = page.getByRole("listitem").filter({ hasText: name });
+  await expect(row.getByRole("button", { name: "收藏" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+});
+
+test("在全部任务页收藏后回到作品广场，卡片和“我的收藏”都已更新", async ({
+  page,
+  backend,
+}) => {
+  // 全程客户端导航：浏览器里的 React Query 缓存一直保留，这正是它可能显示旧收藏的情形。
+  const name = await openFeedWithNewWork(page, backend);
+  const count = (await favoriteNames(page)).length;
+  await navigateThroughHeader(page, "全部任务", "/tasks");
+  const row = page
+    .getByRole("list", { name: "任务列表" })
+    .getByRole("listitem")
+    .filter({ hasText: name });
+  const saved = page.waitForResponse((response) =>
+    isServerAction(response.request()),
+  );
+  await row.getByRole("button", { name: "收藏" }).click();
+  await saved;
+
+  await navigateThroughHeader(page, "作品广场", "/feed");
+  await expect(star(page, name)).toHaveAttribute("aria-pressed", "true");
+  await expect(favorites(page)).toHaveCount(count + 1);
+  await expect(favorites(page).first()).toContainText(name);
+});
+
+test("加载到第二页后收藏第一页的作品，已加载的页不会被换掉", async ({
+  page,
+  backend,
+}) => {
+  const name = await openFeedWithNewWork(page, backend);
+  await page.getByTestId("feed-end").scrollIntoViewIfNeeded();
+  await expect(cards(page)).toHaveCount(12);
+  const saved = page.waitForResponse((response) =>
+    isServerAction(response.request()),
+  );
+
+  await star(page, name).click();
+  await saved;
+
+  // 已加载的页被换回第一页之后，第二页很快又会加载回来，只看最后的卡片数看不出来：
+  // Server Action 带回页面之后的 2 秒里一直读卡片数，记下最小值。
+  let fewest = await cards(page).count();
+  const until = Date.now() + 2000;
+  while (Date.now() < until) {
+    fewest = Math.min(fewest, await cards(page).count());
+  }
+  // eslint-disable-next-line playwright/prefer-to-have-count -- fewest 是一段时间里的最小值，toHaveCount 只能断言当前的数量。
+  expect(fewest).toBe(12);
+});
+
+test("收藏一个较早的作品，“我的收藏”里它直接出现在按创建时间排好的位置", async ({
+  page,
+  backend,
+}) => {
+  await openFeed(page);
+  const name = await unfavoritedCard(page);
+  const before = await favoriteNames(page);
+  const rows = await backend.db
+    .selectFrom("tasks")
+    .select(["name", "created_at"])
+    .where("name", "in", [...before, name])
+    .execute();
+  const createdAt = new Map(
+    rows.map((row) => [row.name, row.created_at.getTime()]),
+  );
+  const expected = [...before, name].sort(
+    (a, b) => (createdAt.get(b) ?? 0) - (createdAt.get(a) ?? 0),
+  );
+  // 让收藏请求晚 3 秒才失败：断言的是返回之前乐观更新时的顺序，失败后收藏回滚，不留下数据。
+  await failRequests(page, isServerAction, { delayMs: 3000 });
+
+  await star(page, name).click();
+
+  await expect(favorites(page)).toHaveText(expected, { timeout: 1000 });
+});

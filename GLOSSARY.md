@@ -1,28 +1,20 @@
-# Next Demo
+# Next Template
 
-一套可复用的 Next.js 模板：约定、工具链，以及演示这些约定的可运行参考实现。
+一个提交 prompt 生成 3D 模型的应用，同时是 Next.js 项目模板：从它派生的项目保留约定和工具链，换上自己的业务。
 
 ## Language
 
-**Demo**:
-`/demos` 下可运行的参考实现，供 agent 和开发者写代码时对照。从模板派生的项目也保留它，但只在本地开发和 Demo 专用的命令下提供，上线的构建里没有。
-_Avoid_: 示例应用、sample
+**Sample product**:
+本仓库自带的业务（任务和上传），按真实项目的写法实现，不另设演示用的代码。派生项目删掉它、写自己的业务；需要参考写法时，到模板的仓库里看。
+_Avoid_: Demo、示例应用、sample app
 
-**UI demo**:
-Demo 里演示设计系统组件用法的部分，位于 `/demos/ui`。
-_Avoid_: showcase、组件展示
+**UI catalog**:
+`/ui` 页面：设计系统组件的目录，每个组件有一个可调参数的 playground 和若干 Example。派生项目和设计系统一起保留它。
+_Avoid_: UI demo、showcase、组件展示
 
 **Example**:
-UI demo 里一个可以单独复制的用法文件，对应组件的一种使用场景。
-_Avoid_: 用 demo 指单个用法
-
-**Data demo**:
-Demo 里读写 Demo backend、演示前后端数据流的 task 小应用，包括验证它的 e2e 测试。
-_Avoid_: 数据示例、task demo
-
-**Demo backend**:
-Data demo 自带的后端，由本 app 实现，数据存在 Demo 专用的数据库和对象存储里，只在配置了 Demo 数据库时启用。
-_Avoid_: Demo 后端、Mock API、mock server、假后端、fake backend
+UI catalog 里一个可以单独复制的用法文件，对应组件的一种使用场景。
+_Avoid_: demo
 
 ## 多语言
 
@@ -30,23 +22,23 @@ _Avoid_: Demo 后端、Mock API、mock server、假后端、fake backend
 写新文案时使用的语言，其他 locale 的文案都由它翻译而来。它的文案一旦修改，其他 locale 都要重新翻译。
 _Avoid_: 基准语言、主语言；也不要叫默认语言，默认 locale 是用户偏好未知时显示的语言，是另一个概念
 
-## Demo 的虚构领域
+## 任务
 
-**Demo task**:
-Demo 虚构业务里，用户提交的一次生成任务。名称唯一，可以收藏，完成后生成一个可下载的 3D 模型文件（`.glb`）。任务有一张封面图，作为它在列表、卡片和详情页上的缩略图；用户可以上传图片替换封面图，没上传时显示默认占位图。
+**Task**:
+用户提交的一次生成任务。名称唯一，可以收藏，完成后生成一个可下载的 3D 模型文件（`.glb`）。任务有一张封面图，作为它在列表、卡片和详情页上的缩略图；用户可以上传图片替换封面图，没上传时显示默认占位图。
 _Avoid_: job、generation
 
-**Demo comment**:
-某个 Demo task 下的一条文字评论，只有内容和发表时间，没有作者。任务被删除时，它的评论一起删除。
+**Comment**:
+某个 Task 下的一条文字评论，只有内容和发表时间，没有作者。任务被删除时，它的评论一起删除。
 _Avoid_: 留言、备注
 
-**Demo task status**:
-Demo task 当前所处的阶段，依次为 `pending`、`running`（带进度）、`done` 或 `failed`。只有 `failed` 的任务可以重试，重试后回到 `pending`。
+**Task status**:
+Task 当前所处的阶段，依次为 `pending`、`running`（带进度）、`done` 或 `failed`。只有 `failed` 的任务可以重试，重试后回到 `pending`。
 
-**Demo generator**:
-Demo backend 里模拟生成过程的后台程序：推进 Demo task 的状态和进度，写入日志，任务完成时产出模型文件。
-_Avoid_: Demo 生成器、worker、定时器
+**Generator**:
+模拟外部生成服务的后台程序：推进 Task 的状态和进度，写入日志，任务完成时产出模型文件。
+_Avoid_: 生成器、worker、定时器
 
-**Demo upload**:
-用户为某个用途（比如 Demo task 的封面图）上传的一个文件。先上传，再被一条业务记录使用，一个 Demo upload 只能被一条记录使用；创建后一段时间仍没被使用的会被清理。
+**Upload**:
+用户为某个用途（比如 Task 的封面图）上传的一个文件。先上传，再被一条业务记录使用，一个 Upload 只能被一条记录使用；创建后一段时间仍没被使用的会被清理。
 _Avoid_: 附件、file

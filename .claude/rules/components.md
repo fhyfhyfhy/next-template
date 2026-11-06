@@ -13,7 +13,7 @@ Every UI task starts at [Reuse, compose, extend, or add](#reuse-compose-extend-o
 
 ## Reuse, compose, extend, or add
 
-1. Search `components/ui/`, the rest of root `components/`, the owning feature's `components/`, and other features' public entries for components that cover the need. For each candidate, read its public entry and Props, its examples in `features/demo-ui/components/<component-id>-examples/` when it has them, and its existing callers. Confirm its behavior, supported states, and required providers.
+1. Search `components/ui/`, the rest of root `components/`, the owning feature's `components/`, and other features' public entries for components that cover the need. For each candidate, read its public entry and Props, its examples in `features/ui-catalog/components/<component-id>-examples/` when it has them, and its existing callers. Confirm its behavior, supported states, and required providers.
 2. Compare the best-fitting candidate with the need, and take the least invasive action that covers it. The rows run from least to most invasive:
 
    | What the candidate lacks | Action |
@@ -25,8 +25,8 @@ Every UI task starts at [Reuse, compose, extend, or add](#reuse-compose-extend-o
 
 ## Use a component
 
-- Choose the appearance with the component's existing `variant` and `size`. The caller owns placement, surrounding spacing, and layout, and sets them through `className`, along with local adjustments such as a color for a state only this caller has. When a third caller repeats the same visual override, extend the component's variants or defaults instead; UI demo examples do not count as callers.
-- Give each trigger or control exactly one interactive DOM element. To make a trigger look like a project button, pass the button as its `render` prop, as `DeleteTaskDialog` in `features/demo-task/components/delete-task-dialog.tsx` does with `<DialogTrigger render={<Button variant="ghost" />}>`; a button nested in another button or a link is invalid HTML.
+- Choose the appearance with the component's existing `variant` and `size`. The caller owns placement, surrounding spacing, and layout, and sets them through `className`, along with local adjustments such as a color for a state only this caller has. When a third caller repeats the same visual override, extend the component's variants or defaults instead; UI catalog examples do not count as callers.
+- Give each trigger or control exactly one interactive DOM element. To make a trigger look like a project button, pass the button as its `render` prop, as in `<DialogTrigger render={<Button variant="ghost" />}>`; a button nested in another button or a link is invalid HTML.
 
 ## Write a component
 
@@ -41,7 +41,7 @@ When designing or refactoring a component API, composing public parts, sharing s
 - Declare components as named `export function` declarations. Files the framework loads follow its export convention, such as the default export of Next.js `page.tsx` and `layout.tsx`.
 - Keep controlled state in the caller: accept the value and its change callback together, and read the value from props on every render rather than copying it into local state. For uncontrolled use, accept a default-value prop and let the underlying primitive own the state. Pass the callback's arguments, event details, and cancellation through unchanged.
 - Represent independent behavior, such as `disabled`, with a state prop, separate from `variant` and `size`.
-- Export each part of a compound component that callers arrange as a named export, as `components/ui/` does: a Server Component cannot read static members such as `Menu.Item` from an imported client reference. Show in its UI demo examples (`features/demo-ui/components/<component-id>-examples/`) which root owns the state, which parts belong inside it, and which providers are required.
+- Export each part of a compound component that callers arrange as a named export, as `components/ui/` does: a Server Component cannot read static members such as `Menu.Item` from an imported client reference. Show in its UI catalog examples (`features/ui-catalog/components/<component-id>-examples/`) which root owns the state, which parts belong inside it, and which providers are required.
 - A component used as a render target passes the supplied ref and element props to its DOM element, handling `ref` per [React conventions](react.md).
 
 ### Styles and variants
@@ -88,5 +88,5 @@ Splitting is complete when the parent shows the overall flow and each part chang
 
 Finish every UI change with the checks below that apply.
 
-- Before adding a public component in `components/ui/`, changing its public API, or editing UI demo examples, read [UI demo examples](../../README.md#ui-demo-examples), and update the affected runnable examples in the same change.
-- Check each affected scenario in a browser against its expected appearance, behavior, and accessibility: design-system components on `/demos/ui`, every other component on the pages that render it.
+- Before adding a public component in `components/ui/`, changing its public API, or editing UI catalog examples, read [UI catalog examples](../../README.md#ui-catalog-examples), and update the affected runnable examples in the same change.
+- Check each affected scenario in a browser against its expected appearance, behavior, and accessibility: design-system components on `/ui`, every other component on the pages that render it.

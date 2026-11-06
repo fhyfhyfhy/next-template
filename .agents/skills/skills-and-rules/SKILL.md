@@ -27,3 +27,5 @@ A skill change is done when `.agents/skills/<name>/SKILL.md` is in place and, in
 ## Citing code
 
 In skills and rules, cite this repo's code as `symbol` in `path`, the path written from the repo root, such as `fetchApi` in `lib/fetch.ts`, so the reader opens it without searching; cite a whole file by its path alone. Later mentions in the same document use the name alone. Symbols from frameworks and packages take no path.
+
+Cite only code that a project made from this template keeps: the layers outside `features/`, `features/ui-catalog/` (the catalog of `components/ui/` at `/ui`), the app shell in `app/` (root layout, providers, not-found page), scripts, config, and the e2e helpers in `e2e/test.ts`, `e2e/browser.ts`, and `e2e/backend.ts`. The other features, their routes and API, their messages, and their specs are this repo's sample product, which a project replaces with its own; skills and rules reach them only through rules that hold for any feature. Show a pattern taken from them as a short inline snippet with generic names, such as an `orders` feature, so the skill or rule still reads correctly once the sample product is gone.
