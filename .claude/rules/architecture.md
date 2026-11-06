@@ -72,6 +72,15 @@ Ordered top to bottom, like "Layers".
   - `lib/` may group an adapter that spans several files into one level of directory. When outside code uses only one of its modules, that module is the directory's `index`; when it uses several, it imports each by its path and the directory has no `index`.
 - Keep types with the module or schema that owns them. Extract a shared contract into that owner's `types/` when needed to preserve dependency direction or give the contract an independent role.
 
+### Feature boundaries
+
+[docs/features.md](../../docs/features.md) records which features depend on which, what each one is responsible for, and what sits next to it but belongs elsewhere. Put new code in the feature responsible for the business concept it serves. When no feature is, decide by how the concept exists:
+
+- A concept that exists only as part of another joins that concept's feature. In the database, its rows are deleted with the other's, as a task's comments are in `features/demo-task/`.
+- A concept that exists on its own gets a feature of its own. In the database, it has its own tables and lifecycle, and other features reach it through its `server.ts`, as a record takes an upload through `attachUpload` in `features/demo-upload/server/uploads.ts`.
+
+Creating, merging, or splitting a feature, changing what one is responsible for, or adding or removing a dependency between features updates `docs/features.md` in the same change.
+
 ### Shared code ownership
 
 Choose the owner by responsibility. Code that represents a business concept or changes with its policies belongs to that feature, including pure functions, presentational components, types, and constants. Cross-feature consumers reuse it through the feature's public entries. A global lifetime or multiple consumers does not change ownership.
