@@ -5,7 +5,7 @@ import {
   restoreSeedUploads,
   SEED_KEY_PREFIX,
   type SeedUpload,
-} from "@/features/upload/server";
+} from "@/features/upload/seed";
 
 import type { TaskStatus } from "../types/task-filters";
 import { type Executor, getTaskDb, taskDb } from "./connection";
@@ -88,7 +88,7 @@ function seedLogs(status: TaskStatus) {
   return logs;
 }
 
-/** 有封面的种子任务用生成的封面图，done 的种子任务带模型文件；都放在 `SEED_KEY_PREFIX` 前缀下，重置和清理都不删它们。 */
+/** 有封面的种子任务用生成的封面图，done 的种子任务带模型文件；都放在 `SEED_KEY_PREFIX` 前缀下，清理任务不删它们。 */
 function seedUploads(tasks: ReturnType<typeof seedTasks>): SeedUpload[] {
   const model = cubeGlb();
   return tasks.flatMap(({ row, hasCover }) => [

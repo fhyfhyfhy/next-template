@@ -13,7 +13,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 export interface ObjectStorageConfig {
   /** server 调用 S3 API 的地址。 */
   endpoint: string;
-  /** 浏览器能直接读取对象的地址前缀，key 拼在它后面。真实环境里通常是 CDN 或存储的公开域名。 */
+  /** 浏览器能直接读取对象的地址前缀，key 拼在它后面。部署环境里通常是 CDN 或存储的公开域名。 */
   publicUrl: string;
   bucket: string;
   accessKeyId: string;

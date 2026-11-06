@@ -36,7 +36,7 @@ export const listComments = cache(async (taskId: string) => {
   return rows.map(toComment);
 });
 
-/** 发表评论：内容去掉首尾空白后为 1 到 500 字，否则按 `COMMENT_CONTENT_INVALID` 拒绝。 */
+/** 发表评论：内容去掉首尾空白后不能为空，也不能超过 `COMMENT_MAX_LENGTH` 个字，否则按 `COMMENT_CONTENT_INVALID` 拒绝。 */
 export async function createComment(
   taskId: string,
   input: { content: unknown },

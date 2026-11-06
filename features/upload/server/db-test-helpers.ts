@@ -2,7 +2,8 @@ import { beforeEach, expect } from "vitest";
 
 import { DomainError } from "@/lib/domain-error";
 
-import { clearUploads, createUpload, getAttachedUploadUrls } from "./uploads";
+import { clearUploads } from "./seed";
+import { createUpload, getAttachedUploadUrls } from "./uploads";
 
 // *.db.test.ts 共用的准备和断言。
 

@@ -13,7 +13,7 @@ import { getTaskQueryOptions, type Task } from "./get-task";
 import { activeTasksQueryOptions, taskListKey } from "./get-tasks";
 import { retryTaskAction } from "./retry-task-action";
 
-/** 重试后的任务：服务端重试时改的字段（server/tasks.ts 的 `retryTaskRecord`），`updated_at` 由服务端决定，等 refetch。 */
+/** 重试后的任务：服务端重试时改的字段（server/tasks.ts 的 `retryTask`），`updated_at` 由服务端决定，等 refetch。 */
 const asRetried = (task: Task): Task => ({
   ...task,
   status: "pending",

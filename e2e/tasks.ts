@@ -1,0 +1,310 @@
+import { randomUUID } from "node:crypto";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import type { Page } from "@playwright/test";
+import type { Kysely } from "kysely";
+
+import { localEnv } from "../scripts/local-services/datasets.mjs";
+import { connectE2eDatabase, notify, unique } from "./backend";
+import { clickForClientNavigation } from "./browser";
+import { expect, test as base } from "./test";
+
+// 任务和上传这套示例业务的 e2e 数据和页面 helper。写入直接进 e2e 数据集，对应用来说就是“别处改了数据”：不让 Next
+// 的服务端缓存失效，页面按自己的新鲜度规则才看到变化。
+// 只描述用到的列；表结构以各 feature 的 server/migrations.mts 为准，改了结构要同步这里。
+
+type TaskStatus = "pending" | "running" | "done" | "failed";
+
+interface Tables {
+  tasks: {
+    id: string;
+    name: string;
+    prompt: string;
+    status: TaskStatus;
+    progress: number;
+    favorite: boolean;
+    created_at: Date;
+    updated_at: Date;
+  };
+  task_comments: {
+    id: string;
+    task_id: string;
+    content: string;
+    created_at: Date;
+  };
+  task_logs: { task_id: string; line: string };
+  uploads: {
+    id: string;
+    key: string;
+    purpose: string;
+    content_type: string;
+    size: number;
+  };
+  upload_attachments: {
+    upload_id: string;
+    record_type: string;
+    record_id: string;
+    name: string;
+  };
+}
+
+// 应用的 SSE 日志流监听这个频道（features/task/server/task-events.ts），任务变化后发通知，页面才收到新日志。
+const TASK_CHANGED_CHANNEL = "task_changed";
+
+// 生成服务产出的模型文件。内容只要是 GLB 的文件头就够：用例只看任务的状态，不解析模型。
+const MODEL_BYTES = new Uint8Array([
+  0x67, 0x6c, 0x54, 0x46, 2, 0, 0, 0, 12, 0, 0, 0,
+]);
+
+export interface CreatedTask {
+  id: string;
+  name: string;
+  prompt: string;
+}
+
+export class TaskData {
+  readonly db: Kysely<Tables>;
+  private readonly storage: S3Client;
+  private readonly bucket: string;
+
+  constructor() {
+    const env = localEnv("e2e");
+    this.db = connectE2eDatabase<Tables>();
+    this.bucket = env.STORAGE_BUCKET;
+    this.storage = new S3Client({
+      endpoint: env.STORAGE_ENDPOINT,
+      region: "us-east-1",
+      credentials: {
+        accessKeyId: env.STORAGE_ACCESS_KEY_ID,
+        secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY,
+      },
+      forcePathStyle: true,
+    });
+  }
+
+  async close() {
+    this.storage.destroy();
+    await this.db.destroy();
+  }
+
+  /** 新建一个任务，默认排队中、没有封面。`createdAt` 决定它在按创建时间排序的列表里的位置。 */
+  async createTask({
+    name = unique("e2e 任务"),
+    prompt = unique("e2e prompt"),
+    status = "pending",
+    progress = status === "done" || status === "failed" ? 100 : 0,
+    createdAt = new Date(),
+  }: {
+    name?: string;
+    prompt?: string;
+    status?: TaskStatus;
+    progress?: number;
+    createdAt?: Date;
+  } = {}): Promise<CreatedTask> {
+    const id = `e2e-${randomUUID()}`;
+    await this.db
+      .insertInto("tasks")
+      .values({
+        id,
+        name,
+        prompt,
+        status,
+        progress,
+        favorite: false,
+        created_at: createdAt,
+        updated_at: createdAt,
+      })
+      .execute();
+    return { id, name, prompt };
+  }
+
+  async addComments(taskId: string, contents: string[]) {
+    const now = Date.now();
+    await this.db
+      .insertInto("task_comments")
+      .values(
+        contents.map((content, index) => ({
+          id: `e2e-${randomUUID()}`,
+          task_id: taskId,
+          content,
+          created_at: new Date(now + index),
+        })),
+      )
+      .execute();
+  }
+
+  /**
+   * 像生成服务那样报告一次进度：更新状态和进度，写一条生成日志，并通知正在推送日志的页面。进入 done 时和
+   * generator 一样产出模型文件，关联到任务上（features/task/server/generator.ts 的 `advanceTask`）。
+   */
+  async reportProgress(
+    taskId: string,
+    {
+      status,
+      progress,
+      log,
+    }: { status: TaskStatus; progress: number; log: string },
+  ) {
+    const model =
+      status === "done" ? await this.saveModel(`e2e-${randomUUID()}`) : null;
+    await this.db.transaction().execute(async (trx) => {
+      await trx
+        .updateTable("tasks")
+        .set({ status, progress, updated_at: new Date() })
+        .where("id", "=", taskId)
+        .execute();
+      await trx
+        .insertInto("task_logs")
+        .values({ task_id: taskId, line: log })
+        .execute();
+      if (model) {
+        await trx.insertInto("uploads").values(model).execute();
+        await trx
+          .insertInto("upload_attachments")
+          .values({
+            upload_id: model.id,
+            record_type: "task",
+            record_id: taskId,
+            name: "model",
+          })
+          .execute();
+      }
+      await notify(trx, TASK_CHANGED_CHANNEL, taskId);
+    });
+  }
+
+  async renameTask(taskId: string, name: string) {
+    await this.db
+      .updateTable("tasks")
+      .set({ name, updated_at: new Date() })
+      .where("id", "=", taskId)
+      .execute();
+  }
+
+  /** 失败的任务回到排队中，和应用里的重试一样清空日志。 */
+  async retryTask(taskId: string) {
+    await this.db.transaction().execute(async (trx) => {
+      await trx
+        .updateTable("tasks")
+        .set({ status: "pending", progress: 0, updated_at: new Date() })
+        .where("id", "=", taskId)
+        .execute();
+      await trx.deleteFrom("task_logs").where("task_id", "=", taskId).execute();
+      await notify(trx, TASK_CHANGED_CHANNEL, taskId);
+    });
+  }
+
+  async deleteTask(taskId: string) {
+    await this.db.transaction().execute(async (trx) => {
+      // 评论和日志随外键删除。
+      await trx.deleteFrom("tasks").where("id", "=", taskId).execute();
+      await notify(trx, TASK_CHANGED_CHANNEL, taskId);
+    });
+  }
+
+  /** 把模型文件写进存储，key 的格式和应用里服务端产出的文件一样（`uploads/` 加上传 id）。 */
+  private async saveModel(id: string) {
+    const key = `uploads/${id}`;
+    await this.storage.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: MODEL_BYTES,
+        ContentType: "model/gltf-binary",
+      }),
+    );
+    return {
+      id,
+      key,
+      purpose: "task-model",
+      content_type: "model/gltf-binary",
+      size: MODEL_BYTES.byteLength,
+    };
+  }
+}
+
+/** `tasks` 在每个 worker 里连一次 e2e 数据集和存储。 */
+export const test = base.extend<object, { tasks: TaskData }>({
+  tasks: [
+    async ({}, use) => {
+      const tasks = new TaskData();
+      await use(tasks);
+      await tasks.close();
+    },
+    { scope: "worker" },
+  ],
+});
+
+/**
+ * 整页打开搜索页，再经导航栏在浏览器里导航到 `url`。导航栏是服务端渲染的，里面没有只在浏览器里出现的东西；
+ * 搜索框在 hydration 之前不可用，它可用说明应用已经在浏览器里运行，这时点导航链接是客户端导航
+ * （`clickForClientNavigation` 再确认一次）。到达的页面在浏览器里渲染，没有要等 hydrate 的部分。
+ */
+export async function enterThroughHeader(
+  page: Page,
+  link: string,
+  url: string,
+) {
+  await page.goto("/search");
+  await expect(page.getByLabel("搜索任务")).toBeEnabled();
+  await navigateThroughHeader(page, link, url);
+}
+
+/** 在已经由浏览器渲染的任务页面上，经导航栏导航到 `url`。 */
+export async function navigateThroughHeader(
+  page: Page,
+  link: string,
+  url: string,
+) {
+  await clickForClientNavigation(
+    page,
+    page.getByRole("navigation", { name: "主要" }).getByRole("link", {
+      name: link,
+    }),
+    url,
+  );
+}
+
+/** 在已经打开的全部任务页上点一个状态筛选，等新列表到达。 */
+export async function filterByStatus(page: Page, label: string, url: string) {
+  await page
+    .getByRole("navigation", { name: "按状态筛选" })
+    .getByRole("link", { name: label })
+    .click();
+  await expect(page).toHaveURL(url);
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+}
+
+export const taskRows = (page: Page) =>
+  page.getByRole("list", { name: "任务列表" }).getByRole("listitem");
+
+/** 经导航栏进入全部任务页，等列表出现。 */
+export async function openTasksPage(page: Page) {
+  await enterThroughHeader(page, "全部任务", "/tasks");
+  await expect(taskRows(page).first()).toBeVisible();
+}
+
+/** 在已经打开的全部任务页上用表单建一个任务，等它出现在列表里，返回它的 id 和名称。 */
+export async function createTaskThroughForm(
+  page: Page,
+  name = unique("新任务"),
+) {
+  await page.getByLabel("名称").fill(name);
+  await page.getByLabel("Prompt").fill(unique("e2e prompt"));
+  await page.getByRole("button", { name: "创建任务" }).click();
+  const row = taskRows(page).filter({ hasText: name });
+  await expect(row).toBeVisible();
+  const href = await row.getByRole("link").getAttribute("href");
+  const id = href?.split("/").at(-1);
+  if (!id) throw new Error(`The row for ${name} has no task link`);
+  return { id, name };
+}
+
+/** header 徽标显示的进行中任务数。别的用例建的任务也算在里面，断言时只比较前后的差。 */
+export async function runningCount(page: Page) {
+  const badge = page.getByLabel(/^进行中的任务 \d+ 个$/);
+  await expect(badge).toBeVisible();
+  const label = (await badge.getAttribute("aria-label")) ?? "";
+  return Number(/\d+/.exec(label)?.[0]);
+}
+
+export { expect };

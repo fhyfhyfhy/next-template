@@ -77,7 +77,7 @@ Ordered top to bottom, like "Layers".
 [docs/features.md](../../docs/features.md) records which features depend on which, what each one is responsible for, and what sits next to it but belongs elsewhere. Put new code in the feature responsible for the business concept it serves. When no feature is, decide by how the concept exists:
 
 - A concept that exists only as part of another joins that concept's feature. In the database, its rows are deleted with the other's, as an order's line items are.
-- A concept that exists on its own gets a feature of its own. In the database, it has its own tables and lifecycle, and other features reach it through its `server.ts`, as an order attaches an uploaded file through the upload feature's `server.ts`.
+- A concept that exists on its own gets a feature of its own. In the database, it has its own tables and lifecycle, and other features reach it through its `server.ts`, as an order looks up its customer through the customers feature's `server.ts`.
 
 Creating, merging, or splitting a feature, changing what one is responsible for, or adding or removing a dependency between features updates `docs/features.md` in the same change.
 
@@ -145,3 +145,5 @@ features/orders/components/
 ### Feature public API
 
 Heavy dependencies, such as `three`, go through a sub-entry beside `index.ts`, such as `canvas.ts`: the main entry stays light, and callers can load the heavy part lazily.
+
+Code that runs in a plain Node process outside Next, such as a script that writes seed data, imports through a sub-entry beside `server.ts`, such as `seed.ts`, that re-exports only what it needs: `server.ts` also re-exports modules that import Next's runtime, which fails to load outside Next.

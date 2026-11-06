@@ -46,7 +46,7 @@ A page's state that belongs in the URL, such as its filters, sorting, pagination
 When a Server Component prefetches a read that React Query owns, follow the installed guide `node_modules/next/dist/docs/01-app/02-guides/client-side-data-fetching/tanstack-query.md`, adapted as below.
 
 - Create a `QueryClient` in `lib/react-query.ts` per render on the server; the browser reuses the one in `app/providers.tsx`.
-- Prefetch with the feature's options factory, swapping only `queryFn` for the data layer, which returns the data that key holds: `queryClient.query({ ...getCommentsQueryOptions(id), queryFn: () => listComments(id) })`. `query()` replaces the guide's deprecated `prefetchQuery`: add `.catch(noop)` (`noop` in `lib/react-query.ts`) to ignore a failure as `prefetchQuery` did, and leave it unawaited to stream a pending query.
+- Prefetch with the feature's options factory, swapping only `queryFn` for the data layer, which returns the data that key holds: `queryClient.query({ ...getOrderItemsQueryOptions(id), queryFn: () => listOrderItems(id) })`. `query()` replaces the guide's deprecated `prefetchQuery`: add `.catch(noop)` (`noop` in `lib/react-query.ts`) to ignore a failure as `prefetchQuery` did, and leave it unawaited to stream a pending query.
 - Pick the guide's pattern per hydration site: **Provide initial data from a Server Component** for prefetch and pending streaming, or **Build a prerenderable hydration state** for cached data. Read a prerenderable state's timestamp in the same `use cache` function as its data, which returns both, such as `{ page, fetchedAt }`: the two then expire and refresh together, and hydration relies on that timestamp to tell whether the data is newer than the browser's.
 - Behind the guide's Suspense boundary, a prerenderable state reaches the HTML while its UI renders only in the browser. To render that UI on the server too, give the consuming query `staleTime: "static"` while `environmentManager.isServer()`, keeping the browser's `staleTime`.
 - A prerenderable infinite query carries only its first page: pass it to `HydrationBoundary` only for queries the browser has no data for, keeping the state's queries whose `queryClient.getQueryCache().get(queryHash)` has no `data`, so it never replaces pages already loaded.
@@ -64,15 +64,15 @@ Render server data from its owner: props or a promise from a Server Component, o
 - A value a Server Component renders: `useOptimistic` in the Client Component that triggers the write, set inside the transition that awaits the write. The value falls back to the server's when the transition ends, so it needs no rollback. Catch the write's rejection in the transition: an uncaught one reaches the nearest error boundary.
 
   ```tsx
-  const [pinned, setPinned] = useOptimistic(task.pinned);
-  const pinTaskMutation = useMutation(pinTaskMutationOptions(t));
+  const [pinned, setPinned] = useOptimistic(order.pinned);
+  const pinOrderMutation = useMutation(pinOrderMutationOptions(t));
 
   function togglePinned() {
     const next = !pinned;
     startTransition(async () => {
       setPinned(next);
       try {
-        await pinTaskMutation.mutateAsync({ taskId: task.id, pinned: next });
+        await pinOrderMutation.mutateAsync({ orderId: order.id, pinned: next });
       } catch {
         // The factory's meta.errorMessage already shows the failure toast.
       }
@@ -89,7 +89,7 @@ Render server data from its owner: props or a promise from a Server Component, o
 The global handler in `app/providers.tsx` shows request failures as toasts. A query or mutation configures it through `meta` (`HandleRequestErrorOptions` in `lib/react-query.ts`), set in the options factory so it holds for every caller.
 
 - A query failure shows a toast only when the query already has data: the component keeps showing that data, so the toast is the only sign that the refresh failed. A first load that fails has nothing to show, so the component renders the error instead.
-- A mutation failure shows a toast, because the user acted and needs feedback. Each write's factory takes `t` as its first argument and sets `meta.errorMessage` to that operation's message from its own namespace, such as "Couldn't delete the task"; a function of the error picks the message by failure. A failure without `errorMessage` shows the generic message.
+- A mutation failure shows a toast, because the user acted and needs feedback. Each write's factory takes `t` as its first argument and sets `meta.errorMessage` to that operation's message from its own namespace, such as "Couldn't delete the order"; a function of the error picks the message by failure. A failure without `errorMessage` shows the generic message.
 - Each failing request gets its own toast: unrelated failures show side by side, and a request that fails again, such as a polling query, updates its toast instead of adding one.
 - Leave the toast to the global handler; a component's `catch` or `onError` that toasts again shows a second one.
 - When the feature handles a recoverable failure, show its recovery UI and suppress the toast for that case only, with a `suppressErrorToast` predicate in `meta`: `(error) => error instanceof ApiError && error.status === 404` for a `fetchApi` failure, or `(error) => isActionError(error, CODE)` with `isActionError` in `lib/action-result.ts` for a Server Action's. Keep other failures on the global path.

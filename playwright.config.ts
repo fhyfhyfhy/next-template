@@ -1,14 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// 端口避开 3000 起 dev/start 自动顺延的那几个端口；同一台机器上另一份 checkout 也在跑 e2e 时，用 E2E_PORT 换一个端口。
-// 两份 checkout 共用 compose.yaml 里的 e2e 数据集，不能同时跑。
+// 端口避开 3000 起 dev/start 自动顺延的那几个端口，被别的程序占着时用 E2E_PORT 换一个。
+// 同一台机器上的各份 checkout 共用 compose.yaml 里的 e2e 数据集，同一时间只能有一份在跑 e2e。
 const PORT = Number(process.env.E2E_PORT ?? 3998);
 const BASE_URL = `http://localhost:${PORT}`;
 
 // 对着生产构建运行：缓存新鲜度和 prefetch 只有在 next start 下才可信。build 之前先把 e2e 数据集恢复成种子数据，
 // 预渲染进静态 shell 的数据和测试开始时库里的一致。
-// 调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务，比如先 LOCAL_DATASET=e2e pnpm db:reset，再设
-// LOCAL_DATASET=e2e TASK_GENERATOR_ENABLED=false 运行 pnpm dev --port 3998；这时依赖生产行为的用例（如预取）会失败。
+// 调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务（README 的 Tests 一节有 bash 和 PowerShell 的启动命令）；
+// 这时依赖生产行为的用例（如预取）会失败。
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "test-results/e2e",
@@ -35,7 +35,7 @@ export default defineConfig({
       // 打开 instant() 依赖的测试 API，产物也因此放进单独的目录，不覆盖正在运行的 start（next.config.ts）。
       EXPOSE_TESTING_API: "1",
       LOCAL_DATASET: "e2e",
-      // 任务只按用例的安排推进（e2e/backend.ts 的 `advance`），不由后台的 generator 推进。
+      // 任务只按用例的安排推进（e2e/tasks.ts 的 `reportProgress`），不由后台的 generator 推进。
       TASK_GENERATOR_ENABLED: "false",
     },
     url: BASE_URL,

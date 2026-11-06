@@ -10,7 +10,7 @@ import { createTask, getTask } from "./tasks";
 
 resetBeforeEach();
 
-describe("generator", () => {
+describe("Generator 推进任务", () => {
   test("一步步把任务从 pending 推进到 done，之后不再变化", async () => {
     const { id } = await createTask({ name: "推进测试", prompt: "一只狐狸" });
 

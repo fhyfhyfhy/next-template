@@ -1,6 +1,6 @@
 import { beforeEach, expect } from "vitest";
 
-import { clearUploads } from "@/features/upload/server";
+import { clearUploads } from "@/features/upload/seed";
 import { DomainError } from "@/lib/domain-error";
 
 import { getTaskDb } from "./connection";

@@ -1,7 +1,7 @@
 import { sql } from "kysely";
 import { describe, expect, test } from "vitest";
 
-import { createDb } from "@/lib/db";
+import { getDb } from "@/lib/db";
 
 import { readLogs, rejection, resetBeforeEach } from "./db-test-helpers";
 import { advanceTask } from "./generator";
@@ -20,7 +20,7 @@ describe("生成日志", () => {
     // 模拟数据库断开这条 LISTEN 连接（比如数据库重启）。
     await sql`select pg_terminate_backend(pid) from pg_stat_activity
       where query = 'listen task_changed' and datname = current_database()`.execute(
-      createDb(process.env.DATABASE_URL ?? ""),
+      getDb(),
     );
 
     await expect(reader.read()).rejects.toThrow(/subscription/);

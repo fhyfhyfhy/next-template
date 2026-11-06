@@ -25,7 +25,7 @@ export function TaskCover({ coverUrl, className, ...props }: TaskCoverProps) {
     );
   }
   return (
-    // 封面图直接从对象存储（真实环境里是 CDN）加载，地址随部署变化，不经过 next/image 的优化服务。
+    // 封面图直接从对象存储（部署环境里通常是 CDN）加载，地址随部署变化，不经过 next/image 的优化服务。
     <Image
       src={coverUrl}
       alt=""

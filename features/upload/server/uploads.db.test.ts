@@ -14,7 +14,8 @@ import {
   rejection,
   upload,
 } from "./db-test-helpers";
-import { attachUpload, clearUploads, createUpload } from "./uploads";
+import { clearUploads } from "./seed";
+import { attachUpload, createUpload } from "./uploads";
 
 clearUploadsBeforeEach();
 

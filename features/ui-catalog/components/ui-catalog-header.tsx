@@ -35,7 +35,7 @@ const themes = [
 ] as const;
 
 /** 品牌导航和系统、浅色、深色主题选择。 */
-export function UiCatalogHeader() {
+export function UiCatalogHeader({ brand }: { brand: string }) {
   const t = useTranslations();
   const { theme, setTheme } = useTheme();
   // 服务端无法读取 localStorage；hydration 完成前不显示已选主题。
@@ -51,8 +51,10 @@ export function UiCatalogHeader() {
             <IconStack2 className="size-6" aria-hidden />
           </span>
           <span className="text-xl font-semibold tracking-tight">
-            {t("ui-catalog.header.brand")}
-            <span className="ml-1 text-primary">.</span>
+            {brand}
+            <span aria-hidden className="ml-1 text-primary">
+              .
+            </span>
           </span>
         </Link>
         <div className="flex items-center gap-3 sm:gap-6">

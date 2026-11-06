@@ -25,13 +25,21 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `:local`
 
 `pnpm dev` always runs on local services. `pnpm build:local` and `pnpm start:local` do too, for checking production behavior on your machine. Each starts the services, creates and migrates the dataset `LOCAL_DATASET` names (`dev` by default), writes the seed data when it has no tasks, and passes its connection settings to Next as the environment variables in `lib/env.ts`. The data persists in Docker volumes across restarts. `pnpm db:reset` restores a dataset to the seed data, and `docker compose down -v` deletes all of them. Inside the app, the generator advances tasks in the background, as an outside generation service would.
 
-`pnpm build` and `pnpm start` are for deployments: they read the connection settings from the environment, and `lib/env.ts` fails the build when one is missing. Run `pnpm db:migrate` against the deployment's `DATABASE_URL` before starting a new version.
+`pnpm build` and `pnpm start` are for deployments: they read the connection settings from the environment, and `lib/env.ts` fails the build when one is missing. See [Deployment](#deployment).
 
 ## Starting a project
 
-The sample product is everything that serves tasks and uploads: `features/task/`, `features/upload/`, the routes in `app/[locale]/(tasks)/` and `app/api/`, their namespaces in `messages/`, the specs in `e2e/`, and their entries in `GLOSSARY.md` and `docs/features.md`, along with the places that wire them in: the background jobs in `instrumentation.ts`, the migration list in `scripts/db/migrate.mjs`, and the seed entry in `scripts/local-services/seed.mjs`. A project replaces it with its own features, the same way: the [Glossary](GLOSSARY.md), [Feature boundaries](docs/features.md), and the rules in `.claude/rules/` describe the conventions without referring to the sample product, and this repository stays the place to read working code for them.
+The sample product is everything that serves tasks and uploads: `features/task/`, `features/upload/`, the routes in `app/[locale]/(tasks)/` and `app/api/`, their namespaces in `messages/`, the specs and the fixture in `e2e/tasks.ts`, and their entries in `GLOSSARY.md` and `docs/features.md`. Replacing it also touches the places that wire it into the rest:
 
-Keep the rest: the layers outside `features/`, `features/ui-catalog/` with the design system it documents, the app shell in `app/`, the scripts, and the e2e helpers in `e2e/test.ts`, `e2e/browser.ts`, and `e2e/backend.ts`, whose fixture methods change with the project's tables.
+- `app/[locale]/page.tsx`, whose home page redirects to `/tasks`. Typed routes are off, so nothing reports the redirect once `/tasks` is gone.
+- The background jobs in `instrumentation.ts`, and `TASK_GENERATOR_ENABLED` in `lib/env.ts` and `playwright.config.ts`.
+- The migration list in `scripts/db/migrate.mjs` and the seed entry in `scripts/local-services/seed.mjs`.
+- The namespaces registered in `lib/i18n/messages.ts`, and the route keys in `messages/*/app.json`: `tasks`, `taskDetail`, `feed`, `search`, and `recent`.
+- Object storage, if the project has no uploads: the `STORAGE_*` variables in `lib/env.ts`, the `storage` service in `compose.yaml`, and the bucket setup and `PUBLIC_PREFIXES` in `scripts/local-services/services.mjs`.
+
+A project replaces it with its own features, the same way: the [Glossary](GLOSSARY.md), [Feature boundaries](docs/features.md), and the rules in `.claude/rules/` describe the conventions without referring to the sample product, and this repository stays the place to read working code for them.
+
+Keep the rest: the layers outside `features/`, `features/ui-catalog/` with the design system it documents, the app shell in `app/`, the scripts, and the e2e helpers in `e2e/test.ts`, `e2e/browser.ts`, and `e2e/backend.ts`, which a project's own fixtures build on.
 
 ## Checks
 
@@ -60,11 +68,25 @@ Vitest runs every `*.test.*` file, kept next to the code it tests, in one of two
 
 `pnpm test` runs both.
 
-`pnpm test:e2e` runs the Playwright specs in `e2e/` against a production build on port 3998 (`E2E_PORT`), on the `e2e` dataset. Install the browser once with `pnpm exec playwright install chromium`. Before building, it resets the dataset to the seed data, so the prerendered pages match the database; the specs then add their own data straight to that database through the fixture in `e2e/backend.ts` ([.claude/rules/e2e.md](.claude/rules/e2e.md)). The server runs with the generator off (`TASK_GENERATOR_ENABLED=false`), so tasks advance only when a spec advances them. Two checkouts share the `e2e` dataset, so run the specs from one at a time.
+`pnpm test:e2e` runs the Playwright specs in `e2e/` against a production build on port 3998 (`E2E_PORT`), on the `e2e` dataset. Install the browser once with `pnpm exec playwright install chromium`. Before building, it resets the dataset to the seed data, so the prerendered pages match the database; the specs then add their own data straight to that database through fixtures built on `e2e/backend.ts` ([.claude/rules/e2e.md](.claude/rules/e2e.md)). The server runs with the generator off (`TASK_GENERATOR_ENABLED=false`), so tasks advance only when a spec advances them. Two checkouts share the `e2e` dataset, so run the specs from one at a time.
 
 The e2e build turns on the testing API that `instant()` from `@next/playwright` needs to hold back streamed content: its `webServer` sets `EXPOSE_TESTING_API=1`, which `next.config.ts` reads. Keep that variable out of deployment builds. The build goes to `.next-e2e`, so a running `pnpm start` keeps its own output. ESLint applies `eslint-plugin-playwright`'s recommended rules to `e2e/`.
 
-While debugging, `E2E_REUSE_SERVER=1` makes the specs reuse a server you started on the port, such as `LOCAL_DATASET=e2e TASK_GENERATOR_ENABLED=false pnpm dev --port 3998` after `LOCAL_DATASET=e2e pnpm db:reset`; specs that depend on production behavior, such as prefetching, fail against a dev server, and a production server needs a build made with `EXPOSE_TESTING_API=1`.
+While debugging, `E2E_REUSE_SERVER=1` makes the specs reuse a server you started on the port. Reset the dataset with `pnpm db:reset e2e`, start a dev server on it, and run the specs against it:
+
+```bash
+LOCAL_DATASET=e2e TASK_GENERATOR_ENABLED=false pnpm dev --port 3998
+E2E_REUSE_SERVER=1 pnpm test:e2e
+```
+
+In PowerShell:
+
+```powershell
+$env:LOCAL_DATASET = "e2e"; $env:TASK_GENERATOR_ENABLED = "false"; pnpm dev --port 3998
+$env:E2E_REUSE_SERVER = "1"; pnpm test:e2e
+```
+
+Specs that depend on production behavior, such as prefetching, fail against a dev server, and a production server needs a build made with `EXPOSE_TESTING_API=1`.
 
 ## Data access
 
@@ -121,8 +143,17 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js. Set the environment variables in `lib/env.ts` for the deployment, and migrate its database with `pnpm db:migrate`.
+Deploy the app as a long-running Node process, such as in a container, because two parts depend on one:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `instrumentation.ts` starts background jobs on an interval, the generator and the upload cleanup, so the process has to keep running between requests. Serverless platforms, Vercel among them, don't keep it running.
+- The `use cache` handler in `lib/cache-handler.mts` keeps entries in each process's memory, and `updateTag` expires them only in the process that handled the write. Run one instance, or replace the handler with one the instances share before running more; the [self-hosting-audit](.agents/skills/self-hosting-audit/SKILL.md) skill checks a deployment for this and the rest.
+
+Build each environment against that environment. The build reads the database to prerender the gallery's first page, and the rows it reads and `STORAGE_PUBLIC_URL` stay in the static output (see "Environment variables" in `AGENTS.md`), so a build made for one environment shows that environment's data elsewhere. For each release:
+
+1. Set the environment variables in `lib/env.ts`.
+2. Run `pnpm db:migrate` against the environment's `DATABASE_URL`. The build reads the new schema, so migrate before building, and keep each migration compatible with the version still serving until the new one starts.
+3. Run `pnpm build`, then `pnpm start`.
+
+Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

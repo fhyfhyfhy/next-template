@@ -1,19 +1,5 @@
 {
-  "keep": [
-    "Next Template",
-    "Next.js",
-    "prompt",
-    "GLB",
-    "Server Component",
-    "Client Component",
-    "Server Action",
-    "React Query",
-    "Suspense",
-    "localStorage",
-    "hydration",
-    "playground",
-    "example"
-  ],
+  "keep": ["Next Template", "prompt"],
   "translations": {
     "任务": {
       "en": "task"

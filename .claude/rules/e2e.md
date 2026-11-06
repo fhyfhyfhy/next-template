@@ -5,9 +5,9 @@ paths:
 
 # E2E specs
 
-Specs observe the app through the browser and import no application code. The data they need goes straight into the e2e database through the `backend` fixture in `e2e/backend.ts`.
+Specs observe the app through the browser and import no application code. The data they need goes straight into the e2e database through a fixture that the feature's specs share, in a module beside them such as `e2e/orders.ts`, built on `connectE2eDatabase` in `e2e/backend.ts`.
 
-Use `test` and `expect` in `e2e/test.ts`, or in `e2e/backend.ts` for specs that use the fixture, which builds on it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (`playwright.config.ts`); a test that needs another one sets `test.use({ locale })`. `DateTime` in `components/date-time.tsx` renders dates and times in the browser's time zone after hydration: a spec that asserts one also sets `test.use({ timezoneId })`.
+Use `test` and `expect` in `e2e/test.ts`, or in the feature's fixture module, which extends it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (`playwright.config.ts`); a test that needs another one sets `test.use({ locale })`. `DateTime` in `components/date-time.tsx` renders dates and times in the browser's time zone after hydration: a spec that asserts one also sets `test.use({ timezoneId })`.
 
 ## Test data
 
@@ -15,13 +15,13 @@ Use `test` and `expect` in `e2e/test.ts`, or in `e2e/backend.ts` for specs that 
 
 - Treat the seed data as read-only. A test that writes creates its own records, named with `unique` from `e2e/backend.ts`, and asserts on those. On a view every test adds to, such as a paginated list or a count, assert what holds whatever else is there, or compare the value before and after.
 - A record the fixture writes is a change made outside the app: a page that reads through `use cache` shows it only within its freshness bound. Create what such a page must show through the page's own UI, whose Server Action expires the cache, or let the app's refresh path for outside changes pick it up; the fixture's records suit pages that read per request.
-- Background jobs that change data stay off in the e2e server (`webServer.env` in `playwright.config.ts`), and the fixture writes what they would. Each fixture write notifies the app the way the job does.
+- Background jobs that change data stay off in the e2e server (`webServer.env` in `playwright.config.ts`), and the fixture writes what they would. Each fixture write notifies the app the way the job does, such as with `notify` in `e2e/backend.ts`.
 
 ## Hydration
 
-Actionability checks pass on server-rendered HTML before React attaches its handlers, so a click or `setInputFiles` sent before hydration can be lost without an error. Before acting on a page, wait for a readiness signal: something only the browser renders, inside the same Suspense boundary as the control, such as data from a browser-only query. Wrap the navigation and that wait in a per-page helper, such as an `openTask(page, id)` that waits for a list only the browser requests. ESLint's `e2e/act-after-ready` reports an action that follows `page.goto` or `reload` before any `expect` or bare helper call; a control that only the browser renders, so finding it proves hydration, takes an `eslint-disable-next-line` comment that says so.
+Actionability checks pass on server-rendered HTML before React attaches its handlers, so a click or `setInputFiles` sent before hydration can be lost without an error. Before acting on a page, wait for a readiness signal: something only the browser renders, inside the same Suspense boundary as the control, such as data from a browser-only query. Wrap the navigation and that wait in a per-page helper, such as an `openOrder(page, id)` that waits for a list only the browser requests. ESLint's `e2e/act-after-ready` reports an action that follows `page.goto` or `reload` before any `expect` or bare helper call; a control that only the browser renders, so finding it proves hydration, takes an `eslint-disable-next-line` comment that says so.
 
-When the assertion observes another Suspense boundary, that boundary must be hydrated as well. An update that reaches a boundary before it hydrates discards its server-rendered content and shows the fallback, so a navigation can replace a list with its skeleton instead of keeping it on screen. Wait for a browser-only signal inside that boundary, or enter the page through a client-side navigation from another page, which renders every boundary in the browser.
+When the assertion observes another Suspense boundary, that boundary must be hydrated as well. An update that reaches a boundary before it hydrates discards its server-rendered content and shows the fallback, so a navigation can replace a list with its skeleton instead of keeping it on screen. Wait for a browser-only signal inside that boundary, or enter the page through a client-side navigation from another page, which renders every boundary in the browser. For that entry, wait for a browser-only signal on the starting page, then click with `clickForClientNavigation` in `e2e/browser.ts`: a link clicked before hydration loads the whole page from the server, and the helper fails instead of letting the spec continue on server-rendered boundaries.
 
 ## Loading UI
 
@@ -29,7 +29,7 @@ When the assertion observes another Suspense boundary, that boundary must be hyd
 | --- | --- |
 | The static shell after `page.goto`, or the prefetched UI after a `<Link>` click | `instant()` from `@next/playwright` |
 | UI rendered into the server's HTML rather than by the browser | Abort the app's script requests and assert the UI. `instant()` lets browser rendering through, and disabling JavaScript also stops the inline scripts that place a Suspense boundary's content when it resolves after the shell |
-| One streamed section arriving before another | Lock the table the later section reads with the fixture's `holdTable`, and `page.goto(url, { waitUntil: "commit" })`: `load` fires only after the stream ends |
+| One streamed section arriving before another | Lock the table the later section reads with `holdTable` in `e2e/backend.ts`, and `page.goto(url, { waitUntil: "commit" })`: `load` fires only after the stream ends |
 | The UI while a browser request or Server Action is in flight, or after it fails | `delayRequests` or `failRequests` in `e2e/browser.ts`. `failRequests` with `delayMs` shows an optimistic update before the server answers and leaves no write behind |
 
 ## Browser events

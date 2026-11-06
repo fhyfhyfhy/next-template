@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 
-import { expect, test } from "./backend";
+import { failRequests, hasPath } from "./browser";
+import { expect, test } from "./tasks";
 
 // 最近查看：任务 id 存在 localStorage 里，只有浏览器能读，请求要等 hydration 之后才发。
 
@@ -22,21 +23,25 @@ test("按查看顺序列出最近看过的任务，最新的在前", async ({ pa
   await expect(items(page)).toHaveText([/雪地木屋/, /低多边形狐狸/]);
 });
 
-test("服务端渲染的 HTML 里没有任务数据", async ({ page, request }) => {
+test("首次加载失败时显示加载失败，不弹全局提示", async ({ page }) => {
   await visitTask(page, "task-01");
+  // 4xx 不重试，失败立即可见。
+  await failRequests(page, hasPath("/api/tasks/task-01"), { status: 400 });
 
-  const html = await (await request.get("/recent")).text();
-  expect(html).not.toContain("低多边形狐狸");
+  await page.goto("/recent");
+
+  await expect(items(page).first()).toContainText("加载失败（task-01）");
+  await expect(page.getByText("请求失败，请稍后重试")).toHaveCount(0);
 });
 
 test("看过但已被删除的任务显示为已删除，不弹通用提示", async ({
   page,
-  backend,
+  tasks,
 }) => {
   // 已完成的任务打开后日志流立即结束，visitTask 才等得到。
-  const task = await backend.createTask({ status: "done" });
+  const task = await tasks.createTask({ status: "done" });
   await visitTask(page, task.id);
-  await backend.deleteTask(task.id);
+  await tasks.deleteTask(task.id);
 
   await page.goto("/recent");
 

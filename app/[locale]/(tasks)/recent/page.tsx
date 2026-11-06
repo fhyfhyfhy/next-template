@@ -14,7 +14,7 @@ export default function RecentPage() {
   const t = useTranslations();
   return (
     <>
-      <PageHeading title={t("app.recent.title")} />
+      <PageHeading title={t("app.recent.title")} className="mb-8" />
       <Suspense fallback={<RecentTasksLoading />}>
         <RecentTasks />
       </Suspense>

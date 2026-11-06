@@ -14,18 +14,32 @@ const MIGRATION_MODULES = [
 
 const projectRoot = join(import.meta.dirname, "..", "..");
 
-/** 把 `connectionString` 指向的库迁移到最新结构；任何一条失败都抛出，已经成功的保留。 */
-export async function migrateDatabase(connectionString) {
-  const migrations = {};
-  for (const path of MIGRATION_MODULES) {
-    const imported = await import(pathToFileURL(join(projectRoot, path)).href);
-    for (const [name, migration] of Object.entries(imported.migrations)) {
-      if (Object.hasOwn(migrations, name)) {
+/**
+ * 把各 feature 的 `migrations` 合成一条序列。名称决定执行顺序，也是数据库里记录执行过哪些的依据，所以两个文件
+ * 不能用同一个名称。
+ * @param {{ path: string, migrations: Record<string, unknown> }[]} modules
+ */
+export function mergeMigrations(modules) {
+  const merged = {};
+  for (const { path, migrations } of modules) {
+    for (const [name, migration] of Object.entries(migrations)) {
+      if (Object.hasOwn(merged, name)) {
         throw new Error(`Duplicate migration name ${name} in ${path}`);
       }
-      migrations[name] = migration;
+      merged[name] = migration;
     }
   }
+  return merged;
+}
+
+/** 把 `connectionString` 指向的库迁移到最新结构；任何一条失败都抛出，已经成功的保留。 */
+export async function migrateDatabase(connectionString) {
+  const modules = [];
+  for (const path of MIGRATION_MODULES) {
+    const imported = await import(pathToFileURL(join(projectRoot, path)).href);
+    modules.push({ path, migrations: imported.migrations });
+  }
+  const migrations = mergeMigrations(modules);
   const db = new Kysely({
     dialect: new PostgresDialect({
       pool: new pg.Pool({ connectionString, max: 1 }),

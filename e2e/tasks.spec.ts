@@ -1,66 +1,35 @@
 import { instant } from "@next/playwright";
 import type { Page } from "@playwright/test";
 
-import {
-  expect,
-  navigateThroughHeader,
-  runningCount,
-  test,
-  unique,
-} from "./backend";
+import { unique } from "./backend";
 import {
   delayRequests,
   failRequests,
   isNavigation,
   isServerAction,
 } from "./browser";
+import {
+  createTaskThroughForm as createTask,
+  expect,
+  filterByStatus,
+  navigateThroughHeader,
+  openTasksPage,
+  runningCount,
+  taskRows as rows,
+  test,
+} from "./tasks";
 
 // 全部任务页：数据由 Server Component 负责，筛选、排序、分页都在 URL 里。列表是所有任务的服务端缓存快照，
 // 别的用例建的任务也会出现在里面：要写数据的用例在页面上建自己的任务，只对自己的任务断言。
 
-const rows = (page: Page) =>
-  page.getByRole("list", { name: "任务列表" }).getByRole("listitem");
-
 const row = (page: Page, name: string) => rows(page).filter({ hasText: name });
 
-/**
- * 从别的任务页面经导航栏进入全部任务页，等列表出现。整页加载时列表在自己的 Suspense 边界里，
- * 可能比页面其他部分晚 hydrate：那之前的点击可能丢失，换筛选时 React 还会丢掉服务端渲染的列表、直接显示骨架屏。
- * 客户端导航（`navigateThroughHeader`）在浏览器里渲染整页，没有要等 hydrate 的部分。
- */
-async function openTasksPage(page: Page) {
-  await page.goto("/search");
-  await navigateThroughHeader(page, "全部任务", "/tasks");
-  await expect(rows(page).first()).toBeVisible();
-}
-
-/** 在已经打开的全部任务页上用表单建一个任务，等它出现在列表里。 */
-async function createTask(page: Page, name = unique("新任务")) {
-  await page.getByLabel("名称").fill(name);
-  await page.getByLabel("Prompt").fill(unique("e2e prompt"));
-  await page.getByRole("button", { name: "创建任务" }).click();
-  await expect(row(page, name)).toBeVisible();
-  const href = await row(page, name).getByRole("link").getAttribute("href");
-  return { name, id: href?.split("/").at(-1) ?? "" };
-}
-
-/** 在已经打开的全部任务页上点一个状态筛选，等新列表到达。 */
-async function filterByStatus(page: Page, label: string, url: string) {
-  await page
-    .getByRole("navigation", { name: "按状态筛选" })
-    .getByRole("link", { name: label })
-    .click();
-  await expect(page).toHaveURL(url);
-  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-}
+// 进入全部任务页都经导航栏客户端导航（`openTasksPage`）：整页加载时列表在自己的 Suspense 边界里，可能比页面其他
+// 部分晚 hydrate，那之前的点击可能丢失，换筛选时 React 还会丢掉服务端渲染的列表、直接显示骨架屏。
 
 /** 去作品广场再按 Back 回来：离开时 Next 用 <Activity> 隐藏这一页，返回时保留状态、重新创建 effect。 */
 async function leaveAndReturn(page: Page) {
-  await page
-    .getByRole("navigation", { name: "主导航" })
-    .getByRole("link", { name: "作品广场" })
-    .click();
-  await expect(page).toHaveURL("/feed");
+  await navigateThroughHeader(page, "作品广场", "/feed");
   await page.goBack();
   await expect(page).toHaveURL("/tasks");
 }
@@ -68,10 +37,9 @@ async function leaveAndReturn(page: Page) {
 // 页面每 3 秒检查一次进行中的任务，发现变化后再重新读取列表，等列表跟上要比默认的 5 秒宽。
 const untilPolled = { timeout: 10_000 };
 
-test("首页就是全部任务，默认显示第一页", async ({ page }) => {
-  await page.goto("/");
+test("全部任务默认显示第一页", async ({ page }) => {
+  await page.goto("/tasks");
 
-  await expect(page).toHaveURL("/tasks");
   await expect(rows(page)).toHaveCount(8);
   await expect(page.getByRole("link", { name: "下一页" })).toBeVisible();
 });
@@ -89,6 +57,7 @@ test("按状态筛选写进 URL，Back 回到上一个筛选", async ({ page }) 
   await page.goBack();
   await expect(page).toHaveURL("/tasks");
   await expect(rows(page)).toHaveCount(8);
+  await expect(rows(page).filter({ hasNotText: "失败" }).first()).toBeVisible();
 });
 
 test("换筛选后立即显示新的选择，新列表到达前旧列表标记为更新中", async ({
@@ -111,6 +80,7 @@ test("换筛选后立即显示新的选择，新列表到达前旧列表标记�
 
   await expect(page).toHaveURL("/tasks?status=failed");
   await expect(busyList).toHaveCount(0);
+  await expect(rows(page).first()).toBeVisible();
   for (const item of await rows(page).all()) {
     await expect(item).toContainText("失败");
   }
@@ -121,6 +91,8 @@ test("排序和分页写进 URL，前进后退都显示对应的数据", async (
   await page.getByRole("combobox", { name: "排序" }).click();
   await page.getByRole("option", { name: "名称" }).click();
   await expect(page).toHaveURL("/tasks?sort=name_asc");
+  // URL 先变，按名称排的列表随后才到。
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
   const firstByName = await rows(page).first().textContent();
 
   await page.getByRole("link", { name: "下一页" }).click();
@@ -153,23 +125,24 @@ test("列表的骨架屏在静态 shell 里，数据随后流式送达", async (
 
 test("列表读服务端缓存：别处改了数据，缓存期内仍显示快照", async ({
   page,
-  backend,
+  tasks,
 }) => {
   await openTasksPage(page);
-  // 名称带 fail 的任务生成失败。先让它结束：之后它不在进行中，页面的变化检查不会因为它重新读取列表。
-  const task = await createTask(page, unique("改名 fail"));
-  await backend.reportProgress(task.id, {
+  // 先让任务结束：之后它不在进行中，页面的变化检查不会因为它重新读取列表。
+  const task = await createTask(page, unique("别处改名的任务"));
+  await tasks.reportProgress(task.id, {
     status: "failed",
     progress: 100,
     log: "生成失败：材质计算出错",
   });
   await expect(row(page, task.name)).toContainText("失败", untilPolled);
 
-  await backend.renameTask(task.id, unique("别处改的名字"));
+  const renamed = unique("别处改的名字");
+  await tasks.renameTask(task.id, renamed);
   await page.reload();
 
   await expect(row(page, task.name)).toBeVisible();
-  await expect(rows(page).filter({ hasText: "别处改的名字" })).toHaveCount(0);
+  await expect(row(page, renamed)).toHaveCount(0);
 });
 
 test("创建任务后列表立即出现新任务，表单清空", async ({ page }) => {
@@ -185,7 +158,7 @@ test("创建任务后列表立即出现新任务，表单清空", async ({ page 
 
 test("停在列表上，新任务的状态一直推进到已完成，header 的进行中数同时更新", async ({
   page,
-  backend,
+  tasks,
 }) => {
   await openTasksPage(page);
   const before = await runningCount(page);
@@ -193,14 +166,14 @@ test("停在列表上，新任务的状态一直推进到已完成，header 的�
   await expect(row(page, task.name)).toContainText("排队中");
   await expect(page.getByLabel(`进行中的任务 ${before + 1} 个`)).toBeVisible();
 
-  await backend.reportProgress(task.id, {
+  await tasks.reportProgress(task.id, {
     status: "running",
     progress: 0,
     log: "开始生成",
   });
   await expect(row(page, task.name)).toContainText("生成中", untilPolled);
 
-  await backend.reportProgress(task.id, {
+  await tasks.reportProgress(task.id, {
     status: "done",
     progress: 100,
     log: "生成完成",
@@ -211,11 +184,11 @@ test("停在列表上，新任务的状态一直推进到已完成，header 的�
 
 test("停在「生成中」筛选上，任务结束后从列表里消失，总数随之减少", async ({
   page,
-  backend,
+  tasks,
 }) => {
   await openTasksPage(page);
   const task = await createTask(page);
-  await backend.reportProgress(task.id, {
+  await tasks.reportProgress(task.id, {
     status: "running",
     progress: 50,
     log: "生成网格",
@@ -225,7 +198,7 @@ test("停在「生成中」筛选上，任务结束后从列表里消失，总�
   const total = page.getByText(/^共 \d+ 个任务$/);
   const before = Number(/\d+/.exec((await total.textContent()) ?? "")?.[0]);
 
-  await backend.reportProgress(task.id, {
+  await tasks.reportProgress(task.id, {
     status: "done",
     progress: 100,
     log: "生成完成",
@@ -237,14 +210,14 @@ test("停在「生成中」筛选上，任务结束后从列表里消失，总�
 
 test("停在「已完成」筛选上，别处的任务结束后出现在列表里", async ({
   page,
-  backend,
+  tasks,
 }) => {
   await openTasksPage(page);
   const task = await createTask(page);
   await filterByStatus(page, "已完成", "/tasks?status=done");
   await expect(row(page, task.name)).toHaveCount(0);
 
-  await backend.reportProgress(task.id, {
+  await tasks.reportProgress(task.id, {
     status: "done",
     progress: 100,
     log: "生成完成",

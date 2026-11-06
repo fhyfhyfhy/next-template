@@ -24,8 +24,7 @@
     "commentTooLong": "评论最多 {max} 个字"
   },
   "nav": {
-    "label": "主导航",
-    "home": "Next Template",
+    "label": "主要",
     "tasks": "全部任务",
     "feed": "作品广场",
     "search": "搜索",

@@ -1,39 +1,21 @@
 import "server-only";
-import type { Kysely } from "kysely";
 import { nanoid } from "nanoid";
 import { DatabaseError } from "pg";
 
 import { badRequest, conflict, notFound } from "@/lib/domain-error";
-import { env } from "@/lib/env";
 
 import {
   UPLOAD_ALREADY_USED,
   UPLOAD_NOT_READY,
 } from "../constants/error-codes";
+import { UPLOAD_KEY_PREFIX } from "../constants/storage-keys";
 import { isUploadPurpose, UPLOAD_PURPOSES } from "../constants/upload-purposes";
-import { getUploadDb, getUploadStorage } from "./connection";
-import type { UploadTables } from "./tables";
+import { type Executor, getUploadStorage, uploadDb } from "./connection";
 
 /** 签发的上传 URL 的有效期。清理任务要等得比它久得多，才不会删掉还在上传的文件（cleanup.ts）。 */
 const UPLOAD_URL_TTL_SECONDS = 5 * 60;
 /** 下载 URL 只用于一次跳转，有效期取短。 */
 const DOWNLOAD_URL_TTL_SECONDS = 60;
-/** 种子文件的 key 前缀。重置和清理都不删这个前缀下的对象：它们由种子数据共用，删了就要重新生成。 */
-export const SEED_KEY_PREFIX = "seed/";
-/** 用户上传和服务端产出的文件的 key 前缀，重置时整体清空。 */
-const UPLOAD_KEY_PREFIX = "uploads/";
-
-/**
- * 调用方的数据库连接或事务。多个 feature 共用一个数据库，调用方传来的是它自己的表类型视图，
- * 指向同一个连接，这里按本 feature 的表类型使用。
- */
-type Executor = Pick<Kysely<unknown>, "isTransaction">;
-
-function uploadDb(executor?: Executor): Kysely<UploadTables> {
-  if (!executor) return getUploadDb();
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- 调用方的表类型视图和本 feature 的视图指向同一个连接或事务，Kysely 的类型参数只描述表，不影响运行时。
-  return executor as unknown as Kysely<UploadTables>;
-}
 
 export interface CreatedUpload {
   id: string;
@@ -268,81 +250,4 @@ export async function saveServerUpload(input: {
     .execute();
   await getUploadStorage().put(key, input.body, input.contentType);
   return id;
-}
-
-export interface SeedUpload {
-  id: string;
-  /** 以 `SEED_KEY_PREFIX` 开头。 */
-  key: string;
-  purpose: string;
-  contentType: string;
-  body: Uint8Array;
-  /** 种子数据里使用这个文件的记录。 */
-  attachment: { recordType: string; recordId: string; name: string };
-}
-
-// 每个进程只把种子文件写进存储一次：内容固定，之后的重置只恢复数据库里的记录。按 bucket 区分，
-// 数据库测试在同一个进程里也可能换 bucket。
-const writtenSeedBuckets = new Set<string>();
-
-/**
- * 恢复种子数据里的文件和它们的关联：记录写进数据库，对象写进存储（每个进程每个 bucket 只写一次）。
- * 种子文件内容固定，不经过关联时的存储核对。
- */
-export async function restoreSeedUploads(
-  uploads: readonly SeedUpload[],
-  executor?: Executor,
-) {
-  const bucket = env.STORAGE_BUCKET;
-  if (!writtenSeedBuckets.has(bucket)) {
-    const storage = getUploadStorage();
-    await Promise.all(
-      uploads.map((upload) =>
-        storage.put(upload.key, upload.body, upload.contentType),
-      ),
-    );
-    writtenSeedBuckets.add(bucket);
-  }
-  if (uploads.length === 0) return;
-  const db = uploadDb(executor);
-  await db
-    .insertInto("uploads")
-    .values(
-      uploads.map((upload) => ({
-        id: upload.id,
-        key: upload.key,
-        purpose: upload.purpose,
-        content_type: upload.contentType,
-        size: upload.body.byteLength,
-      })),
-    )
-    .execute();
-  await db
-    .insertInto("upload_attachments")
-    .values(
-      uploads.map(({ id, attachment }) => ({
-        upload_id: id,
-        record_type: attachment.recordType,
-        record_id: attachment.recordId,
-        name: attachment.name,
-      })),
-    )
-    .execute();
-}
-
-/**
- * 删除所有上传记录和关联，以及存储里 `uploads/` 前缀下的全部文件（种子文件不在这个前缀下），给重置用；
- * 之后由调用方恢复种子数据。文件按前缀列出来删，没有记录对应的文件也一起删掉。
- * 文件在调用方的事务提交后再删（返回的函数），事务回滚时文件还在。
- */
-export async function clearUploads(
-  executor?: Executor,
-): Promise<() => Promise<void>> {
-  const db = uploadDb(executor);
-  await db.deleteFrom("upload_attachments").execute();
-  await db.deleteFrom("uploads").execute();
-  return async () => {
-    const storage = getUploadStorage();
-    await storage.delete(await storage.list(UPLOAD_KEY_PREFIX));
-  };
 }

@@ -10,6 +10,14 @@
 - [ ] TanStack Form v2 正式发布后评估升级：v2 的 `onSubmit` 可以直接返回字段错误（`createValidationError`），能替换现在服务端字段错误用的 `formApi.setErrorMap`。
 - [ ] 复杂表单：字段数组、联动字段、多步骤表单还没有场景用到，第一次需要时补示例，并更新 `.claude/rules/libraries.md` 的 Forms 约定。
 
+## 账号与授权
+
+- [ ] 应用现在没有账号，所有访客共享同一批任务，Server Action 只校验输入、不做授权（ADR 0006）。加账号时补上任务归属、按用户收藏，并在每个 action 里授权写入；这时 data-flow.md 的 Signing out 和 refresh.md 的 Session changes 也有了实例。
+
+## 数据新鲜度
+
+- [ ] 进行中任务的集合每变一次，每个打开着的全部任务页都会调用一次 `expireTaskListAction`。refresh.md 的 Changes made elsewhere 建议改由后端事件失效缓存：generator（真实系统里是外部生成服务）推进任务时调用应用的 Route Handler 做 `revalidateTag`，浏览器只 `router.refresh()`。等部署成多实例、或者同时在线的访客多起来时再做，和共享的缓存 handler 一起考虑（README 的 Deployment 一节）。
+
 ## 文案、国际化与错误恢复
 
 - [ ] 制定文案风格规范：语气、标点、中英文混排。翻译流程、key 和 namespace 的约定已在 `.claude/rules/i18n.md`。

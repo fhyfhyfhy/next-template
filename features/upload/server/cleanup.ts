@@ -2,10 +2,9 @@ import "server-only";
 import { DatabaseError } from "pg";
 
 import { startLeaderInterval } from "@/lib/db";
-import { env } from "@/lib/env";
 
+import { SEED_KEY_PREFIX } from "../constants/storage-keys";
 import { getUploadDb, getUploadStorage } from "./connection";
-import { SEED_KEY_PREFIX } from "./uploads";
 
 /**
  * 上传创建多久之后仍没被任何记录使用，就当作没人要了。必须远长于上传 URL 的有效期（uploads.ts 的
@@ -63,7 +62,6 @@ export async function cleanupUnattachedUploads(
 /** 在后台定期清理，同一个数据库上只有一个进程在清理（`startLeaderInterval`）。返回停止函数。 */
 export function startUploadCleanup() {
   return startLeaderInterval({
-    connectionString: env.DATABASE_URL,
     lockKey: CLEANUP_LOCK_KEY,
     intervalMs: CLEANUP_INTERVAL_MS,
     run: async () => {

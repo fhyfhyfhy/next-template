@@ -31,7 +31,7 @@ export default function SearchPage({
   const t = useTranslations();
   return (
     <>
-      <PageHeading title={t("app.search.title")} />
+      <PageHeading title={t("app.search.title")} className="mb-8" />
       {/* 关键词在 URL 里，预渲染时没有值：搜索框和结果在请求时渲染，页面其他部分进静态 shell。 */}
       <Suspense fallback={<TaskSearchSkeleton />}>
         {loadTaskSearchSearchParams(searchParams).then(({ q }) => (

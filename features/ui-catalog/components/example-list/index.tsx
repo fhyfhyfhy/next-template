@@ -29,7 +29,7 @@ export function ExampleList({
       <h2 className="text-lg font-medium">{t("ui-catalog.examples.title")}</h2>
       <div className="grid items-start gap-5 xl:grid-cols-2">
         {ordered.map((example) => {
-          const Preview = example.component;
+          const Example = example.component;
           const source = sources[example.id];
           if (source === undefined) {
             // Fast Refresh 和 RSC 更新分开到达，新增示例需等待对应源码。
@@ -46,7 +46,7 @@ export function ExampleList({
               filename={example.filename}
               source={source}
             >
-              <Preview />
+              <Example />
             </ExampleCard>
           );
         })}

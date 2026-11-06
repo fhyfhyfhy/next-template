@@ -14,7 +14,10 @@ export const POSTGRES = {
   port: 54329,
   user: "app",
   password: "app",
-  /** compose 创建的库，用来创建和删除其他数据集的库。 */
+  /**
+   * 连上它去创建和删除各数据集的库。用 Postgres 镜像初始化时自带的 postgres 库：dev 数据集的 app 库要被
+   * db:reset 删掉，而 Postgres 不能删除当前连着的库。
+   */
   adminDatabase: "postgres",
 };
 

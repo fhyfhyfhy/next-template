@@ -1,6 +1,6 @@
-import type { Page } from "@playwright/test";
+import type { Page, Request } from "@playwright/test";
 
-import { expect, runningCount, test, unique } from "./backend";
+import { holdTable, unique } from "./backend";
 import {
   delayRequests,
   failRequests,
@@ -8,6 +8,14 @@ import {
   isServerAction,
   returnToTab,
 } from "./browser";
+import {
+  createTaskThroughForm,
+  expect,
+  openTasksPage,
+  runningCount,
+  taskRows,
+  test,
+} from "./tasks";
 
 // 任务详情：数据由 React Query 负责（任务会在用户停留时自己推进），首屏由服务端 prefetch。
 // 只读的用例看种子数据里的任务；要改数据的用例各自建一个任务，不动种子数据。
@@ -17,9 +25,21 @@ const GLOBAL_ERROR_TOAST = "请求失败，请稍后重试";
 const comments = (page: Page) =>
   page.getByRole("list", { name: "评论" }).getByRole("listitem");
 
+const listRow = (page: Page, name: string) =>
+  taskRows(page).filter({ hasText: name });
+
+/** header 徽标轮询进行中任务的请求（带 status 参数）；相关任务、收藏也请求同一个路径，但不带它。 */
+function isActiveTasksRequest(request: Request) {
+  const url = new URL(request.url());
+  return url.pathname === "/api/tasks" && url.searchParams.has("status");
+}
+
+// 页面每 3 秒检查一次进行中的任务，发现变化后再重新读取列表，等列表跟上要比默认的 5 秒宽。
+const untilPolled = { timeout: 10_000 };
+
 /**
  * 打开详情并等 hydration 完成：首屏 HTML 先到，hydration 之前的点击和文件选择没有事件处理。
- * “同 prompt 的其他任务”只在浏览器里请求，它出现说明页面已经 hydrate。
+ * “同 prompt 的其他任务”由服务端预取、以 pending 状态流式送到浏览器，只在浏览器里渲染，它出现说明页面已经 hydrate。
  */
 async function openTask(page: Page, taskId: string) {
   await page.goto(`/tasks/${taskId}`);
@@ -94,9 +114,9 @@ test.describe("首屏和 404", () => {
     expect(detailRequests).toStrictEqual([]);
   });
 
-  test("评论在详情之后流式出现", async ({ page, backend }) => {
+  test("评论在详情之后流式出现", async ({ page }) => {
     // 锁住评论表：服务端读评论时一直等着，详情先送达。
-    const release = await backend.holdTable("task_comments");
+    const release = await holdTable("task_comments");
     try {
       await page.goto("/tasks/task-01", { waitUntil: "commit" });
 
@@ -122,14 +142,14 @@ test.describe("首屏和 404", () => {
 test.describe("任务推进", () => {
   test("运行中的任务停留在页面上也会更新进度，到终态后徽标数量减少", async ({
     page,
-    backend,
+    tasks,
   }) => {
-    const task = await backend.createTask();
+    const task = await tasks.createTask();
     await openTask(page, task.id);
     const before = await runningCount(page);
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
 
-    await backend.reportProgress(task.id, {
+    await tasks.reportProgress(task.id, {
       status: "running",
       progress: 25,
       log: "解析 prompt",
@@ -140,7 +160,7 @@ test.describe("任务推进", () => {
       "25",
     );
 
-    await backend.reportProgress(task.id, {
+    await tasks.reportProgress(task.id, {
       status: "done",
       progress: 100,
       log: "生成完成",
@@ -149,12 +169,16 @@ test.describe("任务推进", () => {
     await expect(page.getByText(`进行中 ${before - 1}`)).toBeVisible();
   });
 
-  test("回到标签页时徽标立即刷新", async ({ page, backend }) => {
-    const task = await backend.createTask({ status: "running", progress: 50 });
+  test("回到标签页时徽标立即刷新", async ({ page, tasks }) => {
+    const task = await tasks.createTask({ status: "running", progress: 50 });
     await openTask(page, "task-01");
+    // 等一次轮询返回：下一次轮询在 3 秒后，1 秒内的更新只能来自回到标签页时的刷新。
+    await page.waitForResponse((response) =>
+      isActiveTasksRequest(response.request()),
+    );
     const before = await runningCount(page);
 
-    await backend.reportProgress(task.id, {
+    await tasks.reportProgress(task.id, {
       status: "done",
       progress: 100,
       log: "生成完成",
@@ -162,21 +186,21 @@ test.describe("任务推进", () => {
     await returnToTab(page);
 
     await expect(page.getByText(`进行中 ${before - 1}`)).toBeVisible({
-      timeout: 3000,
+      timeout: 1000,
     });
   });
 
-  test("生成日志用 SSE 推送，到终态后结束", async ({ page, backend }) => {
-    const task = await backend.createTask();
+  test("生成日志用 SSE 推送，到终态后结束", async ({ page, tasks }) => {
+    const task = await tasks.createTask();
     await openTask(page, task.id);
     const logs = page.getByRole("log", { name: "生成日志" });
 
-    await backend.reportProgress(task.id, {
+    await tasks.reportProgress(task.id, {
       status: "running",
       progress: 0,
       log: "开始生成",
     });
-    await backend.reportProgress(task.id, {
+    await tasks.reportProgress(task.id, {
       status: "running",
       progress: 25,
       log: "解析 prompt",
@@ -184,7 +208,7 @@ test.describe("任务推进", () => {
     await expect(logs).toContainText("开始生成");
     await expect(logs).toContainText("解析 prompt");
 
-    await backend.reportProgress(task.id, {
+    await tasks.reportProgress(task.id, {
       status: "done",
       progress: 100,
       log: "生成完成",
@@ -195,25 +219,81 @@ test.describe("任务推进", () => {
 
   test("任务在别处被删除后显示已删除，不弹通用提示", async ({
     page,
-    backend,
+    tasks,
   }) => {
-    const task = await backend.createTask({ status: "running", progress: 50 });
+    const task = await tasks.createTask({ status: "running", progress: 50 });
     await openTask(page, task.id);
     await expect(page.getByTestId("task-status")).toHaveText("生成中");
 
-    await backend.deleteTask(task.id);
+    await tasks.deleteTask(task.id);
 
     await expect(page.getByText("任务已被删除")).toBeVisible();
     await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(0);
   });
 });
 
+test.describe("请求失败", () => {
+  test("已有数据时刷新失败，保留数据并弹全局提示", async ({ page, tasks }) => {
+    const task = await tasks.createTask({ status: "running", progress: 50 });
+    await openTask(page, task.id);
+    await expect(page.getByTestId("task-status")).toHaveText("生成中");
+
+    // 4xx 不重试，下一次轮询的失败立即可见。
+    await failRequests(page, hasPath(`/api/tasks/${task.id}`), { status: 400 });
+
+    await expect(page.getByText(GLOBAL_ERROR_TOAST)).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(task.name);
+    await expect(page.getByTestId("task-status")).toHaveText("生成中");
+  });
+
+  test("无关的请求同时失败各弹一个提示，同一个请求再次失败不增加提示", async ({
+    page,
+    tasks,
+  }) => {
+    const task = await tasks.createTask({ status: "running", progress: 50 });
+    await openTask(page, task.id);
+
+    // 详情每 1.5 秒、header 徽标每 3 秒轮询一次，两个都让它失败。
+    await failRequests(
+      page,
+      (request) =>
+        hasPath(`/api/tasks/${task.id}`)(request) ||
+        isActiveTasksRequest(request),
+      { status: 400 },
+    );
+
+    await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(2);
+    // 再等过几次轮询：同一个请求又失败时更新自己的提示，不增加新的。
+    await page.waitForResponse(
+      (response) =>
+        isActiveTasksRequest(response.request()) && response.status() === 400,
+    );
+    await page.waitForResponse(
+      (response) =>
+        hasPath(`/api/tasks/${task.id}`)(response.request()) &&
+        response.status() === 400,
+    );
+    await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(2);
+  });
+});
+
 test.describe("写入", () => {
   test("重试失败的任务后重新开始推进，列表立即反映新状态", async ({
     page,
-    backend,
+    tasks,
   }) => {
-    const task = await backend.createTask({ status: "failed" });
+    await openTasksPage(page);
+    const task = await createTaskThroughForm(page);
+    await tasks.reportProgress(task.id, {
+      status: "failed",
+      progress: 100,
+      log: "生成失败：材质计算出错",
+    });
+    // 列表页发现任务结束后重新读取列表，失败筛选里才有它。
+    await expect(listRow(page, task.name)).toContainText("失败", untilPolled);
+    await page.goto("/tasks?status=failed");
+    await expect(listRow(page, task.name)).toBeVisible();
+
     await openTask(page, task.id);
     const retried = page.waitForResponse((response) =>
       isServerAction(response.request()),
@@ -223,7 +303,7 @@ test.describe("写入", () => {
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
     await retried;
 
-    await backend.reportProgress(task.id, {
+    await tasks.reportProgress(task.id, {
       status: "running",
       progress: 0,
       log: "开始生成",
@@ -231,13 +311,14 @@ test.describe("写入", () => {
     await expect(page.getByTestId("task-status")).toHaveText("生成中");
 
     await page.goto("/tasks?status=failed");
-    await expect(page.getByRole("link", { name: task.name })).toHaveCount(0);
+    await expect(taskRows(page).first()).toBeVisible();
+    await expect(listRow(page, task.name)).toHaveCount(0);
   });
 
-  test("任务已在别处重试过时就地提示并刷新详情", async ({ page, backend }) => {
-    const task = await backend.createTask({ status: "failed" });
+  test("任务已在别处重试过时就地提示并刷新详情", async ({ page, tasks }) => {
+    const task = await tasks.createTask({ status: "failed" });
     await openTask(page, task.id);
-    await backend.retryTask(task.id);
+    await tasks.retryTask(task.id);
 
     await page.getByRole("button", { name: "重试" }).click();
 
@@ -246,11 +327,9 @@ test.describe("写入", () => {
     await expect(page.getByText("重试任务失败，请稍后重试")).toHaveCount(0);
   });
 
-  test("删除任务后回到列表，任务不再出现，详情显示不存在", async ({
-    page,
-    backend,
-  }) => {
-    const task = await backend.createTask({ status: "done" });
+  test("删除任务后回到列表，任务不再出现，详情显示不存在", async ({ page }) => {
+    await openTasksPage(page);
+    const task = await createTaskThroughForm(page);
     await openTask(page, task.id);
     await page.getByRole("button", { name: "删除任务" }).click();
     await page
@@ -259,16 +338,16 @@ test.describe("写入", () => {
       .click();
 
     await expect(page).toHaveURL("/tasks");
-    await expect(page.getByRole("link", { name: task.name })).toHaveCount(0);
+    await expect(taskRows(page).first()).toBeVisible();
+    await expect(listRow(page, task.name)).toHaveCount(0);
     await page.goto(`/tasks/${task.id}`);
     await expectTaskNotFound(page);
   });
 
-  test("重命名表单从当前数据开始编辑，撞名时在字段上提示", async ({
-    page,
-    backend,
-  }) => {
-    const task = await backend.createTask({ status: "done" });
+  test("重命名表单从当前数据开始编辑，撞名时在字段上提示", async ({ page }) => {
+    // 从列表页的表单建任务：列表的缓存里有它的旧名字，改名后列表要靠 Server Action 的失效才显示新名字。
+    await openTasksPage(page);
+    const task = await createTaskThroughForm(page);
     await openTask(page, task.id);
     await page.getByRole("button", { name: "重命名" }).click();
     const input = page.getByLabel("新名称");
@@ -287,7 +366,7 @@ test.describe("写入", () => {
 
     // 新建的任务最晚创建，按创建时间倒序时在第一页。
     await page.goto("/tasks");
-    await expect(page.getByRole("link", { name: renamed })).toBeVisible();
+    await expect(listRow(page, renamed)).toBeVisible();
   });
 
   test("取消重命名后恢复显示原名称", async ({ page }) => {
@@ -305,9 +384,21 @@ test.describe("写入", () => {
 
   test("浏览器把封面图直传对象存储后，详情和列表的缩略图都更新", async ({
     page,
-    backend,
+    tasks,
   }) => {
-    const task = await backend.createTask({ status: "running", progress: 50 });
+    await openTasksPage(page);
+    const task = await createTaskThroughForm(page);
+    await tasks.reportProgress(task.id, {
+      status: "running",
+      progress: 50,
+      log: "生成网格",
+    });
+    // 先让“生成中”筛选的缓存里有这个没有封面的任务，换封面后列表要靠 Server Action 的失效才更新。
+    await page.goto("/tasks?status=running");
+    const row = listRow(page, task.name);
+    await expect(row).toBeVisible(untilPolled);
+    await expect(row.locator("img")).toHaveCount(0);
+
     await openTask(page, task.id);
     const cover = page.getByTestId("task-cover");
     await expect(cover).not.toHaveAttribute("src", /.+/);
@@ -323,7 +414,6 @@ test.describe("写入", () => {
     );
 
     await page.goto("/tasks?status=running");
-    const row = page.getByRole("listitem").filter({ hasText: task.name });
     // 封面图是装饰性图片（alt 为空），没有 img 角色，按标签定位。
     await expect(row.locator("img")).toHaveAttribute(
       "src",
@@ -405,11 +495,8 @@ test.describe("下载", () => {
 });
 
 test.describe("评论", () => {
-  test("发表评论立即显示为发送中，成功后标记消失", async ({
-    page,
-    backend,
-  }) => {
-    const task = await backend.createTask({ status: "done" });
+  test("发表评论立即显示为发送中，成功后标记消失", async ({ page, tasks }) => {
+    const task = await tasks.createTask({ status: "done" });
     await openTask(page, task.id);
     await delayRequests(page, isServerAction, 1500);
     await page.getByLabel("写评论").fill("新评论");
@@ -435,9 +522,9 @@ test.describe("评论", () => {
     await expect(page.getByLabel("写评论")).toHaveValue("发不出去的评论");
   });
 
-  test("删除评论立即消失，失败时恢复原位", async ({ page, backend }) => {
-    const task = await backend.createTask({ status: "done" });
-    await backend.addComments(task.id, ["第一条评论", "第二条评论"]);
+  test("删除评论立即消失，失败时恢复原位", async ({ page, tasks }) => {
+    const task = await tasks.createTask({ status: "done" });
+    await tasks.addComments(task.id, ["第一条评论", "第二条评论"]);
     await openTask(page, task.id);
     await comments(page)
       .first()

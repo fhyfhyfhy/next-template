@@ -24,7 +24,6 @@ export {
 } from "./components/favorites-panel";
 export { FeedGrid } from "./components/feed-grid";
 export { FeedSkeleton } from "./components/feed-skeleton";
-export { QueryErrorBoundary } from "./components/query-error-boundary";
 export { SeedHydrationBoundary } from "./components/seed-hydration-boundary";
 export { getFeedInfiniteQueryOptions } from "./api/get-feed";
 export { getCommentsQueryOptions } from "./api/get-comments";

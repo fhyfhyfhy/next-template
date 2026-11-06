@@ -1,12 +1,10 @@
 "use client";
 
-import { IconStack2 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
-import { LocaleSwitcher } from "@/components/locale-switcher";
 import { cn } from "@/lib/cn";
 
 export { RunningTasksBadge } from "./running-tasks-badge";
@@ -19,25 +17,23 @@ const links = [
   { href: "/recent", key: "recent" },
 ] as const;
 
-/**
- * 任务各页面共用的导航。`badge` 是右侧的进行中任务数，由 layout 在自己的 Suspense 里预取后传入，
- * 导航不用等这次读取。
- */
-export function TaskHeader({ badge }: { badge: ReactNode }) {
+interface TaskHeaderProps {
+  /** 左侧的品牌和首页链接，属于整个应用，由 app 的 layout 传入。 */
+  brand: ReactNode;
+  /** 右侧的进行中任务数，由 layout 在自己的 Suspense 里预取后传入，导航不用等这次读取。 */
+  badge: ReactNode;
+  /** 最右侧的全局操作，比如切换语言。 */
+  actions: ReactNode;
+}
+
+/** 任务各页面共用的 header：任务页面之间的导航，两边放 app 传入的品牌和操作。 */
+export function TaskHeader({ brand, badge, actions }: TaskHeaderProps) {
   const t = useTranslations();
   const pathname = usePathname();
   return (
     <header className="border-b border-border bg-card text-card-foreground">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 sm:px-8">
-        <Link
-          href="/"
-          className="flex items-center gap-2 rounded-control font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <span className="flex size-8 items-center justify-center rounded-control bg-primary text-primary-foreground">
-            <IconStack2 className="size-5" aria-hidden />
-          </span>
-          {t("task.nav.home")}
-        </Link>
+        {brand}
         <nav
           aria-label={t("task.nav.label")}
           className="flex flex-1 flex-wrap gap-1"
@@ -62,7 +58,7 @@ export function TaskHeader({ badge }: { badge: ReactNode }) {
           })}
         </nav>
         {badge}
-        <LocaleSwitcher />
+        {actions}
       </div>
     </header>
   );

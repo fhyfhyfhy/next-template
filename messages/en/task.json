@@ -24,8 +24,7 @@
     "commentTooLong": "Comments can be at most {max} characters"
   },
   "nav": {
-    "label": "Main navigation",
-    "home": "Next Template",
+    "label": "Main",
     "tasks": "All tasks",
     "feed": "Gallery",
     "search": "Search",
@@ -84,8 +83,8 @@
     "empty": "No other tasks"
   },
   "feed": {
-    "label": "Works",
-    "noMore": "No more works",
+    "label": "Models",
+    "noMore": "No more models",
     "loadMoreFailed": "Couldn't load. Scroll here to retry.",
     "favorite": "Favorite"
   },

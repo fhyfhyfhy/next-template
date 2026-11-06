@@ -27,7 +27,7 @@ export default function TasksPage({
   const t = useTranslations();
   return (
     <>
-      <PageHeading title={t("app.tasks.title")} />
+      <PageHeading title={t("app.tasks.title")} className="mb-8" />
       <CreateTaskForm />
       {/* page 保持同步，只在 Suspense 里读 URL：工具栏和列表以外的部分都能进静态 shell。 */}
       <TaskListNavigation>

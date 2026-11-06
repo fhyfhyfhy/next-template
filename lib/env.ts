@@ -6,7 +6,8 @@ import { z } from "zod";
  * 给浏览器用的 `NEXT_PUBLIC_` 变量要另放一个模块。
  */
 const VARIABLES = {
-  // 本地运行时由 scripts/run-next.mjs 按数据集设置（scripts/local-services/datasets.mjs 的 localEnv()），部署时由平台设置。
+  // 数据库和对象存储的连接参数：部署时由平台设置；本地由 scripts/run-next.mjs 和 vitest.config.mts 按数据集设置
+  // （scripts/local-services/datasets.mjs 的 localEnv()）。
   DATABASE_URL: z.url(),
   /** 服务端调用 S3 API 的地址。 */
   STORAGE_ENDPOINT: z.url(),
@@ -40,8 +41,8 @@ function read<T extends z.ZodType>(name: string, schema: T): z.output<T> {
 }
 
 /**
- * 每次访问都重新读 `process.env`，只校验被访问的那个变量：数据层测试会在同一个进程里改它，
- * build 也不要求运行时才有的变量已经设置。
+ * 每次访问都重新读 `process.env`，只校验被访问的那个变量：build 不要求运行时才有的变量已经设置，
+ * lib/env.test.ts 也在同一个进程里改它。
  */
 export const env = new Proxy(
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- 目标对象本身不存属性：每次读取都由下面的 get 拦截，用 VARIABLES 里对应的 schema 解析出 Env 声明的类型，所以这个断言不会让类型和运行时的值对不上。

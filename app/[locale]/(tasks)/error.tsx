@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
+import { StatusMessage } from "@/components/status-message";
 import { Button } from "@/components/ui/button";
 
 interface TaskPageErrorProps {
@@ -14,16 +15,10 @@ interface TaskPageErrorProps {
 export default function TaskPageError({ retry }: TaskPageErrorProps) {
   const t = useTranslations();
   return (
-    <div className="py-16 text-center">
-      <h1 className="text-3xl font-medium tracking-tight">
-        {t("app.pageError.title")}
-      </h1>
-      <p className="mt-3 text-sm text-muted-foreground">
-        {t("app.pageError.description")}
-      </p>
-      <Button className="mt-6" onClick={retry}>
-        {t("app.pageError.retry")}
-      </Button>
-    </div>
+    <StatusMessage
+      title={t("app.pageError.title")}
+      description={t("app.pageError.description")}
+      action={<Button onClick={retry}>{t("app.pageError.retry")}</Button>}
+    />
   );
 }

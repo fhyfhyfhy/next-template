@@ -2,7 +2,6 @@ import "server-only";
 
 import { attachUpload, saveServerUpload } from "@/features/upload/server";
 import { startLeaderInterval } from "@/lib/db";
-import { env } from "@/lib/env";
 
 import { TASK_STEP_INTERVAL_MS } from "../constants/task-rules";
 import { nextTaskStep } from "../utils/task-progress";
@@ -13,7 +12,7 @@ import { findTaskRow, toTask } from "./tasks";
 
 // generator：模拟一个外部的生成服务，只有它推进任务。业务读写的代码不碰推进逻辑。
 
-// 和上传清理的锁用不同的 key。
+// 和上传清理、写种子数据的 advisory lock 用不同的 key。
 const GENERATOR_LOCK_KEY = 2_026_110_201;
 
 /**
@@ -87,7 +86,6 @@ export function startTaskGenerator({
   intervalMs = TASK_STEP_INTERVAL_MS,
 }: { intervalMs?: number } = {}) {
   return startLeaderInterval({
-    connectionString: env.DATABASE_URL,
     lockKey: GENERATOR_LOCK_KEY,
     intervalMs,
     run: advanceActiveTasks,

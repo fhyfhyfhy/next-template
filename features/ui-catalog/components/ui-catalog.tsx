@@ -9,9 +9,12 @@ import { UiCatalogHeader } from "./ui-catalog-header";
 
 /** 展示已验证的组件与对应源文件。 */
 export function UiCatalog({
+  brand,
   component,
   sources,
 }: {
+  /** 应用名，显示在 header 里。 */
+  brand: string;
   component: ComponentId;
   sources: ExampleSources;
 }) {
@@ -26,7 +29,7 @@ export function UiCatalog({
       >
         {t("ui-catalog.skipToContent")}
       </a>
-      <UiCatalogHeader />
+      <UiCatalogHeader brand={brand} />
       <div className="mx-auto grid max-w-[1600px] md:min-h-[calc(100dvh-5rem)] md:grid-cols-[208px_minmax(0,1fr)] lg:grid-cols-[248px_minmax(0,1fr)]">
         <ComponentNavigation />
         <main id="main-content" className="min-w-0 px-5 py-8 sm:px-8 lg:p-12">
@@ -38,7 +41,9 @@ export function UiCatalog({
             </div>
             <h1 className="mt-5 text-5xl font-medium tracking-[-0.055em] sm:text-6xl lg:text-7xl">
               {item.title}
-              <span className="text-primary">.</span>
+              <span aria-hidden className="text-primary">
+                .
+              </span>
             </h1>
             <p className="mt-5 max-w-2xl text-base/7 text-muted-foreground">
               {item.description}

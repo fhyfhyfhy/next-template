@@ -37,7 +37,7 @@ export default function FeedPage() {
   const t = useTranslations();
   return (
     <>
-      <PageHeading title={t("app.feed.title")} />
+      <PageHeading title={t("app.feed.title")} className="mb-8" />
       <div className="grid gap-8 lg:grid-cols-[1fr_240px]">
         {/* FeedHydration 要等缓存的快照：HTML 里先是骨架屏，第一页作为片段写在同一份 HTML 后面，由内联脚本换上，不用等应用的 JS。 */}
         <Suspense fallback={<FeedSkeleton />}>
@@ -52,8 +52,8 @@ export default function FeedPage() {
 }
 
 /**
- * 收藏属于用户自己的数据，按请求读取。服务端预取后随页面送达，
- * 在自己的 Suspense 里，不挡作品广场。
+ * “我的收藏”由 React Query 负责，收藏时在浏览器里乐观更新，所以按请求读取最新的一份，不进作品广场的缓存快照。
+ * 服务端预取后随页面送达，在自己的 Suspense 里，不挡作品广场。
  */
 async function FavoritesHydration() {
   await connection();

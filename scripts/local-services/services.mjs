@@ -23,7 +23,10 @@ import {
 
 const projectRoot = join(import.meta.dirname, "..", "..");
 
-/** 浏览器直接读的前缀：用户上传的文件和种子文件。签发上传、下载模型仍要签名。 */
+/**
+ * 浏览器直接读的前缀：用户上传的文件和种子文件，签发上传、下载模型仍要签名。值和
+ * features/upload/constants/storage-keys.ts 的两个前缀一致；这里是 Node 脚本，不能 import 那边的 TypeScript，改的时候两边一起改。
+ */
 const PUBLIC_PREFIXES = ["uploads/", "seed/"];
 
 /**
@@ -38,7 +41,7 @@ export function startLocalServices() {
   );
   if (result.error || result.status !== 0) {
     throw new Error(
-      "Could not start the local services with Docker Compose; they need Docker running",
+      "Could not start the local services with Docker Compose; see its output above: Docker may not be running, or ports 54329 and 7070 may be taken, such as by containers from another Compose project",
       { cause: result.error },
     );
   }
@@ -78,7 +81,7 @@ async function createDatabase(database, { reset }) {
     );
     if (rowCount === 0) await client.query(`create database ${name}`);
   } catch (error) {
-    // 两个命令同时创建同一个库（比如 build:local 和 vitest 一起启动），后到的会撞上唯一约束。
+    // 两个进程同时准备同一个数据集（比如两份 checkout 同时跑 pnpm test），后到的建库会撞上唯一约束。
     if (error.code !== "42P04" && error.code !== "23505") throw error;
   } finally {
     await client.end();

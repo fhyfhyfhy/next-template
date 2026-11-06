@@ -17,7 +17,7 @@ A feature's `server/` directory holds its data access: the queries and writes on
 - Guard every module here and the `server.ts` entry with `import "server-only"`, except `migrations.mts` and the tests (below).
 - Export one function per operation. Wrap reads in React `cache()`, so `generateMetadata` and the page share one query within a render.
 - Validate inputs inside the function: Route Handlers and Server Actions pass values that came from the browser. The data layer has the final say, even when a Server Action has checked the same values first.
-- Writes that touch several rows run in one transaction. A function that another feature calls inside its transaction accepts that transaction as an optional executor parameter, such as `attachUpload(input, executor?)`.
+- Writes that touch several rows run in one transaction. A function that another feature calls inside its transaction accepts that transaction as an optional executor parameter, such as `reserveStock(input, executor?)`.
 
 ## Results
 
@@ -46,7 +46,7 @@ A server read cached with `use cache` wraps the data-layer read in its own modul
 
 ## Tables and migrations
 
-- Get the connection from `createDb` in `lib/db.ts`, typed with the feature's own table interfaces in `server/tables.ts`. A feature reads and writes only its own tables; another feature's data comes through that feature's `server.ts` functions, never a join on its tables. Foreign keys across features still belong in the database.
+- Get the connection from `getDb` in `lib/db.ts`, typed with the feature's own table interfaces in `server/tables.ts`. A feature reads and writes only its own tables; another feature's data comes through that feature's `server.ts` functions, never a join on its tables. Foreign keys across features still belong in the database.
 - Each feature exports its migrations from `server/migrations.mts` as a `migrations` record. Names start with a timestamp, so the migrations of every feature on one database form a single ordered sequence. `scripts/db/migrate.mjs` loads the file with Node's type stripping, so it imports only `kysely` and nothing relative or through `@/`; add a new feature's file to its list. Never edit an applied migration; add a new one. Migrations go forward only.
 
 ## Tests

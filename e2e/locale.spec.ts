@@ -1,3 +1,4 @@
+import { clickForClientNavigation } from "./browser";
 import { expect, test } from "./test";
 
 // 规则见 docs/adr/0005-unprefixed-urls-in-visitor-locale.md：URL 不带 locale，页面按语言切换器记下的选择显示，
@@ -16,19 +17,22 @@ test("切换语言后地址不变，之后的客户端导航和整页打开都�
   await expect(page).toHaveURL("/search");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
-  // 客户端导航：地址和中文页面相同，拿到的要是英文页面。徽标只在浏览器里渲染，出现说明已经 hydrate。
-  await expect(page.getByLabel(/^\d+ tasks? in progress$/)).toBeVisible();
-  await page
-    .getByRole("navigation", { name: "Main navigation" })
-    .getByRole("link", { name: "All tasks" })
-    .click();
-  await expect(page).toHaveURL("/tasks");
+  // 客户端导航：地址和中文页面相同，拿到的要是英文页面。搜索框在 hydration 之后才可用，可用了再点导航链接。
+  await expect(page.getByLabel("Search tasks")).toBeEnabled();
+  await clickForClientNavigation(
+    page,
+    page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "All tasks" }),
+    "/tasks",
+  );
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "All tasks.",
   );
 
   await page.goto("/ui?component=select");
-  await expect(page.getByRole("heading", { name: "Select." })).toBeVisible();
+  // 标题后的句点只是装饰，不进可访问名称。
+  await expect(page.getByRole("heading", { name: "Select" })).toBeVisible();
   const englishSwitcher = page.getByRole("navigation", { name: "Language" });
   await expect(
     englishSwitcher.getByRole("link", { name: "中文" }),

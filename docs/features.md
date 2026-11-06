@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart LR
-  task[task] -->|封面图和模型文件| upload[upload]
+  task[task] -->|封面图、模型文件、种子数据里的文件| upload[upload]
   catalog[ui-catalog]
 ```
 
@@ -22,8 +22,8 @@ flowchart LR
 
 ## upload
 
-负责：为某个用途上传文件、把文件交给一条业务记录使用、清理没被使用的文件。
+负责：为某个用途上传文件、把文件交给一条业务记录使用、清理没被使用的文件；本地开发和测试时，恢复种子数据引用的文件和上传记录，由 task 写种子数据时调用。
 
 ## ui-catalog
 
-负责：`/ui` 页面：设计系统组件的目录，以及每个组件的 Example。
+负责：设计系统组件的目录：每个组件的 Example 和源码。展示它的路由在 `app/` 里。

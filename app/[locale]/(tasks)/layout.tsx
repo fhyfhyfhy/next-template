@@ -1,6 +1,10 @@
+import { IconStack2 } from "@tabler/icons-react";
+import Link from "next/link";
 import { connection } from "next/server";
+import { useTranslations } from "next-intl";
 import { type ReactNode, Suspense } from "react";
 
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import {
   activeTasksQueryOptions,
   RunningTasksBadge,
@@ -17,8 +21,9 @@ import {
   QueryClient,
 } from "@/lib/react-query";
 
-/** 任务各页面的外壳：导航和内容区。 */
+/** 任务各页面的外壳：导航和内容区。品牌和语言切换属于整个应用，在这里组合进任务的 header。 */
 export default function TaskPagesLayout({ children }: { children: ReactNode }) {
+  const t = useTranslations();
   return (
     <ClientMessages namespaces={["task"]}>
       {/* 导航读当前路径，放进 Suspense 才不影响动态路由的预渲染。 */}
@@ -26,6 +31,18 @@ export default function TaskPagesLayout({ children }: { children: ReactNode }) {
         fallback={<div className="h-16.25 border-b border-border bg-card" />}
       >
         <TaskHeader
+          brand={
+            <Link
+              href="/"
+              className="flex items-center gap-2 rounded-control font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="flex size-8 items-center justify-center rounded-control bg-primary text-primary-foreground">
+                <IconStack2 className="size-5" aria-hidden />
+              </span>
+              {t("app.metadata.title")}
+            </Link>
+          }
+          actions={<LocaleSwitcher />}
           badge={
             <Suspense fallback={<RunningTasksBadgeSkeleton />}>
               <RunningTasksHydration />

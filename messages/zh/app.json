@@ -1,6 +1,7 @@
 {
   "metadata": {
     "title": "Next Template",
+    "titleTemplate": "{page} · {app}",
     "description": "提交 prompt 生成 3D 模型，查看生成进度，收藏和下载作品。"
   },
   "requestError": "请求失败，请稍后重试",
@@ -11,7 +12,7 @@
   },
   "pageError": {
     "title": "页面加载失败",
-    "description": "渲染这个页面时请求出错了，请稍后重试。",
+    "description": "页面没能加载出来，请重试。",
     "retry": "重试"
   },
   "tasks": {
@@ -32,5 +33,8 @@
   },
   "recent": {
     "title": "最近查看"
+  },
+  "ui": {
+    "title": "组件"
   }
 }

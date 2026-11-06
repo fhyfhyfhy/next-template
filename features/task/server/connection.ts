@@ -1,13 +1,12 @@
 import "server-only";
 import type { Kysely } from "kysely";
 
-import { createDb } from "@/lib/db";
-import { env } from "@/lib/env";
+import { getDb } from "@/lib/db";
 
 import type { TaskTables } from "./tables";
 
 export function getTaskDb() {
-  return createDb<TaskTables>(env.DATABASE_URL);
+  return getDb<TaskTables>();
 }
 
 /**

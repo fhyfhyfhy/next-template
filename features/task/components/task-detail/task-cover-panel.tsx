@@ -46,8 +46,7 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
         <label
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
-            "w-full cursor-pointer has-focus-visible:ring-2 has-focus-visible:ring-ring",
-            upload.isPending && "pointer-events-none opacity-40",
+            "w-full cursor-pointer has-focus-visible:ring-2 has-focus-visible:ring-ring has-disabled:pointer-events-none has-disabled:opacity-40",
           )}
         >
           <IconPhotoUp aria-hidden />
@@ -57,6 +56,7 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
           <input
             type="file"
             accept="image/*"
+            disabled={upload.isPending}
             className="sr-only"
             onChange={(event) => {
               const file = event.target.files?.[0];

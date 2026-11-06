@@ -1,8 +1,8 @@
 import "server-only";
 import { type Kysely, sql } from "kysely";
-import { Client } from "pg";
+import type { Client } from "pg";
 
-import { env } from "@/lib/env";
+import { createDedicatedClient } from "@/lib/db";
 
 import type { TaskTables } from "./tables";
 
@@ -28,24 +28,22 @@ interface Listener {
 }
 
 interface ListenerConnection {
-  url: string;
   client: Promise<Client>;
   listeners: Map<string, Set<Listener>>;
 }
 
 declare global {
-  // 每个进程每个库只开一条专用的监听连接，在内存里分发给各个 SSE 流；连接池里的连接会被别的查询借走，
+  // 每个进程只开一条专用的监听连接，在内存里分发给各个 SSE 流；连接池里的连接会被别的查询借走，
   // 不能用来 LISTEN。挂在 globalThis 上：dev 热更新重新执行模块时沿用它，不会多开连接。
   var __taskListener: ListenerConnection | undefined;
 }
 
-function connect(url: string): ListenerConnection {
+function connect(): ListenerConnection {
   const listeners = new Map<string, Set<Listener>>();
   const current: ListenerConnection = {
-    url,
     listeners,
     client: (async () => {
-      const client = new Client({ connectionString: url });
+      const client = createDedicatedClient();
       client.on("notification", ({ payload }) => {
         for (const listener of listeners.get(payload ?? "") ?? []) {
           listener.onChange();
@@ -78,14 +76,7 @@ function drop(current: ListenerConnection) {
  * 等监听连接就绪后才返回，之后发生的变化不会漏掉。返回取消订阅的函数。
  */
 export async function subscribeTaskChanges(taskId: string, listener: Listener) {
-  const url = env.DATABASE_URL;
-  let current = globalThis.__taskListener;
-  if (current?.url !== url) {
-    // 测试会在同一个进程里换库，旧库的连接不再需要。
-    if (current) drop(current);
-    current = connect(url);
-    globalThis.__taskListener = current;
-  }
+  const current = (globalThis.__taskListener ??= connect());
   const set = current.listeners.get(taskId) ?? new Set();
   set.add(listener);
   current.listeners.set(taskId, set);
