@@ -71,6 +71,7 @@ Ordered top to bottom, like "Layers".
   - Any `components/` may contain one level of component directories (see "Component directories"), and so may the reserved `components/ui/`.
   - `lib/` may group an adapter that spans several files into one level of directory. When outside code uses only one of its modules, that module is the directory's `index`; when it uses several, it imports each by its path and the directory has no `index`.
 - Keep types with the module or schema that owns them. Extract a shared contract into that owner's `types/` when needed to preserve dependency direction or give the contract an independent role.
+- A feature exports its constants from its `constants/`; a constant only its own module reads stays there, unexported. ESLint's `architecture/feature-constants` checks SCREAMING_CASE names outside test files and `*-test-helpers` files, whose test data stays with the tests. A value another rule places beside its code, such as a query key prefix ([Query keys](tanstack-query.md#query-keys)), stays where that rule puts it.
 
 ### Feature boundaries
 

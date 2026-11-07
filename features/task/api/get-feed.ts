@@ -6,7 +6,7 @@ import { feedPageSchema } from "../types/task";
 import { taskListKey } from "./get-tasks";
 
 /** 第一页没有游标，pageParam 用空字符串表示。 */
-export const FIRST_FEED_PAGE = "";
+const FIRST_FEED_PAGE = "";
 
 const getFeedPage = (cursor: string) =>
   fetchApi({

@@ -4,11 +4,11 @@ import Link from "next/link";
 import type { Nullable } from "nuqs";
 import type { ComponentProps } from "react";
 
+import { TASK_LIST_HREF } from "../../constants/task-list";
 import {
   serializeTaskListSearchParams,
   type TaskListSearchParams,
 } from "../../utils/task-list-search-params";
-import { TASK_LIST_HREF } from "../../utils/task-urls";
 import { useTaskListSearchParams } from "./use-task-list-search-params";
 
 type TaskListLinkProps = Omit<

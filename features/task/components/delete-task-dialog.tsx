@@ -18,7 +18,7 @@ import {
 import { useMutation } from "@/lib/react-query";
 
 import { deleteTaskMutationOptions } from "../api/delete-task";
-import { TASK_LIST_HREF } from "../utils/task-urls";
+import { TASK_LIST_HREF } from "../constants/task-list";
 
 interface DeleteTaskDialogProps {
   taskId: string;

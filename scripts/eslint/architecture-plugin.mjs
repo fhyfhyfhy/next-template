@@ -2,6 +2,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import componentExportsRule from "./component-exports.mjs";
+import createFeatureConstantsRule from "./feature-constants.mjs";
 import { featureDependencies } from "./feature-cycles.mjs";
 import {
   createFeatureGraphLoader,
@@ -465,6 +466,7 @@ export default function createArchitecturePlugin(projectRoot) {
       "feature-imports": featureImportsRule,
       "feature-dependencies": featureDependenciesRule,
       "feature-graph": featureGraphRule,
+      "feature-constants": createFeatureConstantsRule(projectRoot),
       "root-imports": rootImportsRule,
       "no-feature-cycle": createFeatureCycleRule(projectRoot),
       "component-imports": componentImportsRule,
