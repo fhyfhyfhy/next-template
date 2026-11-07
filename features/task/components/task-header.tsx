@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
-import { TASK_LIST_HREF } from "../utils/task-urls";
+import { TASK_LIST_HREF } from "../constants/task-list";
 
 const links = [
   { href: TASK_LIST_HREF, key: "tasks" },

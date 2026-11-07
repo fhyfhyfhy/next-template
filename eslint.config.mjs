@@ -393,6 +393,15 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // feature 导出的全大写常量放在它的 constants/。测试和 test helper 共用的测试数据跟着测试走。
+    files: [SOURCE_GLOB],
+    ignores: [
+      `**/*.{test,spec}.${extensionGlob}`,
+      `**/*-test-helpers.${extensionGlob}`,
+    ],
+    rules: { "architecture/feature-constants": "error" },
+  },
+  {
     ...APPLICATION_CODE,
     rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
   },

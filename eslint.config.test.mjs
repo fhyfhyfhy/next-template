@@ -23,6 +23,7 @@ const componentExportsRule = "architecture/component-exports";
 const wrapperRule = "architecture/wrapper-imports";
 const rootRule = "architecture/root-imports";
 const namingRule = "naming/kebab-case";
+const constantsRule = "architecture/feature-constants";
 const cases = [];
 const statements = {
   import: (source) =>
@@ -1132,6 +1133,80 @@ for (const [name, from, directive, rules] of [
     rules,
   });
 }
+
+for (const [name, from, files, rules] of [
+  [
+    "feature 的 utils/ 导出全大写常量被拒绝",
+    "utils/value.ts",
+    { "utils/value.ts": `export const VALUE_HREF = "/value";` },
+    [constantsRule],
+  ],
+  [
+    "export 列表和改名导出成全大写都被拒绝",
+    "api/value.ts",
+    {
+      "api/value.ts": `const FIRST_PAGE = "";\nconst limit = 8;\nexport { FIRST_PAGE, limit as PAGE_LIMIT };`,
+    },
+    [constantsRule, constantsRule],
+  ],
+  [
+    "解构导出的全大写名被拒绝",
+    "server/value.ts",
+    {
+      "server/value.ts": `const source = { LIMIT: 1 };\nexport const { LIMIT } = source;`,
+    },
+    [constantsRule],
+  ],
+  [
+    "constants/ 里导出允许",
+    "constants/value.ts",
+    { "constants/value.ts": `export const VALUE_HREF = "/value";` },
+    [],
+  ],
+  [
+    "不导出的全大写常量和 camelCase 导出允许",
+    "api/value.ts",
+    {
+      "api/value.ts": `const PAGE_SIZE = 8;\nexport const valueKey = ["value", PAGE_SIZE] as const;`,
+    },
+    [],
+  ],
+  [
+    "test helper 导出测试数据允许",
+    "server/db-test-helpers.ts",
+    { "server/db-test-helpers.ts": `export const PNG = new Uint8Array(1);` },
+    [],
+  ],
+  [
+    "入口从 constants/ re-export 允许",
+    "index.ts",
+    {
+      "constants/value.ts": `export const VALUE_HREF = "/value";`,
+      "index.ts": `export { VALUE_HREF } from "./constants/value";`,
+    },
+    [],
+  ],
+]) {
+  const feature = `features/constants-case-${cases.length}`;
+  cases.push({
+    name: `feature 常量：${name}`,
+    from: `${feature}/${from}`,
+    files: Object.fromEntries(
+      Object.entries(files).map(([file, content]) => [
+        `${feature}/${file}`,
+        content,
+      ]),
+    ),
+    rules,
+  });
+}
+
+cases.push({
+  name: "feature 常量：feature 以外的目录不查",
+  from: "lib/constants-case-base-path.ts",
+  files: { "lib/constants-case-base-path.ts": `export const BASE_PATH = "";` },
+  rules: [],
+});
 
 describe("架构依赖和 feature、组件导入约定", () => {
   let previousCwd;

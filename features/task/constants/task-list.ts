@@ -15,5 +15,8 @@ export const TASK_SORT_MESSAGE_KEYS = {
   name_asc: "nameAsc",
 } as const satisfies Record<TaskSort, string>;
 
+/** 全部任务页的地址。 */
+export const TASK_LIST_HREF = "/tasks";
+
 /** 全部任务页每页的条数。 */
 export const TASK_LIST_PAGE_SIZE = 8;

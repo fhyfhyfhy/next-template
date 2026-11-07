@@ -9,7 +9,7 @@ import { getUploadDb, getUploadStorage } from "./connection";
  * 上传创建多久之后仍没被任何记录使用，就当作没人要了。必须远长于上传 URL 的有效期（uploads.ts 的
  * UPLOAD_URL_TTL_SECONDS）加上用户完成上传和关联的时间，否则会删掉正在上传、还没来得及关联的文件。
  */
-export const UNATTACHED_UPLOAD_TTL_MS = 60 * 60 * 1000;
+const UNATTACHED_UPLOAD_TTL_MS = 60 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 // 和 generator 的锁（task）用不同的 key：两个后台任务各自选出运行的进程。
 const CLEANUP_LOCK_KEY = 2_026_110_202;
