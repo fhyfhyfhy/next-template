@@ -2,21 +2,15 @@
 
 import { IconArrowRight } from "@tabler/icons-react";
 import Link from "next/link";
-import { useQueryStates } from "nuqs";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
 import type { ComponentId } from "../../constants/catalog";
-import {
-  serializeUiCatalogSearchParams,
-  uiCatalogSearchParams,
-} from "../../utils/ui-catalog-search-params";
+import { serializeUiCatalogSearchParams } from "../../utils/ui-catalog-search-params";
+import { useUiCatalogSearchParams } from "../ui-catalog-navigation";
 
-/**
- * 目录里的一项。示例由服务端按 URL 渲染（`shallow: false`）；nuqs 在服务端返回前就让新的选择高亮，
- * Back 可以回到上一个组件。
- */
+/** 目录里的一项。服务端返回新组件的示例之前，新的选择就已经高亮。 */
 export function ComponentNavigationLink({
   component,
   children,
@@ -24,10 +18,7 @@ export function ComponentNavigationLink({
   component: ComponentId;
   children: ReactNode;
 }) {
-  const [{ component: selected }, setSearchParams] = useQueryStates(
-    uiCatalogSearchParams,
-    { shallow: false, history: "push" },
-  );
+  const [{ component: selected }, setSearchParams] = useUiCatalogSearchParams();
   const current = selected === component;
   return (
     <Link

@@ -183,7 +183,9 @@ test("停在列表上，新任务的状态一直推进到已完成，header 的�
   const before = await runningCount(page);
   const task = await createTask(page);
   await expect(taskRow(page, task.name)).toContainText("排队中");
-  await expect(page.getByLabel(`进行中的任务 ${before + 1} 个`)).toBeVisible();
+  await expect(
+    page.getByText(`进行中的任务 ${before + 1} 个`, { exact: true }),
+  ).toBeAttached();
 
   await tasks.reportProgress(task.id, {
     status: "running",
@@ -198,7 +200,9 @@ test("停在列表上，新任务的状态一直推进到已完成，header 的�
     log: "生成完成",
   });
   await expect(taskRow(page, task.name)).toContainText("已完成", untilPolled);
-  await expect(page.getByLabel(`进行中的任务 ${before} 个`)).toBeVisible();
+  await expect(
+    page.getByText(`进行中的任务 ${before} 个`, { exact: true }),
+  ).toBeAttached();
 });
 
 test("停在「生成中」筛选上，任务结束后从列表里消失，总数随之减少", async ({

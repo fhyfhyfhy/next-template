@@ -346,10 +346,10 @@ export async function createTaskThroughForm(
 
 /** header 徽标显示的进行中任务数。别的用例建的任务也算在里面，断言时只比较前后的差。 */
 export async function runningCount(page: Page) {
-  const badge = page.getByLabel(/^进行中的任务 \d+ 个$/);
-  await expect(badge).toBeVisible();
-  const label = (await badge.getAttribute("aria-label")) ?? "";
-  return Number(/\d+/.exec(label)?.[0]);
+  // 读屏读到的完整说法；屏幕上的简短说法对读屏隐藏。
+  const badge = page.getByText(/^进行中的任务 \d+ 个$/);
+  await expect(badge).toBeAttached();
+  return Number(/\d+/.exec((await badge.textContent()) ?? "")?.[0]);
 }
 
 export { expect };
