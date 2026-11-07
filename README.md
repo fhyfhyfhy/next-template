@@ -1,73 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+A full-stack [Next.js](https://nextjs.org) app for generating 3D models from a prompt, which doubles as a project template. A project made from it keeps the conventions, tooling, and agent instructions, and replaces the sample product, the task and upload business, with its own; see [Starting a project](#starting-a-project).
 
 ## Getting Started
 
-Install dependencies, then run the development server:
+Start Docker, then install dependencies and run the development server:
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. To browse the [Demo](#demo) with its Demo backend, start Docker, run `pnpm demo:dev` instead, and open `/demos`.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. `pnpm dev` first starts the local services, migrates the database, and writes the seed data into an empty one; see [Local services](#local-services).
 
-When port 3000 is taken, the `dev` and `start` scripts, including their `demo:` versions, move to the next free port and print the URL. Pass `--port` to pin one.
+When port 3000 is taken, the `dev` and `start` scripts, including their `:local` versions, move to the next free port and print the URL. Pass `--port` to pin one.
 
-## Demo
+## Local services
 
-`/demos` holds runnable reference implementations of this template's conventions, kept in projects made from it. They are served only under `pnpm dev` and the `pnpm demo:*` scripts: a plain production build (`pnpm build`, `pnpm start`) answers 404 for every `/demos` page, and its home page is a placeholder without a link to them, as `DEMOS_SERVED` in `app/demos.ts` decides.
+`compose.yaml` runs the backend's services for local work: Postgres on `127.0.0.1:54329` and Versity Gateway, an S3-compatible object storage, on `127.0.0.1:7070`. Each checkout on the machine shares the two containers. They hold one dataset per use, each its own database and bucket, so the uses leave each other's data alone:
 
-- **UI demo** (`/demos/ui`): the design-system components; see [UI demo examples](#ui-demo-examples).
-- **Data demo** (the other `/demos` pages): a small task app that exercises the data rules against the Demo backend. [`demos.md`](.agents/skills/next-data-flow/demos.md) maps each scenario to its rule, code, and e2e spec.
+| Dataset | Used by |
+| --- | --- |
+| `dev` | `pnpm dev`, `pnpm build:local`, `pnpm start:local` |
+| `e2e` | `pnpm test:e2e` |
+| `test` | the data-layer tests in `pnpm test` |
 
-The **Demo backend** is built into this app the way the template expects a project's own backend to be ([ADR 0003](docs/adr/0003-fullstack-demo-backend.md)): the `demo-task` and `demo-upload` features hold its data layer, Route Handlers under `app/api/demo/` serve the browser's reads, and Server Actions do the writes. Data lives in Postgres and files in S3-compatible object storage ([ADR 0004](docs/adr/0004-demo-uploads-presigned-object-storage.md)), both from `compose.demo.yaml`, so the Demo needs Docker.
+`pnpm dev` always runs on local services. `pnpm build:local` and `pnpm start:local` do too, for checking production behavior on your machine. Each starts the services, creates and migrates the dataset `LOCAL_DATASET` names (`dev` by default), writes the seed data when it has no tasks, and passes its connection settings to Next as the environment variables in `lib/env.ts`. The data persists in Docker volumes across restarts. `pnpm db:reset` restores a dataset to the seed data, and `docker compose down -v` deletes all of them. Inside the app, the generator advances tasks in the background, as an outside generation service would.
 
-The Demo has its own scripts, `pnpm demo:dev`, `pnpm demo:build`, and `pnpm demo:start`: they start the two services (Postgres on `127.0.0.1:54329`, Versity Gateway on `127.0.0.1:7070`), create and migrate the Demo database, prepare its bucket, and pass the `DEMO_*` variables that enable the Demo backend to Next. The data persists in Docker volumes across restarts; the first run writes the seed data, and the fault lab's reset restores it. `docker compose -f compose.demo.yaml down -v` deletes it. Their build output goes to `.next-demo`, leaving the project's `.next` alone. Inside the app, the Demo generator advances tasks in the background, and every business operation waits 500 ms by default so loading states show; the fault lab's panel changes that delay until the next reset and injects faults into data-layer operations. `pnpm dev`, `pnpm build`, and `pnpm start` never set the `DEMO_*` variables, so `/api/demo` answers 404 under all three and a deployment never exposes the Demo backend; under `pnpm dev` the Data demo pages show a notice instead. The demos' e2e specs are described under [Tests](#tests).
+`pnpm build` and `pnpm start` are for deployments: they read the connection settings from the environment. `lib/env.ts` fails the build when prerendering reads a missing one, and `pnpm start` checks them all before serving. See [Deployment](#deployment).
+
+## Starting a project
+
+The sample product is everything that serves tasks and uploads: `features/task/`, `features/upload/`, the routes in `app/[locale]/(tasks)/` and `app/api/`, their namespaces in `messages/`, the specs `e2e/tasks.spec.ts`, `e2e/task-detail.spec.ts`, `e2e/feed.spec.ts`, `e2e/search.spec.ts`, and `e2e/recent.spec.ts` with their fixture in `e2e/tasks.ts`, and their entries in `GLOSSARY.md` and `docs/features.md`. Replacing it also touches the places that wire it into the rest:
+
+- `app/[locale]/page.tsx`, whose home page redirects to the task list through `TASK_LIST_HREF`.
+- The background jobs in `instrumentation.ts`, and their switches `TASK_GENERATOR_ENABLED` and `UPLOAD_CLEANUP_ENABLED` in `lib/env.ts`, `lib/env.test.ts`, and `playwright.config.ts`.
+- The seed data: `scripts/local-services/seed.sql`, the files it references in `scripts/local-services/seed-files/`, their content types in `SEED_CONTENT_TYPES` in `scripts/local-services/services.mjs`, and the tables `scripts/local-services/seed.db.test.mjs` counts.
+- The namespaces registered in `lib/i18n/messages.ts`; in `messages/*/app.json`, the route keys `tasks`, `taskDetail`, `feed`, `search`, and `recent`, `pageError` for `app/[locale]/(tasks)/error.tsx`, and `metadata.description`; and the sample product's terms in `messages/terms.json`.
+- The specs that test kept code through the sample product's pages: `e2e/home.spec.ts`, `e2e/locale.spec.ts`, and `e2e/date-time.spec.ts`. Point them at the project's own pages rather than deleting them.
+- Text in kept files that describes the sample product: the introductions of `README.md` and `GLOSSARY.md`, the items in `TODO.md`, and comments that use its pages or tables as examples. Search the kept files for its words, such as task, upload, 任务, and 上传.
+- `SAMPLE_PRODUCT` in `scripts/docs-links.test.mjs`: empty it. The rules' links to the sample product then open on GitHub only, and the test stops looking for their files here.
+- Object storage, if the project has no uploads: the `STORAGE_*` variables in `lib/env.ts` and in `localEnv` in `scripts/local-services/datasets.mjs`, the `storage` service in `compose.yaml`, the bucket setup and `PUBLIC_PREFIXES` in `scripts/local-services/services.mjs`, and `connectE2eStorage` in `e2e/backend.ts`.
+
+A project replaces it with its own features, the same way: the rules in `.claude/rules/` and the skills link to the sample product's code on this repository's GitHub, so their examples still open once it is gone (they point at `main`; to keep them at the version the project started from, replace `/blob/main/` and `/tree/main/` with that commit), a project's own terms and features take the sample product's entries in the [Glossary](GLOSSARY.md) and [Feature boundaries](docs/features.md), and this repository stays the place to read working code for them.
+
+Keep the rest: the layers outside `features/`, `features/ui-catalog/` with the design system it documents, the app shell in `app/`, the scripts, and the e2e helpers in `e2e/test.ts`, `e2e/browser.ts`, and `e2e/backend.ts`, which a project's own fixtures build on.
 
 ## Checks
 
-`pnpm check` runs `format:check`, `lint`, `typecheck`, and `test` in that order and stops at the first failure. The e2e sets and the Demo features' tests run on their own (see [Tests](#tests)).
+`pnpm check` runs `format:check`, `lint`, `typecheck`, and `test` in that order and stops at the first failure. `test` includes the data-layer tests, so it needs Docker; the e2e specs run on their own (see [Tests](#tests)).
 
 Git hooks run through [husky](https://typicode.github.io/husky/), from `.husky/`:
 
 | Hook | Does |
 | --- | --- |
-| `pre-commit` | refuses commits on `main`; on the staged files, runs `eslint --fix` and Prettier, the unit tests related to staged code (`vitest related`, in the `app` or `demo-unit` project), the messages test when `messages/` changed, and the docs links test when a `.md` changed ([lint-staged](https://github.com/lint-staged/lint-staged), `lint-staged.config.mjs`) |
+| `pre-commit` | refuses commits on `main`; on the staged files, runs `eslint --fix` and Prettier, the unit tests related to staged code (`vitest related` in the `unit` project), the messages test when `messages/` changed, and the docs links test when a `.md` changed ([lint-staged](https://github.com/lint-staged/lint-staged), `lint-staged.config.mjs`) |
 | `pre-push` | `pnpm check` over the whole repo |
 | `post-merge`, `post-checkout` | `pnpm install --frozen-lockfile` when `pnpm-lock.yaml` changed |
 
 `pnpm install` enables the hooks through the `prepare` script; it skips that step when the dependencies are already installed, so an existing checkout runs `pnpm prepare` once.
 
-`pnpm typecheck` runs `next typegen` before `tsc --noEmit`, because helpers such as `PageProps<"/[locale]/demos/tasks">` come from the route types Next generates in `.next/types`. `tsconfig.json` excludes the copies that `next dev`, the `demo:` scripts, and the e2e builds keep in `.next/dev` and the other `.next-*` directories: after a route is removed or renamed, they stay stale until their script runs again.
+`pnpm typecheck` runs `next typegen` before `tsc --noEmit`, because helpers such as `PageProps<"/[locale]/tasks">` come from the route types Next generates in `.next/types`. `tsconfig.json` excludes the copies that `next dev` and the e2e build keep in `.next/dev` and `.next-e2e`: after a route is removed or renamed, they stay stale until their script runs again.
 
 ## Tests
 
-Vitest runs every `*.test.*` file, kept next to the code it tests, in one of three projects in `vitest.config.mts`, which also resolves `@/` like `tsconfig.json`:
+Vitest runs every `*.test.*` file, kept next to the code it tests, in one of two projects in `vitest.config.mts`, which also resolves `@/` like `tsconfig.json`:
 
-| Project | Tests | Run by |
-| --- | --- | --- |
-| `app` | everything outside the Demo features, including the data-layer tests (`*.db.test.*`) of the project's own features, which need their database | `pnpm test` |
-| `demo-unit` | the Demo features' unit tests | `pnpm demo:test`, and `git commit` for the tests related to the staged Demo files |
-| `demo-db` | the Demo features' data-layer tests, against real Postgres and object storage on the `test` dataset, its own database and bucket | `pnpm demo:test` |
+| Project | Tests |
+| --- | --- |
+| `unit` | everything except the data-layer tests |
+| `db` | the data-layer tests (`*.db.test.*`), against real Postgres and object storage on the `test` dataset; the project starts the local services |
 
-`demo-db` starts the services, so `pnpm demo:test` needs Docker, which keeps it out of `pnpm check`.
+`pnpm test` runs both.
 
-End-to-end specs run with Playwright in two sets, each against its own production build and port, so they can run side by side and alongside `pnpm dev`. Install the browser once with `pnpm exec playwright install chromium`.
+`pnpm test:e2e` runs the Playwright specs in `e2e/` against a production build on port 3998 (`E2E_PORT`), on the `e2e` dataset. Install the browser once with `pnpm exec playwright install chromium`. Before building, it resets the dataset to the seed data, so the prerendered pages match the database; the specs then add their own data straight to that database through fixtures built on `e2e/backend.ts` ([.claude/rules/e2e.md](.claude/rules/e2e.md)). The server runs with the background jobs off (`TASK_GENERATOR_ENABLED=false`, `UPLOAD_CLEANUP_ENABLED=false`), so tasks advance only when a spec advances them. Two checkouts share the `e2e` dataset, so run the specs from one at a time.
 
-- `pnpm test:e2e` runs the project's own specs in `e2e/`, skipping `e2e/demo/`, against `pnpm build` and `pnpm start` on port 3998 (`E2E_PORT`). That build serves no demos, so a spec that opens a `/demos` page belongs in `e2e/demo/`. `e2e/home.spec.ts` is the minimal example to start from.
-- `pnpm demo:test:e2e` runs the demos' specs in `e2e/demo/` against `pnpm demo:build` and `pnpm demo:start` on port 3999 (`DEMO_E2E_PORT`), on the `e2e` dataset: its own database and bucket in the same services. The specs reset it through `/api/demo/control/*` before each test, pause the Demo generator, and inject faults; a running `demo:dev` keeps the `dev` dataset and its data. Two checkouts share the `e2e` dataset, so run the set from one at a time.
+The e2e build turns on the testing API that `instant()` from `@next/playwright` needs to hold back streamed content: its `webServer` sets `EXPOSE_TESTING_API=1`, which `next.config.ts` reads. Keep that variable out of deployment builds. The build goes to `.next-e2e`, so a running `pnpm start` keeps its own output. ESLint applies `eslint-plugin-playwright`'s recommended rules to `e2e/`.
 
-Both sets build with the testing API that `instant()` from `@next/playwright` needs to hold back streamed content: their `webServer` sets `EXPOSE_TESTING_API=1`, which `next.config.ts` reads. Keep that variable out of deployment builds. Those builds go to `.next-e2e` and `.next-demo-e2e`, so a running `pnpm start` or `pnpm demo:start` keeps its own output. ESLint applies `eslint-plugin-playwright`'s recommended rules to `e2e/`.
+While debugging, `E2E_REUSE_SERVER=1` makes the specs reuse a server you started on the port. Reset the dataset with `pnpm db:reset e2e`, start a dev server on it, and run the specs against it:
 
-While debugging, `E2E_REUSE_SERVER=1` makes either set reuse a server you started on its port, such as `DEMO_DATASET=e2e pnpm demo:dev --port 3999`; specs that depend on production behavior, such as prefetching, fail against a dev server, and a production server needs a build made with `EXPOSE_TESTING_API=1`.
+```bash
+LOCAL_DATASET=e2e TASK_GENERATOR_ENABLED=false UPLOAD_CLEANUP_ENABLED=false pnpm dev --port 3998
+E2E_REUSE_SERVER=1 pnpm test:e2e
+```
+
+In PowerShell:
+
+```powershell
+$env:LOCAL_DATASET = "e2e"; $env:TASK_GENERATOR_ENABLED = "false"; $env:UPLOAD_CLEANUP_ENABLED = "false"; pnpm dev --port 3998
+$env:E2E_REUSE_SERVER = "1"; pnpm test:e2e
+```
+
+Specs that depend on production behavior, such as prefetching, fail against a dev server, and a production server needs a build made with `EXPOSE_TESTING_API=1`.
 
 ## Data access
 
-The template is full-stack: a project's backend lives in this app ([ADR 0003](docs/adr/0003-fullstack-demo-backend.md)), and the Data demo is its runnable reference.
+The app is full-stack: its backend lives in this app ([ADR 0006](docs/adr/0006-template-is-a-real-project.md)).
 
 - Each feature's `server/` holds its data layer: queries, writes, business rules, and migrations ([.claude/rules/server-data.md](.claude/rules/server-data.md)). `lib/db.ts` creates the Kysely + pg connection, `lib/object-storage.ts` wraps S3-compatible storage, and `lib/domain-error.ts` carries business-rule failures.
 - Server Components, `use cache` reads, Server Actions, and Route Handlers call the data layer directly. The browser reads through `fetchApi` in `lib/fetch.ts` from Route Handlers under `/api` and writes through Server Actions ([.claude/rules/data-flow.md](.claude/rules/data-flow.md)).
 - `lib/fetch.ts` defines the response format: a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or as the only field of a 2xx body. `app/providers.tsx` decides what a failed browser request shows.
+- User files go from the browser straight to object storage through a presigned URL, and a Server Action then attaches the upload to its record ([ADR 0004](docs/adr/0004-uploads-presigned-object-storage.md)).
 
 ## Internationalization
 
@@ -85,26 +116,29 @@ Official Next.js skills record a versioned `ref` in `skills-lock.json`. When upg
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## UI demo examples
+## UI catalog examples
 
-The UI demo at `/demos/ui` shows the design-system components. Add examples under `features/demo-ui/components/<component-id>-examples/`.
-For a new component, adapt the [Button directory](features/demo-ui/components/button-examples),
-including its `demo.tsx`, `playground.tsx`, and public `index.ts`.
+The UI catalog at `/ui` shows the design-system components. Add examples under `features/ui-catalog/components/<component-id>-examples/`.
+For a new component, adapt the [Button directory](features/ui-catalog/components/button-examples),
+including its `preview.tsx`, `playground.tsx`, and public `index.ts`.
 Add one `*.example.tsx` per usage scenario; use
-[basic.example.tsx](features/demo-ui/components/button-examples/basic.example.tsx)
+[basic.example.tsx](features/ui-catalog/components/button-examples/basic.example.tsx)
 for minimal usage.
 
 Keep the component and its `metadata` export in the same TSX file; the
-[metadata types](features/demo-ui/types/examples.ts) define the fields.
-Demo metadata uses literal values because generation reads it without executing TSX.
+[metadata types](features/ui-catalog/types/examples.ts) define the fields.
+Metadata uses literal values because generation reads it without executing TSX.
+A component's description follows the interface language: write it in every
+`messages/<locale>/ui-catalog.json` under `components.<component-id>.description`.
+Text inside `*-examples/` stays literal, in the source locale, so each file stays copyable.
 `order` defaults to `0`, with component ID or example filename breaking ties.
 
 Keep playgrounds and usage examples independently copyable; displayed code comes
-from those runnable files. `Demo` owns the playground and controls; shared UI demo
+from those runnable files. `Preview` owns the playground and controls; shared UI catalog
 code renders usage examples.
 
 The dev/build scripts update generated indexes. Commit them with their sources;
-run `pnpm demo:generate:examples` when working without the dev server.
+run `pnpm generate:examples` when working without the dev server.
 
 ## Learn More
 
@@ -115,8 +149,17 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Deploy the app as a long-running Node process, such as in a container, because two parts depend on one:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `instrumentation.ts` starts background jobs on an interval, the generator and the upload cleanup, so the process has to keep running between requests. Serverless platforms, Vercel among them, don't keep it running.
+- The `use cache` handler in `lib/cache-handler.mts` keeps entries in each process's memory, and `updateTag` expires them only in the process that handled the write. Run one instance, or replace the handler with one the instances share before running more; the [self-hosting-audit](.agents/skills/self-hosting-audit/SKILL.md) skill checks a deployment for this and the rest.
+
+Build each environment against that environment. The build reads the database to prerender the gallery's first page, and the rows it reads and `STORAGE_PUBLIC_URL` stay in the static output (see "Environment variables" in `AGENTS.md`), so a build made for one environment shows that environment's data elsewhere. For each release:
+
+1. Set the environment variables in `lib/env.ts`.
+2. Run `pnpm db:migrate` against the environment's `DATABASE_URL`. The build reads the new schema, so migrate before building, and keep each migration compatible with the version still serving until the new one starts.
+3. Run `pnpm build`, then `pnpm start`.
+
+Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

@@ -3,7 +3,6 @@ import {
   DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
-  ListObjectsV2Command,
   NotFound,
   PutObjectCommand,
   S3Client,
@@ -13,7 +12,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 export interface ObjectStorageConfig {
   /** server 调用 S3 API 的地址。 */
   endpoint: string;
-  /** 浏览器能直接读取对象的地址前缀，key 拼在它后面。真实环境里通常是 CDN 或存储的公开域名。 */
+  /** 浏览器能直接读取对象的地址前缀，key 拼在它后面。部署环境里通常是 CDN 或存储的公开域名。 */
   publicUrl: string;
   bucket: string;
   accessKeyId: string;
@@ -51,8 +50,6 @@ export interface ObjectStorage {
   ): Promise<void>;
   /** 删除这些 key 的对象，不存在的 key 忽略。 */
   delete(keys: string[]): Promise<void>;
-  /** 以 `prefix` 开头的全部 key。 */
-  list(prefix: string): Promise<string[]>;
   publicUrl(key: string): string;
 }
 
@@ -150,25 +147,6 @@ export function createObjectStorage(
           }),
         );
       }
-    },
-
-    async list(prefix) {
-      const keys: string[] = [];
-      let token: string | undefined;
-      do {
-        const page = await client.send(
-          new ListObjectsV2Command({
-            Bucket: bucket,
-            Prefix: prefix,
-            ContinuationToken: token,
-          }),
-        );
-        for (const object of page.Contents ?? []) {
-          if (object.Key) keys.push(object.Key);
-        }
-        token = page.IsTruncated ? page.NextContinuationToken : undefined;
-      } while (token);
-      return keys;
     },
 
     publicUrl(key) {

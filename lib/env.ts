@@ -6,13 +6,20 @@ import { z } from "zod";
  * 给浏览器用的 `NEXT_PUBLIC_` 变量要另放一个模块。
  */
 const VARIABLES = {
-  // Demo backend：只有 demo:* 命令和数据层测试会设置，值来自 scripts/demo-backend/datasets.mjs 的 demoEnv()。
-  DEMO_DATABASE_URL: z.url().optional(),
-  DEMO_STORAGE_ENDPOINT: z.url().optional(),
-  DEMO_STORAGE_PUBLIC_URL: z.url().optional(),
-  DEMO_STORAGE_BUCKET: z.string().optional(),
-  DEMO_STORAGE_ACCESS_KEY_ID: z.string().optional(),
-  DEMO_STORAGE_SECRET_ACCESS_KEY: z.string().optional(),
+  // 数据库和对象存储的连接参数：部署时由平台设置；本地由 scripts/run-next.mjs 和 vitest.config.mts 按数据集设置
+  // （scripts/local-services/datasets.mjs 的 localEnv()）。
+  DATABASE_URL: z.url(),
+  /** 服务端调用 S3 API 的地址。 */
+  STORAGE_ENDPOINT: z.url(),
+  /** 浏览器直接读取对象的地址前缀，通常是 CDN 或存储的公开域名。 */
+  STORAGE_PUBLIC_URL: z.url(),
+  STORAGE_BUCKET: z.string().min(1),
+  STORAGE_ACCESS_KEY_ID: z.string().min(1),
+  STORAGE_SECRET_ACCESS_KEY: z.string().min(1),
+  /** 是否在这个进程里运行 generator（instrumentation.ts）。e2e 关掉它，由用例自己推进任务。 */
+  TASK_GENERATOR_ENABLED: z.stringbool().default(true),
+  /** 是否在这个进程里运行上传清理（instrumentation.ts）。e2e 关掉它：会改数据的后台任务在 e2e 里都不运行。 */
+  UPLOAD_CLEANUP_ENABLED: z.stringbool().default(true),
 } satisfies Record<string, z.ZodType>;
 
 type Variables = typeof VARIABLES;
@@ -36,8 +43,8 @@ function read<T extends z.ZodType>(name: string, schema: T): z.output<T> {
 }
 
 /**
- * 每次访问都重新读 `process.env`，只校验被访问的那个变量：数据层测试会在同一个进程里改它，
- * build 也不要求运行时才有的变量已经设置。
+ * 每次访问都重新读 `process.env`，只校验被访问的那个变量：build 不要求运行时才有的变量已经设置，
+ * lib/env.test.ts 也在同一个进程里改它。
  */
 export const env = new Proxy(
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- 目标对象本身不存属性：每次读取都由下面的 get 拦截，用 VARIABLES 里对应的 schema 解析出 Env 声明的类型，所以这个断言不会让类型和运行时的值对不上。

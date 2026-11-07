@@ -2,32 +2,38 @@ import "server-only";
 import { Kysely, PostgresDialect } from "kysely";
 import { Client, Pool } from "pg";
 
+import { env } from "./env";
+
 declare global {
-  // dev 热更新会重新执行模块，连接池挂在 globalThis 上，按连接串复用，不会越开越多。
-  var __kyselyPools: Map<string, Pool> | undefined;
+  // dev 热更新会重新执行模块，连接池挂在 globalThis 上复用，不会越开越多。
+  var __kyselyPool: Pool | undefined;
+}
+
+function createPool() {
+  const pool = new Pool({ connectionString: env.DATABASE_URL, max: 10 });
+  // 闲置的连接断开时连接池发出 error，不监听的话在 Next 之外是未捕获的异常；连接池会丢掉这条连接，下次查询新建。
+  pool.on("error", (error) => console.error("Database pool error", error));
+  return pool;
 }
 
 /**
- * 按连接串取一个 Kysely 实例，同一个连接串在进程内共用一个 pg 连接池。`TDatabase` 只描述调用方拥有的表：
+ * 应用数据库（`DATABASE_URL`）的 Kysely 实例，进程内共用一个 pg 连接池。`TDatabase` 只描述调用方拥有的表：
  * 多个 feature 共用一个库时，各自用自己的表类型调用它，得到的是同一个连接池上的不同类型视图。
  * pg 把 int8（`count()`、bigint 列）返回成字符串，以免超出 Number 的精度；表类型照实写成 string，需要数字的地方
  * 在数据层的映射里转换。
  * Kysely 实例本身不持有连接，每次调用新建一个开销很小。
  */
-export function createDb<TDatabase>(
-  connectionString: string,
-): Kysely<TDatabase> {
-  const pools = (globalThis.__kyselyPools ??= new Map());
-  let pool = pools.get(connectionString);
-  if (!pool) {
-    pool = new Pool({ connectionString, max: 10 });
-    pools.set(connectionString, pool);
-  }
+export function getDb<TDatabase>(): Kysely<TDatabase> {
+  const pool = (globalThis.__kyselyPool ??= createPool());
   return new Kysely<TDatabase>({ dialect: new PostgresDialect({ pool }) });
 }
 
+/** 应用数据库的一条专用连接，不进连接池，给 LISTEN 这类要独占一条连接的用途。调用方负责 connect 和 end。 */
+export function createDedicatedClient() {
+  return new Client({ connectionString: env.DATABASE_URL });
+}
+
 interface LeaderIntervalOptions {
-  connectionString: string;
   /** `pg_try_advisory_lock` 的 key。同一个库上用同一个 key 的进程里只有一个在运行 `run`。 */
   lockKey: number;
   intervalMs: number;
@@ -41,7 +47,6 @@ interface LeaderIntervalOptions {
  * 上一轮还没结束时跳过这一轮，不会叠加运行。返回停止函数。
  */
 export function startLeaderInterval({
-  connectionString,
   lockKey,
   intervalMs,
   run,
@@ -60,7 +65,7 @@ export function startLeaderInterval({
   async function tick() {
     if (!leader) {
       if (!client) {
-        const next = new Client({ connectionString });
+        const next = createDedicatedClient();
         // 连接断开时 pg 发出 error 事件，不监听会让进程退出；断开后锁已释放，下一轮重新连接、重新竞争。
         next.on("error", () => void dropClient());
         await next.connect();

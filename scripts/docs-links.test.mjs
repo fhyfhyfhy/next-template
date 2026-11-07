@@ -2,8 +2,8 @@ import { existsSync, globSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { describe, expect, test } from "vitest";
 
-// agent 读的文档靠相对链接互相引用，demos.md 还按场景列出代码和 spec 的路径；移动或改名文件时，
-// 这里会指出失效的引用。外部链接和 node_modules 里的安装文档不检查。
+// agent 读的文档靠相对链接互相引用；移动或改名文件时，这里会指出失效的链接。指向本仓库 GitHub 的链接另外检查
+// （见 SAMPLE_PRODUCT），其他外部链接和 node_modules 里的安装文档不检查。
 
 const projectRoot = join(import.meta.dirname, "..");
 const read = (file) =>
@@ -78,41 +78,114 @@ describe("文档里的相对链接和锚点都能打开", () => {
   });
 });
 
-function missingDemoPaths(text) {
-  const missing = [];
-  for (const row of text.matchAll(/^\| \d+ \|.*$/gm)) {
-    // 列依次是 #、Scenario、Rules、Code、Spec。
-    const [, , , code, spec] = row[0].split(" | ");
-    for (const [, path] of `${code} ${spec}`.matchAll(/`([^`]+)`/g)) {
-      if (!path.includes("/")) continue;
-      const full = /^(app|e2e|features|lib|scripts)\//.test(path)
-        ? path
-        : `features/demo-task/${path}`;
-      const found = path.includes("*")
-        ? globSync(full, { cwd: projectRoot }).length > 0
-        : existsSync(join(projectRoot, full));
-      if (!found) missing.push(path);
-    }
-  }
-  return missing;
-}
-
-test("demos.md 场景表列出的代码和 spec 都存在", () => {
-  expect(
-    missingDemoPaths(read(".agents/skills/next-data-flow/demos.md")),
-  ).toStrictEqual([]);
-});
-
-test("检查本身能发现失效的链接、锚点和路径", () => {
+test("检查本身能发现失效的链接和锚点", () => {
   expect(
     brokenLinks(
       ".claude/rules/example.md",
       "[a](e2e.md#hydration) [b](missing.md) [c](e2e.md#no-such-heading) `[d](missing.md)`",
     ),
   ).toStrictEqual(["missing.md", "e2e.md#no-such-heading"]);
-  expect(
-    missingDemoPaths(
-      "| 1 | x | y | `api/get-task.ts`, `api/missing.ts`, `api/*-nothing.ts` | `e2e/demo/feed.spec.ts` |",
+});
+
+// Sample product 的代码，派生项目会删掉它（README 的 Starting a project）。agent 读的文档引用它时链接到模板在 GitHub
+// 上的版本，链接文字是从仓库根开始的路径（.agents/skills/skills-and-rules/SKILL.md 的 Citing code）。
+// 派生项目删掉 Sample product 时清空 SAMPLE_PRODUCT：链接指向模板的仓库，本地已经没有对应的文件。
+// 列表取自 README 那一节里属于 Sample product 的代码：第一段的目录和 spec，以及种子数据；`app/api/` 只列 Sample product
+// 自己的目录，因为 rules 用 `app/api/` 泛指 Route Handler 的位置。链接按 README 固定到某个提交后照样检查。
+const GITHUB_LINK =
+  /^https:\/\/github\.com\/fhyfhyfhy\/next-template\/(?:blob|tree)\/[^/]+\/([^#?]+)/;
+const SAMPLE_PRODUCT = [
+  "features/task/",
+  "features/upload/",
+  "app/[locale]/(tasks)/",
+  "app/api/tasks/",
+  "app/api/feed/",
+  "e2e/tasks.ts",
+  "e2e/tasks.spec.ts",
+  "e2e/task-detail.spec.ts",
+  "e2e/feed.spec.ts",
+  "e2e/search.spec.ts",
+  "e2e/recent.spec.ts",
+  "scripts/local-services/seed",
+];
+const agentDocs = docs.filter(
+  (file) =>
+    file === "AGENTS.md" ||
+    [".claude/rules/", ".agents/skills/", "docs/agents/"].some((dir) =>
+      file.startsWith(dir),
     ),
-  ).toStrictEqual(["api/missing.ts", "api/*-nothing.ts"]);
+);
+// 链接文字里可以有一层方括号，比如 [`app/[locale]/page.tsx`](…)；URL 里的括号已经转义。
+const MARKDOWN_LINK = /\[((?:[^[\]]|\[[^[\]]*\])*)\]\(([^)\s]+)\)/g;
+const withoutCodeBlocks = (text) =>
+  text.replace(/^(```|````)[\s\S]*?^\1/gm, "");
+
+/** 指向本仓库 GitHub 的链接：路径要在仓库里存在，链接文字写成代码时要和路径一致。 */
+function brokenGithubLinks(file, text = read(file)) {
+  const broken = [];
+  for (const [, label, target] of withoutCodeBlocks(text).matchAll(
+    MARKDOWN_LINK,
+  )) {
+    const match = GITHUB_LINK.exec(target);
+    if (!match) continue;
+    const path = decodeURIComponent(match[1]);
+    const code = /^`([^`]+)`$/.exec(label)?.[1];
+    if (
+      (SAMPLE_PRODUCT.length > 0 && !existsSync(join(projectRoot, path))) ||
+      (code && code.replace(/\/$/, "") !== path)
+    ) {
+      broken.push(target);
+    }
+  }
+  return broken;
+}
+
+/** 链接之外出现的 Sample product 路径。 */
+function unlinkedSamplePaths(file, text = read(file)) {
+  const rest = withoutCodeBlocks(text).replace(MARKDOWN_LINK, "");
+  return SAMPLE_PRODUCT.filter((path) => rest.includes(path));
+}
+
+describe("指向本仓库 GitHub 的链接：路径在仓库里存在，链接文字和路径一致", () => {
+  test.each(docs)("%s", (file) => {
+    expect(brokenGithubLinks(file)).toStrictEqual([]);
+  });
+});
+
+describe("agent 读的文档引用 Sample product 时都带 GitHub 链接", () => {
+  test.each(agentDocs)("%s", (file) => {
+    expect(unlinkedSamplePaths(file)).toStrictEqual([]);
+  });
+});
+
+test("检查本身能发现失效的 GitHub 链接和没带链接的 Sample product 路径", () => {
+  const base = "https://github.com/fhyfhyfhy/next-template";
+  const sha = "0123456789abcdef0123456789abcdef01234567";
+  expect(
+    brokenGithubLinks(
+      ".claude/rules/example.md",
+      [
+        `[\`lib/fetch.ts\`](${base}/blob/main/lib/fetch.ts)`,
+        `[\`app/[locale]/(tasks)/layout.tsx\`](${base}/blob/main/app/%5Blocale%5D/%28tasks%29/layout.tsx)`,
+        `[\`features/task/\`](${base}/tree/main/features/task)`,
+        `[\`lib/missing.ts\`](${base}/blob/main/lib/missing.ts)`,
+        `[\`lib/db.ts\`](${base}/blob/main/lib/fetch.ts)`,
+        // 按 README 固定到某个提交的链接照样检查。
+        `[\`lib/fetch.ts\`](${base}/blob/${sha}/lib/fetch.ts)`,
+        `[\`lib/missing.ts\`](${base}/blob/${sha}/lib/missing.ts)`,
+        `[\`features/task/\`](${base}/tree/${sha}/features/upload)`,
+      ].join(" "),
+    ),
+  ).toStrictEqual([
+    `${base}/blob/main/lib/missing.ts`,
+    `${base}/blob/main/lib/fetch.ts`,
+    `${base}/blob/${sha}/lib/missing.ts`,
+    `${base}/tree/${sha}/features/upload`,
+  ]);
+  expect(
+    unlinkedSamplePaths(
+      ".claude/rules/example.md",
+      `\`features/task/server/tasks.ts\` and [\`features/upload/server.ts\`](${base}/blob/main/features/upload/server.ts)`,
+    ),
+  ).toStrictEqual(["features/task/"]);
 });

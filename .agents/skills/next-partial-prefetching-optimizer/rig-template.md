@@ -78,14 +78,14 @@ server lifecycle. Ensure its command serves the production build with
 test commands without starting another server manually:
 
 ```bash filename="Terminal"
-EXPOSE_TESTING_API=1 pnpm build && BASE_URL=http://localhost:3000 pnpm playwright test tests/prefetch-optimization.spec.ts
+EXPOSE_TESTING_API=1 pnpm build:local && BASE_URL=http://localhost:3000 pnpm playwright test tests/prefetch-optimization.spec.ts
 ```
 
 PowerShell (stop if the build fails):
 
 ```powershell
 $env:EXPOSE_TESTING_API = '1'
-pnpm build
+pnpm build:local
 $instantBuildExitCode = $LASTEXITCODE
 Remove-Item Env:EXPOSE_TESTING_API
 if ($instantBuildExitCode -ne 0) { throw 'Production test build failed' }
@@ -94,8 +94,8 @@ pnpm playwright test tests/prefetch-optimization.spec.ts
 ```
 
 If the rig does not use `webServer`, start the server with the same variable
-after the build, `EXPOSE_TESTING_API=1 pnpm start --port 3000` (PowerShell:
-`$env:EXPOSE_TESTING_API = '1'; pnpm start --port 3000`), in a separate
+after the build, `EXPOSE_TESTING_API=1 pnpm start:local --port 3000` (PowerShell:
+`$env:EXPOSE_TESTING_API = '1'; pnpm start:local --port 3000`), in a separate
 terminal, keep it running during the test command, and stop it afterward.
 This project's `next.config.ts` puts a build made with the variable in
 `.next-e2e`, and `start` serves that directory only while the variable is set.

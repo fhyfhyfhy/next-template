@@ -19,13 +19,13 @@ function linkHrefs(locale: Locale, href: string) {
 }
 
 test("设置了 basePath 时，每个语言链接都以它开头", () => {
-  expect(linkHrefs("zh", "/demos/ui?component=select")).toStrictEqual([
-    "/base/en/demos/ui?component=select",
+  expect(linkHrefs("zh", "/ui?component=select")).toStrictEqual([
+    "/base/en/ui?component=select",
   ]);
 });
 
 test("切到默认 locale 的链接也带前缀，proxy 才会记下选择", () => {
-  expect(linkHrefs("en", "/demos")).toStrictEqual(["/base/zh/demos"]);
+  expect(linkHrefs("en", "/tasks")).toStrictEqual(["/base/zh/tasks"]);
 });
 
 test("根路径的链接不带结尾的 /，query 照旧", () => {

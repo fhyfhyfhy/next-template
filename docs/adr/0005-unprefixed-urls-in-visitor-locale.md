@@ -15,5 +15,5 @@
 - 语言切换器链接到带目标 locale 前缀的地址（`/en/...`），proxy 把选择记进 `NEXT_LOCALE` cookie（保留一年），再跳到不带前缀的地址。带前缀的地址只用来切换语言。
 - 没选过语言时按浏览器语言显示，不写 cookie，浏览器语言变了页面也跟着变。e2e 因此要固定浏览器的 locale。
 - 根 layout 是 `app/[locale]/layout.tsx`。`app/` 下直接放的 layout 会抢走根 layout 的位置，所以全局 404 改用 `global-not-found`。
-- 路由类型都带上 `[locale]`，例如 `PageProps<"/[locale]/demos/tasks">`。
+- 路由类型都带上 `[locale]`，例如 `PageProps<"/[locale]/tasks">`。
 - Server Action 和 Route Handler 读不到 root params，需要 locale 时由调用方显式传入。

@@ -1,6 +1,5 @@
 import "server-only";
 import { unstable_rethrow } from "next/navigation";
-import type { z } from "zod";
 
 import { badRequest, DomainError, errorBody, ErrorCode } from "./domain-error";
 
@@ -30,33 +29,6 @@ export function routeHandler<TContext>(
       );
     }
   };
-}
-
-/**
- * 按 `schema` 解析请求体的 JSON；没有请求体时按 null 解析。不是合法 JSON 或不符合 schema 时按参数错误拒绝，
- * `param` 是第一个出错的字段。
- */
-export async function readJsonBody<TSchema extends z.ZodType>(
-  request: Request,
-  schema: TSchema,
-): Promise<z.output<TSchema>> {
-  const text = await request.text();
-  let body: unknown = null;
-  if (text) {
-    try {
-      body = JSON.parse(text);
-    } catch {
-      throw badRequest("Request body is not valid JSON");
-    }
-  }
-  const result = schema.safeParse(body);
-  if (!result.success) {
-    const [issue] = result.error.issues;
-    throw badRequest(`Invalid request body: ${result.error.message}`, {
-      param: issue?.path.join("."),
-    });
-  }
-  return result.data;
 }
 
 /** 读一个整数 query 参数；没有时返回 undefined，不是整数时按参数错误拒绝。 */

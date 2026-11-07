@@ -1,20 +1,5 @@
 {
-  "keep": [
-    "Next Demo",
-    "Next.js",
-    "Demo",
-    "prompt",
-    "GLB",
-    "Server Component",
-    "Client Component",
-    "Server Action",
-    "React Query",
-    "Suspense",
-    "localStorage",
-    "hydration",
-    "playground",
-    "example"
-  ],
+  "keep": ["Next Template", "prompt"],
   "translations": {
     "任务": {
       "en": "task"
@@ -33,9 +18,6 @@
     },
     "最近查看": {
       "en": "recently viewed"
-    },
-    "故障实验室": {
-      "en": "fault lab"
     }
   }
 }

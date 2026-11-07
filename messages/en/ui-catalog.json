@@ -1,0 +1,81 @@
+{
+  "skipToContent": "Skip to component content",
+  "header": {
+    "tagline": "DESIGN SYSTEM",
+    "theme": {
+      "label": "Theme",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "baseUiDocs": "Base UI docs"
+  },
+  "navigation": {
+    "eyebrow": "COMPONENTS",
+    "label": "Components"
+  },
+  "page": {
+    "eyebrow": "COMPONENT LIBRARY",
+    "footer": "BUILT WITH BASE UI · TAILWIND CSS"
+  },
+  "playground": {
+    "label": "Interactive lab",
+    "preview": "Live preview",
+    "showCode": "Show code",
+    "hideCode": "Hide code",
+    "canvas": "INTERACTIVE CANVAS",
+    "hint": "Adjust the props to explore different states",
+    "panelLabel": "Props panel",
+    "panelTitle": "Props",
+    "reset": "Reset"
+  },
+  "examples": {
+    "title": "Usage examples",
+    "showCode": "{title}: show code",
+    "hideCode": "{title}: hide code"
+  },
+  "sourceCode": {
+    "label": "{filename} source",
+    "copy": "Copy code",
+    "copied": "Copied",
+    "copyFailed": "Copy failed. Select the code manually."
+  },
+  "components": {
+    "badge": {
+      "description": "A small label for a status or category."
+    },
+    "button": {
+      "description": "A button that can be rendered as another element and can stay focusable while disabled."
+    },
+    "checkbox": {
+      "description": "An easily stylable checkbox."
+    },
+    "dialog": {
+      "description": "A popup that opens on top of the entire page."
+    },
+    "field": {
+      "description": "Groups a label, control, and error message; TanStack Form supplies the state."
+    },
+    "form": {
+      "description": "A form that validates its fields on submit and focuses the first invalid one."
+    },
+    "input": {
+      "description": "A native input element that works with Field automatically when placed inside it."
+    },
+    "progress": {
+      "description": "Shows the progress of a long-running operation."
+    },
+    "select": {
+      "description": "A form control for choosing a predefined value from a dropdown menu."
+    },
+    "skeleton": {
+      "description": "A placeholder shown while content is loading."
+    },
+    "switch": {
+      "description": "A control that indicates whether a setting is on or off."
+    },
+    "toaster": {
+      "description": "A brief message that appears temporarily and stacks with others."
+    }
+  }
+}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { StatusMessage } from "@/components/status-message";
 import { routing } from "@/lib/i18n/routing";
 
 import { fontVariables } from "./fonts";
@@ -13,7 +14,13 @@ const locale = routing.defaultLocale;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations({ locale });
-  return { title: t("app.globalNotFound.title") };
+  // 它在 [locale] 的 layout 之外，用不上那里的标题模板，自己按同一个格式拼。
+  return {
+    title: t("app.metadata.titleTemplate", {
+      page: t("app.globalNotFound.title"),
+      app: t("app.name"),
+    }),
+  };
 }
 
 export default async function GlobalNotFound() {
@@ -21,19 +28,16 @@ export default async function GlobalNotFound() {
   return (
     <html lang={locale} className={`${fontVariables} h-full antialiased`}>
       <body className="min-h-full">
-        <main className="mx-auto max-w-xl px-5 py-24 text-center">
-          <h1 className="text-3xl font-medium tracking-tight">
-            {t("app.globalNotFound.title")}
-          </h1>
-          <p className="mt-3 text-sm text-muted-foreground">
-            {t("app.globalNotFound.description")}
-          </p>
-          <Link
-            href="/"
-            className="mt-6 inline-block text-sm text-primary hover:underline"
-          >
-            {t("app.globalNotFound.home")}
-          </Link>
+        <main className="mx-auto max-w-xl px-5 py-8">
+          <StatusMessage
+            title={t("app.globalNotFound.title")}
+            description={t("app.globalNotFound.description")}
+            action={
+              <Link href="/" className="text-sm text-primary hover:underline">
+                {t("app.globalNotFound.home")}
+              </Link>
+            }
+          />
         </main>
       </body>
     </html>

@@ -1,0 +1,63 @@
+import { globSync } from "node:fs";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { Kysely, PostgresDialect } from "kysely";
+import { Migrator } from "kysely/migration";
+import pg from "pg";
+
+// 每个 feature 在自己的 server/migrations.mts 里导出 `migrations`，这里找出全部文件，合成一条序列，按名称
+// （时间戳前缀）排序执行。那些文件由 Node 的类型剥离直接加载，只能依赖 kysely（见文件开头的说明）。
+const MIGRATION_GLOB = "features/*/server/migrations.mts";
+
+const projectRoot = join(import.meta.dirname, "..", "..");
+
+/**
+ * 把各 feature 的 `migrations` 合成一条序列。名称决定执行顺序，也是数据库里记录执行过哪些的依据，所以两个文件
+ * 不能用同一个名称。
+ * @param {{ path: string, migrations: Record<string, unknown> }[]} modules
+ */
+export function mergeMigrations(modules) {
+  const merged = {};
+  for (const { path, migrations } of modules) {
+    for (const [name, migration] of Object.entries(migrations)) {
+      if (Object.hasOwn(merged, name)) {
+        throw new Error(`Duplicate migration name ${name} in ${path}`);
+      }
+      merged[name] = migration;
+    }
+  }
+  return merged;
+}
+
+/**
+ * 把 `connectionString` 指向的库迁移到最新结构。Kysely 在 Postgres 上把这一次要执行的 migration 放进一个事务：
+ * 任何一条失败都抛出，这一次已经执行的一起回滚。
+ */
+export async function migrateDatabase(connectionString) {
+  const modules = [];
+  for (const path of globSync(MIGRATION_GLOB, { cwd: projectRoot }).sort()) {
+    const imported = await import(pathToFileURL(join(projectRoot, path)).href);
+    modules.push({ path, migrations: imported.migrations });
+  }
+  const migrations = mergeMigrations(modules);
+  const db = new Kysely({
+    dialect: new PostgresDialect({
+      pool: new pg.Pool({ connectionString, max: 1 }),
+    }),
+  });
+  try {
+    const migrator = new Migrator({
+      db,
+      provider: { getMigrations: async () => migrations },
+    });
+    const { error, results } = await migrator.migrateToLatest();
+    for (const result of results ?? []) {
+      if (result.status === "Error") {
+        console.error(`Migration ${result.migrationName} failed`);
+      }
+    }
+    if (error) throw error;
+  } finally {
+    await db.destroy();
+  }
+}

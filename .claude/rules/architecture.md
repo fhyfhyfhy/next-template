@@ -76,8 +76,8 @@ Ordered top to bottom, like "Layers".
 
 [docs/features.md](../../docs/features.md) records which features depend on which, what each one is responsible for, and what sits next to it but belongs elsewhere. Put new code in the feature responsible for the business concept it serves. When no feature is, decide by how the concept exists:
 
-- A concept that exists only as part of another joins that concept's feature. In the database, its rows are deleted with the other's, as a task's comments are in `features/demo-task/`.
-- A concept that exists on its own gets a feature of its own. In the database, it has its own tables and lifecycle, and other features reach it through its `server.ts`, as a record takes an upload through `attachUpload` in `features/demo-upload/server/uploads.ts`.
+- A concept that exists only as part of another joins that concept's feature. In the database, its rows are deleted with the other's, as a task's comments are in [`features/task/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task).
+- A concept that exists on its own gets a feature of its own. In the database, it has its own tables and lifecycle, and other features reach it through its `server.ts`, as the task feature attaches a cover through `attachUpload` from [`features/upload/server.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/upload/server.ts).
 
 Creating, merging, or splitting a feature, changing what one is responsible for, or adding or removing a dependency between features updates `docs/features.md` in the same change.
 
@@ -98,8 +98,8 @@ Import from the same directory and its subdirectories by relative path (`./`), a
 A simple component is a single file. A complex component is a directory, holding either a main component with private subcomponents or a compound component with several public parts:
 
 ```
-features/task/components/
-  task-editor/
+features/orders/components/
+  order-editor/
     index.tsx         ← entry and main component
     toolbar.tsx       ← private subcomponent
     status-bar.tsx
@@ -126,6 +126,8 @@ export { DialogBackdrop } from "./backdrop";
 export { DialogContext } from "./context";
 ```
 
+In the sample product, [`features/task/components/task-detail/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-detail) is a main component with private subcomponents, and [`features/task/components/task-list-navigation/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-navigation) a compound component whose parts share a context.
+
 - Code outside the directory imports only through its `index`.
 - The `index` exports by name each component, context, hook, and type that callers need.
 - Keep component-specific contexts, hooks, helpers, and types alongside its parts. Keep implementation-only symbols private. Extract them to the appropriate layer within their owner when they acquire an independent reuse role; business ownership remains unchanged.
@@ -133,14 +135,16 @@ export { DialogContext } from "./context";
 Component directories are one level deep, so when one grows past ~5–7 files, split it into **sibling** component directories:
 
 ```
-features/task/components/
-  task-editor/            ← main component
+features/orders/components/
+  order-editor/            ← main component
     index.tsx
     status-bar.tsx
-  task-editor-toolbar/    ← split-out subcomponent
+  order-editor-toolbar/    ← split-out subcomponent
     index.tsx
     format-button.tsx
 ```
+
+In the sample product, the task list, its toolbar, and its navigation are sibling component directories: [`features/task/components/task-list/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list), [`features/task/components/task-list-toolbar/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-toolbar), and `task-list-navigation/`.
 
 ### Feature public API
 

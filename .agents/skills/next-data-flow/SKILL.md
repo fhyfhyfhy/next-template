@@ -78,7 +78,7 @@ Give every consumer a refresh path for each update trigger it has: URL changes, 
 ## Project integration
 
 - When writing the code, follow the rules: [data-flow.md](../../../.claude/rules/data-flow.md), [tanstack-query.md](../../../.claude/rules/tanstack-query.md) for browser requests and options factories, and [server-data.md](../../../.claude/rules/server-data.md) for the data layer, Server Actions, `use cache` reads, and Route Handlers. Adapt official examples to them.
-- Before implementing one of these patterns, read its runnable reference in the [Data demo](demos.md): code and e2e spec per scenario.
+- Before implementing one of these patterns, read its working version in the [sample product](sample-product.md): code and e2e spec per scenario.
 
 ## Framework guidance
 

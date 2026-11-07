@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0006
+---
+
 # 模板转为全栈，Demo backend 由本 app 实现
 
 模板默认的项目形态从"前端接独立后端"改为全栈：后端由本 app 的 Route Handler、Server Action 和服务端数据层实现，数据存在 Postgres（kysely + pg）。Demo 是模板约定的可运行参考，所以 Data demo 整体换成这种写法，取代 [ADR 0001](0001-demos-use-standalone-mock-api.md) 的独立进程 Mock API。接独立后端的约定不再由模板和 Demo 提供。

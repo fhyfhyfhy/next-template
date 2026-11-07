@@ -1,9 +1,10 @@
 import { expect, test as base } from "@playwright/test";
 
 /**
- * 所有 spec 都从这里取 `test`。页面打出 next-intl 的 `MISSING_MESSAGE` 错误时用例失败：Client Component 用到的
- * namespace 没有下发，页面上只会显示 `namespace.key`。ESLint 的 i18n/client-namespaces 在 lint 时检查各个
- * `ClientMessages` 的列表（.claude/rules/i18n.md），这里兜住它分析不到的情况。
+ * 所有 spec 直接或经 feature 的 fixture 模块（比如 e2e/tasks.ts）从这里取 `test`。
+ * 页面打出 next-intl 的 `MISSING_MESSAGE` 错误时用例失败：Client Component 用到的 namespace 没有下发，
+ * 页面上只会显示 `namespace.key`。ESLint 的 i18n/client-namespaces 在 lint 时检查各个 `ClientMessages` 的列表
+ * （.claude/rules/i18n.md），这里兜住它分析不到的情况。
  */
 export const test = base.extend<{ failOnMissingMessage: void }>({
   failOnMissingMessage: [
@@ -23,5 +24,8 @@ export const test = base.extend<{ failOnMissingMessage: void }>({
     { auto: true },
   ],
 });
+
+/** 全局错误处理弹出的通用提示（app/providers.tsx，messages/zh/app.json 的 `requestError`）。 */
+export const GLOBAL_ERROR_TOAST = "请求失败，请稍后重试";
 
 export { expect };
