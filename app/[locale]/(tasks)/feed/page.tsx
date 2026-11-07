@@ -39,7 +39,7 @@ export default function FeedPage() {
     <>
       <PageHeading title={t("app.feed.title")} className="mb-8" />
       <div className="grid gap-8 lg:grid-cols-[1fr_240px]">
-        {/* FeedHydration 要等缓存的快照：HTML 里先是骨架屏，第一页作为片段写在同一份 HTML 后面，由内联脚本换上，不用等应用的 JS。 */}
+        {/* FeedHydration 读缓存的快照，通常已经预渲染在静态 shell 里（get-cached-feed-snapshot.ts）；缓存没有命中、要重新读库时先显示骨架屏。 */}
         <Suspense fallback={<FeedSkeleton />}>
           <FeedHydration />
         </Suspense>

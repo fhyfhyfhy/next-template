@@ -7,24 +7,25 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
-import { TASK_LIST_HREF } from "../../utils/task-urls";
+import { TASK_LIST_HREF } from "../utils/task-urls";
 
-// `segment` 是这个 layout 下一级的路由 segment，和 href 的第一段相同。
 const links = [
-  { href: TASK_LIST_HREF, segment: "tasks", key: "tasks" },
-  { href: "/feed", segment: "feed", key: "feed" },
-  { href: "/search", segment: "search", key: "search" },
-  { href: "/recent", segment: "recent", key: "recent" },
+  { href: TASK_LIST_HREF, key: "tasks" },
+  { href: "/feed", key: "feed" },
+  { href: "/search", key: "search" },
+  { href: "/recent", key: "recent" },
 ] as const;
 
 /**
- * 链接对应的页面是不是当前页：页面本身是 `page`，它下面的页面（比如任务详情）是 `true`。`segments` 是这个 layout 下面的
- * 路由 segment，按路由树判断而不看 URL：proxy 把 /tasks 改写到 /zh/tasks，预渲染时服务端读到的路径和浏览器里的不同。
+ * 链接对应的页面是不是当前页：页面本身是 `page`，它下面的页面（比如任务详情）是 `true`。按路由树判断而不看 URL：
+ * proxy 把 /tasks 改写到 /zh/tasks，预渲染时服务端读到的路径和浏览器里的不同。`segments` 是 header 所在 layout
+ * 下面的路由 segment，header 要直接渲染在 app/[locale]/(tasks)/layout.tsx 里，它们拼起来才是链接的路径。
  */
-function currentState(linkSegment: string, segments: string[]) {
-  const [segment, ...below] = segments;
-  if (segment !== linkSegment) return undefined;
-  return below.length === 0 ? "page" : "true";
+function currentState(href: string, segments: string[]) {
+  const path = `/${segments.join("/")}`;
+  if (path === href) return "page";
+  if (path.startsWith(`${href}/`)) return "true";
+  return undefined;
 }
 
 interface TaskHeaderProps {
@@ -49,7 +50,7 @@ export function TaskHeader({ brand, badge, actions }: TaskHeaderProps) {
           className="flex flex-1 flex-wrap gap-1"
         >
           {links.map((link) => {
-            const current = currentState(link.segment, segments);
+            const current = currentState(link.href, segments);
             return (
               <Link
                 key={link.href}

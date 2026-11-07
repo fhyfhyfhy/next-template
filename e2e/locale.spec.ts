@@ -26,9 +26,9 @@ test("切换语言后地址不变，之后的客户端导航和整页打开都�
       .getByRole("link", { name: "All tasks" }),
     "/tasks",
   );
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "All tasks.",
-  );
+  await expect(
+    page.getByRole("heading", { level: 1, name: "All tasks" }),
+  ).toBeVisible();
 
   await page.goto("/ui?component=select");
   // 标题后的句点只是装饰，不进可访问名称。
@@ -82,9 +82,9 @@ test.describe("浏览器语言是英文", () => {
     await page.goto("/tasks");
     await expect(page).toHaveURL("/tasks");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "All tasks.",
-    );
+    await expect(
+      page.getByRole("heading", { level: 1, name: "All tasks" }),
+    ).toBeVisible();
     await expect(page).toHaveTitle("All tasks · Next Template");
     expect((await context.cookies()).map(({ name }) => name)).not.toContain(
       "NEXT_LOCALE",

@@ -5,7 +5,9 @@ import { expect, test } from "./test";
 test("首页跳到全部任务", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL("/tasks");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("全部任务.");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "全部任务" }),
+  ).toBeVisible();
 });
 
 test.describe("浏览器语言是英文", () => {
@@ -15,8 +17,8 @@ test.describe("浏览器语言是英文", () => {
     await page.goto("/");
     await expect(page).toHaveURL("/tasks");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "All tasks.",
-    );
+    await expect(
+      page.getByRole("heading", { level: 1, name: "All tasks" }),
+    ).toBeVisible();
   });
 });

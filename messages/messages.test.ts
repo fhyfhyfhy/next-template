@@ -27,7 +27,7 @@ function namespaceFiles(locale: string) {
     .sort();
 }
 
-/** 一个 namespace 的全部文案，key 是 next-intl 里用的点分路径（`taskList.emptyTitle`）。 */
+/** 一个 namespace 的全部文案，key 是 next-intl 里用的点分路径（`taskList.empty`）。 */
 function readMessages(locale: string, namespace: string) {
   const json: unknown = JSON.parse(
     readFileSync(join(MESSAGES_DIR, locale, `${namespace}.json`), "utf8"),

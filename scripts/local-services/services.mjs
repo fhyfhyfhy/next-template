@@ -35,8 +35,9 @@ export const SEED_CONTENT_TYPES = {
 };
 
 /**
- * 浏览器直接读的前缀：用户上传的文件和种子文件，签发上传、下载模型仍要签名。`uploads/` 和
- * features/upload/constants/storage-keys.ts 的 `UPLOAD_KEY_PREFIX` 一致，改的时候一起改。
+ * 浏览器直接读的前缀：用户上传和服务端产出的文件、种子文件。签发上传要签名；下载链接也签名，是为了带上文件名
+ * （`Content-Disposition`）。`uploads/` 和 features/upload/constants/storage-keys.ts 的 `UPLOAD_KEY_PREFIX` 一致，
+ * 改的时候一起改。
  */
 const PUBLIC_PREFIXES = ["uploads/", SEED_PREFIX];
 

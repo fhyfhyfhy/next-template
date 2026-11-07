@@ -355,10 +355,11 @@ test.describe("写入", () => {
     await expectTaskNotFound(page);
   });
 
-  test("重命名表单从当前数据开始编辑，撞名时在字段上提示", async ({ page }) => {
-    // 从列表页的表单建任务：列表的缓存里有它的旧名字，改名后列表要靠 Server Action 的失效才显示新名字。
-    await openTasksPage(page);
-    const task = await createTaskThroughForm(page);
+  test("重命名表单从当前数据开始编辑，撞名时在字段上提示", async ({
+    page,
+    tasks,
+  }) => {
+    const task = await tasks.createTask();
     await openTask(page, task.id);
     await page.getByRole("button", { name: "重命名" }).click();
     const input = page.getByLabel("新名称");
@@ -369,9 +370,16 @@ test.describe("写入", () => {
     await page.getByRole("button", { name: "保存" }).click();
     await expect(page.getByText("名称已被其他任务占用")).toBeVisible();
     await expect(page.getByText("重命名任务失败，请稍后重试")).toHaveCount(0);
+  });
 
+  test("改名后详情和列表立即显示新名称", async ({ page }) => {
+    // 从列表页的表单建任务：列表的缓存里有它的旧名字，改名后列表要靠 Server Action 的失效才显示新名字。
+    await openTasksPage(page);
+    const task = await createTaskThroughForm(page);
+    await openTask(page, task.id);
+    await page.getByRole("button", { name: "重命名" }).click();
     const renamed = unique("改名后的任务");
-    await input.fill(renamed);
+    await page.getByLabel("新名称").fill(renamed);
     await page.getByRole("button", { name: "保存" }).click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(renamed);
 
@@ -425,7 +433,7 @@ test.describe("写入", () => {
     );
 
     await page.goto("/tasks?status=running");
-    // 封面图是装饰性图片（alt 为空），没有 img 角色，按标签定位。
+    // 封面图是装饰性图片（alt 为空），没有 img 角色，按 img 元素定位。
     await expect(row.locator("img")).toHaveAttribute(
       "src",
       /\/uploads\/[^/]+$/,

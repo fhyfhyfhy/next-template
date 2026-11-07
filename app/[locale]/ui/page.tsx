@@ -15,7 +15,7 @@ import { getCachedExampleSources } from "@/features/ui-catalog/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
-  // 设计系统的 UI catalog是给开发者看的，不让搜索引擎收录。
+  // UI catalog 是给开发者看的，不让搜索引擎收录。
   return { title: t("app.ui.title"), robots: { index: false } };
 }
 

@@ -16,7 +16,8 @@
 
 ## 可访问性
 
-- [ ] 进行中任务徽标的 `aria-label` 挂在没有角色的 span 上（features/task/components/task-header/running-tasks-badge.tsx），读屏多半读可见文字，英文的复数说法听不到；换成可见文字或合适的角色，e2e 用 `getByLabel` 找它，要一起改。
+- [ ] 进行中任务徽标的 `aria-label` 挂在没有角色的 span 上（features/task/components/running-tasks-badge/index.tsx），读屏多半读可见文字，英文的复数说法听不到；换成可见文字或合适的角色，e2e 用 `getByLabel` 找它，要一起改。
+- [ ] UI catalog 切换组件时，旧的示例没有标成 `aria-busy`（features/ui-catalog/components/component-navigation/link.tsx）：导航用 `shallow: false` 等服务端渲染新示例，data-flow.md 的 URL state 要求这时用 `startTransition` 标出旧内容。源码读取有缓存，等待很短；要做时让导航和内容区共享这个 transition。
 
 ## 数据新鲜度
 

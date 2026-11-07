@@ -1,4 +1,7 @@
+import { sql } from "kysely";
 import { describe, expect, test } from "vitest";
+
+import { createDedicatedClient, getDb } from "@/lib/db";
 
 import { COMMENT_CONTENT_INVALID } from "../constants/error-codes";
 import { taskCommentSchema } from "../types/task";
@@ -38,6 +41,31 @@ describe("评论", () => {
     expect(
       (await rejection(createComment("task-404", { content: "评论" }))).status,
     ).toBe(404);
+  });
+
+  test("发表评论时任务被同时删除，按任务不存在 404", async () => {
+    // 另一个连接删掉任务先不提交：评论的外键检查要等这一行的锁，提交后才发现任务没了。先查任务存在再插入的写法
+    // 这时查得到任务，插入却违反外键。
+    const other = createDedicatedClient();
+    await other.connect();
+    try {
+      await other.query("begin");
+      await other.query("delete from tasks where id = 'task-01'");
+      const created = rejection(createComment("task-01", { content: "评论" }));
+      await expect
+        .poll(async () => {
+          const { rows } = await sql<{ waiting: string }>`
+            select count(*) as waiting from pg_stat_activity
+            where wait_event_type = 'Lock' and query like 'insert into "task_comments"%'
+          `.execute(getDb());
+          return rows[0]?.waiting;
+        })
+        .toBe("1");
+      await other.query("commit");
+      expect((await created).status).toBe(404);
+    } finally {
+      await other.end();
+    }
   });
 
   test("删除评论，评论不属于这个任务时 404", async () => {

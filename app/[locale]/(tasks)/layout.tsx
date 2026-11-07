@@ -26,7 +26,7 @@ export default function TaskPagesLayout({ children }: { children: ReactNode }) {
   const t = useTranslations();
   return (
     <ClientMessages namespaces={["task"]}>
-      {/* 导航读当前路径，放进 Suspense 才不影响动态路由的预渲染。 */}
+      {/* 导航读路由 segment，放进 Suspense 才不影响动态路由的预渲染。 */}
       <Suspense
         fallback={<div className="h-16.25 border-b border-border bg-card" />}
       >

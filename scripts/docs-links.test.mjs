@@ -160,6 +160,7 @@ describe("agent 读的文档引用 Sample product 时都带 GitHub 链接", () =
 
 test("检查本身能发现失效的 GitHub 链接和没带链接的 Sample product 路径", () => {
   const base = "https://github.com/fhyfhyfhy/next-template";
+  const sha = "0123456789abcdef0123456789abcdef01234567";
   expect(
     brokenGithubLinks(
       ".claude/rules/example.md",
@@ -169,11 +170,17 @@ test("检查本身能发现失效的 GitHub 链接和没带链接的 Sample prod
         `[\`features/task/\`](${base}/tree/main/features/task)`,
         `[\`lib/missing.ts\`](${base}/blob/main/lib/missing.ts)`,
         `[\`lib/db.ts\`](${base}/blob/main/lib/fetch.ts)`,
+        // 按 README 固定到某个提交的链接照样检查。
+        `[\`lib/fetch.ts\`](${base}/blob/${sha}/lib/fetch.ts)`,
+        `[\`lib/missing.ts\`](${base}/blob/${sha}/lib/missing.ts)`,
+        `[\`features/task/\`](${base}/tree/${sha}/features/upload)`,
       ].join(" "),
     ),
   ).toStrictEqual([
     `${base}/blob/main/lib/missing.ts`,
     `${base}/blob/main/lib/fetch.ts`,
+    `${base}/blob/${sha}/lib/missing.ts`,
+    `${base}/tree/${sha}/features/upload`,
   ]);
   expect(
     unlinkedSamplePaths(
