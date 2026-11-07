@@ -125,16 +125,6 @@ export class TaskData {
     return new Map(rows.map((row) => [row.name, row.created_at.getTime()]));
   }
 
-  /** 库里这个任务是否已收藏。 */
-  async isFavorite(taskId: string) {
-    const row = await this.db
-      .selectFrom("tasks")
-      .select("favorite")
-      .where("id", "=", taskId)
-      .executeTakeFirstOrThrow();
-    return row.favorite;
-  }
-
   /** 库里已完成的任务数，别的用例完成的也算在内。 */
   async countDone() {
     const { total } = await this.db

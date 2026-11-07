@@ -2,8 +2,8 @@ export { PageHeading } from "./components/page-heading";
 export {
   RunningTasksBadge,
   RunningTasksBadgeSkeleton,
-  TaskHeader,
-} from "./components/task-header";
+} from "./components/running-tasks-badge";
+export { TaskHeader } from "./components/task-header";
 export { CreateTaskForm } from "./components/create-task-form";
 export { TaskList } from "./components/task-list";
 export {

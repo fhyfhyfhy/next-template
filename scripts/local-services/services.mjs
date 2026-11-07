@@ -14,7 +14,13 @@ import {
 import pg from "pg";
 
 import { migrateDatabase } from "../db/migrate.mjs";
-import { databaseUrl, DATASETS, localEnv, POSTGRES } from "./datasets.mjs";
+import {
+  databaseUrl,
+  DATASETS,
+  localEnv,
+  POSTGRES,
+  STORAGE,
+} from "./datasets.mjs";
 import { createLocalStorageClient } from "./storage.mjs";
 
 const projectRoot = join(import.meta.dirname, "..", "..");
@@ -23,7 +29,7 @@ const SEED_SQL = readFileSync(join(import.meta.dirname, "seed.sql"), "utf8");
 const SEED_FILES = join(import.meta.dirname, "seed-files");
 /** seed-files/ 下的文件传到 bucket 的这个前缀下，路径不变；seed.sql 里上传记录的 key 指向它们。 */
 const SEED_PREFIX = "seed/";
-const SEED_CONTENT_TYPES = {
+export const SEED_CONTENT_TYPES = {
   ".svg": "image/svg+xml",
   ".glb": "model/gltf-binary",
 };
@@ -46,7 +52,7 @@ export function startLocalServices() {
   );
   if (result.error || result.status !== 0) {
     throw new Error(
-      "Could not start the local services with Docker Compose; see its output above: Docker may not be running, or ports 54329 and 7070 may be taken, such as by containers from another Compose project",
+      `Could not start the local services with Docker Compose; see its output above: Docker may not be running, or ports ${POSTGRES.port} and ${new URL(STORAGE.endpoint).port} may be taken, such as by containers from another Compose project`,
       { cause: result.error },
     );
   }

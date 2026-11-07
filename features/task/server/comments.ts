@@ -62,7 +62,11 @@ export async function createComment(
     return toComment(row);
   } catch (error) {
     // 外键保证任务存在：任务不存在，或者在这之前刚被删除，都按任务不存在拒绝。
-    if (error instanceof DatabaseError && error.code === "23503") {
+    if (
+      error instanceof DatabaseError &&
+      error.code === "23503" &&
+      error.constraint === "task_comments_task_id_fkey"
+    ) {
       throw notFound(`Task ${taskId} not found`);
     }
     throw error;

@@ -543,13 +543,14 @@ test.describe("评论", () => {
   test("发表评论立即显示为发送中，成功后标记消失", async ({ page, tasks }) => {
     const task = await tasks.createTask({ status: "done" });
     await openTask(page, task.id);
-    await delayRequests(page, isServerAction, 1500);
+    const release = await holdRequests(page, isServerAction);
     await page.getByLabel("写评论").fill("新评论");
     await page.getByRole("button", { name: "发表" }).click();
 
     await expect(comments(page).last()).toContainText("新评论");
     await expect(comments(page).last()).toContainText("发送中");
     await expect(page.getByLabel("写评论")).toHaveValue("");
+    release();
     await expect(comments(page).last()).not.toContainText("发送中");
     await expect(comments(page)).toHaveCount(1);
   });
@@ -580,7 +581,12 @@ test.describe("评论", () => {
       .click();
 
     await expect(comments(page)).toHaveText([/第二条评论/]);
+    const deleted = waitForServerAction(page);
     release();
+    await deleted;
+    // 重新打开，读的是服务端的数据。
+    await openTask(page, task.id);
+    await expect(comments(page)).toHaveText([/第二条评论/]);
   });
 
   test("删除评论失败时恢复原位，只弹一个全局提示", async ({ page, tasks }) => {

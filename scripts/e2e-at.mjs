@@ -6,8 +6,8 @@ import { join, resolve } from "node:path";
 // 用法：pnpm e2e:at <commit> [playwright test 的参数]
 // 用这份 checkout 的 e2e/ 和 Playwright 配置，测 <commit> 的应用代码：确认为某个 bug 写的 spec 在修复前的提交上
 // 会失败（.claude/rules/e2e.md 的 Regression specs）。端口照常由 E2E_PORT 决定。
-// e2e 用到的 scripts/local-services/（datasets.mjs、storage.mjs，webServer 的 seed.sql）不复制，用的是 <commit> 的：
-// 那个提交要有兼容的这些文件，更早的提交跑不起来。
+// e2e 引入的 scripts/local-services/、webServer 运行的 reset.mjs 和 run-next.mjs 等 scripts/ 都来自 <commit>，不复制：
+// 那个提交要有这份 e2e 用到的文件，没有 scripts/local-services/storage.mjs 的提交跑不起来。
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const [ref, ...rest] = process.argv.slice(2);

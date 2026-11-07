@@ -17,5 +17,5 @@
 - `upload_attachments` 的每一行记录一个 `(record_type, record_id, name)` 用了哪个上传，比如 `("task", "task-01", "cover")`。`upload_id` 唯一，冲突时返回 `UPLOAD_ALREADY_USED`；`(record_type, record_id, name)` 唯一，一个任务只有一张封面。重复提交同样的关联什么也不做。
 - `record_id` 指向哪张表由 `record_type` 决定，没法对业务表建外键。业务记录删除时，所属 feature 要在同一个事务里调用 `upload` 解除它的全部关联，所以 `upload` 的函数接受调用方传入的事务。漏调的后果只是文件不会被清理，不会误删正在使用的文件。
 - `uploads` 表不存状态。创建超过 1 小时、而且没有 attachment 的上传，由 `upload` 的清理任务连同对象一起删除。换封面、删任务时都只改 attachment，不当场删文件，删除只有这一条路径。
-- `uploads/` 前缀的公开读策略只在开发环境的初始化脚本里设置：R2 没有 bucket policy API，公开读要靠它自己的公开域名，所以公开地址是一个配置项。
+- `uploads/` 前缀（以及本地的种子文件所在的 `seed/` 前缀）的公开读策略只在开发环境的初始化脚本里设置：R2 没有 bucket policy API，公开读要靠它自己的公开域名，所以公开地址是一个配置项。
 - presigned 上传 URL 要把 `Content-Type` 签进去，S3 client 要设置 `requestChecksumCalculation: "WHEN_REQUIRED"`。Versity 不会拒绝 SDK 默认附带的空 checksum 参数，用它开发时发现不了这个问题，但换成 Garage、SeaweedFS 等存储后上传会失败。

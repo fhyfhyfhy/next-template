@@ -4,7 +4,8 @@ import type { Migration } from "kysely/migration";
 // task 的 migration。scripts/db/migrate.mjs 用 Node 的类型剥离直接加载这个文件，所以它只能依赖
 // kysely：不能带 server-only，也不能引用 @/ 或其他相对路径的模块。名称带时间戳前缀，和其他 feature 的
 // migration 合成一条按名称排序的序列执行；已经执行过的 migration 不要再改，改结构就加一条新的。
-// 表结构另有两份副本，改结构时一起改：scripts/local-services/seed.sql 的种子数据和 e2e/tasks.ts 的 `Tables`。
+// 改表结构时一起改：本 feature 的 server/tables.ts（表的类型）、scripts/local-services/seed.sql（种子数据）和
+// e2e/tasks.ts 的 `Tables`（e2e 直接写库用的类型）。
 
 export const migrations: Record<string, Migration> = {
   "20261102000200_create_tasks": {

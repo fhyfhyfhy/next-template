@@ -9,13 +9,6 @@ declare global {
   var __kyselyPool: Pool | undefined;
 }
 
-/**
- * 应用数据库（`DATABASE_URL`）的 Kysely 实例，进程内共用一个 pg 连接池。`TDatabase` 只描述调用方拥有的表：
- * 多个 feature 共用一个库时，各自用自己的表类型调用它，得到的是同一个连接池上的不同类型视图。
- * pg 把 int8（`count()`、bigint 列）返回成字符串，以免超出 Number 的精度；表类型照实写成 string，需要数字的地方
- * 在数据层的映射里转换。
- * Kysely 实例本身不持有连接，每次调用新建一个开销很小。
- */
 function createPool() {
   const pool = new Pool({ connectionString: env.DATABASE_URL, max: 10 });
   // 闲置的连接断开时连接池发出 error，不监听的话在 Next 之外是未捕获的异常；连接池会丢掉这条连接，下次查询新建。
@@ -23,6 +16,13 @@ function createPool() {
   return pool;
 }
 
+/**
+ * 应用数据库（`DATABASE_URL`）的 Kysely 实例，进程内共用一个 pg 连接池。`TDatabase` 只描述调用方拥有的表：
+ * 多个 feature 共用一个库时，各自用自己的表类型调用它，得到的是同一个连接池上的不同类型视图。
+ * pg 把 int8（`count()`、bigint 列）返回成字符串，以免超出 Number 的精度；表类型照实写成 string，需要数字的地方
+ * 在数据层的映射里转换。
+ * Kysely 实例本身不持有连接，每次调用新建一个开销很小。
+ */
 export function getDb<TDatabase>(): Kysely<TDatabase> {
   const pool = (globalThis.__kyselyPool ??= createPool());
   return new Kysely<TDatabase>({ dialect: new PostgresDialect({ pool }) });

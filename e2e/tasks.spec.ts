@@ -10,6 +10,8 @@ import {
   isServerAction,
   openWithoutScripts,
   recordRequests,
+  requestBodyIncludes,
+  waitForServerAction,
 } from "./browser";
 import {
   createTaskThroughForm as createTask,
@@ -38,6 +40,23 @@ async function leaveAndReturn(page: Page) {
   await page.goBack();
   await expect(page).toHaveURL("/tasks");
 }
+
+test("整页打开时 header 标出当前页，详情页上“全部任务”标为它的上级", async ({
+  page,
+}) => {
+  const link = (name: string) =>
+    page.getByRole("navigation", { name: "主要" }).getByRole("link", { name });
+
+  await page.goto("/tasks");
+  await expect(link("全部任务")).toHaveAttribute("aria-current", "page");
+
+  await page.goto("/tasks/task-01");
+  await expect(link("全部任务")).toHaveAttribute("aria-current", "true");
+
+  await page.goto("/feed");
+  await expect(link("作品广场")).toHaveAttribute("aria-current", "page");
+  await expect(link("全部任务")).not.toHaveAttribute("aria-current");
+});
 
 test("全部任务默认显示第一页", async ({ page }) => {
   await page.goto("/tasks");
@@ -150,10 +169,7 @@ test("创建任务后列表立即出现新任务，表单清空", async ({ page 
   await openTasksPage(page);
   // 让进行中任务的轮询失败：列表的变化信号发现不了新任务，列表只能靠创建的 Server Action 让缓存失效来更新。
   await failRequests(page, isActiveTasksRequest, { status: 400 });
-  const name = unique("新建的跑车");
-  await page.getByLabel("名称").fill(name);
-  await page.getByLabel("Prompt").fill(unique("e2e prompt"));
-  await page.getByRole("button", { name: "创建任务" }).click();
+  const { name } = await createTask(page, unique("新建的跑车"));
 
   await expect(taskRow(page, name)).toContainText("排队中");
   await expect(page.getByLabel("名称")).toHaveValue("");
@@ -301,8 +317,14 @@ test("名称被占用后改了名字，离开再返回，改过的名字不会�
 
 test("名称为空时在浏览器里就拦下，不发请求", async ({ page }) => {
   await openTasksPage(page);
-  const actions = recordRequests(page, isServerAction);
-  await page.getByLabel("Prompt").fill(unique("e2e prompt"));
+  const prompt = unique("e2e prompt");
+  // 列表的变化信号也会调 Server Action：只记带这次 prompt 的。
+  const actions = recordRequests(
+    page,
+    (request) =>
+      isServerAction(request) && requestBodyIncludes(prompt)(request),
+  );
+  await page.getByLabel("Prompt").fill(prompt);
   await page.getByRole("button", { name: "创建任务" }).click();
 
   await expect(page.getByText("请输入名称")).toBeVisible();
@@ -327,7 +349,7 @@ test("创建出错时弹全局提示，填的内容还在，重试能成功", as
   await expect(taskRow(page, name)).toBeVisible();
 });
 
-test("收藏立即生效，请求完成前就显示已收藏", async ({ page, tasks }) => {
+test("收藏立即生效，请求完成前就显示已收藏", async ({ page }) => {
   await openTasksPage(page);
   const { id, name } = await createTask(page);
   // 收藏的 Server Action 放行之前，星标只能来自乐观更新。
@@ -337,9 +359,10 @@ test("收藏立即生效，请求完成前就显示已收藏", async ({ page, ta
   await star.click();
   await expect(star).toHaveAttribute("aria-pressed", "true");
 
+  // 等这次收藏的响应：返回时写入和缓存失效都已完成；列表的变化信号也会调 Server Action，按任务 id 认出它。
+  const saved = waitForServerAction(page, requestBodyIncludes(id));
   release();
-  // 等库里真的写入：列表的变化信号也会调 Server Action，等响应分不出是哪一个。
-  await expect.poll(() => tasks.isFavorite(id)).toBe(true);
+  await saved;
   await page.reload();
   await expect(
     taskRow(page, name).getByRole("button", { name: "收藏" }),

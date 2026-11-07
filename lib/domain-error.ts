@@ -37,7 +37,6 @@ export const ErrorCode = {
   BAD_REQUEST: 40000,
   NOT_FOUND: 40400,
   SERVER_ERROR: 50000,
-  SERVICE_UNAVAILABLE: 50300,
 } as const;
 
 /** 请求参数不合法；有专门含义的参数错误传自己的 `code`。 */

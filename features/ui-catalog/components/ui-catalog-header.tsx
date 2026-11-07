@@ -39,7 +39,7 @@ interface UiCatalogHeaderProps {
   actions: ReactNode;
 }
 
-/** 目录的 header：调用方给的品牌和操作，以及系统、浅色、深色主题选择。 */
+/** UI catalog 的 header：调用方给的品牌和操作，以及系统、浅色、深色主题选择。 */
 export function UiCatalogHeader({ brand, actions }: UiCatalogHeaderProps) {
   const t = useTranslations();
   const { theme, setTheme } = useTheme();

@@ -90,10 +90,10 @@ test("检查本身能发现失效的链接和锚点", () => {
 // Sample product 的代码，派生项目会删掉它（README 的 Starting a project）。agent 读的文档引用它时链接到模板在 GitHub
 // 上的版本，链接文字是从仓库根开始的路径（.agents/skills/skills-and-rules/SKILL.md 的 Citing code）。
 // 派生项目删掉 Sample product 时清空 SAMPLE_PRODUCT：链接指向模板的仓库，本地已经没有对应的文件。
-// 列表对应 README 那一节的第一段；`app/api/` 只列 Sample product 自己的目录，因为 rules 用 `app/api/` 泛指
-// Route Handler 的位置。
+// 列表取自 README 那一节里属于 Sample product 的代码：第一段的目录和 spec，以及种子数据；`app/api/` 只列 Sample product
+// 自己的目录，因为 rules 用 `app/api/` 泛指 Route Handler 的位置。链接按 README 固定到某个提交后照样检查。
 const GITHUB_LINK =
-  /^https:\/\/github\.com\/fhyfhyfhy\/next-template\/(?:blob|tree)\/main\/([^#?]+)/;
+  /^https:\/\/github\.com\/fhyfhyfhy\/next-template\/(?:blob|tree)\/[^/]+\/([^#?]+)/;
 const SAMPLE_PRODUCT = [
   "features/task/",
   "features/upload/",

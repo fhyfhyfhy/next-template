@@ -18,7 +18,7 @@ flowchart LR
 
 不负责：
 
-- 封面图和模型文件本身的上传和清理，归 upload；task 只决定任务用哪个文件当封面。
+- 封面图和模型文件本身的上传和清理，归 upload；task 决定任务用哪个文件当封面，generator 产出模型文件后交给 upload 保存、关联到任务。
 
 ## upload
 

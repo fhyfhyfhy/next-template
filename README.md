@@ -29,14 +29,13 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `:local`
 
 ## Starting a project
 
-The sample product is everything that serves tasks and uploads: `features/task/`, `features/upload/`, the routes in `app/[locale]/(tasks)/` and `app/api/`, their namespaces in `messages/`, the specs and the fixture in `e2e/tasks.ts`, and their entries in `GLOSSARY.md` and `docs/features.md`. Replacing it also touches the places that wire it into the rest:
+The sample product is everything that serves tasks and uploads: `features/task/`, `features/upload/`, the routes in `app/[locale]/(tasks)/` and `app/api/`, their namespaces in `messages/`, the specs `e2e/tasks.spec.ts`, `e2e/task-detail.spec.ts`, `e2e/feed.spec.ts`, `e2e/search.spec.ts`, and `e2e/recent.spec.ts` with their fixture in `e2e/tasks.ts`, and their entries in `GLOSSARY.md` and `docs/features.md`. Replacing it also touches the places that wire it into the rest:
 
 - `app/[locale]/page.tsx`, whose home page redirects to the task list through `TASK_LIST_HREF`.
 - The background jobs in `instrumentation.ts`, and their switches `TASK_GENERATOR_ENABLED` and `UPLOAD_CLEANUP_ENABLED` in `lib/env.ts`, `lib/env.test.ts`, and `playwright.config.ts`.
 - The seed data: `scripts/local-services/seed.sql`, the files it references in `scripts/local-services/seed-files/`, their content types in `SEED_CONTENT_TYPES` in `scripts/local-services/services.mjs`, and the tables `scripts/local-services/seed.db.test.mjs` counts.
 - The namespaces registered in `lib/i18n/messages.ts`; in `messages/*/app.json`, the route keys `tasks`, `taskDetail`, `feed`, `search`, and `recent`, `pageError` for `app/[locale]/(tasks)/error.tsx`, and `metadata.description`; and the sample product's terms in `messages/terms.json`.
 - The specs that test kept code through the sample product's pages: `e2e/home.spec.ts`, `e2e/locale.spec.ts`, and `e2e/date-time.spec.ts`. Point them at the project's own pages rather than deleting them.
-- The cases in `eslint.config.test.mjs` that lint real files under `features/task/`, which must exist on disk: point them at the project's own files.
 - Text in kept files that describes the sample product: the introductions of `README.md` and `GLOSSARY.md`, the items in `TODO.md`, and comments that use its pages or tables as examples. Search the kept files for its words, such as task, upload, 任务, and 上传.
 - `SAMPLE_PRODUCT` in `scripts/docs-links.test.mjs`: empty it. The rules' links to the sample product then open on GitHub only, and the test stops looking for their files here.
 - Object storage, if the project has no uploads: the `STORAGE_*` variables in `lib/env.ts` and in `localEnv` in `scripts/local-services/datasets.mjs`, the `storage` service in `compose.yaml`, the bucket setup and `PUBLIC_PREFIXES` in `scripts/local-services/services.mjs`, and `connectE2eStorage` in `e2e/backend.ts`.

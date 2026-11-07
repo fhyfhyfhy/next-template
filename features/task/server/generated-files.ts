@@ -1,6 +1,6 @@
 import "server-only";
 
-// generator 产出的文件内容：任务完成时的 3D 模型。按需生成，不放进仓库。
+// generator 产出的文件内容：任务完成时的 3D 模型。
 
 const GLB_MAGIC = 0x46546c67; // "glTF"
 const CHUNK_JSON = 0x4e4f534a;

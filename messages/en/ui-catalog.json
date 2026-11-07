@@ -45,7 +45,7 @@
       "description": "A small label for a status or category."
     },
     "button": {
-      "description": "A button that can be rendered as another element, or stay focusable while disabled."
+      "description": "A button that can be rendered as another element and can stay focusable while disabled."
     },
     "checkbox": {
       "description": "An easily stylable checkbox."

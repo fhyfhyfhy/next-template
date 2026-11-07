@@ -157,4 +157,4 @@ deleteOrderMutation.mutate({ orderId }, { onSuccess: () => onClose() });
     });
   ```
 
-- Values that change per call are variables (`mutate({ orderId })`). Context fixed for the mutation, such as the record a comment belongs to, is a factory argument after `t` (`createCommentMutationOptions(t, orderId)`): it can build the request URL as well as the cache keys, and variables stay the per-call payload.
+- Values that change per call are variables (`mutate({ orderId })`). Context fixed for the mutation, such as the record a comment belongs to, is a factory argument after `t` (`createCommentMutationOptions(t, orderId)`, as in [`features/task/api/create-comment.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/create-comment.ts)): it can build the request URL as well as the cache keys, and variables stay the per-call payload.

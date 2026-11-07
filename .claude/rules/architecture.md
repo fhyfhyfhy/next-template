@@ -144,7 +144,7 @@ features/orders/components/
     format-button.tsx
 ```
 
-The sample product's task list sits beside its toolbar and navigation this way: [`features/task/components/task-list/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list), [`features/task/components/task-list-toolbar/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-toolbar), and [`features/task/components/task-list-navigation/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-navigation).
+The sample product's task list sits beside its toolbar and navigation this way: [`features/task/components/task-list/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list), [`features/task/components/task-list-toolbar/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-toolbar), and `task-list-navigation/`.
 
 ### Feature public API
 

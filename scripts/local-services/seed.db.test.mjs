@@ -1,10 +1,10 @@
 import { readdirSync, statSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { extname, join, relative, sep } from "node:path";
 import pg from "pg";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { databaseUrl, DATASETS } from "./datasets.mjs";
-import { writeSeedRows } from "./services.mjs";
+import { SEED_CONTENT_TYPES, writeSeedRows } from "./services.mjs";
 
 // 每个测试开始时库里已经是种子数据（test-reset.mjs）。
 
@@ -47,9 +47,7 @@ afterEach(async () => {
 describe("种子数据", () => {
   test("每条上传记录都有 seed-files/ 里的同名文件，大小一致，没有多余的文件", async () => {
     const client = await connect();
-    const { rows } = await client.query(
-      "select key, size from uploads order by key",
-    );
+    const { rows } = await client.query("select key, size from uploads");
     const files = readdirSync(SEED_FILES, {
       recursive: true,
       withFileTypes: true,
@@ -64,7 +62,19 @@ describe("种子数据", () => {
       })
       .sort((a, b) => (a.key < b.key ? -1 : 1));
 
-    expect(files).toStrictEqual(rows);
+    const byKey = (a, b) => (a.key < b.key ? -1 : 1);
+    expect(files).toStrictEqual(rows.toSorted(byKey));
+  });
+
+  test("每条上传记录的 content_type 和上传文件时用的一致", async () => {
+    const client = await connect();
+    const { rows } = await client.query(
+      "select key, content_type from uploads",
+    );
+
+    for (const { key, content_type } of rows) {
+      expect(content_type, key).toBe(SEED_CONTENT_TYPES[extname(key)]);
+    }
   });
 
   test("库里已有任务时再执行不写入", async () => {

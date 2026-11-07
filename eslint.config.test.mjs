@@ -1501,14 +1501,14 @@ describe("服务端代码不用 fetchApi 请求本 app 自己的接口", () => {
     },
     {
       name: "数据层和 Server Action 请求同源路径时报错",
-      file: "features/task/api/probe-action.ts",
+      file: "features/ui-catalog/api/probe-action.ts",
       directive: `"use server";\n\n`,
       url: `"/api/tasks"`,
       reported: 1,
     },
     {
       name: "服务端请求其他服务的完整 URL 不报",
-      file: "features/task/server/probe.ts",
+      file: "features/ui-catalog/server/probe.ts",
       url: `"https://api.example.com/v1/items"`,
       reported: 0,
     },
@@ -1521,7 +1521,7 @@ describe("服务端代码不用 fetchApi 请求本 app 自己的接口", () => {
     },
     {
       name: "feature 的浏览器请求模块不报",
-      file: "features/task/api/get-probe.ts",
+      file: "features/ui-catalog/api/get-probe.ts",
       url: `"/api/tasks"`,
       reported: 0,
     },
@@ -1696,7 +1696,7 @@ export function Probe({ at }: { at: number }) {
   for (const { name, file, source, reported } of [
     {
       name: "format.dateTime in a Client Component is reported",
-      file: "features/task/components/task-list/index.tsx",
+      file: "features/ui-catalog/components/example-list/index.tsx",
       source: clientDateTime,
       reported: ["date-time"],
     },
@@ -1726,7 +1726,7 @@ export default async function Probe() {
     },
     {
       name: "relative times and numbers still format anywhere",
-      file: "features/task/components/task-list/index.tsx",
+      file: "features/ui-catalog/components/example-list/index.tsx",
       source: `"use client";
 
 import { useFormatter } from "next-intl";
@@ -1759,7 +1759,7 @@ describe("翻译函数不按 namespace 取", () => {
   for (const { name, file, source, reported } of [
     {
       name: "useTranslations 传 namespace 时报错",
-      file: "features/task/components/task-list/index.tsx",
+      file: "features/ui-catalog/components/example-list/index.tsx",
       source: `"use client";
 
 import { useTranslations } from "next-intl";
@@ -1818,7 +1818,7 @@ describe("每个 key 的第一段是文件 owner 的 namespace", () => {
   for (const { name, file, source, reported } of [
     {
       name: "feature 只读自己的 key；模板字面量和条件表达式的每个分支都按前缀查",
-      file: "features/task/components/task-list/index.tsx",
+      file: "features/ui-catalog/components/example-list/index.tsx",
       source: `"use client";
 
 import { useTranslations } from "next-intl";
@@ -1827,10 +1827,10 @@ export function Probe({ status, wide }: { status: string; wide: boolean }) {
   const t = useTranslations();
   return (
     <p>
-      {t("task.taskList.empty")}
-      {t(\`task.taskStatus.\${status}\`)}
-      {t(wide ? "task.taskList.empty" : "ui-catalog.header.brand")}
-      {t.rich("app.tasks.title")}
+      {t("ui-catalog.examples.title")}
+      {t(\`ui-catalog.header.theme.\${status}\`)}
+      {t(wide ? "ui-catalog.examples.title" : "ui.dialog.close")}
+      {t.rich("app.name")}
     </p>
   );
 }
@@ -1893,13 +1893,13 @@ describe("应用的环境变量只通过 lib/env.ts 读", () => {
   for (const { name, file, source, reported } of [
     {
       name: "feature 的服务端代码直接读应用的变量时报错",
-      file: "features/task/server/connection.ts",
+      file: "features/ui-catalog/server/get-cached-example-sources.ts",
       source: `export const url = process.env.DATABASE_URL;\n`,
       reported: ["env"],
     },
     {
       name: "按变量名取、解构、整个传出去都报错",
-      file: "features/task/server/connection.ts",
+      file: "features/ui-catalog/server/get-cached-example-sources.ts",
       source: `const name = "DATABASE_URL";
 export const byName = process.env[name];
 export const { STORAGE_BUCKET } = process.env;
@@ -1948,7 +1948,10 @@ describe("React 19 写法和 effect 清理由 @eslint-react 检查", () => {
   // 报告的 @eslint-react 规则，去掉前缀。file 用真实存在的路径，原因同 restricted。
   async function reactRules(source) {
     const [result] = await restrictedSyntaxLinter.lintText(source, {
-      filePath: join(project, "features/task/components/task-list/index.tsx"),
+      filePath: join(
+        project,
+        "features/ui-catalog/components/example-list/index.tsx",
+      ),
     });
     expect(result.fatalErrorCount).toBe(0);
     return result.messages
@@ -2155,7 +2158,7 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
   for (const { name, file, source, reported } of [
     {
       name: "每种有对应组件的原生元素都被拒绝",
-      file: "features/task/components/feed-grid/feed-card.tsx",
+      file: "features/ui-catalog/components/example-card.tsx",
       source: component(`(
     <>
       <button />
@@ -2174,13 +2177,13 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
     },
     {
       name: "render prop 里的原生元素也被拒绝",
-      file: "features/task/components/feed-grid/feed-card.tsx",
+      file: "features/ui-catalog/components/example-card.tsx",
       source: `declare function Trigger(props: { render: unknown }): null;\n${component("<Trigger render={<button />} />")}`,
       reported: ["native-element"],
     },
     {
       name: "文件选择和隐藏字段的 input 保持原生",
-      file: "features/task/components/feed-grid/feed-card.tsx",
+      file: "features/ui-catalog/components/example-card.tsx",
       source: component(`(
     <>
       <input type="file" />
@@ -2191,7 +2194,7 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
     },
     {
       name: "同名组件和成员表达式不受影响",
-      file: "features/task/components/feed-grid/feed-card.tsx",
+      file: "features/ui-catalog/components/example-card.tsx",
       source: `declare function Form(): null;
 declare const form: { Field: () => null };
 ${component(`(
