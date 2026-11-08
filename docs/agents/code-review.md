@@ -2,6 +2,8 @@
 
 Project reviews for the `code-review` skill, one per section.
 
+**Ends review rounds:** changes to comments other than tool directives such as `eslint-disable`, to test descriptions, and to the text of messages in `messages/{locale}/`, leaving their keys and ICU arguments as they are.
+
 ## Architecture
 
 - **Runs when:** the diff changes application code (the directories in the Layers table of `.claude/rules/architecture.md`, plus `instrumentation.ts` and `proxy.ts` at the root) or `docs/features.md`. An edit inside a function body is enough, since it can give a module a second job, add an unrelated branch, or copy logic a third time.
