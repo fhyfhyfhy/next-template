@@ -3,7 +3,7 @@ name: skills-and-rules
 description: This repo's skills and rules. Use when adding, updating, customizing, or creating a skill, or adding or editing a rule.
 ---
 
-Run these commands from the repo root.
+Run these commands from the project root, the directory holding `AGENTS.md`.
 
 ## Skills
 
@@ -27,6 +27,6 @@ A skill change is done when `.agents/skills/<name>/SKILL.md` is in place and, in
 
 ## Citing code
 
-In skills and rules, cite this repo's code as `symbol` in `path`, the path written from the repo root, such as `fetchApi` in `lib/fetch.ts`, so the reader opens it without searching; cite a whole file by its path alone. Later mentions in the same document use the name alone. Symbols from frameworks and packages take no path.
+In skills and rules, cite this project's code as `symbol` in `path`, the path written from the project root, such as `fetchApi` in `lib/fetch.ts`, so the reader opens it without searching; cite a whole file by its path alone. Later mentions in the same document use the name alone. Symbols from frameworks and packages take no path.
 
-next-template's sample product, the example business it ships, is the working reference for the conventions: when a skill or rule needs a working example, cite its code. A project made from the template deletes it, so link that code to next-template on GitHub, with the path from the repo root as the link text and `[`, `]`, `(`, and `)` percent-encoded in the URL: `symbol` in [`features/task/server/tasks.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/server/tasks.ts). A pattern a few lines can show may use a snippet with generic names, such as an `orders` feature, with the sample product's version linked beside it.
+next-template's sample product, the example business it ships, is the working reference for the conventions: when a skill or rule needs a working example, cite its code. A project made from the template deletes it, so link that code to next-template on GitHub, with the path from next-template's root as the link text and `[`, `]`, `(`, and `)` percent-encoded in the URL: `symbol` in [`features/task/server/tasks.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/server/tasks.ts). A pattern a few lines can show may use a snippet with generic names, such as an `orders` feature, with the sample product's version linked beside it.
