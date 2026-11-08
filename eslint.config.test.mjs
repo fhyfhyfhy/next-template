@@ -1721,6 +1721,11 @@ describe("页面上的 HTML 只由 React 渲染", () => {
       source: `export function Probe() {\n  return <a href="javascript:void(0)" />;\n}\n`,
       rule: "no-script-url",
     },
+    {
+      name: "写进对象再展开的 dangerouslySetInnerHTML 也报错",
+      source: `export function Probe({ html }: { html: string }) {\n  const props = { dangerouslySetInnerHTML: { __html: html } };\n  return <div {...props} />;\n}\n`,
+      rule: "security/raw-html",
+    },
   ]) {
     test(name, async () => {
       const [result] = await eslint.lintText(source, {

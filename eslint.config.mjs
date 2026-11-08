@@ -27,6 +27,7 @@ import withWrapperImports, {
   apiFileFactoriesRule,
   mutationCallbacksRule,
 } from "./scripts/eslint/query-plugin.mjs";
+import securityPlugin from "./scripts/eslint/security-plugin.mjs";
 import { TAILWIND_PALETTES } from "./scripts/eslint/tailwind-palettes.mjs";
 import writingStylePlugin from "./scripts/eslint/writing-style-plugin.mjs";
 
@@ -412,11 +413,13 @@ const eslintConfig = defineConfig([
   },
   {
     ...APPLICATION_CODE,
+    plugins: { security: securityPlugin },
     rules: {
       "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX],
       // 页面上的 HTML 只由 React 渲染：dangerouslySetInnerHTML 和 javascript: URL 都会把字符串当代码执行。
-      // 任何组件都查，因为组件可能把这个 prop 传给它渲染的元素。
+      // 任何组件都查，因为组件可能把这个 prop 传给它渲染的元素；写进对象再展开的由 security/raw-html 查。
       "react/no-danger": ["error", { customComponentNames: ["*"] }],
+      "security/raw-html": "error",
       "no-script-url": "error",
     },
   },
