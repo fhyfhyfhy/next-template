@@ -29,22 +29,7 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `:local`
 
 ## Starting a project
 
-The sample product is everything that serves tasks and uploads: `features/task/`, `features/upload/`, the routes in `app/[locale]/(tasks)/` and `app/api/`, their namespaces in `messages/`, the specs `e2e/tasks.spec.ts`, `e2e/task-detail.spec.ts`, `e2e/feed.spec.ts`, `e2e/search.spec.ts`, and `e2e/recent.spec.ts` with their fixture in `e2e/tasks.ts`, and their entries in `GLOSSARY.md` and `docs/features.md`. Replacing it also touches the places that wire it into the rest:
-
-- `app/[locale]/page.tsx`, whose home page redirects to the task list through `TASK_LIST_HREF`.
-- The background jobs in `instrumentation.ts`, and their switches `TASK_GENERATOR_ENABLED` and `UPLOAD_CLEANUP_ENABLED` in `lib/env.ts`, `lib/env.test.ts`, and `playwright.config.ts`.
-- The seed data: `scripts/local-services/seed.sql`, the files it references in `scripts/local-services/seed-files/`, their content types in `SEED_CONTENT_TYPES` in `scripts/local-services/services.mjs`, and the tables `scripts/local-services/seed.db.test.mjs` counts.
-- The namespaces registered in `lib/i18n/messages.ts`; in `messages/*/app.json`, the route keys `tasks`, `taskDetail`, `feed`, `search`, and `recent`, `pageError` for `app/[locale]/(tasks)/error.tsx`, and `metadata.description`; and the sample product's terms in `messages/terms.json`.
-- The specs that test kept code through the sample product's pages: `e2e/home.spec.ts`, `e2e/locale.spec.ts`, and `e2e/date-time.spec.ts`. Point them at the project's own pages rather than deleting them.
-- Text in kept files that describes the sample product: the introductions of `README.md` and `GLOSSARY.md`, the items in `TODO.md`, and comments that use its pages or tables as examples. Search the kept files for its words, such as task, upload, 任务, and 上传.
-- `SAMPLE_PRODUCT` in `scripts/docs-links.test.mjs`: empty it. The rules' links to the sample product then open on GitHub only, and the test stops looking for their files here.
-- Object storage, if the project has no uploads: the `STORAGE_*` variables in `lib/env.ts` and in `localEnv` in `scripts/local-services/datasets.mjs`, the `storage` service in `compose.yaml`, the bucket setup and `PUBLIC_PREFIXES` in `scripts/local-services/services.mjs`, and `connectE2eStorage` in `e2e/backend.ts`.
-
-A project replaces it with its own features, the same way: the rules in `.claude/rules/` and the skills link to the sample product's code on this repository's GitHub, so their examples still open once it is gone (they point at `main`; to keep them at the version the project started from, replace `/blob/main/` and `/tree/main/` with that commit), a project's own terms and features take the sample product's entries in the [Glossary](GLOSSARY.md) and [Feature boundaries](docs/features.md), and this repository stays the place to read working code for them.
-
-Keep the rest: the layers outside `features/`, `features/ui-catalog/` with the design system it documents, the app shell in `app/`, the scripts, and the e2e helpers in `e2e/test.ts`, `e2e/browser.ts`, and `e2e/backend.ts`, which a project's own fixtures build on.
-
-A project whose data lives elsewhere, such as in another app's database, replaces the data setup as a whole: it writes its own [`.claude/rules/data-setup.md`](.claude/rules/data-setup.md), keeping the headings other files link to, and replaces the code that file describes: `lib/db.ts`, `scripts/db/`, and the `db` project in `vitest.config.mts`, plus `compose.yaml` and `scripts/local-services/` when it runs no local services. `.claude/rules/server-data.md` and the review in `docs/agents/code-review.md` stay as they are.
+A project made from this template deletes the sample product and writes its own features in its place, and keeps the rest: the conventions, tooling, and agent instructions, the layers outside `features/`, the UI catalog, and the app shell. A project whose data lives elsewhere, such as in another app's database, also replaces the data setup. The [derived-project](.agents/skills/derived-project/SKILL.md) skill lists the sample product and what a project does with each of the template's files, and [start.md](.agents/skills/derived-project/start.md) walks through starting one.
 
 ## Checks
 
@@ -118,29 +103,9 @@ Official Next.js skills record a versioned `ref` in `skills-lock.json`. When upg
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## UI catalog examples
+## UI catalog
 
-The UI catalog at `/ui` shows the design-system components. Add examples under `features/ui-catalog/components/<component-id>-examples/`.
-For a new component, adapt the [Button directory](features/ui-catalog/components/button-examples),
-including its `preview.tsx`, `playground.tsx`, and public `index.ts`.
-Add one `*.example.tsx` per usage scenario; use
-[basic.example.tsx](features/ui-catalog/components/button-examples/basic.example.tsx)
-for minimal usage.
-
-Keep the component and its `metadata` export in the same TSX file; the
-[metadata types](features/ui-catalog/types/examples.ts) define the fields.
-Metadata uses literal values because generation reads it without executing TSX.
-A component's description follows the interface language: write it in every
-`messages/<locale>/ui-catalog.json` under `components.<component-id>.description`.
-Text inside `*-examples/` stays literal, in the source locale, so each file stays copyable.
-`order` defaults to `0`, with component ID or example filename breaking ties.
-
-Keep playgrounds and usage examples independently copyable; displayed code comes
-from those runnable files. `Preview` owns the playground and controls; shared UI catalog
-code renders usage examples.
-
-The dev/build scripts update generated indexes. Commit them with their sources;
-run `pnpm generate:examples` when working without the dev server.
+The UI catalog at `/ui` shows the design-system components, each with a playground and runnable usage examples, written as [.claude/rules/ui-catalog.md](.claude/rules/ui-catalog.md) describes.
 
 ## Learn More
 

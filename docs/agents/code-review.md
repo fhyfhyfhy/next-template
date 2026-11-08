@@ -29,7 +29,7 @@ Project reviews for the `code-review` skill, one per section.
 ## UI
 
 - **Runs when:** the diff changes a `.tsx` or `.jsx` file, a file under any `components/`, or a `.css` file.
-- **Standards:** `.claude/rules/components.md`, `.claude/rules/react.md`, `.agents/skills/vercel-composition-patterns/` (`SKILL.md` and its `rules/`), and "UI catalog examples" in `README.md`
+- **Standards:** `.claude/rules/components.md`, `.claude/rules/react.md`, `.claude/rules/ui-catalog.md`, and `.agents/skills/vercel-composition-patterns/` (`SKILL.md` and its `rules/`)
 - **Brief:** Review the components the diff adds or changes, and how it renders others; ESLint checks component entries and imports, that UI libraries and native controls stay in `components/ui/`, Tailwind classes and tokens, the legacy React forms, and the Rules of React. Where a component lives is the Architecture review's.
   - **Reuse, compose, extend, or add**: search `components/ui/`, `components/`, the feature's components, and other features' entries for a candidate, and check that the change took the least invasive action that covers the need.
   - **Using a component**: appearance through its `variant` and `size`, placement and layout through `className`; a visual override a third caller repeats belongs in the component; one interactive element per trigger, with a project button passed as `render`.
