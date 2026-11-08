@@ -34,7 +34,7 @@ disable-model-invocation: true
 
 This project was made from [next-template](https://github.com/fhyfhyfhy/next-template); \`.template-version\` names the template commit it last took in. What the project does with each of the template's files, and how to upgrade it, are in next-template's own \`derived-project\` skill.
 
-Read it in the local next-template checkout that \`git config next-template.path\` names in this repository; when it names none, clone https://github.com/fhyfhyfhy/next-template.git outside the project and set it. Pull the checkout to the latest \`main\` with \`git -C <checkout> pull --ff-only\`, then follow \`.agents/skills/derived-project/SKILL.md\` there.
+Read it in the local next-template checkout that \`git config next-template.path\` names in this repository; when it names none, clone https://github.com/fhyfhyfhy/next-template.git outside the project and set it with \`git config next-template.path <checkout>\`. Pull the checkout to the latest \`main\` with \`git -C <checkout> pull --ff-only\`, then read \`.agents/skills/derived-project/SKILL.md\` there; to upgrade, follow \`upgrade.md\` beside it.
 `,
   "agents/openai.yaml": `interface:
   display_name: "Derived project"
