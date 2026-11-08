@@ -17,14 +17,14 @@ Project reviews for the `code-review` skill, one per section.
 
 ## Data flow
 
-- **Runs when:** the diff changes how backend data is read, written, cached, or shown: a feature's `api/`, `server/`, or `server.ts`, `app/api/`, a migration, an environment variable, or a page or component that reads or writes data, such as one that calls the data layer, `useQuery`, `useMutation`, or `useQueryStates`.
-- **Standards:** `.claude/rules/data-flow.md`, `.claude/rules/server-data.md`, `.claude/rules/tanstack-query.md`, `.agents/skills/next-data-flow/` (`SKILL.md`, `refresh.md`, and `framework-notes.md`), and "Environment variables" in `AGENTS.md`
+- **Runs when:** the diff changes how backend data is read, written, cached, or shown: a feature's `api/`, `server/`, or `server.ts`, `app/api/`, the database schema, an environment variable, or a page or component that reads or writes data, such as one that calls the data layer, `useQuery`, `useMutation`, or `useQueryStates`.
+- **Standards:** `.claude/rules/data-flow.md`, `.claude/rules/server-data.md`, `.claude/rules/data-setup.md`, `.claude/rules/tanstack-query.md`, `.agents/skills/next-data-flow/` (`SKILL.md`, `refresh.md`, and `framework-notes.md`), and "Environment variables" in `AGENTS.md`
 - **Brief:** Review the reads and writes the diff adds or changes; ESLint checks the request libraries, server code requesting the app's own API, which file each factory lives in, where mutation callbacks go, and how environment variables are read. For each read, list its consumers and update triggers as the skill's Steps do, following them past the diff to every page and component that shows the same data, then check:
   - **Ownership**: one owner per read, chosen by the skill's signals; no copy of it in state, context, or a store, and no second owner refetching part of it.
   - **Server read and delivery**: a per-request read awaits `connection()` first; a cached read's arguments, `cacheLife`, and tags fit its freshness bound and the writes that change it; independent reads start together; each `<Suspense>` sits close to its read, with a fallback the size of the content; a value that must come from the runtime is read after `connection()`.
   - **Refreshes**: every display of the data a write changes refreshes after it, through `updateTag` in the action for a server-cached read and the factory's cache updates for a query; an optimistic value goes through each display's owner and rolls back on failure; data changed elsewhere and a session change each have a refresh path.
   - **Failures**: the factory's `meta` sets the failure toast, and a recoverable failure suppresses it for that case only; a query renders its data first, then its error, then loading.
-  - **Server Actions and the data layer**: an action validates its input and authorizes the write before calling the data layer, which validates again; a write that touches several rows runs in one transaction; a broken business rule throws `DomainError` with the feature's code; results map to JSON-native schemas; a migration only adds to the applied ones.
+  - **Server Actions and the data layer**: an action validates its input and authorizes the write before calling the data layer, which validates again; a write that touches several rows runs in one transaction; a broken business rule throws `DomainError` with the feature's code; results map to JSON-native schemas; a schema change follows "Schema changes" in `data-setup.md`.
 
 ## UI
 
@@ -54,7 +54,7 @@ Project reviews for the `code-review` skill, one per section.
 ## Tests
 
 - **Runs when:** the diff changes application behavior, tests, test fixtures or helpers, or test configuration.
-- **Standards:** `.claude/rules/e2e.md`, "Tests" in `.claude/rules/server-data.md`, and "Test and lint tooling" in `AGENTS.md`
+- **Standards:** `.claude/rules/e2e.md`, "Tests" in `.claude/rules/server-data.md`, "Test databases" in `.claude/rules/data-setup.md`, and "Test and lint tooling" in `AGENTS.md`
 - **Brief:** Judge the test design: whether the tests catch this change breaking, without breaking on changes that keep its behavior. For each behavior the diff adds, changes, or fixes, find its tests, in the diff or already in the repo, then check:
   - **Missing**: a behavior no test would notice breaking is a finding, and so is a bug fix without a regression test.
   - **Level**: each behavior is tested where its failure shows, and once: a pure rule in a unit test; a data-layer rule in a `*.db.test.ts` beside its module, against the real database; what only a browser shows, such as hydration, streaming, caching, navigation, and focus, in an e2e spec.
@@ -62,7 +62,7 @@ Project reviews for the `code-review` skill, one per section.
   - **Outcomes, not implementation**: assertions on what users see, what callers receive, or what is stored, through the public interface; none on internal calls or private state, and no test of a mock's own behavior. In the browser, find elements by role and accessible name.
   - **Cases**: the cases that matter for the behavior, such as empty and boundary values, invalid input, a failing dependency, and concurrent writes the code guards against; one behavior per test, named by what it checks.
   - **Determinism**: nothing depends on the wall clock, randomness, test order, or a fixed wait; time and data come from fixtures, such as the read-only seed data, records a test creates for itself, and background jobs the fixture stands in for, and each wait ends on the event that completes it.
-  - **Stand-ins**: real dependencies where the repo provides them, such as the local database and object storage; a stand-in only at a boundary the tests can't run, intercepted rather than written into the app, and behaving as the real one does.
+  - **Stand-ins**: real dependencies where the repo provides them, such as the test databases in `data-setup.md`; a stand-in only at a boundary the tests can't run, intercepted rather than written into the app, and behaving as the real one does.
   - **Fit**: existing fixtures, helpers, and test entries reused, and setup shared rather than copied.
 
 ## Comments
