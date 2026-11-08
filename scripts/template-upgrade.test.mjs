@@ -70,7 +70,9 @@ let report;
 beforeAll(() => {
   writeFileSync(env.GIT_CONFIG_GLOBAL, "");
   mkdirSync(templateDir);
-  git("init", "-q");
+  git("init", "-q", "-b", "main");
+  git("init", "-q", "--bare", join(root, "origin.git"));
+  git("remote", "add", "origin", join(root, "origin.git"));
   const baseFiles = {
     "only-template.txt": lines("a", "b", "c"),
     "both.txt": lines("a", "b", "c", "d", "e", "f", "g"),
@@ -83,6 +85,8 @@ beforeAll(() => {
     "pnpm-lock.yaml": lines("lock: 1"),
     "features/task/task.ts": lines("task"),
     "old/index.generated.ts": lines("1", "2", "3", "4", "5", "6", "7"),
+    ".agents/skills/derived-project/SKILL.md": lines("full skill 1"),
+    ".agents/skills/derived-project/upgrade.md": lines("upgrade steps"),
   };
   base = commit(baseFiles);
   target = commit({
@@ -102,7 +106,9 @@ beforeAll(() => {
     "own.txt": lines("template's"),
     "old/index.generated.ts": null,
     "new/index.generated.ts": lines("one", "2", "3", "4", "5", "6", "7"),
+    ".agents/skills/derived-project/SKILL.md": lines("full skill 2"),
   });
+  git("push", "-q", "origin", "main");
 
   mkdirSync(projectDir);
   writeFiles(projectDir, {
@@ -116,6 +122,8 @@ beforeAll(() => {
     "features/task/task.ts": null,
     "own.txt": lines("project's"),
     "old/index.generated.ts": lines("1", "2", "3", "4", "5", "6", "seven"),
+    ".agents/skills/derived-project/SKILL.md": lines("an older pointer"),
+    ".agents/skills/derived-project/upgrade.md": null,
   });
   report = upgradeProject({ templateDir, projectDir });
 });
@@ -162,6 +170,23 @@ describe("模板的改动带进派生项目", () => {
     expect(report.generated).toStrictEqual(["new/index.generated.ts"]);
   });
 
+  test("derived-project skill 不合并，换成指向本地 next-template 的指针", () => {
+    expect(read(".agents/skills/derived-project/SKILL.md")).toContain(
+      "git config next-template.path",
+    );
+    expect(read(".agents/skills/derived-project/agents/openai.yaml")).toContain(
+      "allow_implicit_invocation: false",
+    );
+    expect(
+      existsSync(join(projectDir, ".agents/skills/derived-project/upgrade.md")),
+    ).toBe(false);
+    expect(
+      [...report.merged, ...report.decisions.map(({ path }) => path)].filter(
+        (path) => path.startsWith(".agents/"),
+      ),
+    ).toStrictEqual([]);
+  });
+
   test("Sample product 和 lockfile 不带进来", () => {
     expect(existsSync(join(projectDir, "features"))).toBe(false);
     expect(read("pnpm-lock.yaml")).toBe(lines("lock: 1"));
@@ -202,5 +227,18 @@ test("两边都改过的二进制文件保持项目的版本，等人决定", ()
     path: "image.bin",
     reason: "binary file that both the template and the project changed",
   });
+  rmSync(dir, { recursive: true, force: true });
+});
+
+// 放在最后：它让模板的 checkout 落后于 origin/main。
+test("模板的 checkout 不在最新的 main 上就拒绝升级", () => {
+  commit({ "later.txt": lines("later") });
+  git("push", "-q", "origin", "main");
+  git("reset", "-q", "--hard", "HEAD~1");
+  const dir = mkdtempSync(join(tmpdir(), "template-upgrade-behind-"));
+  writeFiles(dir, { ".template-version": `${base}\n` });
+  expect(() => upgradeProject({ templateDir, projectDir: dir })).toThrow(
+    /not the latest main/,
+  );
   rmSync(dir, { recursive: true, force: true });
 });

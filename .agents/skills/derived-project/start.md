@@ -2,7 +2,7 @@
 
 Turn a copy of next-template into a new project. The groups of files are in [SKILL.md](SKILL.md#the-templates-files).
 
-1. Copy the template's files at the commit to start from into the project's directory, and write that commit into `.template-version`.
+1. Copy the template's files at its latest `main` into the project's directory, and write that commit into `.template-version`. Then, from the project's root, run `node <checkout>/scripts/template-upgrade.mjs .`, which puts this skill's pointer in place of the project's copy.
 2. Delete the [sample product](SKILL.md#sample-product), then empty `SAMPLE_PRODUCT` in `scripts/sample-product.mjs`, so `scripts/docs-links.test.mjs` stops looking for the linked files in the project. Write the project's own features in its place. The sample product is also wired into files the project keeps; change them there:
    - `app/[locale]/page.tsx`, whose home page redirects to the task list through `TASK_LIST_HREF`.
    - The background jobs in `instrumentation.ts`, and their switches `TASK_GENERATOR_ENABLED` and `UPLOAD_CLEANUP_ENABLED` in `lib/env.ts`, `lib/env.test.ts`, and `playwright.config.ts`.

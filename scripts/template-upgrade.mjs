@@ -15,9 +15,34 @@ import { fileURLToPath } from "node:url";
 import { SAMPLE_PRODUCT } from "./sample-product.mjs";
 
 // 用法：node <next-template 的 checkout>/scripts/template-upgrade.mjs <派生项目的目录>
-// 把 next-template 从派生项目的 .template-version 到这份 checkout 的 HEAD 之间的改动带进派生项目，再把
-// .template-version 改成 HEAD（.agents/skills/derived-project/upgrade.md）。从目标版本的 checkout 运行，用的就总是
-// 目标版本的脚本，派生项目里还没有这个脚本时也能用。只改派生项目的文件，不碰它的 git；要人处理的文件列在报告里。
+// 把 next-template 从派生项目的 .template-version 到最新 main 之间的改动带进派生项目，再把 .template-version 改成
+// 最新 main（.agents/skills/derived-project/upgrade.md）。只升级到最新 main：这份 checkout 不在 origin/main 上就拒绝，
+// 这样用的也总是最新的脚本，派生项目里还没有这个脚本时也能用。只改派生项目的文件，不碰它的 git；要人处理的文件
+// 列在报告里。
+
+/**
+ * 派生项目里的 derived-project skill 不合并，换成下面的指针：完整的规则和升级流程只看 next-template 本地 checkout
+ * 里的最新版，派生项目里不留一份会过时的副本。
+ */
+const POINTER_DIR = ".agents/skills/derived-project/";
+const POINTER = {
+  "SKILL.md": `---
+name: derived-project
+description: How this project relates to next-template, the template it was made from, and how to upgrade it to the template's latest version.
+disable-model-invocation: true
+---
+
+This project was made from [next-template](https://github.com/fhyfhyfhy/next-template); \`.template-version\` names the template commit it last took in. What the project does with each of the template's files, and how to upgrade it, are in next-template's own \`derived-project\` skill.
+
+Read it in the local next-template checkout that \`git config next-template.path\` names in this repository; when it names none, clone https://github.com/fhyfhyfhy/next-template.git outside the project and set it. Pull the checkout to the latest \`main\` with \`git -C <checkout> pull --ff-only\`, then follow \`.agents/skills/derived-project/SKILL.md\` there.
+`,
+  "agents/openai.yaml": `interface:
+  display_name: "Derived project"
+  short_description: "Upgrade this project from next-template"
+policy:
+  allow_implicit_invocation: false
+`,
+};
 
 /** 派生项目从来不拿的文件：Sample product，以及按 package.json 重新生成的 lockfile。 */
 const SKIPPED = (path) =>
@@ -63,6 +88,13 @@ export function upgradeProject({ templateDir, projectDir }) {
     "utf8",
   ).trim();
   const target = git(["rev-parse", "HEAD"]).toString().trim();
+  git(["fetch", "--quiet", "origin", "main"]);
+  const latest = git(["rev-parse", "origin/main"]).toString().trim();
+  if (target !== latest) {
+    throw new Error(
+      `${templateDir} is at ${target.slice(0, 12)}, not the latest main ${latest.slice(0, 12)}; pull it first: git -C ${templateDir} pull --ff-only`,
+    );
+  }
   if (
     runGit(["-C", templateDir, "cat-file", "-e", `${base}^{commit}`]).status !==
     0
@@ -163,6 +195,7 @@ export function upgradeProject({ templateDir, projectDir }) {
     const status = fields[i++][0];
     const from = fields[i++];
     const path = status === "R" || status === "C" ? fields[i++] : from;
+    if (from.startsWith(POINTER_DIR) || path.startsWith(POINTER_DIR)) continue;
     if (SKIPPED(path)) {
       report.skipped.push(path);
       continue;
@@ -228,16 +261,25 @@ export function upgradeProject({ templateDir, projectDir }) {
   }
 
   rmSync(tempDir, { recursive: true, force: true });
+  rmSync(inProject(POINTER_DIR), { recursive: true, force: true });
+  for (const [file, content] of Object.entries(POINTER)) {
+    mkdirSync(dirname(inProject(POINTER_DIR + file)), { recursive: true });
+    writeFileSync(inProject(POINTER_DIR + file), content);
+  }
   writeFileSync(join(projectDir, ".template-version"), `${target}\n`);
   return report;
 }
 
 function print(report, templateDir) {
-  const short = (sha) => sha.slice(0, 7);
+  const short = (sha) => sha.slice(0, 12);
+  const diff = `git -C '${templateDir}' diff ${short(report.base)} ${short(report.target)} --`;
   const lines = [
     `Took next-template ${short(report.base)}..${short(report.target)} into the project: ` +
       `${report.merged.length} changed, ${report.added.length} added, ` +
       `${report.deleted.length} deleted, ${report.renamed.length} renamed.`,
+    "",
+    "Read the template's change to a file with:",
+    `  ${diff} <path>`,
   ];
   const section = (title, items) => {
     if (items.length === 0) return;
@@ -265,7 +307,7 @@ function print(report, templateDir) {
     lines.push(
       "",
       `Sample product, not taken (${sample.length}). Read its changes with:`,
-      `  git -C '${templateDir}' diff ${short(report.base)} ${short(report.target)} -- ${paths}`,
+      `  ${diff} ${paths}`,
     );
   }
   if (report.skipped.includes("pnpm-lock.yaml")) {

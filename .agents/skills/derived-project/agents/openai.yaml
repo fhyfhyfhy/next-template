@@ -1,0 +1,5 @@
+interface:
+  display_name: "Derived project"
+  short_description: "Start or upgrade a project made from next-template"
+policy:
+  allow_implicit_invocation: false
