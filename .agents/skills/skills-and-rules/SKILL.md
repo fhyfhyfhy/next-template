@@ -3,7 +3,7 @@ name: skills-and-rules
 description: This repo's skills and rules. Use when adding, updating, customizing, or creating a skill, or adding or editing a rule.
 ---
 
-Run these commands from the project root, the directory holding `AGENTS.md`.
+Run these commands from the project root, where `skills-lock.json` is.
 
 ## Skills
 
