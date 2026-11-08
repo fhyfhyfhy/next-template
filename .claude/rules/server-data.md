@@ -27,7 +27,7 @@ A feature's `server/` directory holds its data access: its queries and writes an
 
 ## Errors
 
-- Reject a request that breaks a business rule with `DomainError` in `lib/domain-error.ts`: its HTTP status and a business code from the feature's `constants/error-codes.ts`, plus `param` and `params` when the UI needs them. Codes are unique across features; the first three digits are the status.
+- Reject a request that breaks a business rule with `DomainError` in `lib/domain-error.ts`: its HTTP status and a business code from the feature's `constants/error-codes.ts`, plus `param` and `params` when the UI needs them. When the UI shows more than its copy, such as the records that block the write, pass them as `data`, JSON-native values that the UI parses with the schema of that code. Codes are unique across features; the first three digits are the status.
 - Let the database enforce invariants it can, such as a unique name, and translate the constraint violation into the business code.
 - Route Handlers turn a `DomainError` into the failure response that `lib/fetch.ts` parses. A Server Action returns or throws it ("Server Actions" below).
 

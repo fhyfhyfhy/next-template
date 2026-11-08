@@ -9,13 +9,14 @@ import { BASE_PATH } from "./base-path";
 /** 接口地址：本 app 的接口用不带 basePath 的同源路径，比如 `/api/tasks`；其他服务的接口用完整 URL。 */
 export type ApiPath = `/${string}` | `https://${string}` | `http://${string}`;
 
-// 失败响应体 `{ error: { code, message, param?, params? } }` 里的错误对象。`message` 面向开发者，
-// UI 按 `code` 和 `params` 生成文案。服务端按这个格式写失败响应（lib/domain-error.ts 的 `errorBody`）。
+// 失败响应体 `{ error: { code, message, param?, params?, data? } }` 里的错误对象。`message` 面向开发者，
+// UI 按 `code` 和 `params` 生成文案，`data` 是文案之外要展示的数据（lib/domain-error.ts）。服务端按这个格式写失败响应（lib/domain-error.ts 的 `errorBody`）。
 const errorSchema = z.object({
   code: z.number(),
   message: z.string(),
   param: z.string().optional(),
   params: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
+  data: z.unknown().optional(),
 });
 /** 失败响应体里的错误对象。Server Action 返回预期失败时也用它（lib/action-result.ts），浏览器端两条路拿到的字段相同。 */
 export type ApiErrorObject = z.infer<typeof errorSchema>;
@@ -51,7 +52,7 @@ interface ApiErrorInit {
 
 /**
  * 接口失败：HTTP 非 2xx，或 2xx 但响应体只有符合格式的 `error` 对象（此时 `status` 是 2xx）。
- * `status` 总是有值，判断未登录、限流、服务不可用这类通用失败用它。`code`、`param`、`params` 取自
+ * `status` 总是有值，判断未登录、限流、服务不可用这类通用失败用它。`code`、`param`、`params`、`data` 取自
  * 响应体的 `error` 对象，响应体不是这个格式时（如网关的错误页）都是 `undefined`；`body` 是解析后的
  * 响应体，不是 JSON 时为原始文本。`message` 由 URL、status 和后端的 `error.message` 拼成，面向开发者和
  * 日志，UI 不直接展示它，而是按 `code` 和 `params` 生成文案。
@@ -65,6 +66,8 @@ export class ApiError extends Error {
   readonly param: string | undefined;
   /** 翻译文案需要的插值数据。 */
   readonly params: Record<string, string | number> | undefined;
+  /** 文案之外要展示的数据，按 `code` 用对应的 schema 解析。 */
+  readonly data: unknown;
   readonly body: unknown;
 
   constructor({ url, status, body }: ApiErrorInit) {
@@ -77,6 +80,7 @@ export class ApiError extends Error {
     this.code = error?.code;
     this.param = error?.param;
     this.params = error?.params;
+    this.data = error?.data;
     this.body = body;
   }
 }

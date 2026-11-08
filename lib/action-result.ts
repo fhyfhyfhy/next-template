@@ -27,8 +27,8 @@ export async function toActionResult<TData>(
 }
 
 /**
- * Server Action 返回的预期业务失败。`code` 是数据层拒绝时的业务错误码，`param`、`params` 和 `ApiError` 的
- * 同名字段一样，UI 按它们生成文案。
+ * Server Action 返回的预期业务失败。`code` 是数据层拒绝时的业务错误码，`param`、`params`、`data` 和
+ * `ApiError` 的同名字段一样。
  */
 export class ActionError extends Error {
   readonly code: number;
@@ -36,13 +36,16 @@ export class ActionError extends Error {
   readonly param: string | undefined;
   /** 翻译文案需要的插值数据。 */
   readonly params: Record<string, string | number> | undefined;
+  /** 文案之外要展示的数据，按 `code` 用对应的 schema 解析。 */
+  readonly data: unknown;
 
-  constructor({ code, message, param, params }: ApiErrorObject) {
+  constructor({ code, message, param, params, data }: ApiErrorObject) {
     super(`Server Action failed with code ${code}: ${message}`);
     this.name = "ActionError";
     this.code = code;
     this.param = param;
     this.params = params;
+    this.data = data;
   }
 }
 
