@@ -4,7 +4,9 @@ import queryString, {
 } from "query-string";
 import { z } from "zod";
 
-/** 接口地址：本 app 的接口用同源路径，比如 `/api/tasks`；其他服务的接口用完整 URL。 */
+import { BASE_PATH } from "./base-path";
+
+/** 接口地址：本 app 的接口用不带 basePath 的同源路径，比如 `/api/tasks`；其他服务的接口用完整 URL。 */
 export type ApiPath = `/${string}` | `https://${string}` | `http://${string}`;
 
 // 失败响应体 `{ error: { code, message, param?, params? } }` 里的错误对象。`message` 面向开发者，
@@ -125,7 +127,11 @@ export async function fetchApi<TSchema extends z.ZodType>({
 }: FetchApiConfig<TSchema>): Promise<z.output<TSchema>> {
   const requestHeaders = new Headers(headers);
   const response = await fetch(
-    queryString.stringifyUrl({ url, query: params }, paramsSerializer),
+    queryString.stringifyUrl(
+      // 同源路径要自己加上 basePath，Next 只给它生成的 URL 加（lib/base-path.ts）。报错里的 url 仍是调用方写的路径。
+      { url: url.startsWith("/") ? BASE_PATH + url : url, query: params },
+      paramsSerializer,
+    ),
     {
       ...init,
       headers: requestHeaders,

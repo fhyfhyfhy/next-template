@@ -23,6 +23,7 @@ paths:
 - A Server Component or `generateMetadata` that reads data that differs per request awaits `connection()` from `next/server` before calling the data layer. Without it, the read also runs while Next prerenders the route, and one request queries the database twice. A read inside `use cache` is cached across renders and skips `connection()`; calling it there is an error. [`app/[locale]/(tasks)/tasks/[id]/page.tsx`](https://github.com/fhyfhyfhy/next-template/blob/main/app/%5Blocale%5D/%28tasks%29/tasks/%5Bid%5D/page.tsx) awaits it for the task detail.
 - The browser reads through `fetchApi` in `lib/fetch.ts`, against the app's Route Handlers under `/api`, and writes through Server Actions. The client dispatches Server Actions one at a time (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, Sequential dispatch on the client), so reads that poll, stream, run in parallel, or may be aborted midway stay on Route Handlers.
 - Raw `fetch` is for what `fetchApi` does not cover: streaming or SSE responses and binary bodies, such as a file sent to a presigned object-storage URL or a model file downloaded.
+- A URL of the app's own built outside Next's `Link`, router, and `redirect`, such as a raw `fetch` or a full-page `<a>`, starts with `BASE_PATH` from `lib/base-path.ts`; `fetchApi` adds it itself.
 
 ## URL state
 

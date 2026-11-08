@@ -89,4 +89,4 @@ Splitting is complete when the parent shows the overall flow and each part chang
 Finish every UI change with the checks below that apply.
 
 - Before adding a public component in `components/ui/`, changing its public API, or editing UI catalog examples, read [ui-catalog.md](ui-catalog.md), and update the affected runnable examples in the same change.
-- Check each affected scenario in a browser against its expected appearance, behavior, and accessibility: design-system components on `/ui`, every other component on the pages that render it.
+- Check each affected scenario in a browser against its expected appearance, behavior, and accessibility: design-system components on `/ui` (under the basePath when the project has one), every other component on the pages that render it.
