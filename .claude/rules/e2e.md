@@ -11,11 +11,11 @@ Use `test` and `expect` in `e2e/test.ts`, or in the feature's fixture module, wh
 
 ## Test data
 
-`pnpm test:e2e` resets the `e2e` dataset to the seed data before it builds, so the static shell and the database start out the same. Every spec then shares that database and the server's cache, one test at a time:
+The specs run against the e2e database that [Test databases](data-setup.md#test-databases) describes, and every spec shares it and the server's cache, one test at a time:
 
-- Treat the seed data as read-only. A test that writes creates its own records, named with `unique` from `e2e/backend.ts`, and asserts on those. On a view every test adds to, such as a paginated list or a count, assert what holds whatever else is there, or compare the value before and after.
+- A test that writes creates its own records, named with `unique` from `e2e/backend.ts`, and asserts on those; data it did not create, such as seed data, is read-only to it. On a view every test adds to, such as a paginated list or a count, assert what holds whatever else is there, or compare the value before and after.
 - A record the fixture writes is a change made outside the app: a page that reads through `use cache` shows it only within its freshness bound. Create what such a page must show through the page's own UI, whose Server Action expires the cache, or let the app's refresh path for outside changes pick it up; the fixture's records suit pages that read per request.
-- Background jobs that change data stay off in the e2e server (`webServer.env` in `playwright.config.ts`), and the fixture writes what they would. Each fixture write notifies the app the way the job does, such as with `notify` in `e2e/backend.ts`.
+- A background job whose work the specs don't test, such as one standing in for an outside service, stays off in the e2e server (`webServer.env` in `playwright.config.ts`); the fixture writes what it would and notifies the app the way the job does. A job whose work is behavior under test runs, and the test waits for its result with `expect.poll`.
 
 ## Hydration
 
@@ -38,7 +38,7 @@ Playwright pages stay in the foreground, so a return to the tab is simulated: us
 
 ## Waiting
 
-- Data changes only when the test changes it: see [Test data](#test-data).
+- Data changes only when the test or a background job that runs changes it: see [Test data](#test-data).
 - End each wait on the event that completes it, such as `waitForServerAction` in `e2e/browser.ts` for a Server Action. A fixed wait fits only a negative assertion, "nothing else happens within N ms", and its `eslint-disable` comment gives that reason.
 - To assert that the browser sent no request, record the requests with `recordRequests` in `e2e/browser.ts` before the action and check the list once the UI has answered.
 
