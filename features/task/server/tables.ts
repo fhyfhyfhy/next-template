@@ -1,3 +1,4 @@
+import "server-only";
 import type { Generated } from "kysely";
 
 import type { TaskStatus } from "../types/task-filters";

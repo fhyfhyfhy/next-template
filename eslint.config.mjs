@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import markdown from "@eslint/markdown";
 import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
 import eslintReact from "@eslint-react/eslint-plugin";
@@ -210,15 +213,11 @@ function restrictedSyntaxWithout(group) {
   return rest.length ? ["error", ...rest] : "off";
 }
 
-// 会进页面的代码，包括 monorepo 里 workspace 包的源码；scripts/、e2e/、测试和根目录的配置文件不进页面。
+// 会进页面的代码：「Layers」表里的目录，测试除外。其余的目录不进页面，比如 scripts/、e2e/、根目录的配置文件，
+// 以及派生项目自己加的测试或部署目录。
 const APPLICATION_CODE = {
-  files: [SOURCE_GLOB],
-  ignores: [
-    `**/*.{test,spec}.${extensionGlob}`,
-    "scripts/**",
-    "e2e/**",
-    `*.${extensionGlob}`,
-  ],
+  files: ROOT_LAYERS.map(({ name }) => `${name}**/*.${extensionGlob}`),
+  ignores: [`**/*.{test,spec}.${extensionGlob}`],
 };
 
 // 颜色只用 app/globals.css 的语义 token 和 black、white，圆角只用内置或 --radius-* token。
@@ -243,6 +242,14 @@ const RESTRICTED_TAILWIND_CLASSES = [
       'Use a built-in radius or a --radius-* token from app/globals.css instead of "$0".',
   },
 ];
+
+// 派生项目自己的检查和忽略项写在 eslint.config.project.mjs（.agents/skills/derived-project/SKILL.md），它导出的
+// 配置接在 template 的规则后面、Prettier 之前；没有这个文件时只用 template 的配置。项目的限制写成自己插件里的独立
+// 规则：在那里给文件设置 no-restricted-imports 或 no-restricted-syntax，会整个替换下面给同一批文件设的选项。
+const PROJECT_CONFIG = join(PROJECT_ROOT, "eslint.config.project.mjs");
+const projectConfig = existsSync(PROJECT_CONFIG)
+  ? (await import(pathToFileURL(PROJECT_CONFIG).href)).default
+  : [];
 
 // ESLint 不会跨配置对象合并同一条规则的选项：后面的对象给某个文件设置 no-restricted-imports 或
 // no-restricted-syntax，会整个替换前面的选项。所以下面设置其中一条的对象都列出它的文件受的全部限制，
@@ -352,6 +359,8 @@ const eslintConfig = defineConfig([
       "naming/kebab-case": "error",
       // 服务端代码直接调数据层，不用 fetchApi 请求本 app 自己的接口。
       "data-flow/no-server-self-fetch": "error",
+      // feature 的 server/ 和 server.ts 只在服务端运行：import "server-only" 让它们进了浏览器的 bundle 就构建失败。
+      "data-flow/server-only": "error",
       // 保留 factory 负责的缓存更新；调用方的成功、失败及结束回调放在 mutate 的第二个参数。
       "@tanstack/query/mutation-callbacks": "error",
       // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。
@@ -403,10 +412,16 @@ const eslintConfig = defineConfig([
   },
   {
     ...APPLICATION_CODE,
-    rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
+    rules: {
+      "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX],
+      // 页面上的 HTML 只由 React 渲染：dangerouslySetInnerHTML 和 javascript: URL 都会把字符串当代码执行。
+      // 任何组件都查，因为组件可能把这个 prop 传给它渲染的元素。
+      "react/no-danger": ["error", { customComponentNames: ["*"] }],
+      "no-script-url": "error",
+    },
   },
   {
-    // Next 在应用进程里加载的根目录文件也是应用代码；APPLICATION_CODE 排除根目录，是为了跳过各种工具的配置文件。
+    // Next 在应用进程里加载的根目录文件也是应用代码，但不在「Layers」表的目录里，单独列出。
     files: [`{proxy,instrumentation}.${extensionGlob}`],
     rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
   },
@@ -674,6 +689,7 @@ const eslintConfig = defineConfig([
     // Claude Code 把 worktree 建在仓库内；每个 worktree 在自己的 checkout 里 lint。
     ".claude/worktrees/**",
   ]),
+  ...projectConfig,
   // 放在所有规则之后，关闭与 Prettier 重叠或冲突的格式规则。
   eslintConfigPrettier,
 ]);

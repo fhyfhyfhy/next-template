@@ -14,7 +14,7 @@ Code that reads and writes data on the server: a feature's data layer and `use c
 
 A feature's `server/` directory holds its data access: its queries and writes and the business rules they enforce. Code outside the feature reaches it through the feature's `server.ts` entry.
 
-- Guard every module here and the `server.ts` entry with `import "server-only"`, except the modules that load outside Next.js, such as the tests (below) and migrations ([Schema changes](data-setup.md#schema-changes)).
+- Guard every module here and the `server.ts` entry with `import "server-only"`, except the modules that load outside Next.js, such as the tests (below) and migrations ([Schema changes](data-setup.md#schema-changes)). ESLint's `data-flow/server-only` reports a module without it.
 - Export one function per operation. Wrap reads in React `cache()`, so `generateMetadata` and the page share one query within a render.
 - Validate inputs inside the function: Route Handlers and Server Actions pass values that came from the browser. The data layer has the final say, even when a Server Action has checked the same values first.
 - Writes that touch several rows run in one transaction. A function that another feature calls inside its transaction accepts that transaction as an optional executor parameter, as `attachUpload` in [`features/upload/server/uploads.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/upload/server/uploads.ts) does.

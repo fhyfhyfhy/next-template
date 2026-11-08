@@ -1,3 +1,4 @@
+# 派生项目自己要跳过的文件写在 .prettierignore.project：package.json 的 format 脚本和 lint-staged.config.mjs 都读它。
 .next/
 .next-e2e/
 out/
