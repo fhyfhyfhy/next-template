@@ -2,6 +2,8 @@ import { existsSync, globSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { describe, expect, test } from "vitest";
 
+import { SAMPLE_PRODUCT } from "./sample-product.mjs";
+
 // agent 读的文档靠相对链接互相引用；移动或改名文件时，这里会指出失效的链接。指向本仓库 GitHub 的链接另外检查
 // （见 SAMPLE_PRODUCT），其他外部链接和 node_modules 里的安装文档不检查。
 
@@ -87,27 +89,11 @@ test("检查本身能发现失效的链接和锚点", () => {
   ).toStrictEqual(["missing.md", "e2e.md#no-such-heading"]);
 });
 
-// Sample product 的代码，派生项目会删掉它（.agents/skills/derived-project/SKILL.md 的 Sample product）。agent 读的文档
-// 引用它时链接到模板在 GitHub 上的版本，链接文字是从仓库根开始的路径（.agents/skills/skills-and-rules/SKILL.md 的
-// Citing code）。派生项目删掉 Sample product 时清空 SAMPLE_PRODUCT：链接指向模板的仓库，本地已经没有对应的文件。
-// 列表和 derived-project 列出的代码一致：目录、spec 和种子数据；`app/api/` 只列 Sample product 自己的目录，因为 rules
-// 用 `app/api/` 泛指 Route Handler 的位置。固定到某个提交的链接照样检查。
+// agent 读的文档引用 Sample product 时链接到模板在 GitHub 上的版本，链接文字是从仓库根开始的路径
+// （.agents/skills/skills-and-rules/SKILL.md 的 Citing code）：派生项目删掉它以后，链接照样能打开。派生项目清空
+// SAMPLE_PRODUCT 以后，不再在本地找这些链接的文件。固定到某个提交的链接照样检查。
 const GITHUB_LINK =
   /^https:\/\/github\.com\/fhyfhyfhy\/next-template\/(?:blob|tree)\/[^/]+\/([^#?]+)/;
-const SAMPLE_PRODUCT = [
-  "features/task/",
-  "features/upload/",
-  "app/[locale]/(tasks)/",
-  "app/api/tasks/",
-  "app/api/feed/",
-  "e2e/tasks.ts",
-  "e2e/tasks.spec.ts",
-  "e2e/task-detail.spec.ts",
-  "e2e/feed.spec.ts",
-  "e2e/search.spec.ts",
-  "e2e/recent.spec.ts",
-  "scripts/local-services/seed",
-];
 const agentDocs = docs.filter(
   (file) =>
     file === "AGENTS.md" ||

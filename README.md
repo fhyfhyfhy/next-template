@@ -29,7 +29,7 @@ When port 3000 is taken, the `dev` and `start` scripts, including their `:local`
 
 ## Starting a project
 
-A project made from this template deletes the sample product and writes its own features in its place, and keeps the rest: the conventions, tooling, and agent instructions, the layers outside `features/`, the UI catalog, and the app shell. A project whose data lives elsewhere, such as in another app's database, also replaces the data setup. The [derived-project](.agents/skills/derived-project/SKILL.md) skill lists the sample product and what a project does with each of the template's files, and [start.md](.agents/skills/derived-project/start.md) walks through starting one.
+A project made from this template deletes the sample product and writes its own features in its place, and keeps the rest: the conventions, tooling, and agent instructions, the layers outside `features/`, the UI catalog, and the app shell. A project whose data lives elsewhere, such as in another app's database, also replaces the data setup. The [derived-project](.agents/skills/derived-project/SKILL.md) skill lists the sample product and what a project does with each of the template's files, [start.md](.agents/skills/derived-project/start.md) walks through starting one, and [upgrade.md](.agents/skills/derived-project/upgrade.md) through taking in a later template commit with `scripts/template-upgrade.mjs`.
 
 ## Checks
 
