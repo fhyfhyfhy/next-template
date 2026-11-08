@@ -90,8 +90,12 @@ test("检查本身能发现失效的链接和锚点", () => {
 });
 
 // agent 读的文档引用 Sample product 时链接到模板在 GitHub 上的版本，链接文字是从仓库根开始的路径
-// （.agents/skills/skills-and-rules/SKILL.md 的 Citing code）：派生项目删掉它以后，链接照样能打开。派生项目清空
-// SAMPLE_PRODUCT 以后，不再在本地找这些链接的文件。固定到某个提交的链接照样检查。
+// （.agents/skills/skills-and-rules/SKILL.md 的 Citing code）：派生项目删掉它以后，链接照样能打开。本地有
+// Sample product 时（模板自己），链接的文件也要在本地存在；派生项目删掉了它，就不在本地找。固定到某个提交的链接
+// 照样检查。
+const SAMPLE_PRODUCT_HERE = SAMPLE_PRODUCT.some((path) =>
+  existsSync(join(projectRoot, path)),
+);
 const GITHUB_LINK =
   /^https:\/\/github\.com\/fhyfhyfhy\/next-template\/(?:blob|tree)\/[^/]+\/([^#?]+)/;
 const agentDocs = docs.filter(
@@ -106,8 +110,12 @@ const MARKDOWN_LINK = /\[((?:[^[\]]|\[[^[\]]*\])*)\]\(([^)\s]+)\)/g;
 const withoutCodeBlocks = (text) =>
   text.replace(/^(```|````)[\s\S]*?^\1/gm, "");
 
-/** 指向本仓库 GitHub 的链接：路径要在仓库里存在，链接文字写成代码时要和路径一致。 */
-function brokenGithubLinks(file, text = read(file)) {
+/** 指向本仓库 GitHub 的链接：`checkFiles` 时路径要在本地存在，链接文字写成代码时要和路径一致。 */
+function brokenGithubLinks(
+  file,
+  text = read(file),
+  checkFiles = SAMPLE_PRODUCT_HERE,
+) {
   const broken = [];
   for (const [, label, target] of withoutCodeBlocks(text).matchAll(
     MARKDOWN_LINK,
@@ -117,7 +125,7 @@ function brokenGithubLinks(file, text = read(file)) {
     const path = decodeURIComponent(match[1]);
     const code = /^`([^`]+)`$/.exec(label)?.[1];
     if (
-      (SAMPLE_PRODUCT.length > 0 && !existsSync(join(projectRoot, path))) ||
+      (checkFiles && !existsSync(join(projectRoot, path))) ||
       (code && code.replace(/\/$/, "") !== path)
     ) {
       broken.push(target);
@@ -147,13 +155,14 @@ describe("agent 读的文档引用 Sample product 时都带 GitHub 链接", () =
 test("检查本身能发现失效的 GitHub 链接和没带链接的 Sample product 路径", () => {
   const base = "https://github.com/fhyfhyfhy/next-template";
   const sha = "0123456789abcdef0123456789abcdef01234567";
+  // 只用派生项目也保留的文件，自检在模板和派生项目里都成立。
   expect(
     brokenGithubLinks(
       ".claude/rules/example.md",
       [
         `[\`lib/fetch.ts\`](${base}/blob/main/lib/fetch.ts)`,
-        `[\`app/[locale]/(tasks)/layout.tsx\`](${base}/blob/main/app/%5Blocale%5D/%28tasks%29/layout.tsx)`,
-        `[\`features/task/\`](${base}/tree/main/features/task)`,
+        `[\`app/[locale]/layout.tsx\`](${base}/blob/main/app/%5Blocale%5D/layout.tsx)`,
+        `[\`features/ui-catalog/\`](${base}/tree/main/features/ui-catalog)`,
         `[\`lib/missing.ts\`](${base}/blob/main/lib/missing.ts)`,
         `[\`lib/db.ts\`](${base}/blob/main/lib/fetch.ts)`,
         // 固定到某个提交的链接照样检查。
@@ -161,6 +170,7 @@ test("检查本身能发现失效的 GitHub 链接和没带链接的 Sample prod
         `[\`lib/missing.ts\`](${base}/blob/${sha}/lib/missing.ts)`,
         `[\`features/task/\`](${base}/tree/${sha}/features/upload)`,
       ].join(" "),
+      true,
     ),
   ).toStrictEqual([
     `${base}/blob/main/lib/missing.ts`,

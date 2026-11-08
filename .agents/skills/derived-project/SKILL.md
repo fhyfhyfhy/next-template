@@ -20,4 +20,4 @@ Everything a project adds is a file of its own: its rules and skills where [skil
 
 ## Sample product
 
-The example business the template ships, so that its conventions have working code to show: the paths `SAMPLE_PRODUCT` in next-template's `scripts/sample-product.mjs` lists.
+The example business the template ships, so that its conventions have working code to show: the paths `SAMPLE_PRODUCT` in `scripts/sample-product.mjs` lists.
