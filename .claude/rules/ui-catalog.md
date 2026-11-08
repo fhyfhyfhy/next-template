@@ -6,7 +6,7 @@ paths:
 
 # UI catalog
 
-The UI catalog at `/ui` shows the design-system components in `components/ui/`, each with a playground and runnable usage examples.
+The UI catalog at `/ui`, under the basePath when the project has one, shows the design-system components in `components/ui/`, each with a playground and runnable usage examples.
 
 ## Examples
 
