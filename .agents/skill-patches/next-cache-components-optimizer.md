@@ -58,7 +58,7 @@ File: rig-template.md
 
 ## Start the testing build in this project
 
-This project's `next.config.ts` sends a build made with `EXPOSE_TESTING_API=1` to `.next-e2e`, so a server started without the variable serves `.next`, which lacks the testing API. Locally the production build and server are `pnpm build:local` and `pnpm start:local`, which start the local services and pass their connection settings: `pnpm build` and `pnpm start` read them from the environment, as a deployment sets them (README).
+This project's `next.config.ts` sends a build made with `EXPOSE_TESTING_API=1` to `.next-e2e`, so a server started without the variable serves `.next`, which lacks the testing API. Locally the production build and server are `pnpm build:local` and `pnpm start:local`, which start the local services and pass their connection settings: `pnpm build` and `pnpm start` read them from the environment, as a deployment sets them.
 
 File: rig-template.md
 

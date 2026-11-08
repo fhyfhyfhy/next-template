@@ -87,11 +87,11 @@ test("检查本身能发现失效的链接和锚点", () => {
   ).toStrictEqual(["missing.md", "e2e.md#no-such-heading"]);
 });
 
-// Sample product 的代码，派生项目会删掉它（README 的 Starting a project）。agent 读的文档引用它时链接到模板在 GitHub
-// 上的版本，链接文字是从仓库根开始的路径（.agents/skills/skills-and-rules/SKILL.md 的 Citing code）。
-// 派生项目删掉 Sample product 时清空 SAMPLE_PRODUCT：链接指向模板的仓库，本地已经没有对应的文件。
-// 列表取自 README 那一节里属于 Sample product 的代码：第一段的目录和 spec，以及种子数据；`app/api/` 只列 Sample product
-// 自己的目录，因为 rules 用 `app/api/` 泛指 Route Handler 的位置。链接按 README 固定到某个提交后照样检查。
+// Sample product 的代码，派生项目会删掉它（.agents/skills/derived-project/SKILL.md 的 Sample product）。agent 读的文档
+// 引用它时链接到模板在 GitHub 上的版本，链接文字是从仓库根开始的路径（.agents/skills/skills-and-rules/SKILL.md 的
+// Citing code）。派生项目删掉 Sample product 时清空 SAMPLE_PRODUCT：链接指向模板的仓库，本地已经没有对应的文件。
+// 列表和 derived-project 列出的代码一致：目录、spec 和种子数据；`app/api/` 只列 Sample product 自己的目录，因为 rules
+// 用 `app/api/` 泛指 Route Handler 的位置。固定到某个提交的链接照样检查。
 const GITHUB_LINK =
   /^https:\/\/github\.com\/fhyfhyfhy\/next-template\/(?:blob|tree)\/[^/]+\/([^#?]+)/;
 const SAMPLE_PRODUCT = [
@@ -170,7 +170,7 @@ test("检查本身能发现失效的 GitHub 链接和没带链接的 Sample prod
         `[\`features/task/\`](${base}/tree/main/features/task)`,
         `[\`lib/missing.ts\`](${base}/blob/main/lib/missing.ts)`,
         `[\`lib/db.ts\`](${base}/blob/main/lib/fetch.ts)`,
-        // 按 README 固定到某个提交的链接照样检查。
+        // 固定到某个提交的链接照样检查。
         `[\`lib/fetch.ts\`](${base}/blob/${sha}/lib/fetch.ts)`,
         `[\`lib/missing.ts\`](${base}/blob/${sha}/lib/missing.ts)`,
         `[\`features/task/\`](${base}/tree/${sha}/features/upload)`,
@@ -188,4 +188,27 @@ test("检查本身能发现失效的 GitHub 链接和没带链接的 Sample prod
       `\`features/task/server/tasks.ts\` and [\`features/upload/server.ts\`](${base}/blob/main/features/upload/server.ts)`,
     ),
   ).toStrictEqual(["features/task/"]);
+});
+
+// README 是给人看的项目介绍，随时会改：agent 读的文档不引用它，agent 要用的内容写在 agent 文档里。derived-project
+// skill 把 README.md 列为派生项目要改写成自己的文件，提到它不算引用。
+/** agent 读的文档里提到 README.md 的地方。 */
+function readmeReferences(file, text = read(file)) {
+  if (file.startsWith(".agents/skills/derived-project/")) return [];
+  return text.match(/README\.md[^\s)`"]*/g) ?? [];
+}
+
+describe("agent 读的文档不引用 README", () => {
+  test.each(agentDocs)("%s", (file) => {
+    expect(readmeReferences(file)).toStrictEqual([]);
+  });
+});
+
+test("检查本身能发现对 README 的引用", () => {
+  expect(
+    readmeReferences(
+      ".claude/rules/example.md",
+      'read [Tests](../../README.md#tests) and "Checks" in `README.md`',
+    ),
+  ).toStrictEqual(["README.md#tests", "README.md"]);
 });
