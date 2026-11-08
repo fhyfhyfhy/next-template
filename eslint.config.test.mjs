@@ -1208,6 +1208,38 @@ cases.push({
   rules: [],
 });
 
+/**
+ * 在临时目录里放一份只有 template 配置的项目：eslint.config.mjs 和它 import 的 scripts/，不带派生项目的
+ * eslint.config.project.mjs，所以用例只验证 template 自己的规则。
+ */
+function createConfigFixture() {
+  const fixture = realpathSync(
+    mkdtempSync(join(tmpdir(), "next-template-eslint-")),
+  );
+  copyFileSync(
+    join(project, "eslint.config.mjs"),
+    join(fixture, "eslint.config.mjs"),
+  );
+  cpSync(join(project, "scripts/eslint"), join(fixture, "scripts/eslint"), {
+    recursive: true,
+  });
+  // eslint.config.mjs 从这里取 build 目录的忽略项。
+  copyFileSync(
+    join(project, "scripts/build-dirs.mjs"),
+    join(fixture, "scripts/build-dirs.mjs"),
+  );
+  copyFileSync(join(project, "tsconfig.json"), join(fixture, "tsconfig.json"));
+  // import/no-relative-packages 要找被 lint 文件所属的 package.json，找不到会直接抛错。
+  copyFileSync(join(project, "package.json"), join(fixture, "package.json"));
+  // Windows 上建目录 symlink 要管理员权限或开发者模式，junction 不用；其他系统忽略这个参数。
+  symlinkSync(
+    join(project, "node_modules"),
+    join(fixture, "node_modules"),
+    "junction",
+  );
+  return fixture;
+}
+
 describe("架构依赖和 feature、组件导入约定", () => {
   let previousCwd;
   let fixture;
@@ -1215,33 +1247,7 @@ describe("架构依赖和 feature、组件导入约定", () => {
 
   beforeAll(() => {
     previousCwd = process.cwd();
-    fixture = realpathSync(
-      mkdtempSync(join(tmpdir(), "next-template-eslint-")),
-    );
-    copyFileSync(
-      join(project, "eslint.config.mjs"),
-      join(fixture, "eslint.config.mjs"),
-    );
-    cpSync(join(project, "scripts/eslint"), join(fixture, "scripts/eslint"), {
-      recursive: true,
-    });
-    // eslint.config.mjs 从这里取 build 目录的忽略项。
-    copyFileSync(
-      join(project, "scripts/build-dirs.mjs"),
-      join(fixture, "scripts/build-dirs.mjs"),
-    );
-    copyFileSync(
-      join(project, "tsconfig.json"),
-      join(fixture, "tsconfig.json"),
-    );
-    // import/no-relative-packages 要找被 lint 文件所属的 package.json，找不到会直接抛错。
-    copyFileSync(join(project, "package.json"), join(fixture, "package.json"));
-    // Windows 上建目录 symlink 要管理员权限或开发者模式，junction 不用；其他系统忽略这个参数。
-    symlinkSync(
-      join(project, "node_modules"),
-      join(fixture, "node_modules"),
-      "junction",
-    );
+    fixture = createConfigFixture();
     for (const { files } of cases) {
       for (const [filename, content] of Object.entries(files)) {
         const file = join(fixture, filename);
@@ -1255,11 +1261,13 @@ describe("架构依赖和 feature、组件导入约定", () => {
     // 架构用例只验证依赖边界；import 排序由下方独立用例验证。
     // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
     // fixture 没有 docs/features.md，feature 依赖图由 scripts/eslint/feature-dependencies.test.mjs 验证。
+    // fixture 的 server/ 文件只为验证依赖方向，不写 import "server-only"；这条规则由下方独立用例验证。
     eslint = new ESLint({
       cwd: fixture,
       overrideConfig: {
         rules: {
           "architecture/feature-dependencies": "off",
+          "data-flow/server-only": "off",
           "simple-import-sort/imports": "off",
           "@typescript-eslint/consistent-type-definitions": "off",
           "@typescript-eslint/consistent-type-assertions": "off",
@@ -1621,6 +1629,141 @@ export async function probe(id: string) {
       ).toHaveLength(reported);
     });
   }
+});
+
+describe("feature 的 server/ 和 server.ts 都 import server-only", () => {
+  const eslint = new ESLint({ cwd: project });
+  const plain = "export const probe = 1;\n";
+  for (const { name, file, source = plain, reported } of [
+    {
+      name: "server/ 里没有 import server-only 的模块报错",
+      file: "features/ui-catalog/server/probe.ts",
+      reported: 1,
+    },
+    {
+      name: "server.ts 入口没有 import server-only 报错",
+      file: "features/ui-catalog/server.ts",
+      reported: 1,
+    },
+    {
+      name: "import 了 server-only 的模块不报",
+      file: "features/ui-catalog/server/probe.ts",
+      source: `import "server-only";\n\n${plain}`,
+      reported: 0,
+    },
+    {
+      name: "测试不报",
+      file: "features/ui-catalog/server/probe.db.test.ts",
+      reported: 0,
+    },
+    {
+      name: "import 了 vitest 的测试 helper 不报",
+      file: "features/ui-catalog/server/probe-test-helpers.ts",
+      source: `import { expect } from "vitest";\n\nexport const check = expect;\n`,
+      reported: 0,
+    },
+    {
+      name: "在 Next 之外加载的 migration 不报",
+      file: "features/ui-catalog/server/migrations.mts",
+      reported: 0,
+    },
+    {
+      name: "feature 的其他层不查",
+      file: "features/ui-catalog/utils/probe.ts",
+      reported: 0,
+    },
+  ]) {
+    test(name, async () => {
+      const [result] = await eslint.lintText(source, {
+        filePath: join(project, file),
+      });
+      expect(
+        result.messages.filter(
+          ({ ruleId }) => ruleId === "data-flow/server-only",
+        ),
+        JSON.stringify(result.messages, null, 2),
+      ).toHaveLength(reported);
+    });
+  }
+});
+
+describe("应用代码只包括「Layers」表里的目录", () => {
+  const eslint = new ESLint({ cwd: project });
+  const envRead = "export const url = process.env.PROBE_URL;\n";
+  const ruleIds = async (file) => {
+    const [result] = await eslint.lintText(envRead, {
+      filePath: join(project, file),
+    });
+    return result.messages.map(({ ruleId }) => ruleId);
+  };
+
+  test("Layers 里的目录受应用代码的限制", async () => {
+    expect(await ruleIds("lib/probe.ts")).toContain("no-restricted-syntax");
+  });
+
+  test("派生项目自己加的目录，比如 tests/，不受应用代码的限制", async () => {
+    expect(await ruleIds("tests/http/probe.ts")).not.toContain(
+      "no-restricted-syntax",
+    );
+  });
+});
+
+describe("页面上的 HTML 只由 React 渲染", () => {
+  const eslint = new ESLint({ cwd: project });
+  for (const { name, source, rule } of [
+    {
+      name: "dangerouslySetInnerHTML 报错，传给组件也报",
+      source: `export function Probe({ html }: { html: string }) {\n  return <Panel dangerouslySetInnerHTML={{ __html: html }} />;\n}\n`,
+      rule: "react/no-danger",
+    },
+    {
+      name: "javascript: URL 报错",
+      source: `export function Probe() {\n  return <a href="javascript:void(0)" />;\n}\n`,
+      rule: "no-script-url",
+    },
+    {
+      name: "写进对象再展开的 dangerouslySetInnerHTML 也报错",
+      source: `export function Probe({ html }: { html: string }) {\n  const props = { dangerouslySetInnerHTML: { __html: html } };\n  return <div {...props} />;\n}\n`,
+      rule: "security/raw-html",
+    },
+  ]) {
+    test(name, async () => {
+      const [result] = await eslint.lintText(source, {
+        filePath: join(project, "components/probe.tsx"),
+      });
+      expect(
+        result.messages.map(({ ruleId }) => ruleId),
+        JSON.stringify(result.messages, null, 2),
+      ).toContain(rule);
+    });
+  }
+});
+
+describe("派生项目的 eslint.config.project.mjs 接在 template 的配置后面", () => {
+  let fixture;
+
+  beforeAll(() => {
+    fixture = createConfigFixture();
+    writeFileSync(
+      join(fixture, "eslint.config.project.mjs"),
+      `export default [{ files: ["probe/**"], rules: { "no-console": "error" } }];\n`,
+    );
+  });
+
+  afterAll(() => {
+    rmSync(fixture, { recursive: true, force: true });
+  });
+
+  test("项目配置里的规则对它的文件生效", async () => {
+    const eslint = new ESLint({ cwd: fixture });
+    const [result] = await eslint.lintText("console.log(1);\n", {
+      filePath: join(fixture, "probe/run.mjs"),
+    });
+    expect(
+      result.messages.map(({ ruleId }) => ruleId),
+      JSON.stringify(result.messages, null, 2),
+    ).toContain("no-console");
+  });
 });
 
 describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", () => {

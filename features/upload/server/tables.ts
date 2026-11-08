@@ -1,3 +1,4 @@
+import "server-only";
 import type { Generated } from "kysely";
 
 // upload 拥有的表，结构由同目录的 migrations.mts 创建。只描述这两张表：别的 feature 的表不在这里，

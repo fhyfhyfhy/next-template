@@ -16,7 +16,7 @@ Each of the template's files belongs to one group, which decides what a project 
 - **Project documents**: `README.md`, `TODO.md`, `GLOSSARY.md`, `docs/features.md`, and `docs/adr/`. They describe the project, so it rewrites them as its own.
 - **Everything else**: application code, configuration, scripts, and tests. The project keeps them, changing a file only where it must, and gives each change an entry in `docs/template-divergences.md`: what the template does, what the project does instead, and why. A change other projects would want too is made in next-template instead.
 
-Everything a project adds is a file of its own: its rules and skills where [skills-and-rules](../skills-and-rules/SKILL.md) places them, and its code where `.claude/rules/architecture.md` does.
+Everything a project adds is a file of its own: its rules and skills where [skills-and-rules](../skills-and-rules/SKILL.md) places them, its lint checks and ignores in `eslint.config.project.mjs`, which `eslint.config.mjs` loads after its own, and its code where `.claude/rules/architecture.md` does.
 
 ## Sample product
 
