@@ -9,10 +9,6 @@ const LINTED = /\.(?:[cm]?[jt]sx?|md)$/;
 
 const args = (files) => files.map((file) => JSON.stringify(file)).join(" ");
 
-// 和 package.json 的 format 脚本一样：Prettier 默认读的两个忽略文件，再加上派生项目自己的 .prettierignore.project。
-const PRETTIER_IGNORES =
-  "--ignore-path .gitignore --ignore-path .prettierignore --ignore-path .prettierignore.project";
-
 const config = {
   "*": (absolutePaths) => {
     const files = absolutePaths.map((path) =>
@@ -24,9 +20,7 @@ const config = {
     // 先让 ESLint 修能自动修的，再格式化。跨文件的检查（比如 feature 之间的环）只看暂存文件不准，留给推送前的完整 lint。
     if (linted.length)
       commands.push(`eslint --fix --no-warn-ignored ${args(linted)}`);
-    commands.push(
-      `prettier --write --ignore-unknown ${PRETTIER_IGNORES} ${args(files)}`,
-    );
+    commands.push(`prettier --write --ignore-unknown ${args(files)}`);
     // 只跑改动文件相关的单元测试：数据库测试要 Docker，留给推送前的 pnpm check（vitest.config.mts）。
     if (code.length) {
       commands.push(
