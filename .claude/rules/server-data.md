@@ -44,7 +44,7 @@ Every write from the browser goes through a Server Action, including writes whos
 
 A write another system sends, such as a webhook delivery, comes through a Route Handler under `app/api/`: a Server Action has no stable endpoint for it to call.
 
-- Authenticate the request as the sender's docs specify before acting on its body, then call the data layer, which validates the payload like any other input.
+- Authenticate the request as the sender's docs specify before acting on its body.
 - The displays it changes refresh as [Changes made elsewhere](../../.agents/skills/next-data-flow/refresh.md#changes-made-elsewhere) says; `updateTag` works only in Server Actions.
 
 Test that the handler applies an authenticated request and refuses an unauthenticated one without writing.
