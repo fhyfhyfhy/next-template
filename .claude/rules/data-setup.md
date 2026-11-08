@@ -9,9 +9,7 @@ paths:
 
 # Data setup
 
-Where this project's data lives: the database server code connects to, who owns its tables, how its schema changes, and the databases the tests run against. The conventions that hold whatever the setup are in [server-data.md](server-data.md).
-
-A project made from this template whose data lives elsewhere replaces this file whole with its own setup, keeping the headings other files link to; `scripts/docs-links.test.mjs` fails when one goes missing.
+Where this project's data lives: the database server code connects to, who owns its tables, how its schema changes, and the databases the tests run against.
 
 ## Connection
 

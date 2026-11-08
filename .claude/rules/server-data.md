@@ -10,8 +10,6 @@ paths:
 
 Code that reads and writes data on the server: a feature's data layer and `use cache` reads in `server/`, its `server.ts` entry, the Server Actions in its `api/`, and the Route Handlers under `app/api/`.
 
-This file holds the conventions that hold whatever the database. Which database, who owns its tables, how its schema changes, and what the tests run against are in [data-setup.md](data-setup.md).
-
 ## Data layer
 
 A feature's `server/` directory holds its data access: its queries and writes and the business rules they enforce. Code outside the feature reaches it through the feature's `server.ts` entry.
