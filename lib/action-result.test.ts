@@ -13,6 +13,7 @@ const takenError = () =>
   conflict(NAME_TAKEN, "name taken", {
     param: "name",
     params: { name: "Lamp" },
+    data: { takenBy: [{ id: "task-1", name: "Lamp" }] },
   });
 
 describe("toActionResult", () => {
@@ -47,7 +48,7 @@ describe("unwrapActionResult", () => {
     expect(unwrapActionResult({ ok: true, data: "task" })).toBe("task");
   });
 
-  test("失败时抛出带 code、param、params 的 ActionError", () => {
+  test("失败时抛出带 code、param、params、data 的 ActionError", () => {
     const { error } = errorBody(takenError());
     let thrown: unknown;
     try {
@@ -60,6 +61,7 @@ describe("unwrapActionResult", () => {
       code: NAME_TAKEN,
       param: "name",
       params: { name: "Lamp" },
+      data: { takenBy: [{ id: "task-1", name: "Lamp" }] },
     });
     expect(isActionError(thrown, NAME_TAKEN)).toBe(true);
     expect(
