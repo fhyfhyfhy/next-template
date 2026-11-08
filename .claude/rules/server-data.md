@@ -33,12 +33,21 @@ A feature's `server/` directory holds its data access: its queries and writes an
 
 ## Server Actions
 
-Every write goes through a Server Action, including writes whose data React Query owns. Put each action in its own top-level `"use server"` module in `api/`, named `<verb>-<resource>-action.ts`, such as [`features/task/api/create-task-action.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/create-task-action.ts). Its runtime exports are only async Server Actions; validation helpers used only by that action may stay private there.
+Every write from the browser goes through a Server Action, including writes whose data React Query owns. Put each action in its own top-level `"use server"` module in `api/`, named `<verb>-<resource>-action.ts`, such as [`features/task/api/create-task-action.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/create-task-action.ts). Its runtime exports are only async Server Actions; validation helpers used only by that action may stay private there.
 
 - The action validates its inputs, with a translated schema when the form shows field messages, authorizes the write, and calls the data layer.
 - An action whose caller handles some of the data layer's `DomainError`s returns an `ActionResult` through `toActionResult`, both in `lib/action-result.ts`, which turns those into `{ ok: false, error }`, `error` being the `ApiErrorObject` in `lib/fetch.ts`, which a failed Route Handler response carries too: a thrown error loses its code on the way to the browser. An action without such failures returns its data, or nothing. Both let other errors throw. Its options factory unwraps the result ([Mutations](tanstack-query.md#mutations)).
 - When other callers need the same input schema, extract it to a sibling such as [`features/task/api/create-task-schema.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/create-task-schema.ts); the action must not import the options factory that calls it.
 - Expose actions needed outside the feature through the main entry `index.ts`, which Client Components can import: the `"use server"` directive in the action's own module turns the export into an action reference, whichever entry re-exports it.
+
+## Writes from other systems
+
+A write another system sends, such as a webhook delivery, comes through a Route Handler under `app/api/`: a Server Action has no stable endpoint for it to call.
+
+- Authenticate the request as the sender's docs specify before acting on its body.
+- The displays it changes refresh as [Changes made elsewhere](../../.agents/skills/next-data-flow/refresh.md#changes-made-elsewhere) says; `updateTag` works only in Server Actions.
+
+Test that the handler applies an authenticated request and refuses an unauthenticated one without writing.
 
 ## Cached reads
 

@@ -18,7 +18,7 @@ Navigation can reuse output the router already holds: verify the displayed value
 
 ## After a write
 
-Every write runs in a Server Action ([Server data: Server Actions](../../../.claude/rules/server-data.md#server-actions)), so first confirm its inputs can reach one: an action receives serializable arguments within its request body limit, so a file goes from the browser straight to object storage and the action then records it, as `updateTaskCover` in [`features/task/api/update-task-cover.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/update-task-cover.ts) does for the sample product's cover. A Client Component triggers it through the feature's options factory ([Mutations](../../../.claude/rules/tanstack-query.md#mutations)). A read's owner determines which display must refresh:
+Every write from the browser runs in a Server Action ([Server data: Server Actions](../../../.claude/rules/server-data.md#server-actions)), so first confirm its inputs can reach one: an action receives serializable arguments within its request body limit, so a file goes from the browser straight to object storage and the action then records it, as `updateTaskCover` in [`features/task/api/update-task-cover.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/update-task-cover.ts) does for the sample product's cover. A Client Component triggers it through the feature's options factory ([Mutations](../../../.claude/rules/tanstack-query.md#mutations)). A read's owner determines which display must refresh:
 
 | Affected data owner | After success |
 | --- | --- |
