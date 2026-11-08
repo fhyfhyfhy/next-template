@@ -44,12 +44,10 @@ Every write from the browser goes through a Server Action, including writes whos
 
 A write another system sends, such as a webhook delivery, comes through a Route Handler under `app/api/`: a Server Action has no stable endpoint for it to call.
 
-- Authenticate the sender as its docs specify before treating the body as data. A signature covers the raw bytes, so verify it on `await request.arrayBuffer()` before parsing, compare in constant time, and refuse a stale timestamp when the signature covers one.
-- Then call the data layer, which validates the payload like any other input.
-- Senders retry a delivery that fails or times out, and may send one twice: answer a failure to apply it with a 5xx status, and make the write idempotent.
+- Authenticate the request as the sender's docs specify before acting on its body, then call the data layer, which validates the payload like any other input.
 - The displays it changes refresh as [Changes made elsewhere](../../.agents/skills/next-data-flow/refresh.md#changes-made-elsewhere) says; `updateTag` works only in Server Actions.
 
-Test that the handler applies a delivery signed as the sender signs it and refuses an unsigned one without writing.
+Test that the handler applies an authenticated request and refuses an unauthenticated one without writing.
 
 ## Cached reads
 
