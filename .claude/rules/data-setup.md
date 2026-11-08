@@ -5,6 +5,7 @@ paths:
   - "lib/db.ts"
   - "scripts/db/**"
   - "scripts/local-services/**"
+  - "e2e/backend.ts"
 ---
 
 # Data setup
@@ -25,4 +26,6 @@ Each feature exports its migrations from `server/migrations.mts` as a `migration
 
 ## Test databases
 
-The `db` project of `pnpm test` runs against the `test` dataset on the local services, real Postgres and object storage, restored to the seed data before each test (`vitest.config.mts`). `pnpm test:e2e` runs against the `e2e` dataset ([Test data](e2e.md#test-data)).
+The `db` project of `pnpm test` runs against the `test` dataset on the local services, real Postgres and object storage, restored to the seed data before each test (`vitest.config.mts`).
+
+`pnpm test:e2e` runs against the `e2e` dataset, which it resets to the seed data before it builds, so the static shell and the database start out the same. `e2e/backend.ts` connects to it, with `connectE2eDatabase` and `connectE2eStorage`, and sends with `notify` the Postgres notification a background job sends after its write.
