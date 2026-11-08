@@ -22,7 +22,7 @@ A skill change is done when `.agents/skills/<name>/SKILL.md` is in place and, in
 
 - A short rule for every task goes in `AGENTS.md`, which `CLAUDE.md` imports.
 - A longer topic, or a rule for only some files, goes in its own `.claude/rules/<topic>.md`. It needs no pointer: Claude Code loads these files itself, and `AGENTS.md` § Rule files sends Codex and Cursor there.
-- In a project made from next-template, a rule for that project alone, short or long, goes in a rule file of its own, without `paths` when it covers every task: `AGENTS.md` and the template's rule files stay as the template has them ([derived-project](../derived-project/SKILL.md)).
+- In a project made from next-template, a rule for that project alone, short or long, goes in a rule file of its own, without `paths` when it covers every task: `AGENTS.md` and the template's rule files stay as the template has them.
 - Leave to the linter whatever it can check; a rule holds the judgment calls lint can't express.
 
 ## Citing code
