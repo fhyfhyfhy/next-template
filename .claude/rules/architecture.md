@@ -55,7 +55,7 @@ features/{name}/
   hooks/        feature-specific hooks
   stores/       Zustand stores
   api/          browser requests (fetchApi), Server Actions, query and mutation options factories (tanstack-query.md)
-  server/       server-only data access: queries, writes, business rules, use cache reads, migrations (server-data.md)
+  server/       server-only data access: queries, writes, business rules, use cache reads (server-data.md, data-setup.md)
   utils/        feature-specific utilities
   constants/    feature-specific constants
   types/        feature business types

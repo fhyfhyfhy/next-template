@@ -44,6 +44,8 @@ A project replaces it with its own features, the same way: the rules in `.claude
 
 Keep the rest: the layers outside `features/`, `features/ui-catalog/` with the design system it documents, the app shell in `app/`, the scripts, and the e2e helpers in `e2e/test.ts`, `e2e/browser.ts`, and `e2e/backend.ts`, which a project's own fixtures build on.
 
+A project whose data lives elsewhere, such as in another app's database, replaces the data setup as a whole: it writes its own [`.claude/rules/data-setup.md`](.claude/rules/data-setup.md), keeping the headings other files link to, and replaces the code that file describes: `lib/db.ts`, `scripts/db/`, and the `db` project in `vitest.config.mts`, plus `compose.yaml` and `scripts/local-services/` when it runs no local services. `.claude/rules/server-data.md` and the review in `docs/agents/code-review.md` stay as they are.
+
 ## Checks
 
 `pnpm check` runs `format:check`, `lint`, `typecheck`, and `test` in that order and stops at the first failure. `test` includes the data-layer tests, so it needs Docker; the e2e specs run on their own (see [Tests](#tests)).
@@ -95,7 +97,7 @@ Specs that depend on production behavior, such as prefetching, fail against a de
 
 The app is full-stack: its backend lives in this app ([ADR 0006](docs/adr/0006-template-is-a-real-project.md)).
 
-- Each feature's `server/` holds its data layer: queries, writes, business rules, and migrations ([.claude/rules/server-data.md](.claude/rules/server-data.md)). `lib/db.ts` creates the Kysely + pg connection, `lib/object-storage.ts` wraps S3-compatible storage, and `lib/domain-error.ts` carries business-rule failures.
+- Each feature's `server/` holds its data layer: queries, writes, business rules, and migrations ([.claude/rules/server-data.md](.claude/rules/server-data.md), [.claude/rules/data-setup.md](.claude/rules/data-setup.md)). `lib/db.ts` creates the Kysely + pg connection, `lib/object-storage.ts` wraps S3-compatible storage, and `lib/domain-error.ts` carries business-rule failures.
 - Server Components, `use cache` reads, Server Actions, and Route Handlers call the data layer directly. The browser reads through `fetchApi` in `lib/fetch.ts` from Route Handlers under `/api` and writes through Server Actions ([.claude/rules/data-flow.md](.claude/rules/data-flow.md)).
 - `lib/fetch.ts` defines the response format: a success returns the resource itself, and a failure has an `{ error: { code, message } }` body on a 4xx or 5xx status, or as the only field of a 2xx body. `app/providers.tsx` decides what a failed browser request shows.
 - User files go from the browser straight to object storage through a presigned URL, and a Server Action then attaches the upload to its record ([ADR 0004](docs/adr/0004-uploads-presigned-object-storage.md)).
