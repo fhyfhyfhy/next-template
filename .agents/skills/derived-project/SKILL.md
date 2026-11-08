@@ -19,6 +19,4 @@ Everything a project adds is a file of its own: its rules and skills where [skil
 
 ## Sample product
 
-Everything that serves tasks and uploads: its features, routes, namespace, specs, and seed data, each path listed in `SAMPLE_PRODUCT` in `scripts/sample-product.mjs`, and their entries in `GLOSSARY.md` and `docs/features.md`.
-
-The rules and skills cite its code as links to next-template on GitHub ([Citing code](../skills-and-rules/SKILL.md#citing-code)), so their examples still open once a project has deleted it, and next-template stays the place to read working code for them.
+Everything that serves tasks and uploads: its features, routes, namespace, specs, and seed data, each path listed in `SAMPLE_PRODUCT` in next-template's `scripts/sample-product.mjs`, and their entries in `GLOSSARY.md` and `docs/features.md`.
