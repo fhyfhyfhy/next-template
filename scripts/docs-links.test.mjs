@@ -186,25 +186,31 @@ test("检查本身能发现失效的 GitHub 链接和没带链接的 Sample prod
   ).toStrictEqual(["features/task/"]);
 });
 
-// README 是给人看的项目介绍，随时会改：agent 读的文档不引用它，agent 要用的内容写在 agent 文档里。derived-project
-// skill 把 README.md 列为派生项目要改写成自己的文件，提到它不算引用。
-/** agent 读的文档里提到 README.md 的地方。 */
-function readmeReferences(file, text = read(file)) {
-  if (file.startsWith(".agents/skills/derived-project/")) return [];
-  return text.match(/README\.md[^\s)`"]*/g) ?? [];
+// README 和 docs/research/ 下的调研笔记是给人看的：README 介绍项目、随时会改，调研笔记记的是某一天查到的背景和来源。
+// agent 读的文档不引用它们，agent 要用的结论写在 agent 文档里。derived-project skill 把 README.md 列为派生项目要改写成
+// 自己的文件，提到它不算引用。
+/** agent 读的文档里提到 README.md 或 docs/research/ 的地方。 */
+function peopleDocReferences(file, text = read(file)) {
+  const research = text.match(/docs\/research\/[^\s)`"]*/g) ?? [];
+  if (file.startsWith(".agents/skills/derived-project/")) return research;
+  return [...(text.match(/README\.md[^\s)`"]*/g) ?? []), ...research];
 }
 
-describe("agent 读的文档不引用 README", () => {
+describe("agent 读的文档不引用 README 和调研笔记", () => {
   test.each(agentDocs)("%s", (file) => {
-    expect(readmeReferences(file)).toStrictEqual([]);
+    expect(peopleDocReferences(file)).toStrictEqual([]);
   });
 });
 
-test("检查本身能发现对 README 的引用", () => {
+test("检查本身能发现对 README 和调研笔记的引用", () => {
   expect(
-    readmeReferences(
+    peopleDocReferences(
       ".claude/rules/example.md",
-      'read [Tests](../../README.md#tests) and "Checks" in `README.md`',
+      'read [Tests](../../README.md#tests), "Checks" in `README.md`, and [sources](../../docs/research/2026-10-29-auth.md)',
     ),
-  ).toStrictEqual(["README.md#tests", "README.md"]);
+  ).toStrictEqual([
+    "README.md#tests",
+    "README.md",
+    "docs/research/2026-10-29-auth.md",
+  ]);
 });

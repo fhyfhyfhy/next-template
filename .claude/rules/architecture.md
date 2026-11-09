@@ -69,7 +69,7 @@ Ordered top to bottom, like "Layers".
 - Browser end-to-end specs live in `e2e/` ([e2e.md](e2e.md)) and translated text in `messages/` ([i18n.md](i18n.md)), both outside the layers.
 - Layer directories contain only files, with three exceptions:
   - `app/` holds its route directories. Components that only some routes use, with the code only they use, go in a `_components/` beside those routes, such as `app/[locale]/(orders)/_components/`, which Next.js leaves out of routing. It is a `components/` like any other, and being part of the `app/` layer, it may compose features.
-  - Any `components/` may contain one level of component directories (see "Component directories"), and so may the reserved `components/ui/`.
+  - Any `components/` may contain one level of component directories ([Component directories](components.md#component-directories)), and so may the reserved `components/ui/`.
   - `lib/` may group an adapter that spans several files into one level of directory. When outside code uses only one of its modules, that module is the directory's `index`; when it uses several, it imports each by its path and the directory has no `index`.
 - Keep types with the module or schema that owns them. Extract a shared contract into that owner's `types/` when needed to preserve dependency direction or give the contract an independent role.
 - A feature exports its constants from its `constants/`; a constant only its own module reads stays there, unexported. Test data stays with the tests that use it. A value another rule places beside its code, such as a query key prefix ([Query keys](tanstack-query.md#query-keys)), stays where that rule puts it.
@@ -94,59 +94,6 @@ When a module mixes general behavior with business rules, keep the business part
 ### Package imports
 
 Import from the same directory and its subdirectories by relative path (`./`), and from everywhere else through `@/`. A feature counts as one directory: its files import each other by relative path, `../` included.
-
-### Component directories
-
-A simple component is a single file. A complex component is a directory, holding either a main component with private subcomponents or a compound component with several public parts:
-
-```
-features/orders/components/
-  order-editor/
-    index.tsx         ← entry and main component
-    toolbar.tsx       ← private subcomponent
-    status-bar.tsx
-```
-
-```
-components/ui/dialog/
-  index.ts           ← public entry
-  root.tsx           ← DialogRoot
-  trigger.tsx        ← DialogTrigger
-  popup.tsx          ← DialogPopup
-  backdrop.tsx       ← DialogBackdrop
-  context.ts         ← DialogContext
-  use-dialog-context.ts ← private hook used by the parts
-```
-
-```ts
-// components/ui/dialog/index.ts
-export { DialogRoot } from "./root";
-export type { DialogRootProps } from "./root";
-export { DialogTrigger } from "./trigger";
-export { DialogPopup } from "./popup";
-export { DialogBackdrop } from "./backdrop";
-export { DialogContext } from "./context";
-```
-
-In the sample product, [`features/task/components/task-detail/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-detail) is a main component with private subcomponents, and [`features/task/components/task-list-navigation/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-navigation) a compound component whose parts share a context.
-
-- Code outside the directory imports only through its `index`.
-- The `index` exports by name each component, context, hook, and type that callers need.
-- Keep component-specific contexts, hooks, helpers, and types alongside its parts. Keep implementation-only symbols private. Extract them to the appropriate layer within their owner when they acquire an independent reuse role; business ownership remains unchanged.
-
-Component directories are one level deep, so when one grows past ~5–7 files, split it into **sibling** component directories:
-
-```
-features/orders/components/
-  order-editor/            ← main component
-    index.tsx
-    status-bar.tsx
-  order-editor-toolbar/    ← split-out subcomponent
-    index.tsx
-    format-button.tsx
-```
-
-In the sample product, the task list, its toolbar, and its navigation are sibling component directories: [`features/task/components/task-list/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list), [`features/task/components/task-list-toolbar/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-toolbar), and `task-list-navigation/`.
 
 ### Feature public API
 

@@ -30,9 +30,62 @@ Every UI task starts at [Reuse, compose, extend, or add](#reuse-compose-extend-o
 
 ## Write a component
 
-1. Place it by [Shared code ownership](architecture.md#shared-code-ownership). When extracting shared code, or adding a design-system primitive for its first consumer, apply [Duplication and abstraction](architecture.md#duplication-and-abstraction). Keep a simple component in one file; give one that needs private files or several public parts a component directory ([Component directories](architecture.md#component-directories)).
+1. Place it by [Shared code ownership](architecture.md#shared-code-ownership). When extracting shared code, or adding a design-system primitive for its first consumer, apply [Duplication and abstraction](architecture.md#duplication-and-abstraction). Keep a simple component in one file; give one that needs private files or several public parts a component directory ([Component directories](#component-directories)).
 2. Define the public API. A design-system primitive in `components/ui/` may offer, beyond what its callers use now, the variants, sizes, and parts that shadcn/ui's version of it, when there is one, and the underlying library provide. Every other component offers the smallest public API its current callers need: what they can render, which visual variants they choose, which state they control or leave to the component, and which events they handle. Follow the names and defaults of nearby components. When the public API changes, update every caller in the same change.
 3. Implement it by [Public API](#public-api) and [Styles and variants](#styles-and-variants), and a wrapper around a UI library also by [Wrap a UI library](#wrap-a-ui-library). When ESLint's size warning fires, apply [Split by responsibility](#split-by-responsibility).
+
+### Component directories
+
+A simple component is a single file. A complex component is a directory, holding either a main component with private subcomponents or a compound component with several public parts:
+
+```
+features/orders/components/
+  order-editor/
+    index.tsx         ← entry and main component
+    toolbar.tsx       ← private subcomponent
+    status-bar.tsx
+```
+
+```
+components/ui/dialog/
+  index.ts           ← public entry
+  root.tsx           ← DialogRoot
+  trigger.tsx        ← DialogTrigger
+  popup.tsx          ← DialogPopup
+  backdrop.tsx       ← DialogBackdrop
+  context.ts         ← DialogContext
+  use-dialog-context.ts ← private hook used by the parts
+```
+
+```ts
+// components/ui/dialog/index.ts
+export { DialogRoot } from "./root";
+export type { DialogRootProps } from "./root";
+export { DialogTrigger } from "./trigger";
+export { DialogPopup } from "./popup";
+export { DialogBackdrop } from "./backdrop";
+export { DialogContext } from "./context";
+```
+
+In the sample product, [`features/task/components/task-detail/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-detail) is a main component with private subcomponents, and [`features/task/components/task-list-navigation/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-navigation) a compound component whose parts share a context.
+
+- Code outside the directory imports only through its `index`.
+- The `index` exports by name each component, context, hook, and type that callers need.
+- Keep component-specific contexts, hooks, helpers, and types alongside its parts. Keep implementation-only symbols private. Extract them to the appropriate layer within their owner when they acquire an independent reuse role; business ownership remains unchanged.
+
+Component directories are one level deep, so when one grows past ~5–7 files, split it into **sibling** component directories:
+
+```
+features/orders/components/
+  order-editor/            ← main component
+    index.tsx
+    status-bar.tsx
+  order-editor-toolbar/    ← split-out subcomponent
+    index.tsx
+    format-button.tsx
+```
+
+In the sample product, the task list, its toolbar, and its navigation are sibling component directories: [`features/task/components/task-list/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list), [`features/task/components/task-list-toolbar/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-toolbar), and `task-list-navigation/`.
 
 ### Public API
 

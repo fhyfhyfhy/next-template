@@ -1,13 +1,11 @@
 ---
 paths:
-  - "**/*.ts"
-  - "**/*.tsx"
-  - "**/*.js"
-  - "**/*.jsx"
-  - "**/*.mjs"
-  - "**/*.cjs"
-  - "**/*.mts"
-  - "**/*.cts"
+  - "app/**"
+  - "features/**"
+  - "components/**"
+  - "hooks/**"
+  - "lib/**"
+  - "instrumentation.ts"
 ---
 
 # Data flow
@@ -107,7 +105,7 @@ The global handler in `app/providers.tsx` shows request failures as toasts. A qu
 
 ### Query states
 
-Render a query's states in this order, data first: a failed refresh keeps its data, and checking `error` first would replace data the user can still use. The error state shows the feature's own copy, chosen from `error.code` or `error.status` when it needs to vary; `ApiError.message` in `lib/fetch.ts` is written for developers and logs. `RecentTasks` in [`features/task/components/recent-tasks.tsx`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/components/recent-tasks.tsx) renders each row this way.
+Render a query's states in this order, data first: a failed refresh keeps its data, and checking `error` first would replace data the user can still use. The error state shows the feature's own copy, as [Errors](i18n.md#errors) chooses it. `RecentTasks` in [`features/task/components/recent-tasks.tsx`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/components/recent-tasks.tsx) renders each row this way.
 
 ```tsx
 const todos = useQuery(getTodosQueryOptions());
