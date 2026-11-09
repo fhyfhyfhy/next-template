@@ -29,7 +29,7 @@ Done when no verification has a Wrong, Guessed or Unclear finding left, and ever
 
 ## Confirm what Bugbot loads
 
-On the pull request, comment `bugbot run verbose=true`. Done when its output lists, for the changed files, the `BUGBOT.md` files their directories call for, none truncated or omitted.
+Comment `bugbot run verbose=true` on a pull request that changes ordinary files, such as the next one after the digests merge. On the pull request that adds or regenerates the `BUGBOT.md` files, each of them is a changed file, so Bugbot loads every one and drops what passes 100,000 characters, its learned rules among them. Done when its output lists, for the changed files, the `BUGBOT.md` files their directories call for, none truncated or dropped.
 
 ## Afterwards
 
