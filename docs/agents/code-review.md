@@ -7,7 +7,7 @@ Project reviews for the `code-review` skill, one per section.
 ## Architecture
 
 - **Runs when:** the diff changes application code (the directories in the Layers table of `.claude/rules/architecture.md`, plus `instrumentation.ts` and `proxy.ts` at the root) or `docs/features.md`. An edit inside a function body is enough, since it can give a module a second job, add an unrelated branch, or copy logic a third time.
-- **Standards:** `.claude/rules/architecture.md` and `docs/features.md`
+- **Standards:** `.claude/rules/architecture.md`, "Component directories" in `.claude/rules/components.md`, and `docs/features.md`
 - **Brief:** Review only the changes to application code and `docs/features.md`, and in them these parts of the rule; ESLint checks the rest.
   - The whole of **Single responsibility**, **Duplication and abstraction**, **Design for change**, **Where files go**, and **Shared code ownership**. Count occurrences across the repo before calling an extraction premature or overdue, and look at a changed module's callers and neighbours before judging its owner.
   - **Feature boundaries**: compare the changes with `docs/features.md`: code outside its feature's responsibility, and a new feature whose concept an existing entry covers or that exists only as part of another concept. Judge a change to `docs/features.md` itself by the same section.

@@ -1,13 +1,11 @@
 ---
 paths:
-  - "**/*.ts"
-  - "**/*.tsx"
-  - "**/*.js"
-  - "**/*.jsx"
-  - "**/*.mjs"
-  - "**/*.cjs"
-  - "**/*.mts"
-  - "**/*.cts"
+  - "app/**"
+  - "features/**"
+  - "components/**"
+  - "hooks/**"
+  - "lib/**"
+  - "utils/**"
   - "package.json"
 ---
 
