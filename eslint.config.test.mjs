@@ -23,7 +23,6 @@ const componentExportsRule = "architecture/component-exports";
 const wrapperRule = "architecture/wrapper-imports";
 const rootRule = "architecture/root-imports";
 const namingRule = "naming/kebab-case";
-const appComponentsRule = "naming/app-components";
 const constantsRule = "architecture/feature-constants";
 const cases = [];
 const statements = {
@@ -1109,11 +1108,7 @@ for (const [name, from, rules] of [
     "app/(shop)/_components/cart-summary.tsx",
     [],
   ],
-  [
-    "app/ 下名为 components 的目录被拒绝",
-    "app/(shop)/components/cart-summary.tsx",
-    [appComponentsRule],
-  ],
+  ["app/ 下名为 components 的路由允许", "app/[locale]/components/page.tsx", []],
 ]) {
   cases.push({
     name: `文件命名：${name}`,
