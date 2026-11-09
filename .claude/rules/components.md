@@ -4,6 +4,8 @@ paths:
   - "**/*.jsx"
   - "**/components/**/*.ts"
   - "**/components/**/*.js"
+  - "**/_components/**/*.ts"
+  - "**/_components/**/*.js"
   - "**/*.css"
 ---
 
