@@ -2371,7 +2371,7 @@ export const Theme = createContext("light");
       reported: ["naming-convention-context-name"],
     },
     {
-      name: "<Context value> 和 importing(Context) 不报，组件库的 X.Provider 也不报",
+      name: "<Context value> 和 use(Context) 不报，组件库的 X.Provider 也不报",
       source: `import { Tooltip } from "@base-ui/react/tooltip";
 import { createContext, type ReactNode, use } from "react";
 
@@ -2385,7 +2385,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 export function useTheme() {
-  return importing(ThemeContext);
+  return use(ThemeContext);
 }
 `,
       reported: [],
