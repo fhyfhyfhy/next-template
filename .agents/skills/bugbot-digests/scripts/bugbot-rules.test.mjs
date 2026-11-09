@@ -11,6 +11,7 @@ import {
   loads,
   MAX_FILE_CHARS,
   MAX_LOAD_CHARS,
+  planTotals,
   readText,
   ruleDirectories,
   ruleFiles,
@@ -70,6 +71,31 @@ describe("the directories a rule goes into", () => {
     expect(() => ruleDirectories("r.md", ["nowhere/**"], files)).toThrow(
       "match no file",
     );
+  });
+});
+
+describe("a plan's totals by budgets", () => {
+  const entries = [
+    { directories: [""], budget: 3000 },
+    { directories: ["app/api"], budget: 2000 },
+    { directories: ["features/orders", "app"], budget: 1000 },
+  ];
+  const files = [
+    "proxy.ts",
+    "app/page.tsx",
+    "app/api/health/route.ts",
+    "features/orders/index.ts",
+  ];
+
+  test("the root carries the budgets of the rules placed there", () => {
+    expect(planTotals(entries, files).root).toBe(3000);
+  });
+
+  test("the heaviest change adds every directory above it to the root", () => {
+    expect(planTotals(entries, files).heaviest).toStrictEqual({
+      file: "app/api/health/route.ts",
+      load: 6000,
+    });
   });
 });
 

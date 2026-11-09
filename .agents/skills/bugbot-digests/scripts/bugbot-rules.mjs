@@ -280,11 +280,12 @@ export function currentBugbotFiles(projectRoot) {
   );
 }
 
-/** The characters of rules a change to each project file loads, heaviest first. */
-export function loads(projectRoot, expected = expectedBugbotFiles(projectRoot)) {
-  const size = (directory) =>
-    expected[posix.join(directory, BUGBOT_FILE)]?.length ?? 0;
-  return projectFiles(projectRoot)
+/**
+ * What a change to each file loads, heaviest first, given each directory's size: Bugbot reads the
+ * BUGBOT.md of the file's directory, of every directory above it, and of the root.
+ */
+export function loadsBySize(files, size) {
+  return files
     .map((file) => {
       const parts = posix.dirname(file).split("/");
       let load = size("");
@@ -295,6 +296,27 @@ export function loads(projectRoot, expected = expectedBugbotFiles(projectRoot)) 
       return { file, load };
     })
     .sort((left, right) => right.load - left.load);
+}
+
+/** The characters of rules a change to each project file loads, heaviest first. */
+export function loads(projectRoot, expected = expectedBugbotFiles(projectRoot)) {
+  return loadsBySize(
+    projectFiles(projectRoot),
+    (directory) => expected[posix.join(directory, BUGBOT_FILE)]?.length ?? 0,
+  );
+}
+
+/**
+ * A plan's totals, by budgets: what the root's BUGBOT.md and the heaviest change would carry if
+ * every digest came out at its budget.
+ */
+export function planTotals(entries, files) {
+  const budgetIn = (directory) =>
+    entries
+      .filter((entry) => entry.directories.includes(directory))
+      .reduce((sum, entry) => sum + entry.budget, 0);
+  const [heaviest] = loadsBySize(files, budgetIn);
+  return { root: budgetIn(""), heaviest };
 }
 
 /**
@@ -327,7 +349,8 @@ export function generateBugbotFiles(projectRoot) {
 if (resolve(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
   const projectRoot = findProjectRoot(import.meta.dirname);
   if (process.argv.includes("--plan")) {
-    for (const entry of plan(projectRoot))
+    const entries = plan(projectRoot);
+    for (const entry of entries)
       console.log(
         [
           entry.rule,
@@ -336,6 +359,13 @@ if (resolve(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
           `goes to: ${entry.directories.map((directory) => directory || "(root)").join(", ")}`,
         ].join("\n  "),
       );
+    const { root, heaviest } = planTotals(entries, projectFiles(projectRoot));
+    console.log(
+      [
+        `By budgets, the root's BUGBOT.md carries ${root} characters, and the heaviest change (${heaviest.file}) loads ${heaviest.load}.`,
+        `Keep the root under ${MAX_LOAD_CHARS / 2}, half of MAX_LOAD_CHARS, so the deepest changes stay within it.`,
+      ].join("\n"),
+    );
     process.exit(0);
   }
   const stale = staleDigests(projectRoot);
