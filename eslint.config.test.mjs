@@ -980,6 +980,27 @@ for (const [name, statement, rejected] of [
   });
 }
 cases.push({
+  name: "app 里 _components/ 的组件入口同样禁止星号转导出",
+  from: "app/star-entry/_components/widget/index.ts",
+  files: {
+    "app/star-entry/_components/widget/parts.ts": "export const value = 1;",
+    "app/star-entry/_components/widget/index.ts": 'export * from "./parts";',
+  },
+  rules: ["no-restricted-syntax"],
+});
+cases.push({
+  name: "app 里 _components/ 的组件入口同样不能整体转出 namespace",
+  from: "app/namespace-entry/_components/widget/index.ts",
+  files: {
+    "app/namespace-entry/_components/widget/parts.ts":
+      "export const Root = 1; export const Trigger = 2;",
+    "app/namespace-entry/_components/widget/index.ts":
+      'import * as Parts from "./parts"; export { Parts };',
+  },
+  rules: [componentExportsRule],
+  messageIds: ["namespace"],
+});
+cases.push({
   name: "组件入口不能整体转出类型 namespace",
   from: "components/type-namespace-export/index.ts",
   files: {

@@ -439,6 +439,7 @@ const eslintConfig = defineConfig([
   // 组件入口在所在位置的限制之外，禁止 export * 和 export * as，要求显式列出公开成员。
   ...[
     [`**/components/!(ui)/index.${extensionGlob}`, RESTRICTED_SYNTAX],
+    [`**/_components/*/index.${extensionGlob}`, RESTRICTED_SYNTAX],
     [
       `**/components/ui/*/index.${extensionGlob}`,
       RESTRICTED_SYNTAX.filter(
