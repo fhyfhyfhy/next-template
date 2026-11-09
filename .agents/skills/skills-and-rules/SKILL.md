@@ -24,6 +24,18 @@ A skill change is done when `.agents/skills/<name>/SKILL.md` is in place and, in
 - A longer topic, or a rule for only some files, goes in its own `.claude/rules/<topic>.md`. It needs no pointer: Claude Code loads these files itself, and `AGENTS.md` § Rule files sends Codex and Cursor there.
 - In a project made from next-template, a rule for that project alone, short or long, goes in a rule file of its own, without `paths` when it covers every task: `AGENTS.md` and the template's rule files stay as the template has them.
 - Leave to the linter whatever it can check; a rule holds the judgment calls lint can't express.
+- Each rule has a Bugbot digest (below), which changes with it.
+
+## Bugbot digests
+
+Cursor Bugbot reviews pull requests against the `.cursor/BUGBOT.md` files that `pnpm generate:bugbot` writes: each rule's digest, in each directory its `paths` reach. A rule's digest sits at the same path under `.cursor/digests/`, such as `.cursor/digests/data-flow.md` for `.claude/rules/data-flow.md`.
+
+- A change to a rule brings its digest in line in the same change, then runs `pnpm generate:bugbot`. It refuses while a digest's `source-sha256` differs from its rule's, and prints the hash to set.
+- A digest opens with frontmatter naming its rule (`source: .claude/rules/data-flow.md`) and that rule's `source-sha256`, then lists what a reviewer checks a diff against:
+  - Each constraint of the rule, one bullet each: what the change must do and, in one clause, what goes wrong otherwise where the rule says so. A consequence the rule does not state stays out rather than guessed.
+  - Only what a diff can show and no check catches. Examples, code, the steps of writing the code, background, and what lint or a test already checks (`eslint.config.mjs`, `scripts/eslint/`), whether the rule says so or not, stay out.
+  - Names, paths and identifiers as the rule writes them, in backticks, and no Markdown links: Bugbot reads on through every file a link names.
+  - About a third of the rule's length. Bugbot reads at most `MAX_FILE_CHARS` from one `BUGBOT.md`, and a change here loads at most `MAX_LOAD_CHARS` (both in `scripts/bugbot-rules.mjs`); its tests fail past either.
 
 ## Citing code
 

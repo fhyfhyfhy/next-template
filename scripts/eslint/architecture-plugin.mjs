@@ -310,9 +310,12 @@ export default function createArchitecturePlugin(projectRoot) {
             return;
           }
           const featuresDirectory = join(projectRoot, "features");
+          // 以点开头的目录是工具的，不是 feature，比如 pnpm generate:bugbot 写的 .cursor/。
           const directories = existsSync(featuresDirectory)
             ? readdirSync(featuresDirectory, { withFileTypes: true })
-                .filter((entry) => entry.isDirectory())
+                .filter(
+                  (entry) => entry.isDirectory() && !entry.name.startsWith("."),
+                )
                 .map((entry) => entry.name)
             : [];
           const firstNodeLine = Math.min(...parsed.nodes.values(), Infinity);

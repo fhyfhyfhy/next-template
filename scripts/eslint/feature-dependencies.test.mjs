@@ -94,6 +94,16 @@ test("依赖图和代码一致时，docs/features.md 没有报错", async () => 
   expect(await lint(root, "docs/features.md")).toStrictEqual([]);
 });
 
+test("features/ 下以点开头的目录不是 feature，比如 Bugbot 的 .cursor/", async () => {
+  const root = fixture({
+    "docs/features.md": GRAPH,
+    "features/feature-a/main.ts":
+      'import { b } from "@/features/feature-b"; export const value = b;',
+    "features/.cursor/BUGBOT.md": "# Bugbot rules: `features/`\n",
+  });
+  expect(await lint(root, "docs/features.md")).toStrictEqual([]);
+});
+
 test("docs/features.md 里代码没用到的边、没有目录的节点、没有节点的目录都报错", async () => {
   const root = fixture({
     "docs/features.md": GRAPH.replace(

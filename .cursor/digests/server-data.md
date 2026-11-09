@@ -1,0 +1,19 @@
+---
+source: .claude/rules/server-data.md
+source-sha256: 4a2914c65ec2771c6f43783214829ead1c8bc8170a8c213ef146da1ae35ff7ca
+---
+
+- One exported function per operation; reads wrapped in React `cache()`, so `generateMetadata` and the page share one query.
+- Data-layer functions validate their inputs, even if a Server Action did: callers pass values from the browser.
+- Multi-row writes run in one transaction; a function another feature calls inside its transaction accepts it as an optional executor.
+- Rows map to `types/` types through one mapping function per resource. Those schemas are JSON-native: epoch-ms timestamps, `.nullable()` not `.optional()`, no `.transform()`, `z.date()` or `z.bigint()`, since RSC-prefetched and JSON-refetched data must match.
+- Route Handlers send the data layer's result without renaming or reshaping fields, lists as `{ items }`, and turn a `DomainError` into a failure response.
+- A broken business rule throws `DomainError` with its HTTP status and a code from the feature's `constants/error-codes.ts` whose first three digits are that status; records the UI shows go in `data`, JSON-native values the UI parses with that code's schema.
+- Invariants the database can enforce (a unique name) are constraints, the violation translated to the business code.
+- Every browser write goes through a Server Action in its own top-level `"use server"` module in `api/`, `<verb>-<resource>-action.ts`, whose runtime exports are only async Server Actions.
+- An action validates its inputs, authorizes the write, and calls the data layer.
+- An action whose caller handles some `DomainError`s returns `toActionResult(...)`, since a thrown error loses its code on the way to the browser; an action without them returns data or nothing. Other errors throw.
+- An action never imports the options factory that calls it; a shared schema goes in a sibling. Actions used outside the feature are exported from `index.ts`.
+- A write from another system, such as a webhook, comes through a Route Handler under `app/api/` that authenticates it as the sender's docs specify before acting on its body. The displays it changes still refresh, but not with `updateTag`, which works only in Server Actions.
+- A `use cache` read wraps the data-layer read in its own module in `server/`, `get-cached-<resource>.ts` after its exported function, as `use cache` functions cannot enter a client bundle; outside code imports it from `server.ts`.
+- Each `server/` module has a `*.db.test.ts` beside it on a real database, checking each read's result with its schema after a JSON round trip.

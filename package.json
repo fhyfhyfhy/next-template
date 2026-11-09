@@ -11,6 +11,7 @@
     "db:migrate": "node scripts/db/migrate-deployment.mjs",
     "db:reset": "node scripts/local-services/reset.mjs",
     "generate:examples": "node scripts/ui-catalog/index-generator.mjs",
+    "generate:bugbot": "node scripts/bugbot-rules.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
