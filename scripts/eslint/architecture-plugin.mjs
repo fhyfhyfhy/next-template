@@ -79,7 +79,10 @@ export default function createArchitecturePlugin(projectRoot) {
 
   function componentDirectory(filename) {
     const parts = relative(projectRoot, filename).split(sep);
-    const componentsIndex = parts.lastIndexOf("components");
+    // app/ 里只给部分路由用的组件放在 _components/（.claude/rules/architecture.md「Where files go」）。
+    const componentsIndex = parts.findLastIndex(
+      (part) => part === "components" || part === "_components",
+    );
     if (parts[0] === ".." || componentsIndex === -1) return null;
     // ui/ 是组件集合；components/ui/dialog/ 才是独立组件目录。
     const componentIndex =

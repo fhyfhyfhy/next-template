@@ -46,5 +46,33 @@ export default function createNamingPlugin(projectRoot) {
     },
   };
 
-  return { rules: { "kebab-case": kebabCasePathRule } };
+  // app/ 里只给部分路由用的组件只有 _components/ 一种写法：Next.js 不路由 _ 开头的目录，而
+  // components/ 里的 loading.tsx、error.tsx 这类文件会被当成路由文件。
+  const appComponentsRule = {
+    meta: {
+      type: "suggestion",
+      schema: [],
+      messages: {
+        private:
+          'Put components that only some routes use in a _components/ beside them, not components/: Next.js leaves a _ folder out of routing. See "Where files go" in .claude/rules/architecture.md.',
+      },
+    },
+    create(context) {
+      const parts = relative(projectRoot, context.filename).split(sep);
+      if (parts[0] !== "app" || !parts.slice(1, -1).includes("components"))
+        return {};
+      return {
+        Program(node) {
+          context.report({ node, messageId: "private" });
+        },
+      };
+    },
+  };
+
+  return {
+    rules: {
+      "kebab-case": kebabCasePathRule,
+      "app-components": appComponentsRule,
+    },
+  };
 }

@@ -68,7 +68,7 @@ Ordered top to bottom, like "Layers".
 - Application code goes only in the directories of the two tables above. To add a new kind of directory, update this document first.
 - Browser end-to-end specs live in `e2e/` ([e2e.md](e2e.md)) and translated text in `messages/` ([i18n.md](i18n.md)), both outside the layers.
 - Layer directories contain only files, with three exceptions:
-  - `app/` holds its route directories. Components that only some routes use go in a `components/` beside those routes, such as `app/[locale]/(orders)/components/`, never in a private folder like `_components/`: ESLint checks component directories only under a `components/`. Being part of the `app/` layer, it may compose features.
+  - `app/` holds its route directories. Components that only some routes use, with the code only they use, go in a `_components/` beside those routes, such as `app/[locale]/(orders)/_components/`, which Next.js leaves out of routing. It is a `components/` like any other, and being part of the `app/` layer, it may compose features.
   - Any `components/` may contain one level of component directories (see "Component directories"), and so may the reserved `components/ui/`.
   - `lib/` may group an adapter that spans several files into one level of directory. When outside code uses only one of its modules, that module is the directory's `index`; when it uses several, it imports each by its path and the directory has no `index`.
 - Keep types with the module or schema that owns them. Extract a shared contract into that owner's `types/` when needed to preserve dependency direction or give the contract an independent role.

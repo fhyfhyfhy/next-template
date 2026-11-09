@@ -23,6 +23,7 @@ const componentExportsRule = "architecture/component-exports";
 const wrapperRule = "architecture/wrapper-imports";
 const rootRule = "architecture/root-imports";
 const namingRule = "naming/kebab-case";
+const appComponentsRule = "naming/app-components";
 const constantsRule = "architecture/feature-constants";
 const cases = [];
 const statements = {
@@ -328,8 +329,8 @@ addCase("feature 根入口不能直接转导出组件私有文件", {
 });
 addCase("app 内组件目录同样具有私有边界", {
   from: "app/CASE/page.tsx",
-  to: "app/CASE/components/widget/private.ts",
-  source: "./components/widget/private",
+  to: "app/CASE/_components/widget/private.ts",
+  source: "./_components/widget/private",
   rule: componentRule,
 });
 
@@ -728,7 +729,7 @@ cases.push({
 for (const directory of [
   "components/CASE",
   "components/ui/CASE",
-  "app/CASE/components/dialog",
+  "app/CASE/_components/dialog",
   "features/CASE/components/dialog",
 ]) {
   const feature = directory.startsWith("features/");
@@ -769,7 +770,7 @@ addCase("UI 组件可以通过别名引用其他 UI 组件入口", {
   source: "@/components/ui/CASE-provider",
 });
 addCase("app 局部组件可以通过别名引用全局组件入口", {
-  from: "app/CASE/components/dialog/main.ts",
+  from: "app/CASE/_components/dialog/main.ts",
   to: "components/CASE/index.ts",
   source: "@/components/CASE",
 });
@@ -802,7 +803,7 @@ for (const extension of [
 }
 for (const directory of [
   "components/ui/duplicate-entry",
-  "app/duplicate-entry/components/dialog",
+  "app/duplicate-entry/_components/dialog",
   "features/duplicate-entry/components/dialog",
 ]) {
   cases.push({
@@ -1103,6 +1104,16 @@ for (const [name, from, rules] of [
     [namingRule],
   ],
   ["动态段名用 snake_case 被拒绝", "app/[task_id]/page.tsx", [namingRule]],
+  [
+    "app/ 下路由专用的组件放在 _components/ 允许",
+    "app/(shop)/_components/cart-summary.tsx",
+    [],
+  ],
+  [
+    "app/ 下名为 components 的目录被拒绝",
+    "app/(shop)/components/cart-summary.tsx",
+    [appComponentsRule],
+  ],
 ]) {
   cases.push({
     name: `文件命名：${name}`,
