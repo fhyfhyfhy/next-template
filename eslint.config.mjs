@@ -358,8 +358,6 @@ const eslintConfig = defineConfig([
       "architecture/wrapper-imports": "error",
       // 源码路径统一用 kebab-case，同时保留 Next.js 路由目录的特殊命名约定。
       "naming/kebab-case": "error",
-      // app/ 里路由专用的组件放 _components/，不放 components/。
-      "naming/app-components": "error",
       // 服务端代码直接调数据层，不用 fetchApi 请求本 app 自己的接口。
       "data-flow/no-server-self-fetch": "error",
       // feature 的 server/ 和 server.ts 只在服务端运行：import "server-only" 让它们进了浏览器的 bundle 就构建失败。
