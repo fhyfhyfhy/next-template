@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 
-import { fontVariables } from "@/app/fonts";
-import { Providers } from "@/app/providers";
 import { RootClientMessages } from "@/lib/i18n/client-messages";
 import { routing } from "@/lib/i18n/routing";
 
-import "@/app/globals.css";
+import { fontVariables } from "../fonts";
+import { Providers } from "../providers";
+
+import "../globals.css";
 
 // Cache Components 要求每个 root param 至少预渲染一个值；每个 locale 各出一份静态页面。
 export function generateStaticParams() {

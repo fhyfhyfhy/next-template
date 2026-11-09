@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import createAppComponentPlacementRule from "./app-component-placement.mjs";
 import componentExportsRule from "./component-exports.mjs";
 import createFeatureConstantsRule from "./feature-constants.mjs";
 import { featureDependencies } from "./feature-cycles.mjs";
@@ -10,6 +11,7 @@ import {
   parseFeatureGraph,
 } from "./feature-graph.mjs";
 import {
+  appPath,
   createProjectResolver,
   featurePath,
   SOURCE_EXTENSIONS,
@@ -356,15 +358,17 @@ export default function createArchitecturePlugin(projectRoot) {
       schema: [],
       messages: {
         relative:
-          "Use a relative path (./) for project imports from the same directory or its subdirectories.",
+          "Use a relative path for project imports from the same directory or its subdirectories, and for imports within app/, ../ included.",
         alias:
-          "Use @/ for project imports outside the current directory and its subdirectories.",
+          "Use @/ for project imports outside the current directory and its subdirectories, and from app/ to outside it.",
       },
     },
     create(context) {
       const filename = context.filename;
       if (featurePath(projectRoot, filename)) return {};
       const sourceComponent = componentDirectory(filename);
+      // app/ 和一个 feature 一样算一个目录（architecture.md「Package imports」）：内部引用全用相对路径。
+      const fromApp = appPath(projectRoot, filename) !== null;
 
       return importVisitors((source) => {
         const imported = projectImport(filename, source);
@@ -380,10 +384,13 @@ export default function createArchitecturePlugin(projectRoot) {
         const fromDirectory = relative(dirname(filename), target);
         const isNested =
           !isAbsolute(fromDirectory) && fromDirectory.split(sep)[0] !== "..";
-        if (isNested !== isRelative) {
+        const wantsRelative = fromApp
+          ? appPath(projectRoot, target) !== null
+          : isNested;
+        if (wantsRelative !== isRelative) {
           context.report({
             node: source,
-            messageId: isNested ? "relative" : "alias",
+            messageId: wantsRelative ? "relative" : "alias",
           });
         }
       });
@@ -471,6 +478,7 @@ export default function createArchitecturePlugin(projectRoot) {
       "feature-graph": featureGraphRule,
       "feature-constants": createFeatureConstantsRule(projectRoot),
       "root-imports": rootImportsRule,
+      "app-component-placement": createAppComponentPlacementRule(projectRoot),
       "no-feature-cycle": createFeatureCycleRule(projectRoot),
       "component-imports": componentImportsRule,
       "component-entry": componentEntryRule,

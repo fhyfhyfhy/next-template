@@ -21,14 +21,14 @@ const sourceExtensions = new Set(
 );
 const compare = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
 
-function fileVersion(stat) {
+export function fileVersion(stat) {
   // ctime 和 inode 能识别恢复了 mtime 的写入，以及编辑器的原子替换。
   return stat
     ? `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`
     : null;
 }
 
-function sourceFiles(directory, cache, readStat) {
+export function sourceFiles(directory, cache, readStat) {
   const files = [];
   const visited = new Set();
   function visit(current) {
@@ -60,7 +60,7 @@ function sourceFiles(directory, cache, readStat) {
   return files;
 }
 
-function moduleReferences(filename, text) {
+export function moduleReferences(filename, text) {
   const sourceFile = ts.createSourceFile(
     filename,
     text,

@@ -18,6 +18,12 @@ export function featurePath(projectRoot, filename) {
   return parts[0] === "features" && parts[1] ? parts.slice(1) : null;
 }
 
+/** app/ 下文件相对 app/ 的路径段；不在 app/ 下时为 null。 */
+export function appPath(projectRoot, filename) {
+  const parts = relative(projectRoot, filename).split(sep);
+  return parts[0] === "app" && parts.length > 1 ? parts.slice(1) : null;
+}
+
 /** 解析项目依赖；host 可跟踪配置和解析路径，供调用方判断缓存是否失效。 */
 export function createProjectResolver(projectRoot, host = ts.sys) {
   const root = resolve(projectRoot);
