@@ -16,10 +16,6 @@ Knowledge about this repo that later sessions need goes into the repo, placed pe
 - When adding tests, reuse the existing test entry and select scope through runner arguments. Add a separate entry only when execution setup differs, such as browser tests requiring a server.
 - When adding source checks, extend the existing linter through configuration, plugins, or local rules. Use a standalone checker only when the linter cannot support the required inputs or execution, and document that limitation.
 
-## Cross-platform and cross-tool
-
-A rule, skill, script, or command works on macOS and Windows and in every agent tool, as [.claude/rules/cross-platform.md](.claude/rules/cross-platform.md) sets out.
-
 ## Environment variables
 
 A value read while prerendering is frozen into the static output. `lib/env.ts` fails the build when a required variable is missing there, but two cases pass silently:
