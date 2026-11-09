@@ -398,8 +398,10 @@ const eslintConfig = defineConfig([
     // 只查应用代码目录：scripts/ 和根目录配置文件不经过 Next.js 打包，解析不了 @/。
     files: ROOT_LAYERS.flatMap((layer) => layer.files),
     rules: {
-      // 当前目录及子目录用相对路径，跨目录用 @/；feature 和组件内部交给各自的规则。
+      // 当前目录及子目录用相对路径，跨目录用 @/；app/ 内部全用相对路径；feature 和组件内部交给各自的规则。
       "architecture/root-imports": "error",
+      // app/ 里的 _components/ 在所有使用方所在目录的最近公共祖先里：不被更高的文件引用，也不比需要的更高。
+      "architecture/app-component-placement": "error",
     },
   },
   {

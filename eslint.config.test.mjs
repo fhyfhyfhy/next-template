@@ -22,6 +22,7 @@ const componentEntryRule = "architecture/component-entry";
 const componentExportsRule = "architecture/component-exports";
 const wrapperRule = "architecture/wrapper-imports";
 const rootRule = "architecture/root-imports";
+const placementRule = "architecture/app-component-placement";
 const namingRule = "naming/kebab-case";
 const constantsRule = "architecture/feature-constants";
 const cases = [];
@@ -1084,6 +1085,133 @@ addCase("app 引用子目录用相对路径允许", {
   to: "app/CASE/parts/value.ts",
   source: "./parts/value",
 });
+addCase("app 内部引用上层目录用 @/ 被拒绝", {
+  from: "app/CASE/a/page.tsx",
+  to: "app/CASE/shared.ts",
+  source: "@/app/CASE/shared",
+  rule: rootRule,
+  messageId: "relative",
+});
+addCase("app 内部引用上层目录用 ../ 允许", {
+  from: "app/CASE/a/page.tsx",
+  to: "app/CASE/shared.ts",
+  source: "../shared",
+});
+addCase("app 引用 app 根目录的文件用 @/ 被拒绝", {
+  from: "app/CASE/page.tsx",
+  to: "app/CASE-root.ts",
+  source: "@/app/CASE-root",
+  rule: rootRule,
+  messageId: "relative",
+});
+addCase("app 用相对路径引用 app 外被拒绝", {
+  from: "app/CASE/page.tsx",
+  to: "lib/CASE.ts",
+  source: "../../lib/CASE",
+  rule: rootRule,
+  messageId: "alias",
+});
+
+addCase("比 _components/ 更高的文件引用它被拒绝", {
+  from: "app/CASE/page.tsx",
+  to: "app/CASE/(shop)/_components/badge.ts",
+  source: "./(shop)/_components/badge",
+  rule: placementRule,
+  messageId: "above",
+});
+addCase("更深的文件往上引用 _components/ 允许", {
+  from: "app/CASE/(shop)/a/page.tsx",
+  to: "app/CASE/(shop)/_components/badge.ts",
+  source: "../_components/badge",
+});
+const importing = (source) =>
+  `import { value } from "${source}"; export const result = value;`;
+for (const [name, from, files, messageIds] of [
+  [
+    "使用方都在更深的同一个目录时，_components/ 里的模块被要求往下挪",
+    "app/placement-deeper/(shop)/_components/badge.ts",
+    {
+      "app/placement-deeper/(shop)/_components/badge.ts":
+        "export const value = 1;",
+      "app/placement-deeper/(shop)/@count/[...path]/page.ts": importing(
+        "../../_components/badge",
+      ),
+    },
+    ["deeper"],
+  ],
+  [
+    "使用方分散在多个子目录时，_components/ 在它们的最近公共祖先允许",
+    "app/placement-shared/(shop)/_components/badge.ts",
+    {
+      "app/placement-shared/(shop)/_components/badge.ts":
+        "export const value = 1;",
+      "app/placement-shared/(shop)/layout.ts": importing("./_components/badge"),
+      "app/placement-shared/(shop)/a/page.ts": importing(
+        "../_components/badge",
+      ),
+    },
+    [],
+  ],
+  [
+    "只被同一个 _components/ 里的文件使用，算同一层",
+    "app/placement-sibling/(shop)/_components/helper.ts",
+    {
+      "app/placement-sibling/(shop)/_components/helper.ts":
+        "export const value = 1;",
+      "app/placement-sibling/(shop)/_components/nav.ts": importing("./helper"),
+      "app/placement-sibling/(shop)/layout.ts": importing("./_components/nav"),
+    },
+    [],
+  ],
+  [
+    "旁边的测试不算使用方",
+    "app/placement-test/(shop)/_components/badge.ts",
+    {
+      "app/placement-test/(shop)/_components/badge.ts":
+        "export const value = 1;",
+      "app/placement-test/(shop)/_components/badge.test.ts":
+        importing("./badge"),
+      "app/placement-test/(shop)/a/page.ts": importing("../_components/badge"),
+    },
+    ["deeper"],
+  ],
+  [
+    "组件目录整体算一个模块，在它的 index 上报告",
+    "app/placement-directory/(shop)/_components/dialog/index.ts",
+    {
+      "app/placement-directory/(shop)/_components/dialog/part.ts":
+        "export const value = 1;",
+      "app/placement-directory/(shop)/_components/dialog/index.ts":
+        'export { value } from "./part";',
+      "app/placement-directory/(shop)/a/page.ts": importing(
+        "../_components/dialog",
+      ),
+    },
+    ["deeper"],
+  ],
+  [
+    "组件目录的内部文件不重复报告",
+    "app/placement-directory-part/(shop)/_components/dialog/part.ts",
+    {
+      "app/placement-directory-part/(shop)/_components/dialog/part.ts":
+        "export const value = 1;",
+      "app/placement-directory-part/(shop)/_components/dialog/index.ts":
+        'export { value } from "./part";',
+      "app/placement-directory-part/(shop)/a/page.ts": importing(
+        "../_components/dialog",
+      ),
+    },
+    [],
+  ],
+]) {
+  cases.push({
+    name,
+    from,
+    files,
+    rules: messageIds.map(() => placementRule),
+    messageIds: messageIds.length ? messageIds : undefined,
+  });
+}
 addCase("scripts/ 跨目录可以用相对路径", {
   from: "scripts/CASE/main.mjs",
   to: "scripts/other-CASE/value.mjs",
@@ -2243,7 +2371,7 @@ export const Theme = createContext("light");
       reported: ["naming-convention-context-name"],
     },
     {
-      name: "<Context value> 和 use(Context) 不报，组件库的 X.Provider 也不报",
+      name: "<Context value> 和 importing(Context) 不报，组件库的 X.Provider 也不报",
       source: `import { Tooltip } from "@base-ui/react/tooltip";
 import { createContext, type ReactNode, use } from "react";
 
@@ -2257,7 +2385,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 export function useTheme() {
-  return use(ThemeContext);
+  return importing(ThemeContext);
 }
 `,
       reported: [],
