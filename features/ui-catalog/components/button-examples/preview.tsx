@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
+import { usePlaygroundConfig } from "../../hooks/use-playground-config";
 import type { ComponentMetadata } from "../../types/examples";
-import { formatExampleSource } from "../../utils/example-source";
 import { OptionControl, TextControl, ToggleControl } from "../controls";
 import { Playground } from "../playground";
 import { ButtonPlayground, initialConfig } from "./playground";
@@ -15,56 +13,31 @@ export const metadata = {
 
 /** Button 的可调预览与参数控制。 */
 export function Preview({ source }: { source: string }) {
-  const [config, setConfig] = useState(initialConfig);
-  const [resetKey, setResetKey] = useState(0);
+  const { config, field, playground } = usePlaygroundConfig(
+    initialConfig,
+    source,
+  );
   return (
     <Playground
-      source={formatExampleSource(source, config)}
-      onReset={() => {
-        setConfig(initialConfig);
-        setResetKey((key) => key + 1);
-      }}
+      {...playground}
       controls={
         <>
           <OptionControl
-            label="variant"
-            value={config.variant}
+            {...field("variant")}
             options={["primary", "secondary", "outline", "ghost", "danger"]}
-            onChange={(variant) => setConfig({ ...config, variant })}
           />
+          <OptionControl {...field("size")} options={["sm", "md", "lg"]} />
+          <TextControl {...field("label")} />
           <OptionControl
-            label="size"
-            value={config.size}
-            options={["sm", "md", "lg"]}
-            onChange={(size) => setConfig({ ...config, size })}
-          />
-          <TextControl
-            label="label"
-            value={config.label}
-            onChange={(label) => setConfig({ ...config, label })}
-          />
-          <OptionControl
-            label="icon"
-            value={config.icon}
+            {...field("icon")}
             options={["none", "arrow", "plus"]}
-            onChange={(icon) => setConfig({ ...config, icon })}
           />
-          <ToggleControl
-            label="disabled"
-            value={config.disabled}
-            onChange={(disabled) => setConfig({ ...config, disabled })}
-          />
-          <ToggleControl
-            label="focusableWhenDisabled"
-            value={config.focusableWhenDisabled}
-            onChange={(focusableWhenDisabled) =>
-              setConfig({ ...config, focusableWhenDisabled })
-            }
-          />
+          <ToggleControl {...field("disabled")} />
+          <ToggleControl {...field("focusableWhenDisabled")} />
         </>
       }
     >
-      <ButtonPlayground key={resetKey} config={config} />
+      <ButtonPlayground config={config} />
     </Playground>
   );
 }

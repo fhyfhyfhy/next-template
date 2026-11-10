@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
+import { usePlaygroundConfig } from "../../hooks/use-playground-config";
 import type { ComponentMetadata } from "../../types/examples";
-import { formatExampleSource } from "../../utils/example-source";
 import { OptionControl, TextControl, ToggleControl } from "../controls";
 import { Playground } from "../playground";
 import { initialConfig, SwitchPlayground } from "./playground";
@@ -15,61 +13,26 @@ export const metadata = {
 
 /** Switch 的可调预览与参数控制。 */
 export function Preview({ source }: { source: string }) {
-  const [config, setConfig] = useState(initialConfig);
-  const [resetKey, setResetKey] = useState(0);
+  const { config, setConfig, field, playground } = usePlaygroundConfig(
+    initialConfig,
+    source,
+  );
   return (
     <Playground
-      source={formatExampleSource(source, config)}
-      onReset={() => {
-        setConfig(initialConfig);
-        setResetKey((key) => key + 1);
-      }}
+      {...playground}
       controls={
         <>
-          <OptionControl
-            label="size"
-            value={config.size}
-            options={["sm", "md", "lg"]}
-            onChange={(size) => setConfig({ ...config, size })}
-          />
-          <TextControl
-            label="label"
-            value={config.label}
-            onChange={(label) => setConfig({ ...config, label })}
-          />
-          <TextControl
-            label="description"
-            value={config.description}
-            onChange={(description) => setConfig({ ...config, description })}
-          />
-          <ToggleControl
-            label="checked"
-            value={config.checked}
-            onChange={(checked) => setConfig({ ...config, checked })}
-          />
-          <ToggleControl
-            label="disabled"
-            value={config.disabled}
-            onChange={(disabled) => setConfig({ ...config, disabled })}
-          />
-          <ToggleControl
-            label="readOnly"
-            value={config.readOnly}
-            onChange={(readOnly) => setConfig({ ...config, readOnly })}
-          />
-          <ToggleControl
-            label="required"
-            value={config.required}
-            onChange={(required) => setConfig({ ...config, required })}
-          />
+          <OptionControl {...field("size")} options={["sm", "md", "lg"]} />
+          <TextControl {...field("label")} />
+          <TextControl {...field("description")} />
+          <ToggleControl {...field("checked")} />
+          <ToggleControl {...field("disabled")} />
+          <ToggleControl {...field("readOnly")} />
+          <ToggleControl {...field("required")} />
         </>
       }
     >
-      <SwitchPlayground
-        key={resetKey}
-        config={config}
-        onConfigChange={setConfig}
-      />
+      <SwitchPlayground config={config} onConfigChange={setConfig} />
     </Playground>
   );
 }
