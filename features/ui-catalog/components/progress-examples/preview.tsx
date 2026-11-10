@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
+import { usePlaygroundConfig } from "../../hooks/use-playground-config";
 import type { ComponentMetadata } from "../../types/examples";
-import { formatExampleSource } from "../../utils/example-source";
 import { OptionControl, TextControl, ToggleControl } from "../controls";
 import { Playground } from "../playground";
 import { initialConfig, ProgressPlayground } from "./playground";
@@ -15,31 +13,21 @@ export const metadata = {
 
 /** Progress 的可调预览与参数控制。 */
 export function Preview({ source }: { source: string }) {
-  const [config, setConfig] = useState(initialConfig);
+  const { config, field, numberField, playground } = usePlaygroundConfig(
+    initialConfig,
+    source,
+  );
   return (
     <Playground
-      source={formatExampleSource(source, config)}
-      onReset={() => setConfig(initialConfig)}
+      {...playground}
       controls={
         <>
-          <TextControl
-            label="label"
-            value={config.label}
-            onChange={(label) => setConfig({ ...config, label })}
-          />
+          <TextControl {...field("label")} />
           <OptionControl
-            label="value"
-            value={String(config.value)}
+            {...numberField("value")}
             options={["0", "25", "40", "75", "100"]}
-            onChange={(value) => setConfig({ ...config, value: Number(value) })}
           />
-          <ToggleControl
-            label="indeterminate"
-            value={config.indeterminate}
-            onChange={(indeterminate) =>
-              setConfig({ ...config, indeterminate })
-            }
-          />
+          <ToggleControl {...field("indeterminate")} />
         </>
       }
     >

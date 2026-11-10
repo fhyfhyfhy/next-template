@@ -6,7 +6,7 @@ import { type ReactNode, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { SourceCode } from "./source-code";
+import { SourceCode } from "../source-code";
 
 /** 固定场景及其原始使用代码。 */
 export function ExampleCard({

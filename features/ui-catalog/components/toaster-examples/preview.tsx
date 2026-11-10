@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
+import { usePlaygroundConfig } from "../../hooks/use-playground-config";
 import type { ComponentMetadata } from "../../types/examples";
-import { formatExampleSource } from "../../utils/example-source";
 import { OptionControl, TextControl, ToggleControl } from "../controls";
 import { Playground } from "../playground";
 import { initialConfig, ToasterPlayground } from "./playground";
@@ -15,34 +13,22 @@ export const metadata = {
 
 /** Toaster 的可调预览与参数控制。 */
 export function Preview({ source }: { source: string }) {
-  const [config, setConfig] = useState(initialConfig);
+  const { config, field, playground } = usePlaygroundConfig(
+    initialConfig,
+    source,
+  );
   return (
     <Playground
-      source={formatExampleSource(source, config)}
-      onReset={() => setConfig(initialConfig)}
+      {...playground}
       controls={
         <>
           <OptionControl
-            label="type"
-            value={config.type}
+            {...field("type")}
             options={["default", "success", "info", "warning", "error"]}
-            onChange={(type) => setConfig({ ...config, type })}
           />
-          <TextControl
-            label="title"
-            value={config.title}
-            onChange={(title) => setConfig({ ...config, title })}
-          />
-          <TextControl
-            label="description"
-            value={config.description}
-            onChange={(description) => setConfig({ ...config, description })}
-          />
-          <ToggleControl
-            label="closeButton"
-            value={config.closeButton}
-            onChange={(closeButton) => setConfig({ ...config, closeButton })}
-          />
+          <TextControl {...field("title")} />
+          <TextControl {...field("description")} />
+          <ToggleControl {...field("closeButton")} />
         </>
       }
     >

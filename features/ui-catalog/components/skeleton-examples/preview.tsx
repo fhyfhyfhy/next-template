@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
+import { usePlaygroundConfig } from "../../hooks/use-playground-config";
 import type { ComponentMetadata } from "../../types/examples";
-import { formatExampleSource } from "../../utils/example-source";
 import { OptionControl, ToggleControl } from "../controls";
 import { Playground } from "../playground";
 import { initialConfig, SkeletonPlayground } from "./playground";
@@ -15,24 +13,17 @@ export const metadata = {
 
 /** Skeleton 的可调预览与参数控制。 */
 export function Preview({ source }: { source: string }) {
-  const [config, setConfig] = useState(initialConfig);
+  const { config, field, numberField, playground } = usePlaygroundConfig(
+    initialConfig,
+    source,
+  );
   return (
     <Playground
-      source={formatExampleSource(source, config)}
-      onReset={() => setConfig(initialConfig)}
+      {...playground}
       controls={
         <>
-          <OptionControl
-            label="lines"
-            value={String(config.lines)}
-            options={["1", "2", "3"]}
-            onChange={(lines) => setConfig({ ...config, lines: Number(lines) })}
-          />
-          <ToggleControl
-            label="avatar"
-            value={config.avatar}
-            onChange={(avatar) => setConfig({ ...config, avatar })}
-          />
+          <OptionControl {...numberField("lines")} options={["1", "2", "3"]} />
+          <ToggleControl {...field("avatar")} />
         </>
       }
     >

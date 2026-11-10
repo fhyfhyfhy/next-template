@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
+import { usePlaygroundConfig } from "../../hooks/use-playground-config";
 import type { ComponentMetadata } from "../../types/examples";
-import { formatExampleSource } from "../../utils/example-source";
 import { Playground } from "../playground";
 import { SelectControls } from "./controls";
 import { initialConfig, SelectPlayground } from "./playground";
@@ -15,22 +13,21 @@ export const metadata = {
 
 /** Select 的可调预览与参数控制。 */
 export function Preview({ source }: { source: string }) {
-  const [config, setConfig] = useState(initialConfig);
-  const [resetKey, setResetKey] = useState(0);
+  const { config, setConfig, field, numberField, playground } =
+    usePlaygroundConfig(initialConfig, source);
   return (
     <Playground
-      source={formatExampleSource(source, config)}
-      onReset={() => {
-        setConfig(initialConfig);
-        setResetKey((key) => key + 1);
-      }}
-      controls={<SelectControls config={config} onChange={setConfig} />}
+      {...playground}
+      controls={
+        <SelectControls
+          config={config}
+          field={field}
+          numberField={numberField}
+          onChange={setConfig}
+        />
+      }
     >
-      <SelectPlayground
-        key={resetKey}
-        config={config}
-        onConfigChange={setConfig}
-      />
+      <SelectPlayground config={config} onConfigChange={setConfig} />
     </Playground>
   );
 }

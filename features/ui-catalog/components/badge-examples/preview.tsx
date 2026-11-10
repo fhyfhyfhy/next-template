@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
+import { usePlaygroundConfig } from "../../hooks/use-playground-config";
 import type { ComponentMetadata } from "../../types/examples";
-import { formatExampleSource } from "../../utils/example-source";
 import { OptionControl, TextControl } from "../controls";
 import { Playground } from "../playground";
 import { BadgePlayground, initialConfig } from "./playground";
@@ -15,24 +13,20 @@ export const metadata = {
 
 /** Badge 的可调预览与参数控制。 */
 export function Preview({ source }: { source: string }) {
-  const [config, setConfig] = useState(initialConfig);
+  const { config, field, playground } = usePlaygroundConfig(
+    initialConfig,
+    source,
+  );
   return (
     <Playground
-      source={formatExampleSource(source, config)}
-      onReset={() => setConfig(initialConfig)}
+      {...playground}
       controls={
         <>
           <OptionControl
-            label="variant"
-            value={config.variant}
+            {...field("variant")}
             options={["primary", "muted", "outline", "danger"]}
-            onChange={(variant) => setConfig({ ...config, variant })}
           />
-          <TextControl
-            label="label"
-            value={config.label}
-            onChange={(label) => setConfig({ ...config, label })}
-          />
+          <TextControl {...field("label")} />
         </>
       }
     >
