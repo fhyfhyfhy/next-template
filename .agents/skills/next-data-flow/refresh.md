@@ -22,7 +22,7 @@ Every write from the browser runs in a Server Action ([Server data: Server Actio
 
 | Affected data owner | After success |
 | --- | --- |
-| Server Component | The action invalidates the affected server-cached reads, and its response carries the updated page |
+| Server Component | The action invalidates the affected server-cached reads, and its response carries the updated page. When the affected reads are per request, with no server cache to invalidate, the action calls `refresh()` from `next/cache`: an action that calls no invalidation API returns no page |
 | React Query | The factory's `onSuccess` updates or invalidates the affected queries |
 | Both | Both of the above |
 
@@ -44,6 +44,8 @@ Data can change without this user acting: other users' edits, background jobs, o
 | Server Component | Invalidate the cached reads from the backend's change event, such as `revalidateTag` in a Route Handler; refresh open views from a change signal |
 
 Set the polling interval, and how often a change signal is checked, from the [freshness bound](SKILL.md#steps) of the displays involved.
+
+A server-owned view whose freshness bound is "current as of the last navigation or write" needs no change signal. Its page can then be out of date when the user acts on it, so a write refused because of that refreshes the page too: the action refreshes on each refusal that only an out-of-date page can cause, such as a record changed or removed meanwhile, or an authorization failure on a control the page shows only to someone allowed to use it. The refresh shows the user what is now true in place of a control that would be refused again, at the cost of what they had typed; a refusal about the input itself leaves the page as it is.
 
 A **change signal** is a cheap query or pushed event that reveals a change to the view: a version, a count, or the IDs and states the view depends on. Compare successive results and refresh only when they differ. When the backend has invalidated the cached reads, `router.refresh()` updates an open view. When only the browser can detect the change, call a Server Action that invalidates them; its response carries the refreshed page. Every open page then sends that action, so prefer the backend event when the backend can emit one. Choose the invalidation's freshness as [Server invalidation and refresh](#server-invalidation-and-refresh) describes.
 
