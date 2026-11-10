@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 
 import type { ComponentId } from "../../constants/catalog";
 import type { ExampleDefinition, ExampleSources } from "../../types/examples";
-import { ExampleCard } from "../example-card";
+import { ExampleCard } from "./example-card";
 import { examplesByComponent } from "./registry.generated";
 
 /** 按示例自身的顺序和文件名展示自动发现的场景。 */
