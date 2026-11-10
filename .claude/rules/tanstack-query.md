@@ -12,7 +12,9 @@ Define the browser's requests and the React Query options factories that use the
 
 ## Files
 
-- One request per file, named `<verb>-<resource>.ts` after the operation: GET → `get-` (plural for a list, `get-orders.ts`), POST → `create-`, PUT and PATCH → `update-`, DELETE → `delete-`, and a domain verb for other actions (`cancel-order.ts`). Its response schema lives in the feature's `types/`, shared with the data layer that produces the data. Each read that React Query owns gets a `queryOptions` or `infiniteQueryOptions` factory, and every write a `mutationOptions` factory.
+- One operation per file, named `<verb>-<resource>.ts`. A read is `get-` (plural for a list, `get-orders.ts`), or a domain verb when `get-` would not say what it does (`search-orders.ts`). A write is `create-`, `update-`, `delete-`, or a domain verb (`cancel-order.ts`), beside its Server Action in `<verb>-<resource>-action.ts` ([Server Actions](server-data.md#server-actions)).
+- A read's response schema lives in the feature's `types/`, shared with the data layer that produces the data.
+- Each read that React Query owns gets a `queryOptions` or `infiniteQueryOptions` factory, and every write a `mutationOptions` factory. A step of another feature's write has no factory of its own: the feature exports the action or request function, and the factory of the write that uses it calls it, as `updateTaskCoverMutationOptions` in [`features/task/api/update-task-cover.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/update-task-cover.ts) calls `createUploadAction` and `uploadFile` from [`features/upload/api/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/upload/api).
 - Export from the feature's entry what code outside the feature uses, such as an options factory for a route's server prefetch or another feature's cache update, and keep the rest private, request functions included. Add a feature hook only for logic beyond one query or mutation, such as combining two queries.
 
 ## Requests

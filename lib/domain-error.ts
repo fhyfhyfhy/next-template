@@ -45,6 +45,8 @@ export interface DomainErrorDetails {
 /** 没有专门含义的通用错误码。各 feature 自己的业务错误码放在它的 `constants/error-codes.ts`，值不能和这里重复。 */
 export const ErrorCode = {
   BAD_REQUEST: 40000,
+  UNAUTHORIZED: 40100,
+  FORBIDDEN: 40300,
   NOT_FOUND: 40400,
   SERVER_ERROR: 50000,
 } as const;
@@ -60,6 +62,19 @@ export function badRequest(
 
 export function notFound(message: string) {
   return new DomainError(404, ErrorCode.NOT_FOUND, message);
+}
+
+/** 操作需要 session，而请求没有带。 */
+export function unauthorized(message: string) {
+  return new DomainError(401, ErrorCode.UNAUTHORIZED, message);
+}
+
+/**
+ * actor 看得到这条记录，但不能做这次写操作。actor 看不到的记录用 `notFound`，和不存在的记录一样回答：
+ * 403 会让对方知道记录存在。
+ */
+export function forbidden(message: string) {
+  return new DomainError(403, ErrorCode.FORBIDDEN, message);
 }
 
 /** 请求和资源的当前状态冲突，比如名称已被占用、任务不在可重试的状态。 */

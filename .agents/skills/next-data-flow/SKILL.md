@@ -44,7 +44,7 @@ Choose how the server reads a server-owned read, and the server prefetch of a qu
 | --- | --- |
 | The same for every user, and its displays accept some lag | `use cache` with `cacheLife` within the freshness bound, and `cacheTag` when this app's writes change it |
 | The same for every user, changing only on an event such as a CMS publish | `use cache` with `cacheLife("max")` and a tag that the event's handler expires |
-| Must be current on every request | Per request, after `connection()` ([Transport](../../../.claude/rules/data-flow.md#transport)) |
+| Must be current on every request | Per request ([Transport](../../../.claude/rules/data-flow.md#transport)) |
 | Depends on the session, such as the user's own records | Per request. When its cost calls for a cache, read the session outside the cached function and pass the value the result depends on as an argument. For a read that cannot move out, `use cache: private` reuses the result within one request and in the browser's router cache, never in a server cache |
 | The same for every user, read at request time from a slow, rate-limited, or costly backend | `use cache: remote`, which needs a shared handler under `cacheHandlers` in `next.config.ts`; the default handler, `lib/cache-handler.mts`, keeps entries in each process's memory |
 
@@ -59,7 +59,7 @@ Choose how the server reads a server-owned read, and the server prefetch of a qu
 | Cached, with a lifetime the prerendered shell can include | Await it in the Server Component; it renders into the shell |
 | Per request, or depends on `params`, `searchParams`, or cookies | Await it in a Server Component inside `<Suspense>`. Keep the page and layout synchronous and read `params` and `searchParams` inside the boundary |
 | Server-owned, displayed by a Client Component | Start the read without awaiting it and pass the promise as a prop; the Client Component reads it with `use()` inside `<Suspense>`. Components that display the same read share one promise |
-| Query-owned, with inputs the server has | Prefetch it on the server and hydrate, so its data arrives with the page rather than after hydration ([Server prefetch and hydration](../../../.claude/rules/data-flow.md#server-prefetch-and-hydration)); the data layer reads the request's session itself |
+| Query-owned, with inputs the server has | Prefetch it on the server and hydrate, so its data arrives with the page rather than after hydration ([Server prefetch and hydration](../../../.claude/rules/data-flow.md#server-prefetch-and-hydration)); when the read depends on the session, the Server Component passes the actor to the data layer, as the Route Handler does for the refetch ([Data layer](../../../.claude/rules/server-data.md#data-layer)) |
 | Query-owned, with inputs that exist only in the browser | Fetch it in the browser once they exist ([Queries](../../../.claude/rules/tanstack-query.md#queries)) |
 
 Show what the first view needs first. Render everything that waits for no read at once, await only the reads the first view needs, and stream the rest behind their own boundaries, a query-owned read as an unawaited prefetch. Start independent reads together, each in its own component or all before the first `await`: awaiting one before starting the next runs them in sequence.

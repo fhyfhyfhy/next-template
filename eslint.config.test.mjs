@@ -1367,13 +1367,15 @@ describe("架构依赖和 feature、组件导入约定", () => {
     // 架构用例只验证依赖边界；import 排序由下方独立用例验证。
     // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
     // fixture 没有 docs/features.md，feature 依赖图由 scripts/eslint/architecture/feature-dependencies.test.mjs 验证。
-    // fixture 的 server/ 文件只为验证依赖方向，不写 import "server-only"；这条规则由下方独立用例验证。
+    // fixture 的 server/ 和 -action 文件只为验证依赖方向，不写 import "server-only" 和 "use server"；这两条规则由
+    // 下方独立用例验证。
     eslint = new ESLint({
       cwd: fixture,
       overrideConfig: {
         rules: {
           "architecture/feature-dependencies": "off",
           "data-flow/server-only": "off",
+          "data-flow/action-module": "off",
           "simple-import-sort/imports": "off",
           "@typescript-eslint/consistent-type-definitions": "off",
           "@typescript-eslint/consistent-type-assertions": "off",
@@ -1595,26 +1597,26 @@ export function Example() {
       name: "update- 文件里的 queryOptions 要放回 get- 文件",
       file: "features/example/api/update-task-favorite.ts",
       body: "export const favorites = queryOptions({ queryKey: ['a'], queryFn: () => 1 });",
-      reported: ["queryOptions"],
+      reported: ["query"],
     },
     {
       name: "create- 文件里的 infiniteQueryOptions 要放回 get- 文件",
       file: "features/example/api/create-task.ts",
       body: "export const feed = infiniteQueryOptions({ queryKey: ['a'], queryFn: () => 1, initialPageParam: 1, getNextPageParam: () => 2 });",
-      reported: ["infiniteQueryOptions"],
+      reported: ["query"],
     },
     {
       name: "delete- 文件里改名引入的 queryOptions 也要放回 get- 文件",
       file: "features/example/api/delete-task.ts",
       imports: "queryOptions as listOptions",
       body: "export const list = listOptions({ queryKey: ['a'], queryFn: () => 1 });",
-      reported: ["queryOptions"],
+      reported: ["query"],
     },
     {
-      name: "get- 文件里的 mutationOptions 要放进写入请求的文件",
+      name: "get- 文件里的 mutationOptions 要放进写操作的文件，这里不再查它的 action",
       file: "features/example/api/get-tasks.ts",
       body: "export const save = mutationOptions({ mutationFn: () => Promise.resolve(1) });",
-      reported: ["mutationOptions"],
+      reported: ["mutation"],
     },
     {
       name: "get- 文件放 query 工厂不报错",
@@ -1623,16 +1625,34 @@ export function Example() {
       reported: [],
     },
     {
-      name: "update- 文件放 mutationOptions 不报错",
+      name: "update- 文件放 mutationOptions 并 import 它的 action 不报错",
       file: "features/example/api/update-task.ts",
-      body: "export const save = mutationOptions({ mutationFn: () => Promise.resolve(1) });",
+      body: 'import { updateTaskAction } from "./update-task-action";\nexport const save = mutationOptions({ mutationFn: updateTaskAction });',
       reported: [],
     },
     {
-      name: "领域动词的文件不对应固定的 HTTP 方法，不检查",
+      name: "放 mutationOptions 的文件没有 import 同目录的 action 要报错",
+      file: "features/example/api/update-task.ts",
+      body: "export const save = mutationOptions({ mutationFn: () => Promise.resolve(1) });",
+      reported: ["action"],
+    },
+    {
+      name: "领域动词的文件只放 query 工厂不报错",
       file: "features/example/api/search-tasks.ts",
       body: "export const search = queryOptions({ queryKey: ['a'], queryFn: () => 1 });",
       reported: [],
+    },
+    {
+      name: "领域动词的文件同时放 query 工厂和 mutationOptions 要报错",
+      file: "features/example/api/retry-task.ts",
+      body: "import { retryTaskAction } from \"./retry-task-action\";\nexport const status = queryOptions({ queryKey: ['a'], queryFn: () => 1 });\nexport const retry = mutationOptions({ mutationFn: retryTaskAction });",
+      reported: ["mixed"],
+    },
+    {
+      name: "领域动词的文件放 mutationOptions 也要 import 它的 action",
+      file: "features/example/api/retry-task.ts",
+      body: "export const retry = mutationOptions({ mutationFn: () => Promise.resolve(1) });",
+      reported: ["action"],
     },
     {
       name: "api/ 以外的文件不检查",
@@ -1651,7 +1671,7 @@ export function Example() {
           .filter(
             ({ ruleId }) => ruleId === "@tanstack/query/api-file-factories",
           )
-          .map(({ message }) => message.split(" ")[0]),
+          .map(({ messageId }) => messageId),
         JSON.stringify(result.messages, null, 2),
       ).toStrictEqual(reported);
     });
@@ -1669,13 +1689,42 @@ export function Example() {
   }
 });
 
-describe("服务端代码不用 fetchApi 请求本 app 自己的接口", () => {
+describe("服务端代码不用 fetchApi 或 fetch 请求本 app 自己的接口", () => {
   const eslint = new ESLint({
     cwd: project,
     overrideConfig: { rules: { "import/no-cycle": "off" } },
   });
-  const request = (url) => `fetchApi({ url: ${url}, schema: z.null() })`;
-  for (const { name, file, directive = "", url, reported } of [
+  const request = (url, raw) =>
+    raw ? `fetch(${url})` : `fetchApi({ url: ${url}, schema: z.null() })`;
+  for (const { name, file, directive = "", url, raw, reported } of [
+    {
+      name: "Route Handler 用裸 fetch 请求同源路径时报错",
+      file: "app/api/probe/route.ts",
+      url: `"/api/tasks"`,
+      raw: true,
+      reported: 1,
+    },
+    {
+      name: "裸 fetch 的同源路径以 BASE_PATH 开头也报错",
+      file: "app/api/probe/route.ts",
+      url: "`${BASE_PATH}/api/tasks/${id}`",
+      raw: true,
+      reported: 1,
+    },
+    {
+      name: "服务端用裸 fetch 请求其他服务的完整 URL 不报",
+      file: "features/ui-catalog/server/probe.ts",
+      url: `"https://api.example.com/v1/items"`,
+      raw: true,
+      reported: 0,
+    },
+    {
+      name: "feature 的浏览器请求模块用裸 fetch 请求同源路径不报",
+      file: "features/ui-catalog/api/get-probe.ts",
+      url: "`${BASE_PATH}/api/tasks/${id}`",
+      raw: true,
+      reported: 0,
+    },
     {
       name: "Route Handler 请求同源路径时报错",
       file: "app/api/probe/route.ts",
@@ -1721,7 +1770,7 @@ describe("服务端代码不用 fetchApi 请求本 app 自己的接口", () => {
 import { fetchApi } from "@/lib/fetch";
 
 export async function probe(id: string) {
-  return ${request(url)};
+  return ${request(url, raw)};
 }
 `;
       const [result] = await eslint.lintText(source, {
@@ -1733,6 +1782,102 @@ export async function probe(id: string) {
         ),
         JSON.stringify(result.messages, null, 2),
       ).toHaveLength(reported);
+    });
+  }
+});
+
+describe("数据的文件约定", () => {
+  const eslint = new ESLint({ cwd: project });
+  const action = "export async function probeAction() {}\n";
+  for (const { name, rule, file, source, reported } of [
+    {
+      name: "-action 文件没有以 use server 开头报错",
+      rule: "data-flow/action-module",
+      file: "features/example/api/update-probe-action.ts",
+      source: action,
+      reported: ["missing"],
+    },
+    {
+      name: "use server 不在第一句也报错",
+      rule: "data-flow/action-module",
+      file: "features/example/api/update-probe-action.ts",
+      source: `import { z } from "zod";\n"use server";\n${action}`,
+      reported: ["missing"],
+    },
+    {
+      name: "以 use server 开头的 -action 文件不报",
+      rule: "data-flow/action-module",
+      file: "features/example/api/update-probe-action.ts",
+      source: `"use server";\n\n${action}`,
+      reported: [],
+    },
+    {
+      name: "api/ 里的其他文件不要求 use server",
+      rule: "data-flow/action-module",
+      file: "features/example/api/update-probe.ts",
+      source: action,
+      reported: [],
+    },
+    {
+      name: "-search-params 文件从 nuqs 引入报错",
+      rule: "data-flow/search-params-imports",
+      file: "features/example/utils/probe-search-params.ts",
+      source: `import { parseAsString } from "nuqs";\nexport const parsers = { q: parseAsString };\n`,
+      reported: ["client"],
+    },
+    {
+      name: "-search-params 文件从 nuqs/server 引入、从 nuqs 只引类型不报",
+      rule: "data-flow/search-params-imports",
+      file: "features/example/utils/probe-search-params.ts",
+      source: `import type { Nullable } from "nuqs";\nimport { parseAsString } from "nuqs/server";\nexport const parsers = { q: parseAsString };\nexport type Probe = Nullable<{ q: string }>;\n`,
+      reported: [],
+    },
+    {
+      name: "Client Component 从 nuqs 引入不报",
+      rule: "data-flow/search-params-imports",
+      file: "features/example/components/probe.tsx",
+      source: `"use client";\nimport { useQueryStates } from "nuqs";\nexport const useProbe = useQueryStates;\n`,
+      reported: [],
+    },
+    {
+      name: "types/ 里的 schema 用 z.date()、z.coerce.date()、z.bigint()、optional、transform 都报错",
+      rule: "data-flow/json-native-schema",
+      file: "features/example/types/probe.ts",
+      source: `import { z } from "zod";\nexport const probeSchema = z.object({\n  a: z.date(),\n  b: z.coerce.date(),\n  c: z.bigint(),\n  d: z.string().optional(),\n  e: z.string().transform((value) => value.length),\n});\n`,
+      reported: ["type", "type", "type", "optional", "transform"],
+    },
+    {
+      name: "types/ 里 JSON 原生的 schema 不报，包括校验字符串的 z.iso.date()",
+      rule: "data-flow/json-native-schema",
+      file: "features/example/types/probe.ts",
+      source: `import { z } from "zod";\nexport const probeSchema = z.object({\n  createdAt: z.number(),\n  dueDate: z.iso.date(),\n  note: z.string().nullable(),\n});\n`,
+      reported: [],
+    },
+    {
+      name: "types/ 里没有 import zod 的文件，同名方法不报",
+      rule: "data-flow/json-native-schema",
+      file: "features/example/types/probe.ts",
+      source: `declare const list: { transform(): number };\nexport const size = list.transform();\n`,
+      reported: [],
+    },
+    {
+      name: "types/ 以外的 schema 不查",
+      rule: "data-flow/json-native-schema",
+      file: "features/example/api/create-probe-schema.ts",
+      source: `import { z } from "zod";\nexport const inputSchema = z.object({ note: z.string().optional() });\n`,
+      reported: [],
+    },
+  ]) {
+    test(name, async () => {
+      const [result] = await eslint.lintText(source, {
+        filePath: join(project, file),
+      });
+      expect(
+        result.messages
+          .filter(({ ruleId }) => ruleId === rule)
+          .map(({ messageId }) => messageId),
+        JSON.stringify(result.messages, null, 2),
+      ).toStrictEqual(reported);
     });
   }
 });
