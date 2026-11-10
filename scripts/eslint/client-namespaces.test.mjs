@@ -495,6 +495,30 @@ const list = ["shop"] as const;`,
   });
 });
 
+test("一个文件只能有一个 ClientMessages：第一个之后的每一个都报错", async () => {
+  const root = fixture({
+    "app/(shop)/layout.tsx": `import type { ReactNode } from "react";
+import { ClientMessages } from "@/lib/i18n/client-messages";
+export default function Layout({ children }: { children: ReactNode }) {
+  return <><ClientMessages namespaces={["shop"]}>{children}</ClientMessages><ClientMessages namespaces={[]}>…</ClientMessages></>;
+}
+`,
+    "app/(shop)/page.tsx": PAGE(
+      `import { Shop } from "@/features/shop/shop";`,
+      "<Shop />",
+    ),
+    "features/shop/shop.tsx": CLIENT("Shop", "shop"),
+    "app/page.tsx": PAGE(
+      `import { Greeting } from "./greeting";`,
+      "<Greeting />",
+    ),
+    "app/greeting.tsx": CLIENT("Greeting", "app"),
+  });
+  expect(await lint(root)).toStrictEqual({
+    "app/(shop)/layout.tsx": ["onePerFile"],
+  });
+});
+
 test("error.tsx 这类 Client 文件渲染的 namespace 算在所在 layout 上；global-error 在所有 ClientMessages 外面", async () => {
   const root = fixture({
     "app/(shop)/layout.tsx": LAYOUT(["shop"]),

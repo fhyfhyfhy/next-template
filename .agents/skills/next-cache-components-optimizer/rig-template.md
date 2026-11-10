@@ -78,28 +78,14 @@ server lifecycle. Ensure its command serves the production build with
 test commands without starting another server manually:
 
 ```bash filename="Terminal"
-EXPOSE_TESTING_API=1 pnpm build:local && BASE_URL=http://localhost:3000 pnpm playwright test tests/static-shell.spec.ts
+pnpm test:e2e e2e/static-shell.spec.ts
 ```
 
-PowerShell (stop if the build fails):
-
-```powershell
-$env:EXPOSE_TESTING_API = '1'
-pnpm build:local
-$instantBuildExitCode = $LASTEXITCODE
-Remove-Item Env:EXPOSE_TESTING_API
-if ($instantBuildExitCode -ne 0) { throw 'Production test build failed' }
-$env:BASE_URL = 'http://localhost:3000'
-pnpm playwright test tests/static-shell.spec.ts
-```
-
-If the rig does not use `webServer`, start the server with the same variable
-after the build, `EXPOSE_TESTING_API=1 pnpm start:local --port 3000` (PowerShell:
-`$env:EXPOSE_TESTING_API = '1'; pnpm start:local --port 3000`), in a separate
-terminal, keep it running during the test command, and stop it afterward.
-This project's `next.config.ts` puts a build made with the variable in
-`.next-e2e`, and `start` serves that directory only while the variable is set.
-Use only one server lifecycle for the measured app.
+Write the suite in `e2e/`, the config's `testDir`, as `.claude/rules/e2e.md`
+describes, and run it through `pnpm test:e2e`, the same command on PowerShell.
+Its `webServer` is the one server lifecycle: it makes the build with
+`EXPOSE_TESTING_API=1` and serves it at the config's `baseURL`, which the
+suite uses; the config does not read `BASE_URL`.
 
 Adapt the script names and port to the project. Follow the public
 [`instant()` testing pattern](https://nextjs.org/docs/app/guides/instant-navigation#prevent-regressions-with-e2e-tests): use `page.goto()` for an initial-load

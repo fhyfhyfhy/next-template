@@ -87,6 +87,8 @@ features/orders/components/
     format-button.tsx
 ```
 
+A UI catalog `<component-id>-examples/` directory is the exception: it keeps every file at its top level ([ui-catalog.md](ui-catalog.md)).
+
 In the sample product, the task list, its toolbar, and its navigation are sibling component directories: [`features/task/components/task-list/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list), [`features/task/components/task-list-toolbar/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-toolbar), and `task-list-navigation/`.
 
 ### Public API

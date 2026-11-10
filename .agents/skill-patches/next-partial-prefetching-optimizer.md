@@ -2,9 +2,9 @@
 
 Upstream: `npx skills add https://github.com/vercel/next.js/tree/v16.4.0/skills -s next-partial-prefetching-optimizer -a claude-code -a codex -y`, directory `skills/next-partial-prefetching-optimizer/` in `vercel/next.js` at tag `v16.4.0`. `skills-lock.json` records this source and ref.
 
-## Apply workspace conventions and cross-platform commands
+## Apply workspace conventions
 
-Preserve this project's data ownership and transport constraints and use its browser-harness workflow for manual checks. The production Playwright instant() test remains the proof; the added PowerShell forms only adapt shell syntax.
+Preserve this project's data ownership and transport constraints and use its browser-harness workflow for manual checks. The production Playwright instant() test remains the proof.
 
 ````diff
 @@ # Partial Prefetching optimizer @@
@@ -22,49 +22,28 @@ Preserve this project's data ownership and transport constraints and use its bro
  Optimize each requested source link and destination as its own contract. Turn
 ````
 
+## Run the suite through the project's e2e entry
+
+This project's Playwright `webServer` (`playwright.config.ts`) already makes the build with `EXPOSE_TESTING_API=1`, which `next.config.ts` sends to `.next-e2e`, and starts it on the e2e port with what the specs need; `testDir` is `e2e/`, and the config does not read `BASE_URL`. A suite elsewhere, or a build and server started by hand, misses all of that, so the suite is an e2e spec like any other.
+
 File: rig-template.md
 
 ````diff
 @@ ### Test command and base URL @@
+ ```bash filename="Terminal"
 -EXPOSE_TESTING_API=1 pnpm build
 -BASE_URL=http://localhost:3000 pnpm playwright test tests/prefetch-optimization.spec.ts
-+EXPOSE_TESTING_API=1 pnpm build:local && BASE_URL=http://localhost:3000 pnpm playwright test tests/prefetch-optimization.spec.ts
-+```
-+
-+PowerShell (stop if the build fails):
-+
-+```powershell
-+$env:EXPOSE_TESTING_API = '1'
-+pnpm build:local
-+$instantBuildExitCode = $LASTEXITCODE
-+Remove-Item Env:EXPOSE_TESTING_API
-+if ($instantBuildExitCode -ne 0) { throw 'Production test build failed' }
-+$env:BASE_URL = 'http://localhost:3000'
-+pnpm playwright test tests/prefetch-optimization.spec.ts
- ```
- 
-````
-
-## Start the testing build in this project
-
-This project's `next.config.ts` sends a build made with `EXPOSE_TESTING_API=1` to `.next-e2e`, so a server started without the variable serves `.next`, which lacks the testing API. Locally the production build and server are `pnpm build:local` and `pnpm start:local`, which start the local services and pass their connection settings: `pnpm build` and `pnpm start` read them from the environment, as a deployment sets them.
-
-File: rig-template.md
-
-````diff
-@@ ### Test command and base URL @@
++pnpm test:e2e e2e/prefetch-optimization.spec.ts
  ```
  
 -If the rig does not use `webServer`, start `pnpm start --port 3000` in a
 -separate terminal after the build, keep it running during the test command,
 -and stop it afterward. Use only one server lifecycle for the measured app.
-+If the rig does not use `webServer`, start the server with the same variable
-+after the build, `EXPOSE_TESTING_API=1 pnpm start:local --port 3000` (PowerShell:
-+`$env:EXPOSE_TESTING_API = '1'; pnpm start:local --port 3000`), in a separate
-+terminal, keep it running during the test command, and stop it afterward.
-+This project's `next.config.ts` puts a build made with the variable in
-+`.next-e2e`, and `start` serves that directory only while the variable is set.
-+Use only one server lifecycle for the measured app.
++Write the suite in `e2e/`, the config's `testDir`, as `.claude/rules/e2e.md`
++describes, and run it through `pnpm test:e2e`, the same command on PowerShell.
++Its `webServer` is the one server lifecycle: it makes the build with
++`EXPOSE_TESTING_API=1` and serves it at the config's `baseURL`, which the
++suite uses; the config does not read `BASE_URL`.
  
  Adapt the script names and port to the project. Follow the public
 ````
