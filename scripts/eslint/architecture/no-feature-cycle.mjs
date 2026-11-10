@@ -1,5 +1,5 @@
+import { featurePath } from "../imports.mjs";
 import { createFeatureCycleChecker } from "./feature-cycles.mjs";
-import { featurePath } from "./imports.mjs";
 
 /** 为项目创建 ESLint 规则，报告当前文件中参与 feature 循环的引用。 */
 export default function createFeatureCycleRule(projectRoot) {

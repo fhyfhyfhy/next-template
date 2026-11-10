@@ -31,7 +31,7 @@ Dependencies may stay within the same layer or point to a lower layer. Dependenc
 
 ### Layers
 
-Ordered top to bottom, as "One-way dependencies" describes. This table and the next are enforced by `ROOT_LAYERS` / `FEATURE_LAYERS` in `eslint.config.mjs` — change both together.
+Ordered top to bottom, as "One-way dependencies" describes; `utils/`, `constants/`, and `types/` share one layer, here and in the next table. This table and the next are enforced by `ROOT_LAYERS` / `FEATURE_LAYERS` in `eslint.config.mjs` — change both together.
 
 ```
 app/            routes; composes features
@@ -72,7 +72,6 @@ Ordered top to bottom, like "Layers".
   - Any `components/` may contain one level of component directories ([Component directories](components.md#component-directories)), and so may the reserved `components/ui/`.
   - `lib/` may group an adapter that spans several files into one level of directory. When outside code uses only one of its modules, that module is the directory's `index`; when it uses several, it imports each by its path and the directory has no `index`.
 - Keep types with the module or schema that owns them. Extract a shared contract into that owner's `types/` when needed to preserve dependency direction or give the contract an independent role.
-- A feature exports its constants from its `constants/`; a constant only its own module reads stays there, unexported. Test data stays with the tests that use it. A value another rule places beside its code, such as a query key prefix ([Query keys](tanstack-query.md#query-keys)), stays where that rule puts it.
 
 ### Feature boundaries
 
@@ -87,9 +86,7 @@ Creating, merging, or splitting a feature, changing what one is responsible for,
 
 Choose the owner by responsibility. Code that represents a business concept or changes with its policies belongs to that feature, including pure functions, presentational components, types, and constants. Cross-feature consumers reuse it through the feature's public entries. A global lifetime or multiple consumers does not change ownership.
 
-Root shared code provides domain-neutral behavior with stable, reusable interfaces. Promote feature-local code only when concrete reuse justifies extraction, following "Duplication and abstraction". Business data, decisions, and actions come from callers through arguments, props, callbacks, or children. Framework adapters and shared providers are allowed; make their required setup explicit. The same ownership rule applies transitively: a shared helper or adapter must not hide a dependency on a business policy.
-
-When a module mixes general behavior with business rules, keep the business part in its feature and extract only the stable general part. If multiple features need composition, their caller can assemble them without moving their business implementations into root directories. Composition and policies that belong to the whole app rather than one feature live in `app/` beside the routes.
+Root shared code provides domain-neutral behavior with stable, reusable interfaces. Promote feature-local code only when concrete reuse justifies extraction, following "Duplication and abstraction". When a module mixes general behavior with business rules, keep the business part in its feature and extract only the stable general part. Business data, decisions, and actions come from callers through arguments, props, callbacks, or children.
 
 ### Package imports
 

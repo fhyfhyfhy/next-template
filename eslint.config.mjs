@@ -15,14 +15,14 @@ import playwright from "eslint-plugin-playwright";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 
 import { BUILD_DIRS } from "./scripts/build-dirs.mjs";
+import createNamingPlugin from "./scripts/eslint/architecture/naming-plugin.mjs";
 import createArchitecturePlugin, {
   layerZones,
-} from "./scripts/eslint/architecture-plugin.mjs";
+} from "./scripts/eslint/architecture/plugin.mjs";
 import createDataFlowPlugin from "./scripts/eslint/data-flow-plugin.mjs";
 import e2ePlugin from "./scripts/eslint/e2e-plugin.mjs";
 import createI18nPlugin from "./scripts/eslint/i18n-plugin.mjs";
 import { SOURCE_EXTENSIONS, SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
-import createNamingPlugin from "./scripts/eslint/naming-plugin.mjs";
 import withWrapperImports, {
   apiFileFactoriesRule,
   mutationCallbacksRule,
@@ -32,8 +32,6 @@ import { TAILWIND_PALETTES } from "./scripts/eslint/tailwind-palettes.mjs";
 import writingStylePlugin from "./scripts/eslint/writing-style-plugin.mjs";
 
 const PROJECT_ROOT = import.meta.dirname;
-// 源码和 docs/features.md 两组配置共用一个实例：同名插件在两个配置对象里必须是同一个对象。
-const architecturePlugin = createArchitecturePlugin(PROJECT_ROOT);
 const extensionGlob = `{${SOURCE_EXTENSIONS.join(",")}}`;
 const moduleExtensions = SOURCE_EXTENSIONS.map((extension) => `.${extension}`);
 
@@ -45,7 +43,13 @@ const importGroups = [
   ["\\.css$"],
 ];
 
+// ---- 架构（.claude/rules/architecture.md）的常量，规则配置在下面配置数组的「架构」一段 ----
+
+// 几个配置对象共用一个实例：同名插件在两个配置对象里必须是同一个对象。
+const architecturePlugin = createArchitecturePlugin(PROJECT_ROOT);
+
 // 同层和下层依赖允许；文件和 feature 循环分别由 import/no-cycle、architecture/no-feature-cycle 检查。
+// 数组里的几个目录算同一层。
 // 和 .claude/rules/architecture.md「Layers」「Feature structure」两张表一一对应，改一边要同步另一边。
 const ROOT_LAYERS = [
   { name: "app/", files: ["app/**"] },
@@ -57,10 +61,13 @@ const ROOT_LAYERS = [
   { name: "components/ui/", files: ["components/ui/**"] },
   { name: "hooks/", files: ["hooks/**"] },
   { name: "lib/", files: ["lib/**"] },
-  { name: "utils/", files: ["utils/**"] },
-  { name: "constants/", files: ["constants/**"] },
-  { name: "types/", files: ["types/**"] },
+  [
+    { name: "utils/", files: ["utils/**"] },
+    { name: "constants/", files: ["constants/**"] },
+    { name: "types/", files: ["types/**"] },
+  ],
 ];
+const ROOT_DIRECTORIES = ROOT_LAYERS.flat();
 
 const FEATURE_LAYERS = [
   "components",
@@ -68,13 +75,18 @@ const FEATURE_LAYERS = [
   "stores",
   "api",
   "server",
-  "utils",
-  "constants",
-  "types",
-].map((dir) => ({
-  name: `features/{name}/${dir}/`,
-  files: [`features/*/${dir}/**`],
-}));
+  ["utils", "constants", "types"],
+].map((level) =>
+  [level].flat().map((dir) => ({
+    name: `features/{name}/${dir}/`,
+    files: [`features/*/${dir}/**`],
+  })),
+);
+
+const COMPONENT_INDEX_EXPORT_MESSAGE =
+  "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
+
+// ---- 架构的常量结束 ----
 
 // agent 读的指令，用英文写。和 .claude/rules/writing-style.md「Language by content」表里 Agent instructions
 // 一行对应，改一边要同步另一边。
@@ -153,9 +165,6 @@ const RESTRICTED_IMPORTS = {
   patterns: [{ group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE }],
 };
 
-const COMPONENT_INDEX_EXPORT_MESSAGE =
-  "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
-
 // 应用的部署设置的环境变量只通过 lib/env.ts 读。Node 和 Next 定义的变量直接读，只放行 `process.env.名字`
 // 这种写法：打包器只替换这种写法。
 const FRAMEWORK_ENV = "/^(NODE_ENV|(__)?NEXT_(?!PUBLIC_)\\w+)$/";
@@ -217,7 +226,7 @@ function restrictedSyntaxWithout(group) {
 // 会进页面的代码：「Layers」表里的目录，测试除外。其余的目录不进页面，比如 scripts/、e2e/、根目录的配置文件，
 // 以及派生项目自己加的测试或部署目录。
 const APPLICATION_CODE = {
-  files: ROOT_LAYERS.map(({ name }) => `${name}**/*.${extensionGlob}`),
+  files: ROOT_DIRECTORIES.map(({ name }) => `${name}**/*.${extensionGlob}`),
   ignores: [`**/*.{test,spec}.${extensionGlob}`],
 };
 
@@ -330,62 +339,21 @@ const eslintConfig = defineConfig([
   },
   {
     files: [SOURCE_GLOB],
-    // node_modules 里的包不会反向 import 项目代码，不用解析它们的导出。不忽略的话，import/no-cycle 会逐个解析
-    // @tabler/icons-react 的几千个图标模块和 9MB 的 typescript.js，整体 lint 慢 5 倍以上。
-    settings: { "import/ignore": ["node_modules"] },
     plugins: {
       "simple-import-sort": simpleImportSort,
-      architecture: architecturePlugin,
-      naming: createNamingPlugin(PROJECT_ROOT),
       "data-flow": createDataFlowPlugin(PROJECT_ROOT),
       "@tanstack/query": tanstackQueryPlugin,
     },
     rules: {
       // 按 importGroups 固定顺序并支持自动修复，减少增删依赖时无关的排序 diff。
       "simple-import-sort/imports": ["error", { groups: importGroups }],
-      // feature 内部用相对路径且不反向引用自身公共入口。
-      // 跨边界用 @/；访问其他 feature 时只走公共入口。
-      "architecture/feature-imports": "error",
-      // 按 feature 聚合依赖（含类型引用），捕获文件图无环但 feature 之间互相依赖的情况。
-      "architecture/no-feature-cycle": "error",
-      // feature 之间的每个依赖（含类型引用）都要在 docs/features.md 的依赖图里有对应的边。
-      "architecture/feature-dependencies": "error",
-      // 组件目录内用相对路径，对外只开放 index 入口，避免调用方依赖私有实现路径。
-      "architecture/component-imports": "error",
-      // 每个组件目录只保留一个实现入口，避免多个 index 扩展名产生解析歧义；允许声明文件并存。
-      "architecture/component-entry": "error",
-      // React Query 和 UI 库只经项目封装引入：绕过封装会丢掉 QueryClient 策略，或者项目统一的样式、默认值和行为。
-      "architecture/wrapper-imports": "error",
-      // 源码路径统一用 kebab-case，同时保留 Next.js 路由目录的特殊命名约定。
-      "naming/kebab-case": "error",
       // 服务端代码直接调数据层，不用 fetchApi 请求本 app 自己的接口。
       "data-flow/no-server-self-fetch": "error",
       // feature 的 server/ 和 server.ts 只在服务端运行：import "server-only" 让它们进了浏览器的 bundle 就构建失败。
       "data-flow/server-only": "error",
       // 保留 factory 负责的缓存更新；调用方的成功、失败及结束回调放在 mutate 的第二个参数。
       "@tanstack/query/mutation-callbacks": "error",
-      // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。
-      "import/no-relative-packages": "error",
       "no-restricted-imports": ["error", RESTRICTED_IMPORTS],
-      // 检查可解析的文件依赖环，忽略纯类型导入；跨 feature 的聚合循环由专用规则检查。
-      "import/no-cycle": ["error", { commonjs: true }],
-      // 按层级表禁止下层引用上层，让依赖方向与项目架构保持一致。
-      "import/no-restricted-paths": [
-        "error",
-        {
-          basePath: PROJECT_ROOT,
-          zones: [
-            ...layerZones(ROOT_LAYERS, "Layers"),
-            ...layerZones(FEATURE_LAYERS, "Feature structure"),
-            {
-              target: ["e2e/**"],
-              from: ROOT_LAYERS.flatMap((layer) => layer.files),
-              message:
-                "e2e/ observes the app through the browser and writes its test data straight to the e2e database, so it imports no application code. See .claude/rules/e2e.md.",
-            },
-          ],
-        },
-      ],
     },
   },
   // 复用 TanStack 的严格推荐检查。
@@ -394,25 +362,6 @@ const eslintConfig = defineConfig([
     files: [SOURCE_GLOB],
     plugins: { "@tanstack/query": tanstackQueryPlugin },
   })),
-  {
-    // 只查应用代码目录：scripts/ 和根目录配置文件不经过 Next.js 打包，解析不了 @/。
-    files: ROOT_LAYERS.flatMap((layer) => layer.files),
-    rules: {
-      // 当前目录及子目录用相对路径，跨目录用 @/；app/ 内部全用相对路径；feature 和组件内部交给各自的规则。
-      "architecture/root-imports": "error",
-      // app/ 里的 _components/ 在所有使用方所在目录的最近公共祖先里：不被更高的文件引用，也不比需要的更高。
-      "architecture/app-component-placement": "error",
-    },
-  },
-  {
-    // feature 导出的全大写常量放在它的 constants/。测试和 test helper 共用的测试数据跟着测试走。
-    files: [SOURCE_GLOB],
-    ignores: [
-      `**/*.{test,spec}.${extensionGlob}`,
-      `**/*-test-helpers.${extensionGlob}`,
-    ],
-    rules: { "architecture/feature-constants": "error" },
-  },
   {
     ...APPLICATION_CODE,
     plugins: { security: securityPlugin },
@@ -435,6 +384,66 @@ const eslintConfig = defineConfig([
     files: ["components/ui/**"],
     ignores: APPLICATION_CODE.ignores,
     rules: { "no-restricted-syntax": restrictedSyntaxWithout(NATIVE_ELEMENTS) },
+  },
+  // ---- 架构（.claude/rules/architecture.md）----
+  // 组件入口的配置带着 RESTRICTED_SYNTAX 设置 no-restricted-syntax，所以这一段要排在设置这条规则的配置之后。
+  {
+    files: [SOURCE_GLOB],
+    // node_modules 里的包不会反向 import 项目代码，不用解析它们的导出。不忽略的话，import/no-cycle 会逐个解析
+    // @tabler/icons-react 的几千个图标模块和 9MB 的 typescript.js，整体 lint 慢 5 倍以上。
+    settings: { "import/ignore": ["node_modules"] },
+    plugins: {
+      architecture: architecturePlugin,
+      naming: createNamingPlugin(PROJECT_ROOT),
+    },
+    rules: {
+      // 按层级表禁止下层引用上层，让依赖方向与项目架构保持一致。
+      "import/no-restricted-paths": [
+        "error",
+        {
+          basePath: PROJECT_ROOT,
+          zones: [
+            ...layerZones(ROOT_LAYERS, "Layers"),
+            ...layerZones(FEATURE_LAYERS, "Feature structure"),
+            {
+              target: ["e2e/**"],
+              from: ROOT_DIRECTORIES.flatMap((layer) => layer.files),
+              message:
+                "e2e/ observes the app through the browser and writes its test data straight to the e2e database, so it imports no application code. See .claude/rules/e2e.md.",
+            },
+          ],
+        },
+      ],
+      // 检查可解析的文件依赖环，忽略纯类型导入；跨 feature 的聚合循环由专用规则检查。
+      "import/no-cycle": ["error", { commonjs: true }],
+      // 按 feature 聚合依赖（含类型引用），捕获文件图无环但 feature 之间互相依赖的情况。
+      "architecture/no-feature-cycle": "error",
+      // feature 之间的每个依赖（含类型引用）都要在 docs/features.md 的依赖图里有对应的边。
+      "architecture/feature-dependencies": "error",
+      // feature 内部用相对路径且不反向引用自身公共入口。
+      // 跨边界用 @/；访问其他 feature 时只走公共入口。
+      "architecture/feature-imports": "error",
+      // 组件目录内用相对路径，对外只开放 index 入口，避免调用方依赖私有实现路径。
+      "architecture/component-imports": "error",
+      // 每个组件目录只保留一个实现入口，避免多个 index 扩展名产生解析歧义；允许声明文件并存。
+      "architecture/component-entry": "error",
+      // React Query 和 UI 库只经项目封装引入：绕过封装会丢掉 QueryClient 策略，或者项目统一的样式、默认值和行为。
+      "architecture/wrapper-imports": "error",
+      // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。
+      "import/no-relative-packages": "error",
+      // 源码路径统一用 kebab-case，同时保留 Next.js 路由目录的特殊命名约定。
+      "naming/kebab-case": "error",
+    },
+  },
+  {
+    // 只查应用代码目录：scripts/ 和根目录配置文件不经过 Next.js 打包，解析不了 @/。
+    files: ROOT_DIRECTORIES.flatMap((layer) => layer.files),
+    rules: {
+      // 当前目录及子目录用相对路径，跨目录用 @/；app/ 内部全用相对路径；feature 和组件内部交给各自的规则。
+      "architecture/root-imports": "error",
+      // app/ 里的 _components/ 在所有使用方所在目录的最近公共祖先里：不被更高的文件引用，也不比需要的更高。
+      "architecture/app-component-placement": "error",
+    },
   },
   // 组件入口在所在位置的限制之外，禁止 export * 和 export * as，要求显式列出公开成员。
   ...[
@@ -465,6 +474,41 @@ const eslintConfig = defineConfig([
       ],
     },
   })),
+  {
+    files: ["**/*.{jsx,tsx}"],
+    ignores: [
+      "**/*.{test,spec,story,stories,generated,gen}.{jsx,tsx}",
+      "**/{test,tests,__tests__,stories,generated,__generated__}/**",
+    ],
+    rules: {
+      // 函数过长时提醒检查职责，避免一个组件或 helper 承担过多逻辑。
+      "max-lines-per-function": [
+        "warn",
+        {
+          max: 150,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+      // 文件过长时提醒检查拆分；使用 warn，让职责单一的大组件仍可保留。
+      "max-lines": [
+        "warn",
+        {
+          max: 200,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+    },
+  },
+  {
+    // feature 依赖图和代码对照：图里的节点对应 features/ 下的目录，每条边在代码里都有依赖。
+    files: ["docs/features.md"],
+    plugins: { markdown, architecture: architecturePlugin },
+    language: "markdown/gfm",
+    rules: { "architecture/feature-graph": "error" },
+  },
+  // ---- 架构结束 ----
   // ---- i18n（.claude/rules/i18n.md）----
   // - i18next/no-literal-string：用户看得到的文案放进 messages/，用 t() 渲染。
   // - i18n/client-namespaces：每个 ClientMessages 下发的 namespace 和它包着的 Client Component 用到的一致。
@@ -596,33 +640,6 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["**/*.{jsx,tsx}"],
-    ignores: [
-      "**/*.{test,spec,story,stories,generated,gen}.{jsx,tsx}",
-      "**/{test,tests,__tests__,stories,generated,__generated__}/**",
-    ],
-    rules: {
-      // 函数过长时提醒检查职责，避免一个组件或 helper 承担过多逻辑。
-      "max-lines-per-function": [
-        "warn",
-        {
-          max: 150,
-          skipBlankLines: true,
-          skipComments: true,
-        },
-      ],
-      // 文件过长时提醒检查拆分；使用 warn，让职责单一的大组件仍可保留。
-      "max-lines": [
-        "warn",
-        {
-          max: 200,
-          skipBlankLines: true,
-          skipComments: true,
-        },
-      ],
-    },
-  },
-  {
     files: ["features/*/api/**"],
     rules: {
       // options 工厂跟着文件名里的 HTTP 方法走，读接口的工厂不会混进写接口的文件，反之亦然。
@@ -670,13 +687,6 @@ const eslintConfig = defineConfig([
         },
       ],
     },
-  },
-  {
-    // feature 依赖图和代码对照：图里的节点对应 features/ 下的目录，每条边在代码里都有依赖。
-    files: ["docs/features.md"],
-    plugins: { markdown, architecture: architecturePlugin },
-    language: "markdown/gfm",
-    rules: { "architecture/feature-graph": "error" },
   },
   {
     files: AGENT_INSTRUCTIONS,

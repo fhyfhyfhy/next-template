@@ -12,8 +12,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { expect, onTestFinished, test } from "vitest";
 
+import { createProjectResolver, SOURCE_EXTENSIONS } from "../imports.mjs";
 import { createFeatureCycleChecker } from "./feature-cycles.mjs";
-import { createProjectResolver, SOURCE_EXTENSIONS } from "./imports.mjs";
 
 function fixture(files = {}, config = {}) {
   const root = mkdtempSync(join(tmpdir(), "feature-cycles-"));

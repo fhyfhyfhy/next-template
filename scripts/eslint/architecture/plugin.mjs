@@ -1,21 +1,20 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import {
+  appPath,
+  createProjectResolver,
+  featurePath,
+  SOURCE_EXTENSIONS,
+} from "../imports.mjs";
 import createAppComponentPlacementRule from "./app-component-placement.mjs";
 import componentExportsRule from "./component-exports.mjs";
-import createFeatureConstantsRule from "./feature-constants.mjs";
 import { featureDependencies } from "./feature-cycles.mjs";
 import {
   createFeatureGraphLoader,
   FEATURE_GRAPH_FILE,
   parseFeatureGraph,
 } from "./feature-graph.mjs";
-import {
-  appPath,
-  createProjectResolver,
-  featurePath,
-  SOURCE_EXTENSIONS,
-} from "./imports.mjs";
 import createFeatureCycleRule from "./no-feature-cycle.mjs";
 
 const componentEntryPattern = new RegExp(
@@ -26,17 +25,19 @@ const componentSourceEntryPattern = new RegExp(
 );
 
 /**
- * 将层级声明转换为 import/no-restricted-paths 的禁止依赖区域。
+ * 将层级声明转换为 import/no-restricted-paths 的禁止依赖区域；一层是一个目录，或同层几个目录的数组。
  * except 不按 basePath 解析，所以全部用 glob 表达。
  */
-export function layerZones(layers, section) {
+export function layerZones(levels, section) {
+  const layers = levels.map((level) => [level].flat());
+  const names = (layer) => layer.map((directory) => directory.name).join(", ");
   return layers.slice(1).map((layer, index) => {
-    const forbidden = layers.slice(0, index + 1);
+    const forbidden = layers.slice(0, index + 1).flat();
     const allowed = layers.slice(index + 1);
-    const rule = `${layer.name} can import its own layer and lower layers: ${allowed.map((other) => other.name).join(", ")}. Circular dependencies are forbidden.`;
+    const rule = `${names(layer)} can import its own layer and lower layers: ${allowed.map(names).join(", ")}. Circular dependencies are forbidden.`;
     return {
-      target: layer.files,
-      from: forbidden.flatMap((other) => other.files),
+      target: layer.flatMap((directory) => directory.files),
+      from: forbidden.flatMap((directory) => directory.files),
       message: `${rule} Extract a lower-layer dependency within its owner, or move composition to the caller. Keep business code in its feature. See "${section}" and "Shared code ownership" in .claude/rules/architecture.md.`,
     };
   });
@@ -476,7 +477,6 @@ export default function createArchitecturePlugin(projectRoot) {
       "feature-imports": featureImportsRule,
       "feature-dependencies": featureDependenciesRule,
       "feature-graph": featureGraphRule,
-      "feature-constants": createFeatureConstantsRule(projectRoot),
       "root-imports": rootImportsRule,
       "app-component-placement": createAppComponentPlacementRule(projectRoot),
       "no-feature-cycle": createFeatureCycleRule(projectRoot),

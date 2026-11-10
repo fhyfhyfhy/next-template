@@ -24,7 +24,6 @@ const wrapperRule = "architecture/wrapper-imports";
 const rootRule = "architecture/root-imports";
 const placementRule = "architecture/app-component-placement";
 const namingRule = "naming/kebab-case";
-const constantsRule = "architecture/feature-constants";
 const cases = [];
 const statements = {
   import: (source) =>
@@ -250,6 +249,32 @@ addCase("feature 的 utils 层不能导入 server 层", {
   to: "features/CASE/server/things.ts",
   source: "../server/things",
   rule: "import/no-restricted-paths",
+});
+addCase("feature 的 types 可以导入同层的 constants", {
+  from: "features/CASE/types/thing.ts",
+  to: "features/CASE/constants/limits.ts",
+  source: "../constants/limits",
+});
+addCase("feature 的 constants 可以导入同层的 utils", {
+  from: "features/CASE/constants/limits.ts",
+  to: "features/CASE/utils/rules.ts",
+  source: "../utils/rules",
+});
+addCase("根目录的 types 可以导入同层的 utils", {
+  from: "types/CASE.ts",
+  to: "utils/CASE.ts",
+  source: "@/utils/CASE",
+});
+cases.push({
+  name: "同层的 types 和 constants 之间，文件的值导入循环仍然禁止",
+  from: "features/leaf-cycle/types/thing.ts",
+  files: {
+    "features/leaf-cycle/types/thing.ts":
+      'import { limit } from "../constants/limits"; export const thing = () => limit;',
+    "features/leaf-cycle/constants/limits.ts":
+      'import { thing } from "../types/thing"; export const limit = () => thing;',
+  },
+  rules: ["import/no-cycle"],
 });
 cases.push({
   name: "同层文件之间的值导入循环仍然禁止",
@@ -1289,80 +1314,6 @@ for (const [name, from, directive, rules] of [
   });
 }
 
-for (const [name, from, files, rules] of [
-  [
-    "feature 的 utils/ 导出全大写常量被拒绝",
-    "utils/value.ts",
-    { "utils/value.ts": `export const VALUE_HREF = "/value";` },
-    [constantsRule],
-  ],
-  [
-    "export 列表和改名导出成全大写都被拒绝",
-    "api/value.ts",
-    {
-      "api/value.ts": `const FIRST_PAGE = "";\nconst limit = 8;\nexport { FIRST_PAGE, limit as PAGE_LIMIT };`,
-    },
-    [constantsRule, constantsRule],
-  ],
-  [
-    "解构导出的全大写名被拒绝",
-    "server/value.ts",
-    {
-      "server/value.ts": `const source = { LIMIT: 1 };\nexport const { LIMIT } = source;`,
-    },
-    [constantsRule],
-  ],
-  [
-    "constants/ 里导出允许",
-    "constants/value.ts",
-    { "constants/value.ts": `export const VALUE_HREF = "/value";` },
-    [],
-  ],
-  [
-    "不导出的全大写常量和 camelCase 导出允许",
-    "api/value.ts",
-    {
-      "api/value.ts": `const PAGE_SIZE = 8;\nexport const valueKey = ["value", PAGE_SIZE] as const;`,
-    },
-    [],
-  ],
-  [
-    "test helper 导出测试数据允许",
-    "server/db-test-helpers.ts",
-    { "server/db-test-helpers.ts": `export const PNG = new Uint8Array(1);` },
-    [],
-  ],
-  [
-    "入口从 constants/ re-export 允许",
-    "index.ts",
-    {
-      "constants/value.ts": `export const VALUE_HREF = "/value";`,
-      "index.ts": `export { VALUE_HREF } from "./constants/value";`,
-    },
-    [],
-  ],
-]) {
-  const feature = `features/constants-case-${cases.length}`;
-  cases.push({
-    name: `feature 常量：${name}`,
-    from: `${feature}/${from}`,
-    files: Object.fromEntries(
-      Object.entries(files).map(([file, content]) => [
-        `${feature}/${file}`,
-        content,
-      ]),
-    ),
-    rules,
-  });
-}
-
-cases.push({
-  name: "feature 常量：feature 以外的目录不查",
-  from: "lib/constants-case-base-path.ts",
-  files: { "lib/constants-case-base-path.ts": `export const BASE_PATH = "";` },
-  rules: [],
-});
-
 /**
  * 在临时目录里放一份只有 template 配置的项目：eslint.config.mjs 和它 import 的 scripts/，不带派生项目的
  * eslint.config.project.mjs，所以用例只验证 template 自己的规则。
@@ -1415,7 +1366,7 @@ describe("架构依赖和 feature、组件导入约定", () => {
     process.chdir(fixture);
     // 架构用例只验证依赖边界；import 排序由下方独立用例验证。
     // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
-    // fixture 没有 docs/features.md，feature 依赖图由 scripts/eslint/feature-dependencies.test.mjs 验证。
+    // fixture 没有 docs/features.md，feature 依赖图由 scripts/eslint/architecture/feature-dependencies.test.mjs 验证。
     // fixture 的 server/ 文件只为验证依赖方向，不写 import "server-only"；这条规则由下方独立用例验证。
     eslint = new ESLint({
       cwd: fixture,

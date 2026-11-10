@@ -6,7 +6,7 @@ import {
   createProjectResolver,
   featurePath,
   SOURCE_EXTENSIONS,
-} from "./imports.mjs";
+} from "../imports.mjs";
 
 const ignoredDirectories = new Set([
   "node_modules",

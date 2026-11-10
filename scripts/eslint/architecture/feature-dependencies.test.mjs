@@ -6,7 +6,7 @@ import { ESLint } from "eslint";
 import nextTs from "eslint-config-next/typescript";
 import { expect, onTestFinished, test } from "vitest";
 
-import createArchitecturePlugin from "./architecture-plugin.mjs";
+import createArchitecturePlugin from "./plugin.mjs";
 
 const { parser } = nextTs.find(
   (config) => config.languageOptions?.parser,
