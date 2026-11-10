@@ -24,6 +24,46 @@ export function appPath(projectRoot, filename) {
   return parts[0] === "app" && parts.length > 1 ? parts.slice(1) : null;
 }
 
+/** import 的 source 节点指向的模块：字符串，或不带表达式的模板字符串；其余情况为 null。 */
+export function importSpecifier(source) {
+  if (!source) return null;
+  const specifier =
+    source.type === "TemplateLiteral" && source.expressions.length === 0
+      ? source.quasis[0].value.cooked
+      : source.value;
+  return typeof specifier === "string" ? specifier : null;
+}
+
+/**
+ * 文件引用模块的每种写法对应的 ESLint visitor：import、re-export、动态 import、`import("…")` 类型、
+ * `import … = require()` 和 require()。每个都调用 check(source, node)：source 是指向模块的节点，交给
+ * importSpecifier 读（不带 `from` 的 export 为 null），node 是引用它的节点。检查文件引用了什么的规则都经过
+ * 这里，新增一种写法所有规则都会查到。
+ */
+export function importVisitors(check) {
+  return {
+    ImportDeclaration: (node) => check(node.source, node),
+    ExportNamedDeclaration: (node) => check(node.source, node),
+    ExportAllDeclaration: (node) => check(node.source, node),
+    ImportExpression: (node) => check(node.source, node),
+    TSImportType: (node) => check(node.source, node),
+    TSImportEqualsDeclaration: (node) => {
+      if (node.moduleReference.type === "TSExternalModuleReference") {
+        check(node.moduleReference.expression, node);
+      }
+    },
+    CallExpression: (node) => {
+      if (
+        node.callee.type === "Identifier" &&
+        node.callee.name === "require" &&
+        node.arguments.length === 1
+      ) {
+        check(node.arguments[0], node);
+      }
+    },
+  };
+}
+
 /** 解析项目依赖；host 可跟踪配置和解析路径，供调用方判断缓存是否失效。 */
 export function createProjectResolver(projectRoot, host = ts.sys) {
   const root = resolve(projectRoot);
@@ -60,7 +100,8 @@ export function createProjectResolver(projectRoot, host = ts.sys) {
     compilerOptions = parsed.options;
   }
 
-  // packages 为 true 时也解析包名，返回 TypeScript 解析到的真实路径（workspace 包会解析到仓库内的源码）。
+  // packages 为 true 时也解析包名，返回 TypeScript 解析到的文件的真实路径：workspace 包是它在仓库内的路径，
+  // 不是 node_modules 里的链接；包带类型声明时是它的 .d.ts。
   return (filename, specifier, { packages = false } = {}) => {
     if (typeof specifier !== "string") return null;
     const isRelative = /^(?:\.{1,2})(?:\/|$)/.test(specifier);

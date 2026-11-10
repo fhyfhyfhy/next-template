@@ -1,38 +1,11 @@
-import fs from "node:fs";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import fs, { existsSync } from "node:fs";
 import { syncBuiltinESMExports } from "node:module";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { ESLint } from "eslint";
 import { expect, onTestFinished, test, vi } from "vitest";
 
+import { fixture } from "../fixture-test-helpers.mjs";
 import createFeatureCycleRule from "./no-feature-cycle.mjs";
-
-function fixture(files) {
-  const root = mkdtempSync(join(tmpdir(), "no-feature-cycle-"));
-  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  for (const [file, source] of Object.entries({
-    "tsconfig.json": JSON.stringify({
-      compilerOptions: {
-        module: "esnext",
-        moduleResolution: "bundler",
-        paths: { "@/*": ["./*"] },
-      },
-    }),
-    ...files,
-  })) {
-    const filename = join(root, file);
-    mkdirSync(dirname(filename), { recursive: true });
-    writeFileSync(filename, source, "utf8");
-  }
-  return root;
-}
 
 function eslintFor(root) {
   return new ESLint({

@@ -23,6 +23,12 @@ import createDataFlowPlugin from "./scripts/eslint/data-flow-plugin.mjs";
 import e2ePlugin from "./scripts/eslint/e2e-plugin.mjs";
 import createI18nPlugin from "./scripts/eslint/i18n-plugin.mjs";
 import { SOURCE_EXTENSIONS, SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
+import {
+  FEATURE_LAYERS,
+  ROOT_APP_FILES,
+  ROOT_DIRECTORIES,
+  ROOT_LAYERS,
+} from "./scripts/eslint/layers.mjs";
 import withWrapperImports, {
   apiFileFactoriesRule,
   mutationCallbacksRule,
@@ -43,45 +49,15 @@ const importGroups = [
   ["\\.css$"],
 ];
 
-// ---- 架构（.claude/rules/architecture.md）的常量，规则配置在下面配置数组的「架构」一段 ----
+// ---- 架构（.claude/rules/architecture.md）的常量，规则配置在下面配置数组的「架构」一段，层级表在
+// scripts/eslint/layers.mjs ----
 
 // 几个配置对象共用一个实例：同名插件在两个配置对象里必须是同一个对象。
 const architecturePlugin = createArchitecturePlugin(PROJECT_ROOT);
 
-// 同层和下层依赖允许；文件和 feature 循环分别由 import/no-cycle、architecture/no-feature-cycle 检查。
-// 数组里的几个目录算同一层。
-// 和 .claude/rules/architecture.md「Layers」「Feature structure」两张表一一对应，改一边要同步另一边。
-const ROOT_LAYERS = [
-  { name: "app/", files: ["app/**"] },
-  { name: "features/", files: ["features/**"] },
-  {
-    name: "components/",
-    files: ["components/!(ui)/**", `components/*.${extensionGlob}`],
-  },
-  { name: "components/ui/", files: ["components/ui/**"] },
-  { name: "hooks/", files: ["hooks/**"] },
-  { name: "lib/", files: ["lib/**"] },
-  [
-    { name: "utils/", files: ["utils/**"] },
-    { name: "constants/", files: ["constants/**"] },
-    { name: "types/", files: ["types/**"] },
-  ],
-];
-const ROOT_DIRECTORIES = ROOT_LAYERS.flat();
-
-const FEATURE_LAYERS = [
-  "components",
-  "hooks",
-  "stores",
-  "api",
-  "server",
-  ["utils", "constants", "types"],
-].map((level) =>
-  [level].flat().map((dir) => ({
-    name: `features/{name}/${dir}/`,
-    files: [`features/*/${dir}/**`],
-  })),
-);
+// 只有 lib/ 和 feature 的 server/ 能引用的数据库入口：连接模块（项目根目录下的路径，不带扩展名）和数据库
+// 客户端的包。由 architecture/data-access 检查，对应 .claude/rules/architecture.md「Feature structure」。
+const DATABASE_ACCESS = { modules: ["lib/db"], packages: ["pg", "kysely"] };
 
 const COMPONENT_INDEX_EXPORT_MESSAGE =
   "List public API members explicitly in the component entry. Use named exports instead of export * or namespace re-exports.";
@@ -256,6 +232,7 @@ const RESTRICTED_TAILWIND_CLASSES = [
 // 派生项目自己的检查和忽略项写在 eslint.config.project.mjs（.agents/skills/derived-project/SKILL.md），它导出的
 // 配置接在 template 的规则后面、Prettier 之前；没有这个文件时只用 template 的配置。项目的限制写成自己插件里的独立
 // 规则：在那里给文件设置 no-restricted-imports 或 no-restricted-syntax，会整个替换下面给同一批文件设的选项。
+// 应用代码的目录从 scripts/eslint/layers.mjs 取，不要复制：template 升级改了层级表，复制的那份不会跟着变。
 const PROJECT_CONFIG = join(PROJECT_ROOT, "eslint.config.project.mjs");
 const projectConfig = existsSync(PROJECT_CONFIG)
   ? (await import(pathToFileURL(PROJECT_CONFIG).href)).default
@@ -375,8 +352,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // Next 在应用进程里加载的根目录文件也是应用代码，但不在「Layers」表的目录里，单独列出。
-    files: [`{proxy,instrumentation}.${extensionGlob}`],
+    files: ROOT_APP_FILES,
     rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
   },
   {
@@ -443,7 +419,18 @@ const eslintConfig = defineConfig([
       "architecture/root-imports": "error",
       // app/ 里的 _components/ 在所有使用方所在目录的最近公共祖先里：不被更高的文件引用，也不比需要的更高。
       "architecture/app-component-placement": "error",
+      // 项目模块只按它导出的名字引用（CSS 除外），package.json 的 sideEffects 声明才成立。
+      "architecture/side-effect-imports": "error",
     },
+  },
+  {
+    // 应用代码（含根目录的 proxy、instrumentation）只经 lib/ 和 feature 的 server/ 访问数据库。
+    files: [
+      ...ROOT_DIRECTORIES.flatMap((layer) => layer.files),
+      ...ROOT_APP_FILES,
+    ],
+    ignores: ["lib/**", "features/*/server/**"],
+    rules: { "architecture/data-access": ["error", DATABASE_ACCESS] },
   },
   // 组件入口在所在位置的限制之外，禁止 export * 和 export * as，要求显式列出公开成员。
   ...[
@@ -682,6 +669,30 @@ const eslintConfig = defineConfig([
               importNames: ["test", "expect"],
               message:
                 "Import test and expect from e2e/test.ts, which adds the fixtures every spec runs with.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // UI catalog 把这些文件当作可复制的代码展示（.claude/rules/ui-catalog.md），所以只按包名或 @/ 引用：
+    // 相对路径的引用（含副作用导入）复制出去就解析不了。和上面 e2e/ 一样带上全局的限制。
+    files: [
+      "features/ui-catalog/components/*-examples/playground.tsx",
+      "features/ui-catalog/components/*-examples/*.example.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          ...RESTRICTED_IMPORTS,
+          patterns: [
+            ...RESTRICTED_IMPORTS.patterns,
+            {
+              regex: "^\\.\\.?(/|$)",
+              message:
+                "A UI catalog playground or example is copied on its own: import through @/ or a package, not a relative path.",
             },
           ],
         },

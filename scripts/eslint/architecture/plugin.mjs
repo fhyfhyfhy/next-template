@@ -1,10 +1,20 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import {
+  dirname,
+  extname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 
 import {
   appPath,
   createProjectResolver,
   featurePath,
+  importSpecifier,
+  importVisitors,
   SOURCE_EXTENSIONS,
 } from "../imports.mjs";
 import createAppComponentPlacementRule from "./app-component-placement.mjs";
@@ -47,37 +57,8 @@ export function layerZones(levels, section) {
 export default function createArchitecturePlugin(projectRoot) {
   const resolveProjectImport = createProjectResolver(projectRoot);
 
-  function importSpecifier(source) {
-    if (!source) return null;
-    const specifier =
-      source.type === "TemplateLiteral" && source.expressions.length === 0
-        ? source.quasis[0].value.cooked
-        : source.value;
-    return typeof specifier === "string" ? specifier : null;
-  }
-
   function projectImport(filename, source) {
     return resolveProjectImport(filename, importSpecifier(source));
-  }
-
-  function importVisitors(check) {
-    return {
-      ImportDeclaration: (node) => check(node.source),
-      ExportNamedDeclaration: (node) => check(node.source),
-      ExportAllDeclaration: (node) => check(node.source),
-      ImportExpression: (node) => check(node.source),
-      TSImportType: (node) => check(node.source),
-      TSExternalModuleReference: (node) => check(node.expression),
-      CallExpression: (node) => {
-        if (
-          node.callee.type === "Identifier" &&
-          node.callee.name === "require" &&
-          node.arguments.length === 1
-        ) {
-          check(node.arguments[0]);
-        }
-      },
-    };
   }
 
   function componentDirectory(filename) {
@@ -293,7 +274,6 @@ export default function createArchitecturePlugin(projectRoot) {
       },
     },
     create(context) {
-      // markdown 语言的行列都从 1 开始。
       const file = relative(projectRoot, context.filename).split(sep).join("/");
       if (file !== FEATURE_GRAPH_FILE) return {};
 
@@ -304,6 +284,7 @@ export default function createArchitecturePlugin(projectRoot) {
             parsed = parseFeatureGraph(context.sourceCode.text);
           } catch (error) {
             context.report({
+              // markdown 语言的行列都从 1 开始，下面几处报告也一样。
               loc: { line: 1, column: 1 },
               messageId: "unreadable",
               data: { problem: error.message },
@@ -472,6 +453,89 @@ export default function createArchitecturePlugin(projectRoot) {
     },
   };
 
+  // package.json 声明项目模块没有副作用（sideEffects），打包器会丢掉没用到任何导出的 import，只为执行而引用的
+  // 模块就不会执行，也不报错。
+  const sideEffectImportsRule = {
+    meta: {
+      type: "problem",
+      schema: [],
+      messages: {
+        sideEffect:
+          'Import the names you use from a project module, never the module alone: package.json declares project modules free of side effects, so the bundler drops this import. Only CSS is imported for its effect. See "Feature public API" in .claude/rules/architecture.md.',
+      },
+    },
+    create(context) {
+      return {
+        ImportDeclaration(node) {
+          if (node.specifiers.length > 0 || node.importKind === "type") return;
+          const specifier = importSpecifier(node.source);
+          if (!specifier || specifier.endsWith(".css")) return;
+          if (!projectImport(context.filename, node.source)) return;
+          context.report({ node: node.source, messageId: "sideEffect" });
+        },
+      };
+    },
+  };
+
+  // 选项里的 modules 是连接数据库的项目模块（项目根目录下的路径，不带扩展名；是目录时包含里面的每个文件），
+  // packages 是数据库客户端的包。模块按 import 解析到的文件认，别名、相对路径和带扩展名的写法是同一个引用；
+  // 包连同子路径一起算，只引用类型也算。哪些文件受检查由 eslint.config.mjs 的 files 和 ignores 决定。
+  const dataAccessRule = {
+    meta: {
+      type: "problem",
+      schema: [
+        {
+          type: "object",
+          properties: {
+            modules: { type: "array", items: { type: "string" } },
+            packages: { type: "array", items: { type: "string" } },
+          },
+          required: ["modules", "packages"],
+          additionalProperties: false,
+        },
+      ],
+      messages: {
+        database:
+          'Only lib/ and a feature\'s server/ import {{name}}: reach the database through their functions. See "Feature structure" in .claude/rules/architecture.md.',
+      },
+    },
+    create(context) {
+      const [{ modules, packages }] = context.options;
+      const databaseModules = modules.map((name) => ({
+        name,
+        path: resolve(projectRoot, name),
+      }));
+      const databasePackage = (specifier) =>
+        packages.find(
+          (name) => specifier === name || specifier.startsWith(`${name}/`),
+        );
+      const databaseModule = (specifier) => {
+        const target = resolveProjectImport(
+          context.filename,
+          specifier,
+        )?.target;
+        if (!target) return undefined;
+        const file = target.slice(0, target.length - extname(target).length);
+        return databaseModules.find(
+          ({ path }) => file === path || target.startsWith(path + sep),
+        )?.name;
+      };
+
+      return importVisitors((source) => {
+        const specifier = importSpecifier(source);
+        if (specifier === null) return;
+        const name = databasePackage(specifier) ?? databaseModule(specifier);
+        if (name) {
+          context.report({
+            node: source,
+            messageId: "database",
+            data: { name },
+          });
+        }
+      });
+    },
+  };
+
   return {
     rules: {
       "feature-imports": featureImportsRule,
@@ -484,6 +548,8 @@ export default function createArchitecturePlugin(projectRoot) {
       "component-entry": componentEntryRule,
       "component-exports": componentExportsRule,
       "wrapper-imports": wrapperImportsRule,
+      "side-effect-imports": sideEffectImportsRule,
+      "data-access": dataAccessRule,
     },
   };
 }

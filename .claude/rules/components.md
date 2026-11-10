@@ -75,7 +75,7 @@ In the sample product, [`features/task/components/task-detail/`](https://github.
 - The `index` exports by name each component, context, hook, and type that callers need.
 - Keep component-specific contexts, hooks, helpers, and types alongside its parts. Keep implementation-only symbols private. Extract them to the appropriate layer within their owner when they acquire an independent reuse role; business ownership remains unchanged.
 
-Component directories are one level deep, so when one grows past ~5–7 files, split it into **sibling** component directories:
+Component directories are one level deep, so when one grows past ~5–7 files, test files included, split it into **sibling** component directories:
 
 ```
 features/orders/components/

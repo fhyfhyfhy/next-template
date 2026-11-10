@@ -1,8 +1,13 @@
-import { readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import ts from "typescript";
 
-import { createProjectResolver, SOURCE_EXTENSIONS } from "./imports.mjs";
+import {
+  createCachedResolver,
+  createStatSnapshot,
+  fileVersion,
+} from "./file-versions.mjs";
+import { SOURCE_EXTENSIONS } from "./imports.mjs";
 import { messageNamespace } from "./message-owner.mjs";
 
 // 检查每个 ClientMessages 发的 namespace 和它包着的 Client Component 实际用到的是否一致，约定见
@@ -47,12 +52,6 @@ const EXCLUDED_CONDITIONS = {
   [CLIENT]: new Set(["react-server"]),
   [SERVER]: new Set(["browser"]),
 };
-
-function fileVersion(stat) {
-  return stat
-    ? `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`
-    : null;
-}
 
 const toPosix = (path) => path.split(sep).join("/");
 
@@ -1117,49 +1116,12 @@ export function createClientNamespaceChecker(projectRoot) {
   const root = resolve(projectRoot);
   const realRoot = realpathSync(root);
   const diskModules = new Map();
-  let snapshot = new Map();
+  const stats = createStatSnapshot();
+  const { readStat } = stats;
+  const currentResolver = createCachedResolver(root, readStat);
   let resolveImport;
-  let resolverDependencies = new Map();
-  let resolverRevision = 0;
+  let resolverRevision;
   let analysis = null;
-
-  function readStat(filename) {
-    const path = resolve(filename);
-    if (!snapshot.has(path))
-      snapshot.set(path, statSync(path, { throwIfNoEntry: false }));
-    return snapshot.get(path);
-  }
-
-  function refreshResolver() {
-    if (
-      resolveImport &&
-      [...resolverDependencies].every(
-        ([filename, version]) => fileVersion(readStat(filename)) === version,
-      )
-    )
-      return;
-    resolverDependencies = new Map();
-    // 跟踪 tsconfig、package.json 和解析时探测过的路径，新增的文件也会让解析结果失效。
-    const track = (filename) => {
-      const stat = readStat(filename);
-      resolverDependencies.set(resolve(filename), fileVersion(stat));
-      return stat;
-    };
-    resolveImport = createProjectResolver(root, {
-      ...ts.sys,
-      fileExists: (filename) => track(filename)?.isFile() ?? false,
-      directoryExists: (directory) => track(directory)?.isDirectory() ?? false,
-      readFile: (filename) => {
-        track(filename);
-        return ts.sys.readFile(filename);
-      },
-      realpath: (filename) => {
-        track(filename);
-        return ts.sys.realpath(filename);
-      },
-    });
-    resolverRevision++;
-  }
 
   function diskModule(filename) {
     const stat = readStat(filename);
@@ -1245,8 +1207,8 @@ export function createClientNamespaceChecker(projectRoot) {
   }
 
   return (filename, sourceText) => {
-    snapshot = new Map();
-    refreshResolver();
+    stats.reset();
+    ({ resolveImport, revision: resolverRevision } = currentResolver());
     const file = resolve(filename);
     const disk = diskModule(file);
     const override =

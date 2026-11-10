@@ -1,6 +1,4 @@
 import {
-  mkdirSync,
-  mkdtempSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -8,41 +6,18 @@ import {
   utimesSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { expect, onTestFinished, test } from "vitest";
+import { join } from "node:path";
+import { expect, test } from "vitest";
 
+import {
+  fixture as projectFixture,
+  writeFile,
+} from "../fixture-test-helpers.mjs";
 import { createProjectResolver, SOURCE_EXTENSIONS } from "../imports.mjs";
 import { createFeatureCycleChecker } from "./feature-cycles.mjs";
 
-function fixture(files = {}, config = {}) {
-  const root = mkdtempSync(join(tmpdir(), "feature-cycles-"));
-  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  const tsconfig = {
-    compilerOptions: {
-      module: "esnext",
-      moduleResolution: "bundler",
-      allowJs: true,
-      paths: { "@/*": ["./*"] },
-      ...config,
-    },
-  };
-  for (const [file, content] of Object.entries({
-    "tsconfig.json": JSON.stringify(tsconfig),
-    ...files,
-  })) {
-    const filename = join(root, file);
-    mkdirSync(dirname(filename), { recursive: true });
-    writeFileSync(filename, content, "utf8");
-  }
-  return root;
-}
-
-function write(root, filename, source) {
-  const path = join(root, filename);
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, source, "utf8");
-}
+const fixture = (files, config) =>
+  projectFixture(files, { allowJs: true, ...config });
 
 function check(root, filename, checker = createFeatureCycleChecker(root)) {
   const path = join(root, filename);
@@ -239,7 +214,7 @@ test("同一 checker 读取磁盘内容变化，不以时间戳或文件大小�
   utimesSync(target, timestamp, timestamp);
   const before = statSync(target);
   expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual([]);
-  write(root, "features/b/index.ts", 'export * from "@/features/a";');
+  writeFile(root, "features/b/index.ts", 'export * from "@/features/a";');
   utimesSync(target, timestamp, timestamp);
   const after = statSync(target);
   expect(after.size).toBe(before.size);
@@ -249,7 +224,7 @@ test("同一 checker 读取磁盘内容变化，不以时间戳或文件大小�
       ({ cycle }) => cycle,
     ),
   ).toStrictEqual([["a", "b", "a"]]);
-  write(root, "features/b/index.ts", "export const value = 1;");
+  writeFile(root, "features/b/index.ts", "export const value = 1;");
   expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual([]);
 });
 
@@ -262,7 +237,7 @@ test("同一 checker 跟踪依赖文件新增、删除及跨目录重命名", ()
   const checkFile = createFeatureCycleChecker(root);
   const current = () => check(root, "features/a/index.ts", checkFile);
   expect(current()).toStrictEqual([]);
-  write(root, "features/b/consumer.ts", 'export * from "@/features/a";');
+  writeFile(root, "features/b/consumer.ts", 'export * from "@/features/a";');
   expect(current().length).toBe(1);
   renameSync(
     join(root, "features/b/consumer.ts"),
@@ -285,7 +260,7 @@ test("同一 checker 跟踪整个 feature 目录新增、重命名和删除", ()
   const checkFile = createFeatureCycleChecker(root);
   const current = () => check(root, "features/a/index.ts", checkFile);
   expect(current()).toStrictEqual([]);
-  write(root, "features/b/index.ts", 'export * from "@/features/a";');
+  writeFile(root, "features/b/index.ts", 'export * from "@/features/a";');
   expect(current().length).toBe(1);
   renameSync(join(root, "features/b"), join(root, "features/c"));
   expect(current()).toStrictEqual([]);
@@ -311,7 +286,7 @@ test("同一 checker 重新读取 tsconfig 及 extends 中的别名", () => {
   const checkFile = createFeatureCycleChecker(root);
   const current = () => check(root, "features/a/index.ts", checkFile);
   expect(current()).toStrictEqual([]);
-  write(
+  writeFile(
     root,
     "tsconfig.base.json",
     JSON.stringify({
@@ -322,7 +297,7 @@ test("同一 checker 重新读取 tsconfig 及 extends 中的别名", () => {
     }),
   );
   expect(current().map(({ cycle }) => cycle)).toStrictEqual([["a", "b", "a"]]);
-  write(
+  writeFile(
     root,
     "tsconfig.json",
     JSON.stringify({
@@ -344,7 +319,7 @@ test("配置变化让当前文件退出 feature 图后，其他文件也使用�
   );
   const checkFile = createFeatureCycleChecker(root);
   expect(check(root, "features/a/index.ts", checkFile).length).toBe(1);
-  write(
+  writeFile(
     root,
     "tsconfig.json",
     JSON.stringify({
@@ -393,7 +368,7 @@ test("新增或删除优先解析目标会使已有文件的依赖失效", () =>
   const checkFile = createFeatureCycleChecker(root);
   const current = () => check(root, "features/a/index.ts", checkFile);
   expect(current()).toStrictEqual([]);
-  write(root, "features/b/preferred.ts", "export const value = 1;");
+  writeFile(root, "features/b/preferred.ts", "export const value = 1;");
   expect(current().length).toBe(1);
   rmSync(join(root, "features/b/preferred.ts"));
   expect(current()).toStrictEqual([]);
@@ -408,10 +383,10 @@ test("无效配置不会回退到旧 resolver，修正后同一 checker 可以�
   const current = () => check(root, "features/a/index.ts", checkFile);
   expect(current().length).toBe(1);
   const config = readFileSync(join(root, "tsconfig.json"), "utf8");
-  write(root, "tsconfig.json", "{");
+  writeFile(root, "tsconfig.json", "{");
   expect(current).toThrow();
   expect(current).toThrow();
-  write(root, "tsconfig.json", config);
+  writeFile(root, "tsconfig.json", config);
   expect(current().length).toBe(1);
 });
 
@@ -430,7 +405,7 @@ test("未保存的当前文本覆盖磁盘版本，后续调用不会保留旧�
   ).toStrictEqual([["a", "b", "a"]]);
   expect(check(root, "features/b/index.ts", checkFile)).toStrictEqual([]);
   expect(check(root, "features/a/index.ts", checkFile)).toStrictEqual([]);
-  write(root, "features/a/index.ts", 'export * from "@/features/b";');
+  writeFile(root, "features/a/index.ts", 'export * from "@/features/b";');
   expect(checkFile(filename, "export const value = 1;")).toStrictEqual([]);
   expect(check(root, "features/a/index.ts", checkFile).length).toBe(1);
 });

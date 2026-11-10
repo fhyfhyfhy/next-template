@@ -14,7 +14,8 @@ const appRouteDirectoryName = new RegExp(
 
 /** 为调用方的项目根目录创建路径命名插件，包含 Next.js 路由目录约定。 */
 export default function createNamingPlugin(projectRoot) {
-  // ESLint 只处理源码文件，所以只覆盖源码文件和它们所在的目录；CSS、图片、Markdown 等不在检查范围内。
+  // eslint.config.mjs 只对 SOURCE_GLOB 开这条规则，所以只覆盖源码文件和它们所在的目录；CSS、图片、Markdown
+  // 等的名字不在检查范围内。
   const kebabCasePathRule = {
     meta: {
       type: "suggestion",
