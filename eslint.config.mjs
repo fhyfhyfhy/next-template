@@ -19,7 +19,11 @@ import createNamingPlugin from "./scripts/eslint/architecture/naming-plugin.mjs"
 import createArchitecturePlugin, {
   layerZones,
 } from "./scripts/eslint/architecture/plugin.mjs";
-import createDataFlowPlugin from "./scripts/eslint/data-flow-plugin.mjs";
+import createDataFlowPlugin from "./scripts/eslint/data/data-flow-plugin.mjs";
+import withWrapperImports, {
+  apiFileFactoriesRule,
+  mutationCallbacksRule,
+} from "./scripts/eslint/data/query-plugin.mjs";
 import e2ePlugin from "./scripts/eslint/e2e-plugin.mjs";
 import createI18nPlugin from "./scripts/eslint/i18n-plugin.mjs";
 import { SOURCE_EXTENSIONS, SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
@@ -29,10 +33,6 @@ import {
   ROOT_DIRECTORIES,
   ROOT_LAYERS,
 } from "./scripts/eslint/layers.mjs";
-import withWrapperImports, {
-  apiFileFactoriesRule,
-  mutationCallbacksRule,
-} from "./scripts/eslint/query-plugin.mjs";
 import securityPlugin from "./scripts/eslint/security-plugin.mjs";
 import { TAILWIND_PALETTES } from "./scripts/eslint/tailwind-palettes.mjs";
 import writingStylePlugin from "./scripts/eslint/writing-style-plugin.mjs";
@@ -64,6 +64,40 @@ const COMPONENT_INDEX_EXPORT_MESSAGE =
 
 // ---- 架构的常量结束 ----
 
+// ---- 数据（.claude/rules/ 的 data-flow.md、server-data.md、data-setup.md、tanstack-query.md，AGENTS.md「Environment variables」）的常量，规则配置在下面配置数组的「数据」一段 ----
+// 数据借用 no-restricted-imports、no-restricted-syntax 的各一组限制。这两条规则还管着别的事，所以这两组合进
+// 下面的 RESTRICTED_IMPORTS 和 RESTRICTED_SYNTAX；数据的其余检查和 ENV_ACCESS 的例外在配置数组的「数据」一段。
+
+// TanStack 官方规则和本地规则合成一个插件，规则名统一用官方的前缀 @tanstack/query/*。
+// withWrapperImports 让官方规则识别从 @/lib/react-query 封装的 import。
+const tanstackQueryPlugin = withWrapperImports(pluginQuery);
+tanstackQueryPlugin.rules["mutation-callbacks"] = mutationCallbacksRule;
+tanstackQueryPlugin.rules["api-file-factories"] = apiFileFactoriesRule;
+
+// 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query。
+const QUERY_LIBRARY_MESSAGE =
+  "Request server data with fetchApi from @/lib/request/fetch and React Query from @/lib/react-query. See .claude/rules/data-flow.md.";
+const QUERY_LIBRARY_RESTRICTION = {
+  paths: ["axios", "swr"].map((name) => ({
+    name,
+    message: QUERY_LIBRARY_MESSAGE,
+  })),
+  patterns: [{ group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE }],
+};
+
+// 应用的部署设置的环境变量只通过 lib/env.ts 读。Node 和 Next 定义的变量直接读，只放行 `process.env.名字`
+// 这种写法：打包器只替换这种写法。
+const FRAMEWORK_ENV = "/^(NODE_ENV|(__)?NEXT_(?!PUBLIC_)\\w+)$/";
+const ENV_ACCESS = [
+  {
+    selector: `MemberExpression[object.name='process'][property.name='env']:not(MemberExpression[computed=false][property.name=${FRAMEWORK_ENV}] > .object)`,
+    message:
+      "Read environment variables through env from @/lib/env, which declares and validates them. See AGENTS.md § Environment variables.",
+  },
+];
+
+// ---- 数据的常量结束 ----
+
 // agent 读的指令，用英文写。和 .claude/rules/writing-style.md「Language by content」表里 Agent instructions
 // 一行对应，改一边要同步另一边。
 const AGENT_INSTRUCTIONS = [
@@ -73,14 +107,6 @@ const AGENT_INSTRUCTIONS = [
   ".agents/**/*.md",
   "docs/agents/**/*.md",
 ];
-
-// TanStack 官方规则和本地规则合成一个插件，规则名统一用官方的前缀 @tanstack/query/*。
-// withWrapperImports 让官方规则识别从 @/lib/react-query 封装的 import。
-const tanstackQueryPlugin = withWrapperImports(pluginQuery);
-tanstackQueryPlugin.rules["mutation-callbacks"] = mutationCallbacksRule;
-tanstackQueryPlugin.rules["api-file-factories"] = apiFileFactoriesRule;
-const QUERY_LIBRARY_MESSAGE =
-  "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-flow.md.";
 
 // i18n 里借用 no-restricted-imports、no-restricted-syntax 的几组限制。这两条规则还管着别的事，所以这几组合进
 // 下面的 RESTRICTED_IMPORTS 和 RESTRICTED_SYNTAX；i18n 的其余检查和这几组的例外在配置数组的「i18n」一段。
@@ -129,28 +155,11 @@ const TRANSLATOR_NAMESPACE = [
   },
 ];
 
-// 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query。
+// 所有代码都受的 no-restricted-imports 限制。
 const RESTRICTED_IMPORTS = {
-  paths: [
-    ...["axios", "swr"].map((name) => ({
-      name,
-      message: QUERY_LIBRARY_MESSAGE,
-    })),
-    INTL_PROVIDER_RESTRICTION,
-  ],
-  patterns: [{ group: ["axios/*", "swr/*"], message: QUERY_LIBRARY_MESSAGE }],
+  paths: [...QUERY_LIBRARY_RESTRICTION.paths, INTL_PROVIDER_RESTRICTION],
+  patterns: QUERY_LIBRARY_RESTRICTION.patterns,
 };
-
-// 应用的部署设置的环境变量只通过 lib/env.ts 读。Node 和 Next 定义的变量直接读，只放行 `process.env.名字`
-// 这种写法：打包器只替换这种写法。
-const FRAMEWORK_ENV = "/^(NODE_ENV|(__)?NEXT_(?!PUBLIC_)\\w+)$/";
-const ENV_ACCESS = [
-  {
-    selector: `MemberExpression[object.name='process'][property.name='env']:not(MemberExpression[computed=false][property.name=${FRAMEWORK_ENV}] > .object)`,
-    message:
-      "Read environment variables through env from @/lib/env, which declares and validates them. See AGENTS.md § Environment variables.",
-  },
-];
 
 // Base UI 有对应组件的原生元素只在 components/ui/ 的封装里渲染，别处渲染封装，样式、状态和可访问性才一致。
 // 选择器只匹配小写的原生标签：<Form>、<form.Field> 这类组件和成员表达式不受影响。
@@ -316,29 +325,13 @@ const eslintConfig = defineConfig([
   },
   {
     files: [SOURCE_GLOB],
-    plugins: {
-      "simple-import-sort": simpleImportSort,
-      "data-flow": createDataFlowPlugin(PROJECT_ROOT),
-      "@tanstack/query": tanstackQueryPlugin,
-    },
+    plugins: { "simple-import-sort": simpleImportSort },
     rules: {
       // 按 importGroups 固定顺序并支持自动修复，减少增删依赖时无关的排序 diff。
       "simple-import-sort/imports": ["error", { groups: importGroups }],
-      // 服务端代码直接调数据层，不用 fetchApi 请求本 app 自己的接口。
-      "data-flow/no-server-self-fetch": "error",
-      // feature 的 server/ 和 server.ts 只在服务端运行：import "server-only" 让它们进了浏览器的 bundle 就构建失败。
-      "data-flow/server-only": "error",
-      // 保留 factory 负责的缓存更新；调用方的成功、失败及结束回调放在 mutate 的第二个参数。
-      "@tanstack/query/mutation-callbacks": "error",
       "no-restricted-imports": ["error", RESTRICTED_IMPORTS],
     },
   },
-  // 复用 TanStack 的严格推荐检查。
-  ...pluginQuery.configs["flat/recommended-strict"].map((config) => ({
-    ...config,
-    files: [SOURCE_GLOB],
-    plugins: { "@tanstack/query": tanstackQueryPlugin },
-  })),
   {
     ...APPLICATION_CODE,
     plugins: { security: securityPlugin },
@@ -587,6 +580,43 @@ const eslintConfig = defineConfig([
     },
   },
   // ---- i18n 结束 ----
+  // ---- 数据（.claude/rules/ 的 data-flow.md、server-data.md、data-setup.md、tanstack-query.md，AGENTS.md「Environment variables」）----
+  // QUERY_LIBRARY_RESTRICTION、ENV_ACCESS 前面随 RESTRICTED_IMPORTS、RESTRICTED_SYNTAX 生效，这里只放 ENV_ACCESS 的例外，
+  // 所以这一段要排在设置 no-restricted-syntax 的配置之后。
+  {
+    files: [SOURCE_GLOB],
+    plugins: {
+      "data-flow": createDataFlowPlugin(PROJECT_ROOT),
+      "@tanstack/query": tanstackQueryPlugin,
+    },
+    rules: {
+      // 服务端代码直接调数据层，不用 fetchApi 或 fetch 请求本 app 自己的接口。
+      "data-flow/no-server-self-fetch": "error",
+      // feature 的 server/ 和 server.ts 只在服务端运行：import "server-only" 让它们进了浏览器的 bundle 就构建失败。
+      "data-flow/server-only": "error",
+      // feature 的 api/ 里 -action 文件是 Server Action 模块，以 "use server" 开头。
+      "data-flow/action-module": "error",
+      // utils/ 里的 -search-params 文件 Server Component 也要用，只从 nuqs/server 引入。
+      "data-flow/search-params-imports": "error",
+      // feature 的 types/ 里的 schema 只用 JSON 原生的值：不用 z.date()、z.bigint()、.optional()、.transform()。
+      "data-flow/json-native-schema": "error",
+      // 保留 factory 负责的缓存更新；调用方的成功、失败及结束回调放在 mutate 的第二个参数。
+      "@tanstack/query/mutation-callbacks": "error",
+    },
+  },
+  // 复用 TanStack 的严格推荐检查。
+  ...pluginQuery.configs["flat/recommended-strict"].map((config) => ({
+    ...config,
+    files: [SOURCE_GLOB],
+    plugins: { "@tanstack/query": tanstackQueryPlugin },
+  })),
+  {
+    files: ["features/*/api/**"],
+    rules: {
+      // 一个文件一个操作：读的工厂和写的工厂不放在同一个文件里，写的工厂所在的文件 import 它的 Server Action。
+      "@tanstack/query/api-file-factories": "error",
+    },
+  },
   {
     // 唯一读应用环境变量的地方。
     files: ["lib/env.ts"],
@@ -594,6 +624,7 @@ const eslintConfig = defineConfig([
       "no-restricted-syntax": restrictedSyntaxWithout(ENV_ACCESS),
     },
   },
+  // ---- 数据结束 ----
   {
     files: [SOURCE_GLOB],
     // 测试里的 class 是 cn() 等函数的输入，不会渲染，会故意拼接或写成非规范形式。
@@ -624,13 +655,6 @@ const eslintConfig = defineConfig([
         "error",
         { restrict: RESTRICTED_TAILWIND_CLASSES },
       ],
-    },
-  },
-  {
-    files: ["features/*/api/**"],
-    rules: {
-      // options 工厂跟着文件名里的 HTTP 方法走，读接口的工厂不会混进写接口的文件，反之亦然。
-      "@tanstack/query/api-file-factories": "error",
     },
   },
   // Playwright 推荐的 e2e 检查，比如不用固定时长的等待、expect.poll 必须 await。

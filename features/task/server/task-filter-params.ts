@@ -1,7 +1,7 @@
 import "server-only";
 
-import { badRequest } from "@/lib/domain-error";
-import { integerParam } from "@/lib/route-handler";
+import { badRequest } from "@/lib/request/domain-error";
+import { integerParam } from "@/lib/request/route-handler";
 
 import {
   type TaskFilters,

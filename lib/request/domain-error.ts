@@ -1,7 +1,7 @@
 import type { ApiErrorObject } from "./fetch";
 
 /**
- * 服务端按业务规则拒绝一次读写时抛出，Route Handler 把它转成 `lib/fetch.ts` 解析的失败响应：HTTP `status`
+ * 服务端按业务规则拒绝一次读写时抛出，Route Handler 把它转成 `lib/request/fetch.ts` 解析的失败响应：HTTP `status`
  * 加 `{ error: { code, message, param?, params?, data? } }`；Server Action 把调用方要识别的错误作为
  * `{ ok: false, error }` 返回，`error` 是同一个对象。
  * `code` 是业务错误码，前三位等于 `status`；`message` 面向开发者和日志，UI 按 `code` 和 `params` 生成文案。
@@ -45,6 +45,8 @@ export interface DomainErrorDetails {
 /** 没有专门含义的通用错误码。各 feature 自己的业务错误码放在它的 `constants/error-codes.ts`，值不能和这里重复。 */
 export const ErrorCode = {
   BAD_REQUEST: 40000,
+  UNAUTHORIZED: 40100,
+  FORBIDDEN: 40300,
   NOT_FOUND: 40400,
   SERVER_ERROR: 50000,
 } as const;
@@ -62,6 +64,19 @@ export function notFound(message: string) {
   return new DomainError(404, ErrorCode.NOT_FOUND, message);
 }
 
+/** 操作需要 session，而请求没有带。 */
+export function unauthorized(message: string) {
+  return new DomainError(401, ErrorCode.UNAUTHORIZED, message);
+}
+
+/**
+ * actor 看得到这条记录，但不能做这次写操作。actor 看不到的记录用 `notFound`，和不存在的记录一样回答：
+ * 403 会让对方知道记录存在。
+ */
+export function forbidden(message: string) {
+  return new DomainError(403, ErrorCode.FORBIDDEN, message);
+}
+
 /** 请求和资源的当前状态冲突，比如名称已被占用、任务不在可重试的状态。 */
 export function conflict(
   code: number,
@@ -71,7 +86,7 @@ export function conflict(
   return new DomainError(409, code, message, details);
 }
 
-/** 失败响应的 JSON 体，格式见 `lib/fetch.ts` 的 `errorSchema`。 */
+/** 失败响应的 JSON 体，格式见 `lib/request/fetch.ts` 的 `errorSchema`。 */
 export function errorBody(error: DomainError): { error: ApiErrorObject } {
   return {
     error: {

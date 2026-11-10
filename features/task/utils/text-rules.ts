@@ -1,4 +1,4 @@
-import { badRequest } from "@/lib/domain-error";
+import { badRequest } from "@/lib/request/domain-error";
 
 /**
  * 去掉首尾空白后长度在 1 到 `maxLength` 之间的文本，否则按参数错误拒绝：`param` 是字段名，`params.max` 是上限，

@@ -1,5 +1,5 @@
 import { streamTaskLogs } from "@/features/task/server";
-import { routeHandler } from "@/lib/route-handler";
+import { routeHandler } from "@/lib/request/route-handler";
 
 /** 生成日志的 SSE 流，事件格式见 `streamTaskLogs`。客户端断开时 `request.signal` 中止，流随之结束。 */
 export const GET = routeHandler(

@@ -78,10 +78,16 @@ export const mutationCallbacksRule = {
 const QUERY_FACTORIES = new Set(["queryOptions", "infiniteQueryOptions"]);
 const WRITE_VERBS = new Set(["create", "update", "delete"]);
 
+// 同目录的 Server Action 模块：./<verb>-<resource>-action，可以带扩展名。
+const ACTION_SOURCE = /^\.\/[\w-]+-action(\.[cm]?[jt]s)?$/;
+
 /**
- * api 文件按 HTTP 方法命名、一个文件一个接口（.claude/rules/tanstack-query.md 的 Files），工厂跟着接口走：
- * get- 文件不放 mutationOptions，create-、update-、delete- 文件不放 query 工厂。领域动词（retry-、search-）
- * 不对应固定的方法，不检查。只认从 @/lib/react-query 引入的工厂，包括改名引入。
+ * api 文件一个文件一个操作，读和写分开（.claude/rules/tanstack-query.md 的 Files），工厂跟着操作走：
+ * - get- 文件不放 mutationOptions，create-、update-、delete- 文件不放 query 工厂；
+ * - 领域动词的文件（retry-、search-）读写都可能，所以只查同一个文件不同时放两种工厂；
+ * - 放 mutationOptions 的文件要 import 同目录的 -action 模块：浏览器的写都走 Server Action
+ *   （.claude/rules/server-data.md 的 Server Actions）。只查有没有这个 import，查不到 mutationFn 是否真的调了它。
+ * 只认从 @/lib/react-query 引入的工厂，包括改名引入。
  */
 export const apiFileFactoriesRule = {
   meta: {
@@ -89,19 +95,26 @@ export const apiFileFactoriesRule = {
     schema: [],
     messages: {
       query:
-        "{{factory}} reads a GET endpoint, but {{file}} holds a write. Move it to the get- file of the endpoint it reads: one endpoint per file, named after its HTTP method (Files in .claude/rules/tanstack-query.md).",
+        "{{factory}} builds a read, but {{file}} holds a write. Move it to the read's own file, such as a get- file: one operation per file (Files in .claude/rules/tanstack-query.md).",
       mutation:
-        "mutationOptions builds a write, but {{file}} holds a GET. Move it to the file named after the write's HTTP method, such as update- or create-: one endpoint per file (Files in .claude/rules/tanstack-query.md).",
+        "mutationOptions builds a write, but {{file}} holds a read. Move it to the write's own file, such as an update- or create- file: one operation per file (Files in .claude/rules/tanstack-query.md).",
+      mixed:
+        "{{file}} holds both a read and a write. Move mutationOptions to the write's own file: one operation per file (Files in .claude/rules/tanstack-query.md).",
+      action:
+        "A write's mutationFn calls its Server Action, but {{file}} imports none. Put the action in a sibling <verb>-<resource>-action module and import it here: every write from the browser goes through a Server Action (Server Actions in .claude/rules/server-data.md).",
     },
   },
   create(context) {
     const file = basename(context.filename);
     const verb = file.split("-")[0];
-    if (verb !== "get" && !WRITE_VERBS.has(verb)) return {};
     // 本地名 → 引入名，覆盖 import { queryOptions as listOptions }。
     const factories = new Map();
+    const queries = [];
+    const mutations = [];
+    let importsAction = false;
     return {
       ImportDeclaration(node) {
+        if (ACTION_SOURCE.test(node.source.value)) importsAction = true;
         if (node.source.value !== WRAPPER_SOURCE) return;
         for (const specifier of node.specifiers) {
           if (specifier.type !== "ImportSpecifier") continue;
@@ -112,13 +125,35 @@ export const apiFileFactoriesRule = {
       CallExpression(node) {
         if (node.callee.type !== "Identifier") return;
         const factory = factories.get(node.callee.name);
-        if (verb === "get" && factory === "mutationOptions") {
-          context.report({ node, messageId: "mutation", data: { file } });
-        } else if (verb !== "get" && QUERY_FACTORIES.has(factory)) {
+        if (factory === "mutationOptions") mutations.push(node);
+        else if (QUERY_FACTORIES.has(factory)) queries.push({ node, factory });
+      },
+      "Program:exit"() {
+        if (verb === "get") {
+          // 这些工厂要搬走，搬到的文件再查它的 action。
+          for (const node of mutations) {
+            context.report({ node, messageId: "mutation", data: { file } });
+          }
+          return;
+        }
+        if (WRITE_VERBS.has(verb)) {
+          for (const { node, factory } of queries) {
+            context.report({
+              node,
+              messageId: "query",
+              data: { factory, file },
+            });
+          }
+        } else if (queries.length > 0) {
+          for (const node of mutations) {
+            context.report({ node, messageId: "mixed", data: { file } });
+          }
+        }
+        if (mutations.length > 0 && !importsAction) {
           context.report({
-            node,
-            messageId: "query",
-            data: { factory, file },
+            node: mutations[0],
+            messageId: "action",
+            data: { file },
           });
         }
       },

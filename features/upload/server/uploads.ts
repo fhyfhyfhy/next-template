@@ -2,7 +2,7 @@ import "server-only";
 import { nanoid } from "nanoid";
 import { DatabaseError } from "pg";
 
-import { badRequest, conflict, notFound } from "@/lib/domain-error";
+import { badRequest, conflict, notFound } from "@/lib/request/domain-error";
 
 import {
   UPLOAD_ALREADY_USED,

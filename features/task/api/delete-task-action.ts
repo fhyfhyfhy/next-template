@@ -3,7 +3,7 @@
 import { updateTag } from "next/cache";
 import { z } from "zod";
 
-import { DomainError } from "@/lib/domain-error";
+import { DomainError } from "@/lib/request/domain-error";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { deleteTask } from "../server/tasks";

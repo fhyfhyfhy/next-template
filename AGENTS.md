@@ -23,7 +23,7 @@ A value read while prerendering is frozen into the static output. `lib/env.ts` f
 - The build environment also sets the variable, with a different value than at runtime.
 - The variable is optional or has a default, and the build environment lacks it.
 
-Read a value that must come from the runtime after `await connection()`.
+Read a value that must come from the runtime after the code awaits a Request-time API, such as `cookies()` when it resolves the session, or `await connection()` where it reads none; never inside `use cache`.
 
 ## Agent skills
 

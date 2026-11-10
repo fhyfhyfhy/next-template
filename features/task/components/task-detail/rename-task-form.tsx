@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { isActionError } from "@/lib/action-result";
 import { useMutation } from "@/lib/react-query";
+import { isActionError } from "@/lib/request/action-result";
 
 import type { Task } from "../../api/get-task";
 import { createTaskNameSchema } from "../../api/task-name-schema";

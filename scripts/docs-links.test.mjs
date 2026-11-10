@@ -160,13 +160,13 @@ test("检查本身能发现失效的 GitHub 链接和没带链接的 Sample prod
     brokenGithubLinks(
       ".claude/rules/example.md",
       [
-        `[\`lib/fetch.ts\`](${base}/blob/main/lib/fetch.ts)`,
+        `[\`lib/request/fetch.ts\`](${base}/blob/main/lib/request/fetch.ts)`,
         `[\`app/[locale]/layout.tsx\`](${base}/blob/main/app/%5Blocale%5D/layout.tsx)`,
         `[\`features/ui-catalog/\`](${base}/tree/main/features/ui-catalog)`,
         `[\`lib/missing.ts\`](${base}/blob/main/lib/missing.ts)`,
-        `[\`lib/db.ts\`](${base}/blob/main/lib/fetch.ts)`,
+        `[\`lib/db.ts\`](${base}/blob/main/lib/request/fetch.ts)`,
         // 固定到某个提交的链接照样检查。
-        `[\`lib/fetch.ts\`](${base}/blob/${sha}/lib/fetch.ts)`,
+        `[\`lib/request/fetch.ts\`](${base}/blob/${sha}/lib/request/fetch.ts)`,
         `[\`lib/missing.ts\`](${base}/blob/${sha}/lib/missing.ts)`,
         `[\`features/task/\`](${base}/tree/${sha}/features/upload)`,
       ].join(" "),
@@ -174,7 +174,7 @@ test("检查本身能发现失效的 GitHub 链接和没带链接的 Sample prod
     ),
   ).toStrictEqual([
     `${base}/blob/main/lib/missing.ts`,
-    `${base}/blob/main/lib/fetch.ts`,
+    `${base}/blob/main/lib/request/fetch.ts`,
     `${base}/blob/${sha}/lib/missing.ts`,
     `${base}/tree/${sha}/features/upload`,
   ]);

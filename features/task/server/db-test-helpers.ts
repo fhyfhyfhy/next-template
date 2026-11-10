@@ -1,6 +1,6 @@
 import { expect } from "vitest";
 
-import { DomainError } from "@/lib/domain-error";
+import { DomainError } from "@/lib/request/domain-error";
 
 import { advanceTask } from "./generator";
 import { streamTaskLogs } from "./task-logs";

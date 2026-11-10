@@ -1,5 +1,5 @@
 // task 的业务错误码，前三位是 HTTP status。数据层（server/）按业务规则拒绝时抛出，Route Handler 和
-// Server Action 原样带给浏览器，界面按码选择文案。通用错误码在 lib/domain-error.ts，各 feature 的码不能重复。
+// Server Action 原样带给浏览器，界面按码选择文案。通用错误码在 lib/request/domain-error.ts，各 feature 的码不能重复。
 
 /** 评论内容去掉首尾空白后为空或太长。 */
 export const COMMENT_CONTENT_INVALID = 40001;

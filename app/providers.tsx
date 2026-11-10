@@ -6,7 +6,6 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
 import { toast, Toaster } from "@/components/ui/toaster";
-import { SchemaValidationError, shouldRetryRequest } from "@/lib/fetch";
 import {
   environmentManager,
   type FailedRequest,
@@ -14,6 +13,7 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@/lib/react-query";
+import { SchemaValidationError, shouldRetryRequest } from "@/lib/request/fetch";
 
 function handleRequestError(
   error: unknown,

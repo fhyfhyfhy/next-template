@@ -3,8 +3,8 @@
 import { updateTag } from "next/cache";
 import { z } from "zod";
 
-import type { ActionResult } from "@/lib/action-result";
-import { toActionResult } from "@/lib/action-result";
+import type { ActionResult } from "@/lib/request/action-result";
+import { toActionResult } from "@/lib/request/action-result";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NOT_RETRYABLE } from "../constants/error-codes";

@@ -15,7 +15,7 @@ import {
   conflict,
   DomainError,
   notFound,
-} from "@/lib/domain-error";
+} from "@/lib/request/domain-error";
 
 import {
   TASK_NAME_TAKEN,

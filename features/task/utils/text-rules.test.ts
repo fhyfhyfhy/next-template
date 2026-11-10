@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { DomainError } from "@/lib/domain-error";
+import { DomainError } from "@/lib/request/domain-error";
 
 import { containsPattern, requireText } from "./text-rules";
 

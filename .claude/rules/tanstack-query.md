@@ -12,13 +12,15 @@ Define the browser's requests and the React Query options factories that use the
 
 ## Files
 
-- One request per file, named `<verb>-<resource>.ts` after the operation: GET → `get-` (plural for a list, `get-orders.ts`), POST → `create-`, PUT and PATCH → `update-`, DELETE → `delete-`, and a domain verb for other actions (`cancel-order.ts`). Its response schema lives in the feature's `types/`, shared with the data layer that produces the data. Each read that React Query owns gets a `queryOptions` or `infiniteQueryOptions` factory, and every write a `mutationOptions` factory.
+- One operation per file, named `<verb>-<resource>.ts`. A read is `get-` (plural for a list, `get-orders.ts`), or a domain verb when `get-` would not say what it does (`search-orders.ts`). A write is `create-`, `update-`, `delete-`, or a domain verb (`cancel-order.ts`), beside its Server Action in `<verb>-<resource>-action.ts` ([Server Actions](server-data.md#server-actions)).
+- A read's response schema lives in the feature's `types/`, shared with the data layer that produces the data.
+- Each read that React Query owns gets a `queryOptions` or `infiniteQueryOptions` factory, and every write a `mutationOptions` factory. A step of another feature's write has no factory of its own: the feature exports the action or request function, and the factory of the write that uses it calls it, as `updateTaskCoverMutationOptions` in [`features/task/api/update-task-cover.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/update-task-cover.ts) calls `createUploadAction` and `uploadFile` from [`features/upload/api/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/upload/api).
 - Export from the feature's entry what code outside the feature uses, such as an options factory for a route's server prefetch or another feature's cache update, and keep the rest private, request functions included. Add a feature hook only for logic beyond one query or mutation, such as combining two queries.
 
 ## Requests
 
-- `fetchApi` in `lib/fetch.ts` requests JSON over HTTP, in the browser or on the server: the app's own Route Handlers by a same-origin path such as `/api/tasks`, another service's API by its full URL.
-- Read `FetchApiConfig` in `lib/fetch.ts` before calling `fetchApi`. In particular, query parameters go in `params`, not in the `url` string.
+- `fetchApi` in `lib/request/fetch.ts` requests JSON over HTTP, in the browser or on the server: the app's own Route Handlers by a same-origin path such as `/api/tasks`, another service's API by its full URL.
+- Read `FetchApiConfig` in `lib/request/fetch.ts` before calling `fetchApi`. In particular, query parameters go in `params`, not in the `url` string.
 - Types come from `z.infer` of the schema in `types/`, never a parallel hand-written interface. The schema describes JSON-native values only ([Results](server-data.md#results)).
 
 ## Queries
@@ -28,7 +30,7 @@ The snippets below use a generic `orders` feature. Working versions in the sampl
 ```ts
 import { z } from "zod";
 
-import { fetchApi } from "@/lib/fetch";
+import { fetchApi } from "@/lib/request/fetch";
 import { queryOptions } from "@/lib/react-query";
 
 // types/order.ts
@@ -78,7 +80,7 @@ const { data: status } = useQuery({
   ```
 - Options for one caller, such as `select`, `enabled`, or `placeholderData`, go after the spread. `select` infers its result type, and a component that selects a slice does not re-render when other fields change.
 
-An infinite list uses `infiniteQueryOptions` with `useInfiniteQuery` and cursor pagination (`cursorPageSchema` in `lib/fetch.ts`): the next page starts strictly after the last item loaded, so items inserted while the user scrolls cause no duplicates. Page numbers (`pageSchema` in `lib/fetch.ts`) suit lists that show a total and jump between pages.
+An infinite list uses `infiniteQueryOptions` with `useInfiniteQuery` and cursor pagination (`cursorPageSchema` in `lib/request/fetch.ts`): the next page starts strictly after the last item loaded, so items inserted while the user scrolls cause no duplicates. Page numbers (`pageSchema` in `lib/request/fetch.ts`) suit lists that show a total and jump between pages.
 
 ```ts
 export const getOrdersInfiniteQueryOptions = (filters: OrderFilters) =>
@@ -132,7 +134,7 @@ const deleteOrderMutation = useMutation(deleteOrderMutationOptions(t));
 deleteOrderMutation.mutate({ orderId }, { onSuccess: () => onClose() });
 ```
 
-- A write's `mutationFn` calls its Server Action ([Server Actions](server-data.md#server-actions)). The factory lives in an ordinary module, such as [`features/task/api/create-task.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/create-task.ts), which imports the action. When the action returns an `ActionResult`, the factory unwraps it with `unwrapActionResult`, which throws an `ActionError` for `{ ok: false }`, all in `lib/action-result.ts`: React Query treats every resolved value as success, so without it a failed write would run `onSuccess`. Otherwise the factory passes the result on as is.
+- A write's `mutationFn` calls its Server Action ([Server Actions](server-data.md#server-actions)). The factory lives in an ordinary module, such as [`features/task/api/create-task.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/api/create-task.ts), which imports the action. When the action returns an `ActionResult`, the factory unwraps it with `unwrapActionResult`, which throws an `ActionError` for `{ ok: false }`, all in `lib/request/action-result.ts`: React Query treats every resolved value as success, so without it a failed write would run `onSuccess`. Otherwise the factory passes the result on as is.
 - A Client Component triggers a write through its factory, also when no query displays the data: the factory holds the pending state, the failure toast, and any cache updates.
 - The factory's callbacks update the cache for every caller, reaching the `QueryClient` through the callbacks' last argument. A caller's own reaction, such as closing a dialog or navigating, stays at the call site, never in the factory. Put it in the second argument of `mutate`, whose callbacks run after the factory's and only while the component is mounted, or after `await mutateAsync(...)` when the caller needs the promise, such as a form's `onSubmit` that keeps the form submitting until the write settles.
 - An optimistic update lives in the factory too. `onMutate` cancels the queries it writes, snapshots them, and writes the new value into every query that displays it, each in that query's own data shape; `onError` restores the snapshot, and the global toast reports the failure; `onSettled` invalidates them so the server's value wins. Insert into a list where its server order puts it, so the refetch does not move it.

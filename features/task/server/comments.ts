@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { DatabaseError } from "pg";
 import { cache } from "react";
 
-import { notFound } from "@/lib/domain-error";
+import { notFound } from "@/lib/request/domain-error";
 
 import { COMMENT_CONTENT_INVALID } from "../constants/error-codes";
 import { COMMENT_MAX_LENGTH } from "../constants/task-rules";
