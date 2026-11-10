@@ -2,7 +2,7 @@
 
 next-template's sample product, the task and upload business, is the working reference for this skill and its rules. Server code calls the features' server data layer directly; the browser reads through `fetchApi` in `lib/request/fetch.ts` from Route Handlers under `/api` and writes through Server Actions; data lives in Postgres and files in S3-compatible object storage. Before writing a pattern listed below, read its code and spec; adapt names and keys to the real feature, and keep its owner choice only if the same signal applies.
 
-- Links go to the template's repository on GitHub, so they still open in a project that has replaced the sample product; in this repo, open the same path locally.
+- Links go to the template's repository on GitHub, so they still open in a project that has replaced the sample product; in next-template itself, open the same path locally.
 - Run it in a next-template checkout: `pnpm dev`, or `pnpm build:local` then `pnpm start:local` for production behavior. `pnpm test:e2e` runs its specs, and `pnpm test` its data-layer tests (`*.db.test.ts`) against the local `test` dataset.
 
 | Page | Owner | Why | Freshness bound |

@@ -1,6 +1,12 @@
+import { utimesSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test } from "vitest";
 
-import { parseFeatureGraph } from "./feature-graph.mjs";
+import { fixture, writeFile } from "../fixture-test-helpers.mjs";
+import {
+  createFeatureGraphLoader,
+  parseFeatureGraph,
+} from "./feature-graph.mjs";
 
 function doc(lines) {
   return ["# Feature 划分", "", "```mermaid", ...lines, "```", ""].join("\n");
@@ -69,4 +75,18 @@ test.each([
   ],
 ])("%s时抛错", (_, markdown, message) => {
   expect(() => parseFeatureGraph(markdown)).toThrow(message);
+});
+
+test("文件变了以后，同一个 loader 会重新读依赖图，编辑器里长时间运行的 ESLint 就是这样用的", () => {
+  const root = fixture({
+    "docs/features.md": doc(["flowchart LR", "  a[a]", "  b[b]"]),
+  });
+  const load = createFeatureGraphLoader(root);
+  expect([...load().graph.get("a")]).toStrictEqual([]);
+
+  writeFile(root, "docs/features.md", doc(["flowchart LR", "  a[a] --> b[b]"]));
+  // 文件系统时钟的同一个刻度内，两次写入的修改时间可能相同，所以把这一次的改到更晚。
+  const later = new Date(Date.now() + 60_000);
+  utimesSync(join(root, "docs/features.md"), later, later);
+  expect([...load().graph.get("a")]).toStrictEqual(["b"]);
 });

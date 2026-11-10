@@ -133,12 +133,23 @@ test("同一 feature 内的导入和 feature 以外的文件不检查", async ()
   expect(await lint(root, "app/page.ts")).toStrictEqual([]);
 });
 
-test("依赖图读不出来时，跨 feature 的导入都报错", async () => {
-  const root = fixture({
-    "features/feature-a/main.ts":
-      'import { b } from "@/features/feature-b"; export const value = b;',
-  });
-  const messages = await lint(root, "features/feature-a/main.ts");
-  expect(messages.map(({ messageId }) => messageId)).toStrictEqual(["graph"]);
-  expect(messages[0].message).toMatch(/docs\/features\.md does not exist/);
-});
+test.each([
+  ["不存在", {}, /docs\/features\.md does not exist/],
+  [
+    "解析不了",
+    { "docs/features.md": "# Feature 划分\n\n还没有依赖图。\n" },
+    /docs\/features\.md can't be read: it has no mermaid block/,
+  ],
+])(
+  "docs/features.md %s时，跨 feature 的导入都报错",
+  async (_case, files, message) => {
+    const root = fixture({
+      ...files,
+      "features/feature-a/main.ts":
+        'import { b } from "@/features/feature-b"; export const value = b;',
+    });
+    const messages = await lint(root, "features/feature-a/main.ts");
+    expect(messages.map(({ messageId }) => messageId)).toStrictEqual(["graph"]);
+    expect(messages[0].message).toMatch(message);
+  },
+);

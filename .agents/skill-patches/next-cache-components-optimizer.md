@@ -33,49 +33,26 @@ Preserve this project's data ownership and transport constraints and use its bro
  `prefetch = 'partial'` matches, treat those destination segments as adopted
 ````
 
+## Run the suite through the project's e2e entry
+
+This project's Playwright `webServer` already builds with `EXPOSE_TESTING_API=1` and serves the specs in `e2e/`, so the rig runs the suite as an e2e spec; a suite run any other way lacks the testing API or the specs' setup.
+
 File: rig-template.md
 
 ````diff
 @@ ### Test command and base URL @@
+ ```bash filename="Terminal"
 -EXPOSE_TESTING_API=1 pnpm build
 -BASE_URL=http://localhost:3000 pnpm playwright test tests/static-shell.spec.ts
-+EXPOSE_TESTING_API=1 pnpm build:local && BASE_URL=http://localhost:3000 pnpm playwright test tests/static-shell.spec.ts
-+```
-+
-+PowerShell (stop if the build fails):
-+
-+```powershell
-+$env:EXPOSE_TESTING_API = '1'
-+pnpm build:local
-+$instantBuildExitCode = $LASTEXITCODE
-+Remove-Item Env:EXPOSE_TESTING_API
-+if ($instantBuildExitCode -ne 0) { throw 'Production test build failed' }
-+$env:BASE_URL = 'http://localhost:3000'
-+pnpm playwright test tests/static-shell.spec.ts
- ```
- 
-````
-
-## Start the testing build in this project
-
-This project's `next.config.ts` sends a build made with `EXPOSE_TESTING_API=1` to `.next-e2e`, so a server started without the variable serves `.next`, which lacks the testing API. Locally the production build and server are `pnpm build:local` and `pnpm start:local`, which start the local services and pass their connection settings: `pnpm build` and `pnpm start` read them from the environment, as a deployment sets them.
-
-File: rig-template.md
-
-````diff
-@@ ### Test command and base URL @@
++pnpm test:e2e e2e/static-shell.spec.ts
  ```
  
 -If the rig does not use `webServer`, start `pnpm start --port 3000` in a
 -separate terminal after the build, keep it running during the test command,
 -and stop it afterward. Use only one server lifecycle for the measured app.
-+If the rig does not use `webServer`, start the server with the same variable
-+after the build, `EXPOSE_TESTING_API=1 pnpm start:local --port 3000` (PowerShell:
-+`$env:EXPOSE_TESTING_API = '1'; pnpm start:local --port 3000`), in a separate
-+terminal, keep it running during the test command, and stop it afterward.
-+This project's `next.config.ts` puts a build made with the variable in
-+`.next-e2e`, and `start` serves that directory only while the variable is set.
-+Use only one server lifecycle for the measured app.
++Write the suite in `e2e/`, the config's `testDir`, as `.claude/rules/e2e.md`
++describes. The config's `webServer` already builds with
++`EXPOSE_TESTING_API=1`, and the suite uses the config's `baseURL`.
  
  Adapt the script names and port to the project. Follow the public
 ````

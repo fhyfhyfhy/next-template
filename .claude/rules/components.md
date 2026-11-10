@@ -89,6 +89,8 @@ features/orders/components/
 
 In the sample product, the task list, its toolbar, and its navigation are sibling component directories: [`features/task/components/task-list/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list), [`features/task/components/task-list-toolbar/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-toolbar), and `task-list-navigation/`.
 
+A UI catalog `<component-id>-examples/` directory is the exception: it keeps every file at its top level ([ui-catalog.md](ui-catalog.md#examples)).
+
 ### Public API
 
 When designing or refactoring a component API, composing public parts, sharing state between parts, or reviewing component architecture, read [React Composition Patterns](../../.agents/skills/vercel-composition-patterns/SKILL.md) and follow the relevant files in its `rules/` directory. This rule and [architecture.md](architecture.md) decide where its patterns live.
