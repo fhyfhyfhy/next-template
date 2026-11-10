@@ -24,7 +24,7 @@ Preserve this project's data ownership and transport constraints and use its bro
 
 ## Run the suite through the project's e2e entry
 
-This project's Playwright `webServer` (`playwright.config.ts`) already makes the build with `EXPOSE_TESTING_API=1`, which `next.config.ts` sends to `.next-e2e`, and starts it on the e2e port with what the specs need; `testDir` is `e2e/`, and the config does not read `BASE_URL`. A suite elsewhere, or a build and server started by hand, misses all of that, so the suite is an e2e spec like any other.
+This project's Playwright `webServer` already builds with `EXPOSE_TESTING_API=1` and serves the specs in `e2e/`, so the rig runs the suite as an e2e spec; a suite run any other way lacks the testing API or the specs' setup.
 
 File: rig-template.md
 
@@ -40,10 +40,8 @@ File: rig-template.md
 -separate terminal after the build, keep it running during the test command,
 -and stop it afterward. Use only one server lifecycle for the measured app.
 +Write the suite in `e2e/`, the config's `testDir`, as `.claude/rules/e2e.md`
-+describes, and run it through `pnpm test:e2e`, the same command on PowerShell.
-+Its `webServer` is the one server lifecycle: it makes the build with
-+`EXPOSE_TESTING_API=1` and serves it at the config's `baseURL`, which the
-+suite uses; the config does not read `BASE_URL`.
++describes. The config's `webServer` already builds with
++`EXPOSE_TESTING_API=1`, and the suite uses the config's `baseURL`.
  
  Adapt the script names and port to the project. Follow the public
 ````

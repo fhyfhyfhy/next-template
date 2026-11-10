@@ -82,10 +82,8 @@ pnpm test:e2e e2e/prefetch-optimization.spec.ts
 ```
 
 Write the suite in `e2e/`, the config's `testDir`, as `.claude/rules/e2e.md`
-describes, and run it through `pnpm test:e2e`, the same command on PowerShell.
-Its `webServer` is the one server lifecycle: it makes the build with
-`EXPOSE_TESTING_API=1` and serves it at the config's `baseURL`, which the
-suite uses; the config does not read `BASE_URL`.
+describes. The config's `webServer` already builds with
+`EXPOSE_TESTING_API=1`, and the suite uses the config's `baseURL`.
 
 Adapt the script names and port to the project. Follow the public
 [client-navigation test](https://nextjs.org/docs/app/guides/instant-navigation#prevent-regressions-with-e2e-tests): load the source route, confirm the real
