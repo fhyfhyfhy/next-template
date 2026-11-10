@@ -1,5 +1,5 @@
-import { fetchApi } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
+import { fetchApi } from "@/lib/request/fetch";
 
 import { taskListSchema } from "../types/task";
 import { taskListKey } from "./get-tasks";

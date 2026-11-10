@@ -4,10 +4,10 @@ import { updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
-import type { ActionResult } from "@/lib/action-result";
-import { toActionResult } from "@/lib/action-result";
 import type { Locale } from "@/lib/i18n/routing";
 import type { Translator } from "@/lib/i18n/translator";
+import type { ActionResult } from "@/lib/request/action-result";
+import { toActionResult } from "@/lib/request/action-result";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { TASK_NAME_TAKEN } from "../constants/error-codes";

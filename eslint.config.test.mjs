@@ -1767,7 +1767,7 @@ describe("服务端代码不用 fetchApi 或 fetch 请求本 app 自己的接口
     test(name, async () => {
       const source = `${directive}import { z } from "zod";
 
-import { fetchApi } from "@/lib/fetch";
+import { fetchApi } from "@/lib/request/fetch";
 
 export async function probe(id: string) {
   return ${request(url, raw)};
@@ -2341,7 +2341,7 @@ export function Probe() {
     },
     {
       name: "没有 owner 的文件不读文案",
-      file: "lib/fetch.ts",
+      file: "lib/request/fetch.ts",
       source: `import { getTranslations } from "next-intl/server";
 
 export async function probe() {

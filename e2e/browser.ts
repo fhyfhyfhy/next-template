@@ -99,10 +99,10 @@ export async function holdRequests(
 
 /**
  * 让之后匹配的请求失败，像服务端处理时遇到了意外错误，返回函数恢复正常。Server Action 按 Next 的约定回
- * `text/plain` 的 500，调用方拿到一个被拒绝的 promise；Route Handler 回 `lib/fetch.ts` 认得的失败响应体。
+ * `text/plain` 的 500，调用方拿到一个被拒绝的 promise；Route Handler 回 `lib/request/fetch.ts` 认得的失败响应体。
  * `delayMs` 让失败晚一些返回。要看请求返回之前的乐观更新，改用 `holdRequests` 停住请求、由测试放行，不和时间赛跑。
  * `status` 只用于 Route Handler：换成 4xx 时 query 不重试，失败立即可见；默认的 500 会先重试几次
- * （lib/fetch.ts 的 `shouldRetryRequest`）。Server Action 总是回 500，mutation 不重试。
+ * （lib/request/fetch.ts 的 `shouldRetryRequest`）。Server Action 总是回 500，mutation 不重试。
  */
 export async function failRequests(
   page: Page,

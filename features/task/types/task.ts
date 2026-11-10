@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { cursorPageSchema, pageSchema } from "@/lib/fetch";
+import { cursorPageSchema, pageSchema } from "@/lib/request/fetch";
 
 import { taskStatusSchema } from "./task-filters";
 

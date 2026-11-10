@@ -6,8 +6,8 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
-import { isActionError } from "@/lib/action-result";
 import { useMutation } from "@/lib/react-query";
+import { isActionError } from "@/lib/request/action-result";
 
 import type { Task } from "../../api/get-task";
 import { getTaskModel } from "../../api/get-task-model";

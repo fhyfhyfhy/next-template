@@ -1,4 +1,4 @@
-// upload 的业务错误码，前三位是 HTTP status；通用错误码在 lib/domain-error.ts，各 feature 的码不能重复。
+// upload 的业务错误码，前三位是 HTTP status；通用错误码在 lib/request/domain-error.ts，各 feature 的码不能重复。
 
 /** 这次上传已经被另一条记录使用，一个上传只能被一条记录使用。 */
 export const UPLOAD_ALREADY_USED = 40904;

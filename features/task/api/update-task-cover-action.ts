@@ -4,8 +4,8 @@ import { updateTag } from "next/cache";
 import { z } from "zod";
 
 import { UPLOAD_ALREADY_USED, UPLOAD_NOT_READY } from "@/features/upload";
-import type { ActionResult } from "@/lib/action-result";
-import { toActionResult } from "@/lib/action-result";
+import type { ActionResult } from "@/lib/request/action-result";
+import { toActionResult } from "@/lib/request/action-result";
 
 import { TASK_LIST_TAG } from "../constants/cache-tags";
 import { setTaskCover } from "../server/tasks";

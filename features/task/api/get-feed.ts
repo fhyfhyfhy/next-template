@@ -1,5 +1,5 @@
-import { fetchApi } from "@/lib/fetch";
 import { infiniteQueryOptions } from "@/lib/react-query";
+import { fetchApi } from "@/lib/request/fetch";
 
 import { FEED_PAGE_SIZE } from "../constants/feed";
 import { feedPageSchema } from "../types/task";

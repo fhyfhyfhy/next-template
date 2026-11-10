@@ -5,7 +5,7 @@ import { badRequest, DomainError, errorBody, ErrorCode } from "./domain-error";
 
 /**
  * Route Handler 的适配层：执行 `handler`，返回值序列化成 JSON（返回 `Response` 时原样发出），数据层抛出的
- * `DomainError` 转成 `lib/fetch.ts` 解析的失败响应，其他错误记日志后返回 500。
+ * `DomainError` 转成 `lib/request/fetch.ts` 解析的失败响应，其他错误记日志后返回 500。
  */
 export function routeHandler<TContext>(
   handler: (request: Request, context: TContext) => Promise<unknown>,

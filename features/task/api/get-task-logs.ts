@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ApiError } from "@/lib/fetch";
+import { ApiError } from "@/lib/request/fetch";
 
 import { taskStatusSchema } from "../types/task-filters";
 

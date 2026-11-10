@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { ErrorCode } from "@/lib/domain-error";
+import { ErrorCode } from "@/lib/request/domain-error";
 
 import {
   UPLOAD_ALREADY_USED,

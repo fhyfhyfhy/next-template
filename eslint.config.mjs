@@ -76,7 +76,7 @@ tanstackQueryPlugin.rules["api-file-factories"] = apiFileFactoriesRule;
 
 // 避免另起 axios/SWR 数据通路，统一使用项目的 fetchApi 和 React Query。
 const QUERY_LIBRARY_MESSAGE =
-  "Request server data with fetchApi from @/lib/fetch and React Query from @/lib/react-query. See .claude/rules/data-flow.md.";
+  "Request server data with fetchApi from @/lib/request/fetch and React Query from @/lib/react-query. See .claude/rules/data-flow.md.";
 const QUERY_LIBRARY_RESTRICTION = {
   paths: ["axios", "swr"].map((name) => ({
     name,

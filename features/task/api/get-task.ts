@@ -1,5 +1,5 @@
-import { ApiError, fetchApi } from "@/lib/fetch";
 import { queryOptions } from "@/lib/react-query";
+import { ApiError, fetchApi } from "@/lib/request/fetch";
 
 import { TASK_STEP_INTERVAL_MS } from "../constants/task-rules";
 import { taskSchema } from "../types/task";

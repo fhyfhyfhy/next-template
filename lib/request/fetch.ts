@@ -4,13 +4,13 @@ import queryString, {
 } from "query-string";
 import { z } from "zod";
 
-import { BASE_PATH } from "./base-path";
+import { BASE_PATH } from "@/lib/base-path";
 
 /** 接口地址：本 app 的接口用不带 basePath 的同源路径，比如 `/api/tasks`；其他服务的接口用完整 URL。 */
 export type ApiPath = `/${string}` | `https://${string}` | `http://${string}`;
 
 // 失败响应体 `{ error: { code, message, param?, params?, data? } }` 里的错误对象。`message` 面向开发者，
-// UI 按 `code` 和 `params` 生成文案，`data` 是文案之外要展示的数据（lib/domain-error.ts）。服务端按这个格式写失败响应（lib/domain-error.ts 的 `errorBody`）。
+// UI 按 `code` 和 `params` 生成文案，`data` 是文案之外要展示的数据（lib/request/domain-error.ts）。服务端按这个格式写失败响应（lib/request/domain-error.ts 的 `errorBody`）。
 const errorSchema = z.object({
   code: z.number(),
   message: z.string(),
@@ -18,7 +18,7 @@ const errorSchema = z.object({
   params: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
   data: z.unknown().optional(),
 });
-/** 失败响应体里的错误对象。Server Action 返回预期失败时也用它（lib/action-result.ts），浏览器端两条路拿到的字段相同。 */
+/** 失败响应体里的错误对象。Server Action 返回预期失败时也用它（lib/request/action-result.ts），浏览器端两条路拿到的字段相同。 */
 export type ApiErrorObject = z.infer<typeof errorSchema>;
 const errorBodySchema = z.object({ error: errorSchema });
 // 2xx 只在响应体只有 `error` 一个字段、且它符合 errorSchema 时算失败：资源自己也可能带 `error` 字段

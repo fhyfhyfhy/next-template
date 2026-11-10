@@ -1,4 +1,4 @@
-import { ApiError } from "@/lib/fetch";
+import { ApiError } from "@/lib/request/fetch";
 
 /**
  * 读取 done 任务的 3D 模型文件（`.glb`）。二进制响应按传输例外用 raw `fetch`：Route Handler 302 到对象存储的

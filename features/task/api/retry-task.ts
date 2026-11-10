@@ -1,6 +1,6 @@
-import { isActionError, unwrapActionResult } from "@/lib/action-result";
 import type { Translator } from "@/lib/i18n/translator";
 import { mutationOptions } from "@/lib/react-query";
+import { isActionError, unwrapActionResult } from "@/lib/request/action-result";
 
 import { TASK_NOT_RETRYABLE } from "../constants/error-codes";
 import {

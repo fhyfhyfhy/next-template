@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { UPLOAD_ALREADY_USED } from "@/features/upload";
 import { createUpload } from "@/features/upload/server";
-import { ErrorCode } from "@/lib/domain-error";
+import { ErrorCode } from "@/lib/request/domain-error";
 
 import {
   TASK_NAME_TAKEN,
