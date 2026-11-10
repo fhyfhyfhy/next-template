@@ -98,6 +98,65 @@ const ENV_ACCESS = [
 
 // ---- 数据的常量结束 ----
 
+// ---- UI（.claude/rules/ 的 components.md、react.md、ui-catalog.md）的常量，规则配置在下面配置数组的「UI」一段 ----
+// NATIVE_ELEMENTS 借用 no-restricted-syntax。这条规则还管着别的事，所以这一组合进下面的 RESTRICTED_SYNTAX；
+// 它的例外和 UI 的其余检查在配置数组的「UI」一段。
+
+// Base UI 有对应组件的原生元素只在 components/ui/ 的封装里渲染，别处渲染封装，样式、状态和可访问性才一致。
+// 选择器只匹配小写的原生标签：<Form>、<form.Field> 这类组件和成员表达式不受影响。
+const nativeElement = (element, replacement, condition = "") => ({
+  selector: `JSXOpeningElement[name.name='${element}']${condition}`,
+  message: `Native <${element}> renders only inside components/ui/: use ${replacement}. See .claude/rules/components.md.`,
+});
+const NATIVE_ELEMENTS = [
+  nativeElement("button", "Button from @/components/ui/button"),
+  // Base UI 没有文件选择和隐藏字段的组件，这两种 input 保持原生。
+  nativeElement(
+    "input",
+    "Input, Checkbox, or Switch from @/components/ui/",
+    ":not(:has(JSXAttribute[name.name='type'] > Literal[value=/^(file|hidden)$/]))",
+  ),
+  nativeElement("select", "the Select parts from @/components/ui/select"),
+  nativeElement("progress", "the Progress parts from @/components/ui/progress"),
+  nativeElement("dialog", "the Dialog parts from @/components/ui/dialog"),
+  nativeElement("form", "Form from @/components/ui/form"),
+  ...[
+    ["fieldset", "Fieldset"],
+    ["meter", "Meter"],
+    ["hr", "Separator"],
+  ].map(([element, part]) =>
+    nativeElement(
+      element,
+      `a wrapper of Base UI's ${part} in components/ui/, adding it first if it is missing`,
+    ),
+  ),
+];
+
+// 颜色只用 app/globals.css 的语义 token 和 black、white，圆角只用内置或 --radius-* token。
+const RESTRICTED_TAILWIND_CLASSES = [
+  {
+    pattern: `^(?:.*:)?!?[a-z-]+-(?:${TAILWIND_PALETTES.join("|")})-\\d+(?:/.+)?!?$`,
+    message:
+      'Use a semantic color token from app/globals.css instead of the Tailwind palette color "$0".',
+  },
+  {
+    // 任意值里的十六进制色值和颜色函数；引用 CSS 变量的写法不受限制。
+    // 任意值用 _ 代替空格，_ 属于 \w，所以边界用显式字符集而不是 \b、\w。
+    pattern:
+      "^.*\\[[^\\]]*(?:#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z-])|(?<![a-zA-Z-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\().*$",
+    message:
+      'Define a color token in app/globals.css instead of the hard-coded color in "$0".',
+  },
+  {
+    // 只需拦任意值：不是任意值、又不在内置或 --radius-* 主题里的圆角 class 由 no-unknown-classes 报出。
+    pattern: "^(?:.*:)?!?rounded(?:-[a-z]{1,2})?-[[(].*$",
+    message:
+      'Use a built-in radius or a --radius-* token from app/globals.css instead of "$0".',
+  },
+];
+
+// ---- UI 的常量结束 ----
+
 // agent 读的指令，用英文写。和 .claude/rules/writing-style.md「Language by content」表里 Agent instructions
 // 一行对应，改一边要同步另一边。
 const AGENT_INSTRUCTIONS = [
@@ -161,36 +220,6 @@ const RESTRICTED_IMPORTS = {
   patterns: QUERY_LIBRARY_RESTRICTION.patterns,
 };
 
-// Base UI 有对应组件的原生元素只在 components/ui/ 的封装里渲染，别处渲染封装，样式、状态和可访问性才一致。
-// 选择器只匹配小写的原生标签：<Form>、<form.Field> 这类组件和成员表达式不受影响。
-const nativeElement = (element, replacement, condition = "") => ({
-  selector: `JSXOpeningElement[name.name='${element}']${condition}`,
-  message: `Native <${element}> renders only inside components/ui/: use ${replacement}. See .claude/rules/components.md.`,
-});
-const NATIVE_ELEMENTS = [
-  nativeElement("button", "Button from @/components/ui/button"),
-  // Base UI 没有文件选择和隐藏字段的组件，这两种 input 保持原生。
-  nativeElement(
-    "input",
-    "Input, Checkbox, or Switch from @/components/ui/",
-    ":not(:has(JSXAttribute[name.name='type'] > Literal[value=/^(file|hidden)$/]))",
-  ),
-  nativeElement("select", "the Select parts from @/components/ui/select"),
-  nativeElement("progress", "the Progress parts from @/components/ui/progress"),
-  nativeElement("dialog", "the Dialog parts from @/components/ui/dialog"),
-  nativeElement("form", "Form from @/components/ui/form"),
-  ...[
-    ["fieldset", "Fieldset"],
-    ["meter", "Meter"],
-    ["hr", "Separator"],
-  ].map(([element, part]) =>
-    nativeElement(
-      element,
-      `a wrapper of Base UI's ${part} in components/ui/, adding it first if it is missing`,
-    ),
-  ),
-];
-
 // 所有应用代码都受的 no-restricted-syntax 限制。
 const RESTRICTED_SYNTAX = [
   ...DATE_TIME_FORMATTING,
@@ -214,29 +243,6 @@ const APPLICATION_CODE = {
   files: ROOT_DIRECTORIES.map(({ name }) => `${name}**/*.${extensionGlob}`),
   ignores: [`**/*.{test,spec}.${extensionGlob}`],
 };
-
-// 颜色只用 app/globals.css 的语义 token 和 black、white，圆角只用内置或 --radius-* token。
-const RESTRICTED_TAILWIND_CLASSES = [
-  {
-    pattern: `^(?:.*:)?!?[a-z-]+-(?:${TAILWIND_PALETTES.join("|")})-\\d+(?:/.+)?!?$`,
-    message:
-      'Use a semantic color token from app/globals.css instead of the Tailwind palette color "$0".',
-  },
-  {
-    // 任意值里的十六进制色值和颜色函数；引用 CSS 变量的写法不受限制。
-    // 任意值用 _ 代替空格，_ 属于 \w，所以边界用显式字符集而不是 \b、\w。
-    pattern:
-      "^.*\\[[^\\]]*(?:#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z-])|(?<![a-zA-Z-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\().*$",
-    message:
-      'Define a color token in app/globals.css instead of the hard-coded color in "$0".',
-  },
-  {
-    // 只需拦任意值：不是任意值、又不在内置或 --radius-* 主题里的圆角 class 由 no-unknown-classes 报出。
-    pattern: "^(?:.*:)?!?rounded(?:-[a-z]{1,2})?-[[(].*$",
-    message:
-      'Use a built-in radius or a --radius-* token from app/globals.css instead of "$0".',
-  },
-];
 
 // 派生项目自己的检查和忽略项写在 eslint.config.project.mjs（.agents/skills/derived-project/SKILL.md），它导出的
 // 配置接在 template 的规则后面、Prettier 之前；没有这个文件时只用 template 的配置。项目的限制写成自己插件里的独立
@@ -304,27 +310,6 @@ const eslintConfig = defineConfig([
   },
   {
     files: [SOURCE_GLOB],
-    plugins: { "@eslint-react": eslintReact },
-    rules: {
-      // React 19 的写法，见 .claude/rules/react.md。
-      "@eslint-react/no-forward-ref": "error",
-      "@eslint-react/no-use-context": "error",
-      "@eslint-react/dom-no-use-form-state": "error",
-      // no-context-provider 只按名字认出 context（<XxxContext.Provider>），所以 createContext 的结果都要叫 XxxContext。
-      "@eslint-react/no-context-provider": "error",
-      "@eslint-react/naming-convention-context-name": "error",
-      // 原生 button 默认 type="submit"，放在 form 里点一下就会提交。
-      "@eslint-react/dom-no-missing-button-type": "error",
-      // 组件和 hook 加的监听、定时器、observer 要在 cleanup 里撤掉，否则卸载后还在跑。
-      "@eslint-react/web-api-no-leaked-event-listener": "error",
-      "@eslint-react/web-api-no-leaked-timeout": "error",
-      "@eslint-react/web-api-no-leaked-interval": "error",
-      "@eslint-react/web-api-no-leaked-resize-observer": "error",
-      "@eslint-react/web-api-no-leaked-intersection-observer": "error",
-    },
-  },
-  {
-    files: [SOURCE_GLOB],
     plugins: { "simple-import-sort": simpleImportSort },
     rules: {
       // 按 importGroups 固定顺序并支持自动修复，减少增删依赖时无关的排序 diff。
@@ -348,12 +333,122 @@ const eslintConfig = defineConfig([
     files: ROOT_APP_FILES,
     rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
   },
+  // ---- UI（.claude/rules/ 的 components.md、react.md、ui-catalog.md）----
+  // - NATIVE_ELEMENTS 前面随 RESTRICTED_SYNTAX 生效，这里只放它的例外。所以这一段要排在设置 no-restricted-syntax 的配置之后、
+  //   「架构」一段之前：那一段的组件入口配置给 components/ui/ 的 index 重设这条规则，例外排在它后面会把入口的限制整个替换掉。
+  // - React Hooks 和可访问性的检查来自最前面的 nextVitals。
+  // - 组件目录的入口和引用（architecture/component-*）、UI 库只经封装引入（architecture/wrapper-imports）在「架构」一段。
   {
     // 封装 Base UI 的地方，可以渲染 NATIVE_ELEMENTS 里的原生元素。
     files: ["components/ui/**"],
     ignores: APPLICATION_CODE.ignores,
     rules: { "no-restricted-syntax": restrictedSyntaxWithout(NATIVE_ELEMENTS) },
   },
+  {
+    files: [SOURCE_GLOB],
+    plugins: { "@eslint-react": eslintReact },
+    rules: {
+      // React 19 的写法，见 .claude/rules/react.md。
+      "@eslint-react/no-forward-ref": "error",
+      "@eslint-react/no-use-context": "error",
+      "@eslint-react/dom-no-use-form-state": "error",
+      // no-context-provider 只按名字认出 context（<XxxContext.Provider>），所以 createContext 的结果都要叫 XxxContext。
+      "@eslint-react/no-context-provider": "error",
+      "@eslint-react/naming-convention-context-name": "error",
+      // 原生 button 默认 type="submit"，放在 form 里点一下就会提交。
+      "@eslint-react/dom-no-missing-button-type": "error",
+      // 组件和 hook 加的监听、定时器、observer 要在 cleanup 里撤掉，否则卸载后还在跑。
+      "@eslint-react/web-api-no-leaked-event-listener": "error",
+      "@eslint-react/web-api-no-leaked-timeout": "error",
+      "@eslint-react/web-api-no-leaked-interval": "error",
+      "@eslint-react/web-api-no-leaked-resize-observer": "error",
+      "@eslint-react/web-api-no-leaked-intersection-observer": "error",
+    },
+  },
+  {
+    files: [SOURCE_GLOB],
+    // 测试里的 class 是 cn() 等函数的输入，不会渲染，会故意拼接或写成非规范形式。
+    ignores: [`**/*.{test,spec}.${extensionGlob}`],
+    plugins: { "better-tailwindcss": betterTailwindcss },
+    settings: {
+      "better-tailwindcss": {
+        entryPoint: "app/globals.css",
+        // 不设时插件不做 px 到 rem 的换算，lg:max-h-[520px] 这类可以写成 lg:max-h-130 的 class 就查不出来。
+        // globals.css 没有改根字号，按浏览器默认的 16px 算，和 Tailwind CSS IntelliSense 的默认值一致。
+        rootFontSize: 16,
+      },
+    },
+    // class 的排序、去重和空白由 prettier-plugin-tailwindcss 处理，这里只开它覆盖不到的规则。
+    rules: {
+      // 按 Tailwind 的 canonicalizeCandidates 改成规范写法，与编辑器里 IntelliSense 的提示一致。
+      "better-tailwindcss/enforce-canonical-classes": "error",
+      // 不在 Tailwind 和项目主题里的 class 不会生成样式，多半是拼写错误。
+      "better-tailwindcss/no-unknown-classes": "error",
+      // 同一字符串里设置相同 CSS 属性的 class 会互相覆盖，结果取决于生成顺序而不是书写顺序。
+      "better-tailwindcss/no-conflicting-classes": "error",
+      // 替换当前 Tailwind 版本已废弃的 class。
+      "better-tailwindcss/no-deprecated-classes": "error",
+      // Tailwind 按完整 class 名扫描源码，拼接出来的 class 不会生成样式。
+      "better-tailwindcss/no-concatenated-classes": "error",
+      // 颜色和圆角走主题 token，见 RESTRICTED_TAILWIND_CLASSES。
+      "better-tailwindcss/no-restricted-classes": [
+        "error",
+        { restrict: RESTRICTED_TAILWIND_CLASSES },
+      ],
+    },
+  },
+  {
+    files: ["**/*.{jsx,tsx}"],
+    ignores: [
+      "**/*.{test,spec,story,stories,generated,gen}.{jsx,tsx}",
+      "**/{test,tests,__tests__,stories,generated,__generated__}/**",
+    ],
+    rules: {
+      // 函数过长时提醒检查职责，避免一个组件或 helper 承担过多逻辑。
+      "max-lines-per-function": [
+        "warn",
+        {
+          max: 150,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+      // 文件过长时提醒检查拆分；使用 warn，让职责单一的大组件仍可保留。
+      "max-lines": [
+        "warn",
+        {
+          max: 200,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+    },
+  },
+  {
+    // UI catalog 把这些文件当作可复制的代码展示（.claude/rules/ui-catalog.md），所以只按包名或 @/ 引用：
+    // 相对路径的引用（含副作用导入）复制出去就解析不了。和下面 e2e/ 一样带上全局的限制。
+    files: [
+      "features/ui-catalog/components/*-examples/playground.tsx",
+      "features/ui-catalog/components/*-examples/*.example.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          ...RESTRICTED_IMPORTS,
+          patterns: [
+            ...RESTRICTED_IMPORTS.patterns,
+            {
+              regex: "^\\.\\.?(/|$)",
+              message:
+                "A UI catalog playground or example is copied on its own: import through @/ or a package, not a relative path.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // ---- UI 结束 ----
   // ---- 架构（.claude/rules/architecture.md）----
   // 组件入口的配置带着 RESTRICTED_SYNTAX 设置 no-restricted-syntax，所以这一段要排在设置这条规则的配置之后。
   {
@@ -454,33 +549,6 @@ const eslintConfig = defineConfig([
       ],
     },
   })),
-  {
-    files: ["**/*.{jsx,tsx}"],
-    ignores: [
-      "**/*.{test,spec,story,stories,generated,gen}.{jsx,tsx}",
-      "**/{test,tests,__tests__,stories,generated,__generated__}/**",
-    ],
-    rules: {
-      // 函数过长时提醒检查职责，避免一个组件或 helper 承担过多逻辑。
-      "max-lines-per-function": [
-        "warn",
-        {
-          max: 150,
-          skipBlankLines: true,
-          skipComments: true,
-        },
-      ],
-      // 文件过长时提醒检查拆分；使用 warn，让职责单一的大组件仍可保留。
-      "max-lines": [
-        "warn",
-        {
-          max: 200,
-          skipBlankLines: true,
-          skipComments: true,
-        },
-      ],
-    },
-  },
   {
     // feature 依赖图和代码对照：图里的节点对应 features/ 下的目录，每条边在代码里都有依赖。
     files: ["docs/features.md"],
@@ -625,38 +693,6 @@ const eslintConfig = defineConfig([
     },
   },
   // ---- 数据结束 ----
-  {
-    files: [SOURCE_GLOB],
-    // 测试里的 class 是 cn() 等函数的输入，不会渲染，会故意拼接或写成非规范形式。
-    ignores: [`**/*.{test,spec}.${extensionGlob}`],
-    plugins: { "better-tailwindcss": betterTailwindcss },
-    settings: {
-      "better-tailwindcss": {
-        entryPoint: "app/globals.css",
-        // 不设时插件不做 px 到 rem 的换算，lg:max-h-[520px] 这类可以写成 lg:max-h-130 的 class 就查不出来。
-        // globals.css 没有改根字号，按浏览器默认的 16px 算，和 Tailwind CSS IntelliSense 的默认值一致。
-        rootFontSize: 16,
-      },
-    },
-    // class 的排序、去重和空白由 prettier-plugin-tailwindcss 处理，这里只开它覆盖不到的规则。
-    rules: {
-      // 按 Tailwind 的 canonicalizeCandidates 改成规范写法，与编辑器里 IntelliSense 的提示一致。
-      "better-tailwindcss/enforce-canonical-classes": "error",
-      // 不在 Tailwind 和项目主题里的 class 不会生成样式，多半是拼写错误。
-      "better-tailwindcss/no-unknown-classes": "error",
-      // 同一字符串里设置相同 CSS 属性的 class 会互相覆盖，结果取决于生成顺序而不是书写顺序。
-      "better-tailwindcss/no-conflicting-classes": "error",
-      // 替换当前 Tailwind 版本已废弃的 class。
-      "better-tailwindcss/no-deprecated-classes": "error",
-      // Tailwind 按完整 class 名扫描源码，拼接出来的 class 不会生成样式。
-      "better-tailwindcss/no-concatenated-classes": "error",
-      // 颜色和圆角走主题 token，见 RESTRICTED_TAILWIND_CLASSES。
-      "better-tailwindcss/no-restricted-classes": [
-        "error",
-        { restrict: RESTRICTED_TAILWIND_CLASSES },
-      ],
-    },
-  },
   // Playwright 推荐的 e2e 检查，比如不用固定时长的等待、expect.poll 必须 await。
   {
     ...playwright.configs["flat/recommended"],
@@ -693,30 +729,6 @@ const eslintConfig = defineConfig([
               importNames: ["test", "expect"],
               message:
                 "Import test and expect from e2e/test.ts, which adds the fixtures every spec runs with.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    // UI catalog 把这些文件当作可复制的代码展示（.claude/rules/ui-catalog.md），所以只按包名或 @/ 引用：
-    // 相对路径的引用（含副作用导入）复制出去就解析不了。和上面 e2e/ 一样带上全局的限制。
-    files: [
-      "features/ui-catalog/components/*-examples/playground.tsx",
-      "features/ui-catalog/components/*-examples/*.example.tsx",
-    ],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          ...RESTRICTED_IMPORTS,
-          patterns: [
-            ...RESTRICTED_IMPORTS.patterns,
-            {
-              regex: "^\\.\\.?(/|$)",
-              message:
-                "A UI catalog playground or example is copied on its own: import through @/ or a package, not a relative path.",
             },
           ],
         },
