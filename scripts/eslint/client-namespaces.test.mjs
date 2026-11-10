@@ -1,22 +1,15 @@
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, relative, sep } from "node:path";
+import { mkdirSync, readFileSync, symlinkSync } from "node:fs";
+import { join, relative, sep } from "node:path";
 import { ESLint } from "eslint";
-import nextTs from "eslint-config-next/typescript";
-import { expect, onTestFinished, test } from "vitest";
+import { expect, test } from "vitest";
 
+import {
+  fixture as projectFixture,
+  parser,
+  writeFile,
+} from "./fixture-test-helpers.mjs";
 import createI18nPlugin from "./i18n-plugin.mjs";
 
-const { parser } = nextTs.find(
-  (config) => config.languageOptions?.parser,
-).languageOptions;
 const SOURCE = "**/*.{js,jsx,ts,tsx,mjs,cjs}";
 
 const CLIENT_MESSAGES = `import type { ReactNode } from "react";
@@ -69,30 +62,17 @@ export default function Page() {
 }
 `;
 
-function fixture(files) {
-  const root = mkdtempSync(join(tmpdir(), "client-namespaces-"));
-  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  for (const [file, source] of Object.entries({
-    "tsconfig.json": JSON.stringify({
-      compilerOptions: {
-        module: "esnext",
-        moduleResolution: "bundler",
-        jsx: "preserve",
-        paths: { "@/*": ["./*"] },
-      },
-    }),
-    "package.json": JSON.stringify({ name: "fixture", private: true }),
-    "lib/i18n/client-messages.tsx": CLIENT_MESSAGES,
-    "app/layout.tsx": ROOT_LAYOUT(),
-    ...files,
-  })) {
-    if (source === null) continue;
-    const filename = join(root, file);
-    mkdirSync(dirname(filename), { recursive: true });
-    writeFileSync(filename, source, "utf8");
-  }
-  return root;
-}
+// 带 ClientMessages 和下发 app namespace 的根 layout 的项目；`files` 里源码为 null 的文件不写，可以去掉其中一个。
+const fixture = (files) =>
+  projectFixture(
+    {
+      "package.json": JSON.stringify({ name: "fixture", private: true }),
+      "lib/i18n/client-messages.tsx": CLIENT_MESSAGES,
+      "app/layout.tsx": ROOT_LAYOUT(),
+      ...files,
+    },
+    { jsx: "preserve" },
+  );
 
 function eslintFor(root, fix = false) {
   return new ESLint({
@@ -715,27 +695,45 @@ import { Cart } from "@/features/cart/cart";`,
     { filePath: join(root, "app/page.tsx") },
   );
   expect(unsaved.messages).toStrictEqual([]);
-  mkdirSync(join(root, "features/cart"), { recursive: true });
-  writeFileSync(
-    join(root, "features/cart/cart.tsx"),
-    CLIENT("Cart", "cart"),
-    "utf8",
-  );
+  writeFile(root, "features/cart/cart.tsx", CLIENT("Cart", "cart"));
   const [layout] = await eslint.lintText(read(root, "app/layout.tsx"), {
     filePath: join(root, "app/layout.tsx"),
   });
   // 磁盘上的 page 还没引入 Cart，所以根 layout 不缺 cart。
   expect(layout.messages).toStrictEqual([]);
 
-  writeFileSync(
-    join(root, "app/greeting.tsx"),
+  writeFile(
+    root,
+    "app/greeting.tsx",
     CLIENT(
       "Greeting",
       "app",
       'import { Cart } from "@/features/cart/cart";',
     ).replace("<p>", "<p><Cart />"),
-    "utf8",
   );
+  expect(await lint(root, eslint)).toStrictEqual({
+    "app/layout.tsx": ["missing cart"],
+  });
+});
+
+test("无效配置不会回退到旧 resolver，修正后同一个 ESLint 可以恢复", async () => {
+  const root = fixture({
+    "app/page.tsx": PAGE(
+      `import { Cart } from "@/features/cart/cart";`,
+      "<Cart />",
+    ),
+    "app/layout.tsx": ROOT_LAYOUT([]),
+    "features/cart/cart.tsx": CLIENT("Cart", "cart"),
+  });
+  const eslint = eslintFor(root);
+  expect(await lint(root, eslint)).toStrictEqual({
+    "app/layout.tsx": ["missing cart"],
+  });
+  const config = read(root, "tsconfig.json");
+  writeFile(root, "tsconfig.json", "{");
+  await expect(lint(root, eslint)).rejects.toThrow("'}' expected.");
+  await expect(lint(root, eslint)).rejects.toThrow("'}' expected.");
+  writeFile(root, "tsconfig.json", config);
   expect(await lint(root, eslint)).toStrictEqual({
     "app/layout.tsx": ["missing cart"],
   });

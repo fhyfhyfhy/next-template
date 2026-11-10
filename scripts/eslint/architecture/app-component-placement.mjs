@@ -1,12 +1,9 @@
 import { readFileSync, statSync } from "node:fs";
 import { basename, join, relative, resolve, sep } from "node:path";
 
+import { fileVersion } from "../file-versions.mjs";
 import { createProjectResolver } from "../imports.mjs";
-import {
-  fileVersion,
-  moduleReferences,
-  sourceFiles,
-} from "./feature-cycles.mjs";
+import { moduleReferences, sourceFiles } from "./feature-cycles.mjs";
 
 const COMPONENTS = "_components";
 // 测试跟着它测的模块走，不算使用方：否则旁边的测试会把模块钉在原地。

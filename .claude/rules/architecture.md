@@ -31,7 +31,7 @@ Dependencies may stay within the same layer or point to a lower layer. Dependenc
 
 ### Layers
 
-Ordered top to bottom, as "One-way dependencies" describes; `utils/`, `constants/`, and `types/` share one layer, here and in the next table. This table and the next are enforced by `ROOT_LAYERS` / `FEATURE_LAYERS` in `eslint.config.mjs` — change both together.
+Ordered top to bottom, as "One-way dependencies" describes; `utils/`, `constants/`, and `types/` share one layer, here and in the next table. This table and the next are enforced by `ROOT_LAYERS` / `FEATURE_LAYERS` in `scripts/eslint/layers.mjs` — change both together.
 
 ```
 app/            routes; composes features
@@ -40,7 +40,7 @@ components/     domain-neutral composite UI (e.g. data tables, empty states)
 components/ui/  design-system components (generic UI primitives)
 hooks/          domain-neutral hooks (interaction and platform behavior)
 lib/            framework and infrastructure adapters
-utils/          domain-neutral pure utility functions
+utils/          domain-neutral utility functions
 constants/      domain-neutral constants
 types/          domain-neutral shared contracts
 ```
@@ -79,6 +79,7 @@ Ordered top to bottom, like "Layers".
 
 - A concept that exists only as part of another joins that concept's feature. In the database, its rows are deleted with the other's, as a task's comments are in [`features/task/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task).
 - A concept that exists on its own gets a feature of its own. In the database, it has its own tables and lifecycle, and other features reach it through its `server.ts`, as the task feature attaches a cover through `attachUpload` from [`features/upload/server.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/features/upload/server.ts).
+- A setting that only serves another concept joins that concept's feature, even with a table and a page of its own, such as a default per category, kept in a table keyed by the category, that names an entity's owner when the entity is created. As a feature of its own, it would depend on that feature for its rules while that feature depends on it for the default.
 
 Creating, merging, or splitting a feature, changing what one is responsible for, or adding or removing a dependency between features updates `docs/features.md` in the same change.
 
@@ -94,4 +95,6 @@ Import from the same directory and its subdirectories by relative path (`./`), a
 
 ### Feature public API
 
-Heavy dependencies, such as `three`, go through a sub-entry beside `index.ts`, such as `canvas.ts`: the main entry stays light, and callers can load the heavy part lazily.
+`package.json` declares the project's modules free of side effects (`sideEffects`, CSS aside), so the bundler loads only the modules behind the exports a caller uses. A feature's main entry may export client components beside schemas, types, and constants: a Server Component, a route handler, or a job `instrumentation.ts` starts that imports a schema from it loads none of the components. To keep the declaration true, a module's top level only defines; anything that must run is a function its caller calls. Import a project module for the names it uses, never for its effect alone (`architecture/side-effect-imports`).
+
+Heavy dependencies, such as `three`, go through a sub-entry beside `index.ts`, such as `canvas.ts`, so callers can load the heavy part lazily.

@@ -2553,3 +2553,122 @@ ${component(`(
     });
   }
 });
+
+describe("UI catalog 的 playground 和 example 不用相对路径引用", () => {
+  // no-restricted-imports 的每条报告：这条限制记作 "relative"，RESTRICTED_IMPORTS 里请求库的记作 "global"。
+  // file 和 restricted 一样用真实存在的路径。
+  async function restrictedImports(file, source) {
+    const [result] = await restrictedSyntaxLinter.lintText(source, {
+      filePath: join(project, file),
+    });
+    expect(result.fatalErrorCount).toBe(0);
+    return result.messages
+      .filter(({ ruleId }) => ruleId === "no-restricted-imports")
+      .map(({ message }) =>
+        message.includes("UI catalog")
+          ? "relative"
+          : message.includes("fetchApi")
+            ? "global"
+            : message,
+      );
+  }
+  const example =
+    "features/ui-catalog/components/button-examples/basic.example.tsx";
+  const playground =
+    "features/ui-catalog/components/button-examples/playground.tsx";
+  for (const { name, file, source, reported } of [
+    {
+      name: "example 里相对路径的 import、re-export 和副作用导入都报错",
+      file: example,
+      source: `import { value } from "./helper";
+import "../styles.css";
+export { other } from "./other";
+export const result = value;
+`,
+      reported: ["relative", "relative", "relative"],
+    },
+    {
+      name: "playground 里相对路径的 import 报错",
+      file: playground,
+      source: `import { value } from "../shared";\nexport const result = value;\n`,
+      reported: ["relative"],
+    },
+    {
+      name: "经 @/ 或包名引用不报错，全局的限制照旧",
+      file: example,
+      source: `import { IconCheck } from "@tabler/icons-react";
+import axios from "axios";
+
+import { Button } from "@/components/ui/button";
+
+export const result = [IconCheck, axios, Button];
+`,
+      reported: ["global"],
+    },
+    {
+      name: "preview 不在 catalog 里展示，可以用相对路径引用",
+      file: "features/ui-catalog/components/button-examples/preview.tsx",
+      source: `import { value } from "./playground";\nexport const result = value;\n`,
+      reported: [],
+    },
+  ]) {
+    test(name, async () => {
+      expect(await restrictedImports(file, source)).toStrictEqual(reported);
+    });
+  }
+});
+
+describe("只有 lib/ 和 feature 的 server/ 访问数据库", () => {
+  // import/no-cycle 关掉：它遍历磁盘上的文件，定位不了不在磁盘上的文件，用例才能用不存在的 probe 路径。
+  const eslint = new ESLint({
+    cwd: project,
+    overrideConfig: { rules: { "import/no-cycle": "off" } },
+  });
+  const dataAccess = async (file, source) => {
+    const [result] = await eslint.lintText(source, {
+      filePath: join(project, file),
+    });
+    expect(result.fatalErrorCount).toBe(0);
+    return result.messages
+      .filter(({ ruleId }) => ruleId === "architecture/data-access")
+      .map(({ message }) => message.match(/import (\S+):/)?.[1] ?? message);
+  };
+  const reaches = `import type { Kysely } from "kysely";
+import pg from "pg";
+
+import { getDb } from "@/lib/db";
+
+export const probe = [getDb, pg];
+export type Probe = Kysely<object>;
+`;
+
+  test.each([
+    "app/api/probe/route.ts",
+    "features/task/api/probe.ts",
+    "features/task/components/probe.tsx",
+    "features/task/server.ts",
+    "features/task/components/probe.test.tsx",
+    "components/probe.tsx",
+    "hooks/use-probe.ts",
+    "utils/probe.ts",
+    "proxy.ts",
+    "instrumentation.ts",
+  ])("%s 引用连接模块和数据库客户端的包会报错", async (file) => {
+    expect(await dataAccess(file, reaches)).toStrictEqual([
+      "kysely",
+      "pg",
+      "lib/db",
+    ]);
+  });
+
+  test.each([
+    "lib/probe.ts",
+    "features/task/server/probe.ts",
+    "features/task/server/probe.db.test.ts",
+    // 不是应用代码：e2e 直接往 e2e 的库里写测试数据，脚本负责迁移和种子数据。
+    "e2e/probe.ts",
+    "scripts/db/probe.mjs",
+  ])("%s 可以引用", async (file) => {
+    expect(await dataAccess(file, reaches)).toStrictEqual([]);
+  });
+});

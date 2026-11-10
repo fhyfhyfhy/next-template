@@ -1,16 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import markdown from "@eslint/markdown";
 import { ESLint } from "eslint";
-import nextTs from "eslint-config-next/typescript";
-import { expect, onTestFinished, test } from "vitest";
+import { expect, test } from "vitest";
 
+import { fixture as projectFixture, parser } from "../fixture-test-helpers.mjs";
 import createArchitecturePlugin from "./plugin.mjs";
-
-const { parser } = nextTs.find(
-  (config) => config.languageOptions?.parser,
-).languageOptions;
 
 const GRAPH = [
   "# Feature 划分",
@@ -23,29 +17,15 @@ const GRAPH = [
   "",
 ].join("\n");
 
-function fixture(files) {
-  const root = mkdtempSync(join(tmpdir(), "feature-dependencies-"));
-  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  for (const [file, source] of Object.entries({
-    "tsconfig.json": JSON.stringify({
-      compilerOptions: {
-        module: "esnext",
-        moduleResolution: "bundler",
-        paths: { "@/*": ["./*"] },
-      },
-    }),
+// 带 GRAPH 里三个 feature 的项目。
+const fixture = (files) =>
+  projectFixture({
     "features/feature-a/index.ts": "export const a = 1;",
     "features/feature-b/index.ts": "export const b = 1;",
     "features/feature-c/index.ts":
       "export const c = 1; export type C = { c: number };",
     ...files,
-  })) {
-    const filename = join(root, file);
-    mkdirSync(dirname(filename), { recursive: true });
-    writeFileSync(filename, source, "utf8");
-  }
-  return root;
-}
+  });
 
 async function lint(root, file) {
   const architecture = createArchitecturePlugin(root);

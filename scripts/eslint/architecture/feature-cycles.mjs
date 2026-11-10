@@ -3,6 +3,11 @@ import { extname, join, resolve } from "node:path";
 import ts from "typescript";
 
 import {
+  createCachedResolver,
+  createStatSnapshot,
+  fileVersion,
+} from "../file-versions.mjs";
+import {
   createProjectResolver,
   featurePath,
   SOURCE_EXTENSIONS,
@@ -20,13 +25,6 @@ const sourceExtensions = new Set(
   SOURCE_EXTENSIONS.map((extension) => `.${extension}`),
 );
 const compare = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
-
-export function fileVersion(stat) {
-  // ctime 和 inode 能识别恢复了 mtime 的写入，以及编辑器的原子替换。
-  return stat
-    ? `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`
-    : null;
-}
 
 export function sourceFiles(directory, cache, readStat) {
   const files = [];
@@ -170,60 +168,18 @@ export function featureDependencies(projectRoot) {
 }
 
 /**
- * 创建当前文件的 feature 循环检查器。filename 使用绝对路径，sourceText 可为未保存内容。
- * 返回参与循环的引用及循环路径，行列从 1 开始；其他文件以磁盘内容为准。
+ * 为 projectRoot 的项目创建 feature 循环检查器。每个项目创建一个，跨文件复用：它缓存读过的文件和解析结果。
+ * 返回的检查器一次检查一个文件：filename 使用绝对路径，sourceText 可为未保存内容。它返回参与循环的引用及
+ * 循环路径，行列从 1 开始；其他文件以磁盘内容为准。
  */
 export function createFeatureCycleChecker(projectRoot) {
   const root = resolve(projectRoot);
   const cache = new Map();
   const directories = new Map();
-  let snapshot;
-  let resolveImport;
-  let resolutionRevision = 0;
-  let resolverDependencies = new Map();
+  const stats = createStatSnapshot();
+  const { readStat } = stats;
+  const currentResolver = createCachedResolver(root, readStat);
   let graph = new Map();
-
-  function readStat(filename) {
-    const path = resolve(filename);
-    if (!snapshot.has(path))
-      snapshot.set(path, statSync(path, { throwIfNoEntry: false }));
-    return snapshot.get(path);
-  }
-
-  function resolverStat(filename) {
-    const stat = readStat(filename);
-    resolverDependencies.set(resolve(filename), fileVersion(stat));
-    return stat;
-  }
-
-  function refreshResolver() {
-    if (
-      resolveImport &&
-      [...resolverDependencies].every(
-        ([filename, version]) => fileVersion(readStat(filename)) === version,
-      )
-    )
-      return;
-
-    resolveImport = undefined;
-    resolverDependencies = new Map();
-    // 同时跟踪 extends、package.json 和解析时探测的缺失路径，新增目标也会失效缓存。
-    resolveImport = createProjectResolver(root, {
-      ...ts.sys,
-      fileExists: (filename) => resolverStat(filename)?.isFile() ?? false,
-      directoryExists: (directory) =>
-        resolverStat(directory)?.isDirectory() ?? false,
-      readFile: (filename) => {
-        resolverStat(filename);
-        return ts.sys.readFile(filename);
-      },
-      realpath: (filename) => {
-        resolverStat(filename);
-        return ts.sys.realpath(filename);
-      },
-    });
-    resolutionRevision++;
-  }
 
   return (filename, sourceText) => {
     const parts = featurePath(root, filename);
@@ -235,8 +191,8 @@ export function createFeatureCycleChecker(projectRoot) {
         : moduleReferences(filename, sourceText);
     if (!references.length) return [];
 
-    snapshot = new Map();
-    refreshResolver();
+    stats.reset();
+    const { resolveImport, revision: resolutionRevision } = currentResolver();
     const current =
       previous?.resolutionRevision === resolutionRevision &&
       previous.text === sourceText

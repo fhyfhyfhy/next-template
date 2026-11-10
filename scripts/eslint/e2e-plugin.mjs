@@ -53,8 +53,9 @@ function baseIdentifier(node) {
 }
 
 /**
- * 整页加载之后，先确认页面能操作再操作：`expect(...)` 等到只在浏览器里渲染的内容，或者 `openTask` 这类
- * 不带对象的 helper 调用，都算确认过。确认之前出现的第一个操作会被报告。
+ * 整页加载之后，先确认页面能操作再操作。任何 `expect(...)` 都算确认过：它等的是不是只在浏览器里渲染的内容，
+ * 由写 spec 的人保证（.claude/rules/e2e.md「Hydration」）。单独成句、带 await 的不带对象的 helper 调用也算，
+ * 比如 `openTask`。确认之前出现的第一个操作会被报告。
  */
 const actAfterReady = {
   meta: {
