@@ -70,8 +70,8 @@ export function unauthorized(message: string) {
 }
 
 /**
- * actor 看得到这条记录，但不能做这次写操作。actor 看不到的记录用 `notFound`，和不存在的记录一样回答：
- * 403 会让对方知道记录存在。
+ * actor 看得到这条记录但不能做这次写操作，或者 actor 的角色打不开整个页面。按页面拒绝时先查角色再查记录，
+ * 页面下每个 URL 都同样回答。actor 看不到的单条记录用 `notFound`，和不存在的记录一样回答：403 会让对方知道记录存在。
  */
 export function forbidden(message: string) {
   return new DomainError(403, ErrorCode.FORBIDDEN, message);

@@ -45,11 +45,11 @@ Data can change without this user acting: other users' edits, background jobs, o
 
 Set the polling interval, and how often a change signal is checked, from the [freshness bound](SKILL.md#steps) of the displays involved.
 
-A server-owned view whose freshness bound is "current as of the last navigation or write" needs no change signal. Its page can then be out of date when the user acts on it, so a write refused because of that refreshes the page too: the action refreshes on each refusal that only an out-of-date page can cause, such as a record changed or removed meanwhile, or an authorization failure on a control the page shows only to someone allowed to use it. The refresh shows the user what is now true in place of a control that would be refused again, at the cost of what they had typed; a refusal about the input itself leaves the page as it is.
-
 A **change signal** is a cheap query or pushed event that reveals a change to the view: a version, a count, or the IDs and states the view depends on. Compare successive results and refresh only when they differ. When the backend has invalidated the cached reads, `router.refresh()` updates an open view. When only the browser can detect the change, call a Server Action that invalidates them; its response carries the refreshed page. Every open page then sends that action, so prefer the backend event when the backend can emit one. Choose the invalidation's freshness as [Server invalidation and refresh](#server-invalidation-and-refresh) describes.
 
 A stale-while-revalidate read can reach the page older than the signal's first result. Check the view against that first result once and refresh if they disagree.
+
+A server-owned view whose freshness bound is "current as of the last navigation or write" needs no change signal, so its page can be out of date when the user acts on it. On each refusal that only an out-of-date page can cause, such as a record changed or removed meanwhile, or an authorization failure on a control the page shows only to someone allowed to use it, the action refreshes the page as [After a write](#after-a-write) does for the read's owner: the user then sees what is now true in place of a control that would be refused again. A refusal about the input itself leaves the page as it is, with what the user typed.
 
 ## Server invalidation and refresh
 
