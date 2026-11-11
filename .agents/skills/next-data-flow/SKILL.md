@@ -57,7 +57,7 @@ Choose how the server reads a server-owned read, and the server prefetch of a qu
 | The read | Delivery |
 | --- | --- |
 | Cached, with a lifetime the prerendered shell can include | Await it in the Server Component; it renders into the shell |
-| Per request, or depends on `params`, `searchParams`, or cookies | Await it in a Server Component inside `<Suspense>`. Keep the page and layout synchronous and read `params` and `searchParams` inside the boundary: in an `async` page, a per-request `await` added later sits outside every boundary and holds back the whole page. A value the shell can prerender, such as a translated title, needs no `await` there either (`useTranslations()` rather than `getTranslations()`) |
+| Per request, or depends on `params`, `searchParams`, or cookies | Await it in a Server Component inside `<Suspense>`. Keep the page and layout synchronous and read `params` and `searchParams` inside the boundary: in an `async` page, a per-request `await` added later sits outside every boundary and holds back the whole page |
 | Server-owned, displayed by a Client Component | Start the read without awaiting it and pass the promise as a prop; the Client Component reads it with `use()` inside `<Suspense>`. Components that display the same read share one promise |
 | Query-owned, with inputs the server has | Prefetch it on the server and hydrate, so its data arrives with the page rather than after hydration ([Server prefetch and hydration](../../../.claude/rules/data-flow.md#server-prefetch-and-hydration)); when the read depends on the session, the Server Component passes the actor to the data layer, as the Route Handler does for the refetch ([Data layer](../../../.claude/rules/server-data.md#data-layer)) |
 | Query-owned, with inputs that exist only in the browser | Fetch it in the browser once they exist ([Queries](../../../.claude/rules/tanstack-query.md#queries)) |
@@ -73,7 +73,7 @@ Give every consumer a refresh path for each update trigger it has: URL changes, 
 ## Loading and failures
 
 - Loading: a server-owned read shows its Suspense fallback; a query-owned read renders its states as [Query states](../../../.claude/rules/data-flow.md#query-states) describes.
-- Failure: a server-owned read's error reaches the segment's `error.tsx`, and a missing record calls `notFound()`; a query-owned read follows [Errors in React Query–owned data](../../../.claude/rules/data-flow.md#errors-in-react-queryowned-data).
+- Failure: a server-owned read's error reaches the segment's `error.tsx`, a missing record calls `notFound()`, and a view the actor's role does not open calls `forbidden()` ([Errors](../../../.claude/rules/server-data.md#errors)); a query-owned read follows [Errors in React Query–owned data](../../../.claude/rules/data-flow.md#errors-in-react-queryowned-data).
 
 ## Project integration
 
