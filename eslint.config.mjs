@@ -98,7 +98,7 @@ const ENV_ACCESS = [
 
 // ---- 数据的常量结束 ----
 
-// ---- UI（.claude/rules/ 的 components.md、react.md、ui-catalog.md）的常量，规则配置在下面配置数组的「UI」一段 ----
+// ---- UI（.claude/rules/ 的 components.md、design-system.md、react.md、ui-catalog.md）的常量，规则配置在下面配置数组的「UI」一段 ----
 // NATIVE_ELEMENTS 借用 no-restricted-syntax。这条规则还管着别的事，所以这一组合进下面的 RESTRICTED_SYNTAX；
 // 它的例外和 UI 的其余检查在配置数组的「UI」一段。
 
@@ -333,7 +333,7 @@ const eslintConfig = defineConfig([
     files: ROOT_APP_FILES,
     rules: { "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX] },
   },
-  // ---- UI（.claude/rules/ 的 components.md、react.md、ui-catalog.md）----
+  // ---- UI（.claude/rules/ 的 components.md、design-system.md、react.md、ui-catalog.md）----
   // - NATIVE_ELEMENTS 前面随 RESTRICTED_SYNTAX 生效，这里只放它的例外。所以这一段要排在设置 no-restricted-syntax 的配置之后、
   //   「架构」一段之前：那一段的组件入口配置给 components/ui/ 的 index 重设这条规则，例外排在它后面会把入口的限制整个替换掉。
   // - React Hooks 和可访问性的检查来自最前面的 nextVitals。
