@@ -6,10 +6,8 @@ import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@/lib/react-query";
 
-import { activeTasksQueryOptions } from "../../api/get-tasks";
-import { RunningTasksBadgeSkeleton } from "./skeleton";
-
-export { RunningTasksBadgeSkeleton } from "./skeleton";
+import { activeTasksQueryOptions } from "../api/get-tasks";
+import { RunningTasksBadgeSkeleton } from "./running-tasks-badge-skeleton";
 
 /**
  * 进行中（排队中和生成中）的任务数。轮询间隔由 `activeTasksQueryOptions` 决定。

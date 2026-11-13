@@ -77,7 +77,11 @@ export function Example() {
       </form.Field>
       <form.Subscribe selector={(state) => state.isSubmitting}>
         {(isSubmitting) => (
-          <Button type="submit" disabled={!hydrated || isSubmitting}>
+          <Button
+            type="submit"
+            disabled={!hydrated || isSubmitting}
+            focusableWhenDisabled={hydrated}
+          >
             {isSubmitting ? "保存中…" : "保存"}
           </Button>
         )}

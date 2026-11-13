@@ -16,6 +16,8 @@ import { TaskStatusBadge } from "../task-status-badge";
 import { TaskListChangeSignal } from "./change-signal";
 import { FavoriteToggle } from "./favorite-toggle";
 
+export { TaskListSkeleton } from "./skeleton";
+
 interface TaskListProps {
   /** Server Component 不 await 直接传下来的读取结果，这里用 `use()` 取值，未完成时由外层 Suspense 显示骨架屏。 */
   tasksPromise: Promise<TaskPage>;

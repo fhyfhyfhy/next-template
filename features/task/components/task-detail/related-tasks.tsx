@@ -4,9 +4,9 @@ import { useTranslations } from "next-intl";
 
 import { useQuery } from "@/lib/react-query";
 
-import { getTaskQueryOptions } from "../api/get-task";
-import { relatedTasksQueryOptions } from "../api/get-tasks";
-import { TaskLinkRow } from "./task-link-row";
+import { getTaskQueryOptions } from "../../api/get-task";
+import { relatedTasksQueryOptions } from "../../api/get-tasks";
+import { TaskLinkRow } from "../task-link-row";
 
 /**
  * 依赖查询：先从详情 query 里取 prompt，再用它查其他任务；prompt 还没拿到时第二个请求不发。

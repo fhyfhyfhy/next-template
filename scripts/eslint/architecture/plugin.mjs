@@ -424,7 +424,7 @@ export default function createArchitecturePlugin(projectRoot) {
         wrapper:
           "Import from @/lib/react-query. Only that wrapper may access the original package.",
         uiLibrary:
-          "Use the project's wrapper of {{name}} from @/components/ui/. When it lacks the part you need, add that part to the wrapper. See .claude/rules/components.md.",
+          "Use the project's wrapper of {{name}} from @/components/ui/. When it lacks the part you need, add that part to the wrapper. See .claude/rules/design-system.md.",
       },
     },
     create(context) {

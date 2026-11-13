@@ -7,13 +7,14 @@ Project reviews for the `code-review` skill, one per section.
 ## Architecture
 
 - **Runs when:** the diff changes application code (the directories in the Layers table of `.claude/rules/architecture.md`, plus `instrumentation.ts` and `proxy.ts` at the root) or `docs/features.md`. An edit inside a function body is enough, since it can give a module a second job, add an unrelated branch, or copy logic a third time.
-- **Standards:** `.claude/rules/architecture.md`, "Component directories" in `.claude/rules/components.md`, and `docs/features.md`
+- **Standards:** `.claude/rules/architecture.md`, "Component directories" and "Split by responsibility" in `.claude/rules/components.md`, and `docs/features.md`
 - **Brief:** Review only the changes to application code and `docs/features.md`, and in them these parts of the rule; ESLint checks the rest.
   - The whole of **Single responsibility**, **Duplication and abstraction**, **Design for change**, **Where files go**, and **Shared code ownership**. Count occurrences across the repo before calling an extraction premature or overdue, and look at a changed module's callers and neighbours before judging its owner.
+  - **Split by responsibility** in `components.md`, for each component the diff adds or changes.
   - **Feature boundaries**: compare the changes with `docs/features.md`: code outside its feature's responsibility, and a new feature whose concept an existing entry covers or that exists only as part of another concept or only serves one. Judge a change to `docs/features.md` itself by the same section.
   - **One-way dependencies**: when the change resolves a cycle or an upward import, the business code stays in its feature instead of moving into a root layer.
   - **Layers** and **Feature structure**: each file sits in the layer and feature subdirectory its responsibility belongs to.
-  - **Component directories**: a single file or a directory, an `index` that exports only what callers need, one level deep, and a directory past about 5–7 files, test files included, split into siblings, except a UI catalog `<component-id>-examples/`, which stays flat (`.claude/rules/ui-catalog.md`).
+  - **Component directories**: each component file or directory the diff adds or changes, against every requirement of that section.
   - **Feature public API**: a module's top level only defines, with anything that must run in a function its caller calls, and heavy dependencies go through a sub-entry.
   - Each `eslint-disable` the diff adds for `architecture/*`, `import/no-restricted-paths`, or `import/no-cycle`: whether its description justifies the exception.
 
@@ -30,16 +31,17 @@ Project reviews for the `code-review` skill, one per section.
 
 ## UI
 
-- **Runs when:** the diff changes a `.tsx` or `.jsx` file, a file under any `components/`, or a `.css` file.
-- **Standards:** `.claude/rules/components.md`, `.claude/rules/react.md`, `.claude/rules/ui-catalog.md`, and `.agents/skills/vercel-composition-patterns/` (`SKILL.md` and its `rules/`)
-- **Brief:** Review the components the diff adds or changes, and how it renders others; ESLint checks component entries and imports, that UI libraries and native controls stay in `components/ui/`, Tailwind classes and tokens, the legacy React forms, and the Rules of React. Where a component lives is the Architecture review's.
-  - **Reuse, compose, extend, or add**: search `components/ui/`, `components/`, the feature's components, and other features' entries for a candidate, and check that the change took the least invasive action that covers the need.
-  - **Using a component**: appearance through its `variant` and `size`, placement and layout through `className`; a visual override a third caller repeats belongs in the component; one interactive element per trigger, with a project button passed as `render`.
-  - **Public API**: the smallest one its callers need, unless it is a design-system primitive; controlled state with its change callback, or a default-value prop; independent behavior as a state prop; compound parts as named exports; composition in place of boolean props that keep piling up.
-  - **Styles**: variants with `cva` beside the component; `cn` with the caller's `className` last; a new shared design value as a token, registered in `lib/cn.ts` when `cn` can't merge it otherwise; interaction states from data attributes.
-  - **Wrappers**: a library's parts wrapped one by one, props derived from its types, props both sides set merged with a known winner, and the library's own interactions left to it.
-  - **React**: no new `useMemo`, `useCallback`, or `memo`, and none of the existing ones removed; a ref callback that sets something up returns its cleanup.
-  - **Accessibility and examples**: each control has an accessible name and works from the keyboard; a public component in `components/ui/` changes together with its UI catalog examples; a component past the size warning is split by responsibility.
+- **Runs when:** the diff changes a file that the `paths` of a `.claude/rules/` file under **Standards** match, or a rendered Tailwind class in any other file.
+- **Standards:** `.claude/rules/components.md`, `.claude/rules/design-system.md`, `.claude/rules/react.md`, `.claude/rules/ui-catalog.md`, and `.agents/skills/vercel-composition-patterns/` (`SKILL.md` and the `rules/` files it lists)
+- **Brief:** Review each component, hook, and style the diff adds or changes, and each place it renders a project component, against every item below. ESLint's UI section in `eslint.config.mjs`, with the checks it names in other sections, checks the mechanical rules: leave its errors to it, and judge what it only warns about, such as the `jsx-a11y` checks and `react-hooks/exhaustive-deps`, since a warning fails nothing. Where a component lives, whether it has one responsibility, and whether to extract shared code are the Architecture review's.
+  - **Reuse, compose, extend, or add** in `components.md`: search where its step 1 does, and confirm that the change took the least invasive action that covers the need.
+  - **Use a component** in `components.md`, all of it; for each adjustment the diff passes to a component, count across the repo the callers that already make it.
+  - **Write a component** in `components.md`: its step 2 and **Public API**.
+  - **Design system**: all of `design-system.md`, for each wrapper and token the diff adds or changes.
+  - **Styles and variants** in `components.md`, all of it, for every variant, rendered class, and motion the diff adds or changes. ESLint reads class strings only in `className` attributes, `cn()` and `cva()` calls, and variables named `className(s)`, `classes`, or `style(s)`; for a rendered class anywhere else, such as in a constant, also check what it would report.
+  - **React**: all of `react.md`; in a review of a whole project, the `useMemo`, `useCallback`, and `memo` already there count as the existing ones it keeps, not as added.
+  - **Accessibility** of every interactive element the diff adds or changes, as **Examples and verification** in `components.md` defines a passing scenario.
+  - **UI catalog examples**: in the same change wherever **Examples and verification** in `components.md` asks for them, written as `ui-catalog.md` says.
 
 ## i18n
 

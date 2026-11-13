@@ -13,7 +13,7 @@ export function SwitchThumb({
     <SwitchPrimitive.Thumb
       data-slot="switch-thumb"
       className={cn(
-        "rounded-full bg-white shadow-sm transition-transform duration-150 group-data-[size=lg]/switch:size-6 group-data-[size=md]/switch:size-5 group-data-[size=sm]/switch:size-4 data-checked:translate-x-full motion-reduce:transition-none",
+        "rounded-full bg-white shadow-sm transition-transform duration-150 group-data-[size=lg]/switch:size-6 group-data-[size=md]/switch:size-5 group-data-[size=sm]/switch:size-4 data-checked:translate-x-full",
         className,
       )}
       {...props}

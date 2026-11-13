@@ -1,19 +1,15 @@
 export { PageHeading } from "./components/page-heading";
-export {
-  RunningTasksBadge,
-  RunningTasksBadgeSkeleton,
-} from "./components/running-tasks-badge";
+export { RunningTasksBadge } from "./components/running-tasks-badge";
+export { RunningTasksBadgeSkeleton } from "./components/running-tasks-badge-skeleton";
 export { TaskHeader } from "./components/task-header";
 export { CreateTaskForm } from "./components/create-task-form";
-export { TaskList } from "./components/task-list";
+export { TaskList, TaskListSkeleton } from "./components/task-list";
 export {
   TaskListBusy,
   TaskListNavigation,
 } from "./components/task-list-navigation";
-export { TaskListSkeleton } from "./components/task-list-skeleton";
 export { TaskListToolbar } from "./components/task-list-toolbar";
-export { TaskDetail } from "./components/task-detail";
-export { TaskDetailSkeleton } from "./components/task-detail-skeleton";
+export { TaskDetail, TaskDetailSkeleton } from "./components/task-detail";
 export { TaskSearch } from "./components/task-search";
 export { TaskSearchSkeleton } from "./components/task-search-skeleton";
 export { RecentTasks } from "./components/recent-tasks";
@@ -22,8 +18,7 @@ export {
   FavoritesPanel,
   FavoritesPanelSkeleton,
 } from "./components/favorites-panel";
-export { FeedGrid } from "./components/feed-grid";
-export { FeedSkeleton } from "./components/feed-skeleton";
+export { FeedGrid, FeedSkeleton } from "./components/feed-grid";
 export { SeedHydrationBoundary } from "./components/seed-hydration-boundary";
 export { getFeedInfiniteQueryOptions } from "./api/get-feed";
 export { getCommentsQueryOptions } from "./api/get-comments";
