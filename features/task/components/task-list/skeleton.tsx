@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { TASK_LIST_PAGE_SIZE } from "../constants/task-list";
+import { TASK_LIST_PAGE_SIZE } from "../../constants/task-list";
 
 /** 全部任务列表的占位，行数和行高与加载后的列表一致，下面是总数和翻页按钮那一行。 */
 export function TaskListSkeleton() {

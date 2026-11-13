@@ -32,12 +32,13 @@ Project reviews for the `code-review` skill, one per section.
 ## UI
 
 - **Runs when:** the diff changes a file that the `paths` of a `.claude/rules/` file under **Standards** match, or a rendered Tailwind class in any other file.
-- **Standards:** `.claude/rules/components.md`, `.claude/rules/react.md`, `.claude/rules/ui-catalog.md`, and `.agents/skills/vercel-composition-patterns/` (`SKILL.md` and the `rules/` files it lists)
+- **Standards:** `.claude/rules/components.md`, `.claude/rules/design-system.md`, `.claude/rules/react.md`, `.claude/rules/ui-catalog.md`, and `.agents/skills/vercel-composition-patterns/` (`SKILL.md` and the `rules/` files it lists)
 - **Brief:** Review each component, hook, and style the diff adds or changes, and each place it renders a project component, against every item below. ESLint's UI section in `eslint.config.mjs`, with the checks it names in other sections, checks the mechanical rules: leave its errors to it, and judge what it only warns about, such as the `jsx-a11y` checks and `react-hooks/exhaustive-deps`, since a warning fails nothing. Where a component lives, whether it has one responsibility, and whether to extract shared code are the Architecture review's.
   - **Reuse, compose, extend, or add** in `components.md`: search where its step 1 does, and confirm that the change took the least invasive action that covers the need.
-  - **Use a component** in `components.md`, counting across the repo, for each adjustment the diff passes to a component, the callers that already make it.
-  - **Write a component** in `components.md`: its step 2, **Public API**, and **Wrap a UI library**.
-  - **Styles and variants** in `components.md` for every token, variant, and rendered class the diff adds or changes. ESLint reads class strings only in `className` attributes, `cn()` and `cva()` calls, and variables named `className(s)`, `classes`, or `style(s)`; for a rendered class anywhere else, such as in a constant, also check what it would report.
+  - **Use a component** in `components.md`, all of it; for each adjustment the diff passes to a component, count across the repo the callers that already make it.
+  - **Write a component** in `components.md`: its step 2 and **Public API**.
+  - **Design system**: all of `design-system.md`, for each wrapper and token the diff adds or changes.
+  - **Styles and variants** in `components.md`, all of it, for every variant, rendered class, and motion the diff adds or changes. ESLint reads class strings only in `className` attributes, `cn()` and `cva()` calls, and variables named `className(s)`, `classes`, or `style(s)`; for a rendered class anywhere else, such as in a constant, also check what it would report.
   - **React**: all of `react.md`; in a review of a whole project, the `useMemo`, `useCallback`, and `memo` already there count as the existing ones it keeps, not as added.
   - **Accessibility** of every interactive element the diff adds or changes, as **Examples and verification** in `components.md` defines a passing scenario.
   - **UI catalog examples**: in the same change wherever **Examples and verification** in `components.md` asks for them, written as `ui-catalog.md` says.

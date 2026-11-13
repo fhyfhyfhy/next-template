@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { FEED_PAGE_SIZE } from "../constants/feed";
+import { FEED_PAGE_SIZE } from "../../constants/feed";
 
 /** 作品广场第一页的占位：卡片的封面、名称和收藏按钮一行，以及列表末尾触发加载下一页的区域。 */
 export function FeedSkeleton() {

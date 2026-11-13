@@ -9,6 +9,8 @@ import { environmentManager, useInfiniteQuery } from "@/lib/react-query";
 import { getFeedInfiniteQueryOptions } from "../../api/get-feed";
 import { FeedCard } from "./feed-card";
 
+export { FeedSkeleton } from "./skeleton";
+
 /** 作品广场由 React Query 负责：滚到底部时追加下一页。第一页来自服务端缓存的 hydration state。 */
 export function FeedGrid() {
   const t = useTranslations();

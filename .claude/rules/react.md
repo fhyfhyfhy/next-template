@@ -13,7 +13,7 @@ The repo runs React 19 with React Compiler. Write the React 19 form of each API.
 
 `reactCompiler` in `next.config.ts` memoizes components and hooks, so write values, callbacks, and components without `useMemo`, `useCallback`, or `memo`. Keep the existing ones: removing them can change what the compiler memoizes.
 
-The compiler skips a component or hook that breaks the [Rules of React](https://react.dev/reference/rules), leaving it unmemoized. The `react-hooks` lint rules report what makes it skip, so keep each component and hook passing them.
+The compiler skips a component or hook that breaks the [Rules of React](https://react.dev/reference/rules), leaving it unmemoized. The `react-hooks` lint rules report what makes it skip, some only as warnings, and an `eslint-disable` of `react-hooks/rules-of-hooks` or `react-hooks/exhaustive-deps` makes it skip too: a component or hook is done when they report nothing on it and nothing disables them.
 
 ## Ref callbacks return their cleanup
 

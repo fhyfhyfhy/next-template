@@ -17,12 +17,14 @@ import { useRecentTaskIds } from "../../hooks/use-recent-task-ids";
 import { useRefreshListsWhenSettled } from "../../hooks/use-refresh-lists-when-settled";
 import type { TaskStatus } from "../../types/task-filters";
 import { TaskComments } from "../task-comments";
-import { TaskLogs } from "../task-logs";
+import { TaskHeading } from "../task-heading";
 import { RelatedTasks } from "./related-tasks";
 import { TaskActions } from "./task-actions";
 import { TaskCoverPanel } from "./task-cover-panel";
-import { TaskHeading } from "./task-heading";
+import { TaskLogs } from "./task-logs";
 import { TaskProgress } from "./task-progress";
+
+export { TaskDetailSkeleton } from "./skeleton";
 
 /** 任务详情由 React Query 负责：任务会在用户停留时自己推进，pending、running 时轮询。首屏数据来自服务端 prefetch。 */
 export function TaskDetail({ taskId }: { taskId: string }) {
