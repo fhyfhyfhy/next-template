@@ -1995,9 +1995,34 @@ describe("派生项目的 eslint.config.project.mjs 接在 template 的配置后
 
   beforeAll(() => {
     fixture = createConfigFixture();
+    // better-tailwindcss 按 app/globals.css 读项目主题。
+    mkdirSync(join(fixture, "app"));
+    copyFileSync(
+      join(project, "app/globals.css"),
+      join(fixture, "app/globals.css"),
+    );
     writeFileSync(
       join(fixture, "eslint.config.project.mjs"),
-      `export default [{ files: ["probe/**"], rules: { "no-console": "error" } }];\n`,
+      `import { TAILWIND_CLASS_RESTRICTIONS } from "./scripts/eslint/tailwind-classes.mjs";
+
+export default [
+  { files: ["probe/**"], rules: { "no-console": "error" } },
+  {
+    files: ["components/**"],
+    rules: {
+      "better-tailwindcss/no-restricted-classes": [
+        "error",
+        {
+          restrict: [
+            ...TAILWIND_CLASS_RESTRICTIONS,
+            { pattern: "^text-sm$", message: "PROBE" },
+          ],
+        },
+      ],
+    },
+  },
+];
+`,
     );
   });
 
@@ -2014,6 +2039,24 @@ describe("派生项目的 eslint.config.project.mjs 接在 template 的配置后
       result.messages.map(({ ruleId }) => ruleId),
       JSON.stringify(result.messages, null, 2),
     ).toContain("no-console");
+  });
+
+  test("项目追加 Tailwind 限制后 template 的限制照旧", async () => {
+    const eslint = new ESLint({ cwd: fixture });
+    const [result] = await eslint.lintText(
+      `export const probe = <div className="bg-red-500 text-sm" />;\n`,
+      { filePath: join(fixture, "components/probe.tsx") },
+    );
+    expect(
+      result.messages
+        .filter(
+          ({ ruleId }) => ruleId === "better-tailwindcss/no-restricted-classes",
+        )
+        .map(({ message }) =>
+          message.includes("Tailwind palette color") ? "palette" : message,
+        ),
+      JSON.stringify(result.messages, null, 2),
+    ).toStrictEqual(["palette", "PROBE"]);
   });
 });
 

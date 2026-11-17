@@ -34,7 +34,7 @@ import {
   ROOT_LAYERS,
 } from "./scripts/eslint/layers.mjs";
 import securityPlugin from "./scripts/eslint/security-plugin.mjs";
-import { TAILWIND_PALETTES } from "./scripts/eslint/tailwind-palettes.mjs";
+import { TAILWIND_CLASS_RESTRICTIONS } from "./scripts/eslint/tailwind-classes.mjs";
 import writingStylePlugin from "./scripts/eslint/writing-style-plugin.mjs";
 
 const PROJECT_ROOT = import.meta.dirname;
@@ -132,29 +132,6 @@ const NATIVE_ELEMENTS = [
   ),
 ];
 
-// 颜色只用 app/globals.css 的语义 token 和 black、white，圆角只用内置或 --radius-* token。
-const RESTRICTED_TAILWIND_CLASSES = [
-  {
-    pattern: `^(?:.*:)?!?[a-z-]+-(?:${TAILWIND_PALETTES.join("|")})-\\d+(?:/.+)?!?$`,
-    message:
-      'Use a semantic color token from app/globals.css instead of the Tailwind palette color "$0".',
-  },
-  {
-    // 任意值里的十六进制色值和颜色函数；引用 CSS 变量的写法不受限制。
-    // 任意值用 _ 代替空格，_ 属于 \w，所以边界用显式字符集而不是 \b、\w。
-    pattern:
-      "^.*\\[[^\\]]*(?:#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z-])|(?<![a-zA-Z-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\().*$",
-    message:
-      'Define a color token in app/globals.css instead of the hard-coded color in "$0".',
-  },
-  {
-    // 只需拦任意值：不是任意值、又不在内置或 --radius-* 主题里的圆角 class 由 no-unknown-classes 报出。
-    pattern: "^(?:.*:)?!?rounded(?:-[a-z]{1,2})?-[[(].*$",
-    message:
-      'Use a built-in radius or a --radius-* token from app/globals.css instead of "$0".',
-  },
-];
-
 // ---- UI 的常量结束 ----
 
 // agent 读的指令，用英文写。和 .claude/rules/writing-style.md「Language by content」表里 Agent instructions
@@ -247,6 +224,7 @@ const APPLICATION_CODE = {
 // 派生项目自己的检查和忽略项写在 eslint.config.project.mjs（.agents/skills/derived-project/SKILL.md），它导出的
 // 配置接在 template 的规则后面、Prettier 之前；没有这个文件时只用 template 的配置。项目的限制写成自己插件里的独立
 // 规则：在那里给文件设置 no-restricted-imports 或 no-restricted-syntax，会整个替换下面给同一批文件设的选项。
+// 追加 Tailwind class 的限制同理：restrict 先展开 TAILWIND_CLASS_RESTRICTIONS。
 // 应用代码的目录从 scripts/eslint/layers.mjs 取，不要复制：template 升级改了层级表，复制的那份不会跟着变。
 const PROJECT_CONFIG = join(PROJECT_ROOT, "eslint.config.project.mjs");
 const projectConfig = existsSync(PROJECT_CONFIG)
@@ -390,10 +368,10 @@ const eslintConfig = defineConfig([
       "better-tailwindcss/no-deprecated-classes": "error",
       // Tailwind 按完整 class 名扫描源码，拼接出来的 class 不会生成样式。
       "better-tailwindcss/no-concatenated-classes": "error",
-      // 颜色和圆角走主题 token，见 RESTRICTED_TAILWIND_CLASSES。
+      // 颜色和圆角走主题 token，见 scripts/eslint/tailwind-classes.mjs。
       "better-tailwindcss/no-restricted-classes": [
         "error",
-        { restrict: RESTRICTED_TAILWIND_CLASSES },
+        { restrict: TAILWIND_CLASS_RESTRICTIONS },
       ],
     },
   },
