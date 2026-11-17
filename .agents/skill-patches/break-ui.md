@@ -36,7 +36,7 @@ Upstream: `skills/break-ui/` in `emilkowalski/skills`, as `npx skills update` in
 
 ## Dates and times go through `<DateTime>`
 
-`.claude/rules/i18n.md` ("Dates and numbers") shows a date or time only through `<DateTime>` from `@/components/date-time`, which renders it in the computer's time zone once the page has hydrated, and ESLint reports `Intl.DateTimeFormat` anywhere else. Relative times use next-intl's formatter.
+`.claude/rules/i18n.md` ("Dates and numbers") shows a date or time only through `<DateTime>` from `@/components/date-time`, which renders it in the computer's time zone once the page has hydrated, and ESLint reports `Intl.DateTimeFormat`, `toLocale*String()`, `toDateString()`, and `toTimeString()` anywhere else. Relative times use next-intl's formatter.
 
 File: CATALOG.md
 

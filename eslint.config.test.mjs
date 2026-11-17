@@ -3088,7 +3088,7 @@ describe("agent 指令和 identifier 用英文写", () => {
   });
 });
 
-describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染", () => {
+describe("有封装的原生元素和控件 role 只在 components/ui/ 里渲染", () => {
   const component = (jsx) => `export function Probe() {\n  return ${jsx};\n}\n`;
   for (const { name, file, source, reported } of [
     {
@@ -3099,6 +3099,7 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
       <button />
       <input />
       <input type="checkbox" />
+      <textarea />
       <select />
       <progress />
       <dialog />
@@ -3108,7 +3109,7 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
       <hr />
     </>
   )`),
-      reported: Array(10).fill("native-element"),
+      reported: Array(11).fill("native-element"),
     },
     {
       name: "render prop 里的原生元素也被拒绝",

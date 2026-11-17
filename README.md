@@ -28,7 +28,7 @@ Next.js 模板。
 由 Rule、Lint、测试、Review 和 Skill 约束。
 
 - Rule：[components.md](.claude/rules/components.md)、[design-system.md](.claude/rules/design-system.md)、[react.md](.claude/rules/react.md)、[ui-catalog.md](.claude/rules/ui-catalog.md)、[libraries.md](.claude/rules/libraries.md)
-- Lint：[eslint.config.mjs](eslint.config.mjs) 的 UI 部分，[scripts/eslint/tailwind-palettes.mjs](scripts/eslint/tailwind-palettes.mjs)；组件目录和 UI 库封装的检查在架构部分
+- Lint：[eslint.config.mjs](eslint.config.mjs) 的 UI 部分，[scripts/eslint/tailwind-classes.mjs](scripts/eslint/tailwind-classes.mjs)；组件目录和 UI 库封装的检查在架构部分
 - 测试：[lib/cn.test.mjs](lib/cn.test.mjs)、[scripts/ui-catalog/index-generator.test.mjs](scripts/ui-catalog/index-generator.test.mjs)、[features/ui-catalog/utils/example-source.test.mjs](features/ui-catalog/utils/example-source.test.mjs)、[e2e/ui-catalog.spec.ts](e2e/ui-catalog.spec.ts)
 - Skill
   - 组件：[vercel-composition-patterns](.agents/skills/vercel-composition-patterns/SKILL.md)
