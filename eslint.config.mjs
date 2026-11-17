@@ -564,7 +564,8 @@ const eslintConfig = defineConfig([
       "architecture/component-imports": "error",
       // 每个组件目录只保留一个实现入口，避免多个 index 扩展名产生解析歧义；允许声明文件并存。
       "architecture/component-entry": "error",
-      // React Query 和 UI 库只经项目封装引入：绕过封装会丢掉 QueryClient 策略，或者项目统一的样式、默认值和行为。
+      // React Query、cn 和 UI 库只经项目封装引入：绕过封装会丢掉 QueryClient 策略、按项目主题合并 class，或者项目
+      // 统一的样式、默认值和行为。
       "architecture/wrapper-imports": "error",
       // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。
       "import/no-relative-packages": "error",

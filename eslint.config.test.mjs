@@ -641,6 +641,23 @@ addCase("lib 子目录中的同名文件不能享有封装豁免", {
   source: "@tanstack/react-query",
   rule: wrapperRule,
 });
+for (const source of ["cn", "cn/config"]) {
+  addCase(`业务代码不能直接引用 ${source}`, {
+    from: "app/CASE.ts",
+    source,
+    rule: wrapperRule,
+    messageId: "wrapper",
+  });
+}
+cases.push({
+  name: "lib/cn.ts 封装可以引用 cn 原包",
+  from: "lib/cn.ts",
+  files: {
+    "lib/cn.ts":
+      'import { value as packageValue } from "cn/config"; export const value = packageValue;',
+  },
+  rules: [],
+});
 
 for (const source of [
   "@base-ui/react",
