@@ -103,8 +103,8 @@ const ENV_ACCESS = [
 // NATIVE_ELEMENTS 借用 no-restricted-syntax。这条规则还管着别的事，所以这一组合进下面的 RESTRICTED_SYNTAX；
 // 它的例外和 UI 的其余检查在配置数组的「UI」一段。
 
-// Base UI 有对应组件的原生元素只在 components/ui/ 的封装里渲染，别处渲染封装，样式、状态和可访问性才一致。
-// 选择器只匹配小写的原生标签：<Form>、<form.Field> 这类组件和成员表达式不受影响。
+// Base UI 有对应组件的原生元素和带控件 role 的元素只在 components/ui/ 的封装里渲染，别处渲染封装，样式、状态和
+// 可访问性才一致。选择器只匹配小写的原生标签和写成字符串的 role：<Form>、<form.Field> 这类组件和成员表达式不受影响。
 const nativeElement = (element, replacement, condition = "") => ({
   selector: `JSXOpeningElement[name.name='${element}']${condition}`,
   message: `Native <${element}> renders only inside components/ui/: use ${replacement}. See .claude/rules/components.md.`,
@@ -131,6 +131,12 @@ const NATIVE_ELEMENTS = [
       `a wrapper of Base UI's ${part} in components/ui/, adding it first if it is missing`,
     ),
   ),
+  {
+    selector:
+      "JSXAttribute[name.name='role'] > Literal[value=/^(button|checkbox|switch|radio|radiogroup|slider|spinbutton|textbox|combobox|listbox|option|menu|menuitem|tab|tablist|tooltip|dialog|alertdialog|progressbar|meter|separator)$/]",
+    message:
+      'A control role, such as role="button", renders only inside components/ui/: render the component from @/components/ui/ that has it, or a wrapper of the matching Base UI component, adding it first if it is missing. See "Wrap a UI library" in .claude/rules/design-system.md.',
+  },
 ];
 
 // ---- UI 的常量结束 ----
@@ -315,7 +321,7 @@ const eslintConfig = defineConfig([
   // ---- UI（.claude/rules/ 的 components.md、design-system.md、react.md、ui-catalog.md）----
   // - NATIVE_ELEMENTS 前面随 RESTRICTED_SYNTAX 生效，这里只放它的例外。所以这一段要排在设置 no-restricted-syntax 的配置之后、
   //   「架构」一段之前：那一段的组件入口配置给 components/ui/ 的 index 重设这条规则，例外排在它后面会把入口的限制整个替换掉。
-  // - React Hooks 和可访问性的检查来自最前面的 nextVitals。
+  // - React Hooks 和 jsx-a11y 的 ARIA 检查来自最前面的 nextVitals；下面另加三条拦手写的可点击元素。
   // - 组件目录的入口和引用（architecture/component-*）、UI 库只经封装引入（architecture/wrapper-imports）在「架构」一段。
   {
     // 封装 Base UI 的地方，可以渲染 NATIVE_ELEMENTS 里的原生元素。
@@ -342,6 +348,15 @@ const eslintConfig = defineConfig([
       "@eslint-react/web-api-no-leaked-interval": "error",
       "@eslint-react/web-api-no-leaked-resize-observer": "error",
       "@eslint-react/web-api-no-leaked-intersection-observer": "error",
+    },
+  },
+  {
+    files: [SOURCE_GLOB],
+    rules: {
+      // 给 div、li 加点击处理的写法拦下，改用 Button 或 Link。
+      "jsx-a11y/no-static-element-interactions": "error",
+      "jsx-a11y/click-events-have-key-events": "error",
+      "jsx-a11y/no-noninteractive-element-interactions": "error",
     },
   },
   {

@@ -2262,6 +2262,7 @@ const RESTRICTION_NAMES = [
   ["List public API", "component-entry"],
   ["Read environment variables", "env"],
   ["Native <", "native-element"],
+  ["A control role", "control-role"],
 ];
 
 // 每条 no-restricted-syntax 报告，按它来自哪条限制命名。file 用真实存在的路径：import/no-cycle 定位不了不在磁盘上的文件。
@@ -2802,9 +2803,26 @@ ${component(`(
       reported: [],
     },
     {
+      name: "控件 role 被拒绝，其他 role 不受影响",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
+      source: component(`(
+    <>
+      <div role="button" tabIndex={0} />
+      <span role="checkbox" aria-checked="false" tabIndex={0} />
+      <p role="status" />
+    </>
+  )`),
+      reported: ["control-role", "control-role"],
+    },
+    {
       name: "components/ui/ 的封装可以渲染，其他限制照旧",
       file: "components/ui/badge.tsx",
-      source: `export const url = process.env.DATABASE_URL;\n${component("<button />")}`,
+      source: `export const url = process.env.DATABASE_URL;\n${component(`(
+    <>
+      <button />
+      <div role="button" />
+    </>
+  )`)}`,
       reported: ["env"],
     },
     {
@@ -2824,6 +2842,41 @@ ${component(`(
       expect(await restricted(file, source)).toStrictEqual(reported);
     });
   }
+});
+
+describe("给不是控件的元素加点击处理被拒绝", () => {
+  test("li 和 div 的 onClick 都报告", async () => {
+    const [result] = await restrictedSyntaxLinter.lintText(
+      `export function Probe() {
+  return (
+    <ul>
+      <li onClick={() => {}} />
+      <div onClick={() => {}} />
+    </ul>
+  );
+}
+`,
+      {
+        filePath: join(
+          project,
+          "features/ui-catalog/components/example-list/example-card.tsx",
+        ),
+      },
+    );
+    expect(result.fatalErrorCount).toBe(0);
+    expect(
+      result.messages
+        .filter(({ ruleId }) => ruleId?.startsWith("jsx-a11y/"))
+        .map(({ ruleId }) => ruleId)
+        .sort(),
+      JSON.stringify(result.messages, null, 2),
+    ).toStrictEqual([
+      "jsx-a11y/click-events-have-key-events",
+      "jsx-a11y/click-events-have-key-events",
+      "jsx-a11y/no-noninteractive-element-interactions",
+      "jsx-a11y/no-static-element-interactions",
+    ]);
+  });
 });
 
 describe("UI catalog 的 playground 和 example 不用相对路径引用", () => {
