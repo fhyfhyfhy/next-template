@@ -13,7 +13,10 @@ export function TaskComments({ taskId }: { taskId: string }) {
   return (
     <section>
       <h2 className="mb-3 text-sm font-medium">{t("task.comments.title")}</h2>
-      <QueryErrorBoundary message={t("task.comments.loadFailed")}>
+      <QueryErrorBoundary
+        message={t("task.comments.loadFailed")}
+        subject={t("task.comments.title")}
+      >
         <Suspense
           fallback={
             <p className="text-sm text-muted-foreground">
