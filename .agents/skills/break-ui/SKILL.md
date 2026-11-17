@@ -51,7 +51,7 @@ Look up limits in the validation schema (Zod, Yup, Valibot), database migrations
 
 For each field, pick values from [CATALOG.md](CATALOG.md). Load it now. It covers text, identifiers, numbers, collections, time, media, states, and environment, each with the specific values that break things and why.
 
-Assemble a single worst-case fixture next to the existing demo data, shaped exactly like it (same type, same file conventions). The first few rows of a list matter most because that's what's on screen, so spread the different failures across them instead of stacking every one into row 1.
+Assemble a single worst-case dataset shaped exactly like the demo data: the props of a UI catalog example for a component in `components/ui/`, or the records the page reads for anything else (Phase 3). The first few rows of a list matter most because that's what's on screen, so spread the different failures across them instead of stacking every one into row 1.
 
 Also cover the cases that aren't one dataset:
 
@@ -66,7 +66,7 @@ These are extra examples or extra records (Phase 3). Don't skip them because the
 This repo needs no toggle. Put the worst case where the demo data already is (Hard Rule 2):
 
 - **A component in `components/ui/`**: one `*.example.tsx` per state in `features/ui-catalog/components/<component-id>-examples/` (`.claude/rules/ui-catalog.md`), as `long-labels.example.tsx` in `features/ui-catalog/components/select-examples/` is. The UI catalog page `/ui?component=<component-id>` then shows the demo examples and the worst case together.
-- **A feature component or a page**: create the records in the local `dev` dataset, through the app's own UI or SQL; `pnpm db:reset` brings back the seed data. Empty, one, and 1,000 rows are states of that data too.
+- **A feature component or a page**: create the records in the local `dev` dataset only, through the app's own UI or SQL. `scripts/local-services/seed.sql` is the starting data that `pnpm db:reset` and the `test` and `e2e` datasets reset to, so it stays as it is. Empty, one, and 1,000 rows are states of that data too.
 
 ### Phase 4 — Break it
 

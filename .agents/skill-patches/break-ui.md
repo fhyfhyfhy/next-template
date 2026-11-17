@@ -89,6 +89,11 @@ Pages here read the database, so a toggle in `app/` or `features/` is a data sta
 -4. **The toggle is dev-only.** It never ships to production. Gate it behind the dev environment or keep it inside a prototype route.
 +4. **No data switch in app code.** The worst case is a UI catalog example or records in the local database (Phase 3), never a branch in `app/` or `features/` that picks a fixture.
  5. **Report before fixing.** Some breaks are design decisions (truncate or wrap? hide the role or show "—"?). List them all, propose a fix for each, then stop. Fix only when asked.
+@@ ### Phase 2 — Build the worst case @@
+-Assemble a single worst-case fixture next to the existing demo data, shaped exactly like it (same type, same file conventions). The first few rows of a list matter most because that's what's on screen, so spread the different failures across them instead of stacking every one into row 1.
++Assemble a single worst-case dataset shaped exactly like the demo data: the props of a UI catalog example for a component in `components/ui/`, or the records the page reads for anything else (Phase 3). The first few rows of a list matter most because that's what's on screen, so spread the different failures across them instead of stacking every one into row 1.
+ 
+ Also cover the cases that aren't one dataset:
 @@ ### Phase 3 — Wire the toggle @@
  - **Huge**: the realistic upper bound for list length (1,000+ rows if the list is unpaginated, since that's a performance break as well as a visual one).
  
@@ -107,7 +112,7 @@ Pages here read the database, so a toggle in `app/` or `features/` is a data sta
 +This repo needs no toggle. Put the worst case where the demo data already is (Hard Rule 2):
 +
 +- **A component in `components/ui/`**: one `*.example.tsx` per state in `features/ui-catalog/components/<component-id>-examples/` (`.claude/rules/ui-catalog.md`), as `long-labels.example.tsx` in `features/ui-catalog/components/select-examples/` is. The UI catalog page `/ui?component=<component-id>` then shows the demo examples and the worst case together.
-+- **A feature component or a page**: create the records in the local `dev` dataset, through the app's own UI or SQL; `pnpm db:reset` brings back the seed data. Empty, one, and 1,000 rows are states of that data too.
++- **A feature component or a page**: create the records in the local `dev` dataset only, through the app's own UI or SQL. `scripts/local-services/seed.sql` is the starting data that `pnpm db:reset` and the `test` and `e2e` datasets reset to, so it stays as it is. Empty, one, and 1,000 rows are states of that data too.
  
  ### Phase 4 — Break it
 @@ ### Phase 5 — Report and stop @@
