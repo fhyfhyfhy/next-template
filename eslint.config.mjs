@@ -104,11 +104,14 @@ const ENV_ACCESS = [
 // RESTRICTED_SYNTAX；NATIVE_ELEMENTS 的例外和 UI 的其余检查在配置数组的「UI」一段。
 
 // Base UI 有对应组件的原生元素和带控件 role 的元素只在 components/ui/ 的封装里渲染，别处渲染封装，样式、状态和
-// 可访问性才一致。选择器只匹配小写的原生标签和写成字符串的 role：<Form>、<form.Field> 这类组件和成员表达式不受影响。
+// 可访问性才一致。选择器只匹配小写的原生标签和字符串字面量的 role（`role="button"` 或 `role={"button"}`）：
+// <Form>、<form.Field> 这类组件和成员表达式不受影响。
 const nativeElement = (element, replacement, condition = "") => ({
   selector: `JSXOpeningElement[name.name='${element}']${condition}`,
   message: `Native <${element}> renders only inside components/ui/: use ${replacement}. See "Wrap a UI library" in .claude/rules/design-system.md.`,
 });
+const CONTROL_ROLE =
+  "/^(button|checkbox|switch|radio|radiogroup|slider|spinbutton|textbox|combobox|listbox|option|menu|menuitem|tab|tablist|tooltip|dialog|alertdialog|progressbar|meter|separator)$/";
 const NATIVE_ELEMENTS = [
   nativeElement("button", "Button from @/components/ui/button"),
   // Base UI 没有文件选择和隐藏字段的组件，这两种 input 保持原生。
@@ -134,21 +137,34 @@ const NATIVE_ELEMENTS = [
     ),
   ),
   {
-    selector:
-      "JSXAttribute[name.name='role'] > Literal[value=/^(button|checkbox|switch|radio|radiogroup|slider|spinbutton|textbox|combobox|listbox|option|menu|menuitem|tab|tablist|tooltip|dialog|alertdialog|progressbar|meter|separator)$/]",
+    selector: `JSXAttribute[name.name='role']:matches([value.value=${CONTROL_ROLE}], [value.expression.value=${CONTROL_ROLE}])`,
     message:
       'A control role, such as role="button", renders only inside components/ui/: render the component from @/components/ui/ that has it, or a wrapper of the matching Base UI component, adding it first if it is missing. See "Wrap a UI library" in .claude/rules/design-system.md.',
   },
 ];
 
 // 一个触发器或控件只有一个可交互元素。按名字认父元素，只看直接子元素，间接的嵌套由 UI review 看。不放进
-// NATIVE_ELEMENTS：components/ui/ 里同样生效。
+// NATIVE_ELEMENTS：components/ui/ 里同样生效。按钮套按钮时，里面的 Button 作为外面组件的 render 传入；牵涉链接时
+// 只留下链接本身：Next 的 Link 和 <a> 没有 render，Base UI 的 Button 给它渲染的元素加上按钮语义，不用来渲染链接
+// （Base UI Button 文档的「Rendering links as buttons」），像按钮的链接用 buttonVariants 设样式。
+const NESTED_LINK_MESSAGE =
+  'Give a link one interactive element: render the link alone, neither inside a button or link nor holding one, with buttonVariants from @/components/ui/button as its className when it should look like a button, as in <Link href="/tasks" className={buttonVariants({ variant: "outline" })}>. Next\'s Link and <a> take no render prop, and Base UI\'s Button gives what it renders button semantics, so it never renders a link. See "Use a component" in .claude/rules/components.md.';
 const NESTED_INTERACTIVE = [
   {
     selector:
-      "JSXElement[openingElement.name.name=/(Trigger|Close|Button|Link)$/] > JSXElement[openingElement.name.name=/^(Button|Link|a|button)$/]",
+      "JSXElement[openingElement.name.name=/(Trigger|Close|Button)$|^button$/] > JSXElement[openingElement.name.name=/^(Button|button)$/]",
     message:
-      'Give a trigger or control one interactive element: pass the inner Button or Link as the outer component\'s render prop instead of nesting it. See "Use a component" in .claude/rules/components.md.',
+      'Give a trigger or control one interactive element: render one button, passing the inner Button as the outer component\'s render prop instead of nesting it, as in <DialogTrigger render={<Button variant="ghost" />}>. See "Use a component" in .claude/rules/components.md.',
+  },
+  {
+    selector:
+      "JSXElement[openingElement.name.name=/(Trigger|Close|Button|Link)$|^(a|button)$/] > JSXElement[openingElement.name.name=/^(Link|a)$/]",
+    message: NESTED_LINK_MESSAGE,
+  },
+  {
+    selector:
+      "JSXElement[openingElement.name.name=/Link$|^a$/] > JSXElement[openingElement.name.name=/^(Button|button)$/]",
+    message: NESTED_LINK_MESSAGE,
   },
 ];
 

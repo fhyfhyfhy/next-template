@@ -2430,6 +2430,7 @@ const RESTRICTION_NAMES = [
   ["Native <", "native-element"],
   ["A control role", "control-role"],
   ["Give a trigger or control one interactive element", "nested-interactive"],
+  ["Give a link one interactive element", "nested-link"],
 ];
 
 // 每条 no-restricted-syntax 报告，按它来自哪条限制命名。file 用真实存在的路径：import/no-cycle 定位不了不在磁盘上的文件。
@@ -3155,6 +3156,17 @@ ${component(`(
       reported: ["control-role", "control-role"],
     },
     {
+      name: "写成表达式的字符串 role 同样被拒绝",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
+      source: component(`(
+    <>
+      <div role={"button"} tabIndex={0} />
+      <p role={"status"} />
+    </>
+  )`),
+      reported: ["control-role"],
+    },
+    {
       name: "components/ui/ 的封装可以渲染，其他限制照旧",
       file: "components/ui/badge.tsx",
       source: `export const url = process.env.DATABASE_URL;\n${component(`(
@@ -3256,15 +3268,37 @@ describe("触发器和控件里直接嵌套 Button 或 Link 被拒绝", () => {
       </Link>
     </>
   )`),
-      reported: Array(4).fill("nested-interactive"),
+      reported: [
+        "nested-interactive",
+        "nested-link",
+        "nested-link",
+        "nested-link",
+      ],
     },
     {
-      name: "里面的 Button 或 Link 作为 render prop 传入不报",
+      name: "原生 a 里直接嵌套 Button 或链接也报告",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
+      source: component(`(
+    <>
+      <a href="/">
+        <Button />
+      </a>
+      <a href="/">
+        <Link href="/" />
+      </a>
+    </>
+  )`),
+      reported: ["nested-link", "nested-link"],
+    },
+    {
+      name: "里面的 Button 作为 render prop 传入、链接单独渲染都不报",
       file: "features/ui-catalog/components/example-list/example-card.tsx",
       source: component(`(
     <>
       <DialogTrigger render={<Button />} />
-      <Button render={<Link href="/" />} />
+      <DialogClose render={<Button />} />
+      <Link href="/" className="inline-flex" />
+      <a href="/" />
     </>
   )`),
       reported: [],
@@ -3279,11 +3313,55 @@ describe("触发器和控件里直接嵌套 Button 或 Link 被拒绝", () => {
   )`),
       reported: ["nested-interactive"],
     },
+    {
+      name: "原生 button 里直接嵌套 Button 或链接也报告",
+      file: "components/ui/badge.tsx",
+      source: component(`(
+    <>
+      <button type="button">
+        <Button />
+      </button>
+      <button type="button">
+        <a href="/" />
+      </button>
+    </>
+  )`),
+      reported: ["nested-interactive", "nested-link"],
+    },
   ]) {
     test(name, async () => {
       expect(await restricted(file, source)).toStrictEqual(reported);
     });
   }
+
+  test("牵涉链接的消息让链接用 buttonVariants，不把它作为 render prop 传入", async () => {
+    // Next 的 Link 没有 render，Base UI 的 Button 不渲染链接：消息只能指向 buttonVariants，它得真的从这里导出。
+    expect(
+      readFileSync(join(project, "components/ui/button.tsx"), "utf8"),
+    ).toMatch(/^export const buttonVariants = /m);
+    const messages = (
+      await restrictedSyntaxLinter.lintText(
+        component(`(
+    <Link href="/">
+      <Button />
+    </Link>
+  )`),
+        {
+          filePath: join(
+            project,
+            "features/ui-catalog/components/example-list/example-card.tsx",
+          ),
+        },
+      )
+    )[0].messages
+      .filter(({ ruleId }) => ruleId === "no-restricted-syntax")
+      .map(({ message }) => message);
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toContain(
+      "with buttonVariants from @/components/ui/button as its className",
+    );
+    expect(messages[0]).not.toContain("as the outer component's render prop");
+  });
 });
 
 describe("给不是控件的元素加点击处理被拒绝", () => {
