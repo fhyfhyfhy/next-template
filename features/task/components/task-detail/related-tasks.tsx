@@ -44,6 +44,7 @@ export function RelatedTasks({ taskId }: { taskId: string }) {
         )
       ) : related.error ? (
         <QueryLoadFailed
+          subject={t("task.relatedTasks.title")}
           onRetry={() => void related.refetch()}
           retrying={related.isFetching}
         />

@@ -97,6 +97,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   if (task.error) {
     return (
       <QueryLoadFailed
+        subject={t("task.taskDetail.label")}
         onRetry={() => void task.refetch()}
         retrying={task.isFetching}
       />

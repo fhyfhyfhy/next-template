@@ -20,6 +20,7 @@ export function FavoritesPanel() {
     return favorites.error ? (
       <FavoritesPanelFrame>
         <QueryLoadFailed
+          subject={t("task.favoritesPanel.title")}
           onRetry={() => void favorites.refetch()}
           retrying={favorites.isFetching}
         />

@@ -236,13 +236,18 @@ test.describe("请求失败", () => {
     );
     await tasks.changePrompt(task.id, prompt);
 
-    // 失败任务的 TaskActions 也有「重试」，按钮限定在提示里找。
     const failed = page.getByRole("alert").filter({ hasText: "加载失败" });
     await expect(failed).toBeVisible();
     await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(0);
 
     await restore();
-    await failed.getByRole("button", { name: "重试" }).click();
+    // 可访问名称写明重试的是什么，和失败任务的 TaskActions 里的「重试」分得清。
+    await failed
+      .getByRole("button", {
+        name: "重试加载同 prompt 的其他任务",
+        exact: true,
+      })
+      .click();
     await expect(
       page.getByRole("list", { name: "同 prompt 的其他任务" }),
     ).toContainText(other.name);

@@ -62,6 +62,7 @@ export function FeedGrid() {
   if (feed.error) {
     return (
       <QueryLoadFailed
+        subject={t("task.feed.label")}
         onRetry={() => void feed.refetch()}
         retrying={feed.isFetching}
       />
