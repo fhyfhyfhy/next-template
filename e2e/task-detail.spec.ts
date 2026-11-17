@@ -62,7 +62,8 @@ test.describe("首屏和 404", () => {
   test("不存在的任务按 200 返回：静态 shell 在读到 params 之前就发出了", async ({
     request,
   }) => {
-    // 这是 framework-notes.md 的 Response status 记录的 Next.js 行为；升级后它变成真正的 404，就更新那条记录和这里。
+    // Next.js 文档写明了这个行为（loading.md 的 Status codes）：开了 Cache Components，页面里请求时的检查在 shell 发出之后才运行。
+    // 哪次升级后它变成真正的 404，就更新 page.tsx 的注释和这里。
     const response = await request.get("/tasks/task-404");
 
     expect(response.status()).toBe(200);

@@ -1,7 +1,7 @@
 /**
  * `use cache` 的默认 handler，由 next.config.ts 的 cacheHandlers.default 加载。
  *
- * 这是 Next.js v16.4.3 内置内存 handler 的副本，只改了一处：生产环境把条目保留到 `expire`，而不是 `revalidate`。
+ * 这是 Next.js v16.4.6 内置内存 handler 的副本，只改了一处：生产环境把条目保留到 `expire`，而不是 `revalidate`。
  * 上游在生产环境过了 `revalidate` 就当作没有，请求只能同步等新数据；保留到 `expire` 后，`use cache` wrapper
  * 会先返回旧条目、再在后台重新生成，和 `next dev` 的行为一致（stale-while-revalidate）。改动处标了「改动」。
  *
@@ -13,7 +13,7 @@
  * - packages/next/src/server/lib/lru-cache.ts
  * - packages/next/src/server/lib/incremental-cache/tags-manifest.external.ts
  * - packages/next/src/server/stream-utils/node-web-streams-helper.ts（streamFromBuffer、streamToBuffer）
- * https://github.com/vercel/next.js/tree/v16.4.3/packages/next/src/server
+ * https://github.com/vercel/next.js/tree/v16.4.6/packages/next/src/server
  *
  * Next.js 以 MIT 许可发布：
  * The MIT License (MIT)
