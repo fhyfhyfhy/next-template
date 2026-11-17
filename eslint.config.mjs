@@ -10,6 +10,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
 import betterTailwindcss from "eslint-plugin-better-tailwindcss";
+import { getDefaultSelectors } from "eslint-plugin-better-tailwindcss/defaults";
 import i18next from "eslint-plugin-i18next";
 import playwright from "eslint-plugin-playwright";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
@@ -34,7 +35,7 @@ import {
   ROOT_LAYERS,
 } from "./scripts/eslint/layers.mjs";
 import securityPlugin from "./scripts/eslint/security-plugin.mjs";
-import { TAILWIND_PALETTES } from "./scripts/eslint/tailwind-palettes.mjs";
+import { TAILWIND_CLASS_RESTRICTIONS } from "./scripts/eslint/tailwind-classes.mjs";
 import writingStylePlugin from "./scripts/eslint/writing-style-plugin.mjs";
 
 const PROJECT_ROOT = import.meta.dirname;
@@ -99,22 +100,22 @@ const ENV_ACCESS = [
 // ---- 数据的常量结束 ----
 
 // ---- UI（.claude/rules/ 的 components.md、design-system.md、react.md、ui-catalog.md）的常量，规则配置在下面配置数组的「UI」一段 ----
-// NATIVE_ELEMENTS 借用 no-restricted-syntax。这条规则还管着别的事，所以这一组合进下面的 RESTRICTED_SYNTAX；
-// 它的例外和 UI 的其余检查在配置数组的「UI」一段。
+// NATIVE_ELEMENTS 和 NESTED_INTERACTIVE 借用 no-restricted-syntax。这条规则还管着别的事，所以这两组合进下面的
+// RESTRICTED_SYNTAX；NATIVE_ELEMENTS 的例外和 UI 的其余检查在配置数组的「UI」一段。
 
-// Base UI 有对应组件的原生元素只在 components/ui/ 的封装里渲染，别处渲染封装，样式、状态和可访问性才一致。
-// 选择器只匹配小写的原生标签：<Form>、<form.Field> 这类组件和成员表达式不受影响。
+// Base UI 有对应组件的原生元素和带控件 role 的元素只在 components/ui/ 的封装里渲染，别处渲染封装，样式、状态和
+// 可访问性才一致。选择器只匹配小写的原生标签和写成字符串的 role：<Form>、<form.Field> 这类组件和成员表达式不受影响。
 const nativeElement = (element, replacement, condition = "") => ({
   selector: `JSXOpeningElement[name.name='${element}']${condition}`,
-  message: `Native <${element}> renders only inside components/ui/: use ${replacement}. See .claude/rules/components.md.`,
+  message: `Native <${element}> renders only inside components/ui/: use ${replacement}. See "Wrap a UI library" in .claude/rules/design-system.md.`,
 });
 const NATIVE_ELEMENTS = [
   nativeElement("button", "Button from @/components/ui/button"),
   // Base UI 没有文件选择和隐藏字段的组件，这两种 input 保持原生。
   nativeElement(
     "input",
-    "Input, Checkbox, or Switch from @/components/ui/",
-    ":not(:has(JSXAttribute[name.name='type'] > Literal[value=/^(file|hidden)$/]))",
+    "Input, Checkbox, or Switch from @/components/ui/; a radio or range input takes a wrapper of Base UI's Radio or Slider in components/ui/, adding it first if it is missing",
+    ":not(:has(> JSXAttribute[name.name='type']:matches([value.value=/^(file|hidden)$/], [value.expression.value=/^(file|hidden)$/])))",
   ),
   nativeElement("select", "the Select parts from @/components/ui/select"),
   nativeElement("progress", "the Progress parts from @/components/ui/progress"),
@@ -130,30 +131,27 @@ const NATIVE_ELEMENTS = [
       `a wrapper of Base UI's ${part} in components/ui/, adding it first if it is missing`,
     ),
   ),
+  {
+    selector:
+      "JSXAttribute[name.name='role'] > Literal[value=/^(button|checkbox|switch|radio|radiogroup|slider|spinbutton|textbox|combobox|listbox|option|menu|menuitem|tab|tablist|tooltip|dialog|alertdialog|progressbar|meter|separator)$/]",
+    message:
+      'A control role, such as role="button", renders only inside components/ui/: render the component from @/components/ui/ that has it, or a wrapper of the matching Base UI component, adding it first if it is missing. See "Wrap a UI library" in .claude/rules/design-system.md.',
+  },
 ];
 
-// 颜色只用 app/globals.css 的语义 token 和 black、white，圆角只用内置或 --radius-* token。
-const RESTRICTED_TAILWIND_CLASSES = [
+// 一个触发器或控件只有一个可交互元素。按名字认父元素，只看直接子元素，间接的嵌套由 UI review 看。不放进
+// NATIVE_ELEMENTS：components/ui/ 里同样生效。
+const NESTED_INTERACTIVE = [
   {
-    pattern: `^(?:.*:)?!?[a-z-]+-(?:${TAILWIND_PALETTES.join("|")})-\\d+(?:/.+)?!?$`,
+    selector:
+      "JSXElement[openingElement.name.name=/(Trigger|Close|Button|Link)$/] > JSXElement[openingElement.name.name=/^(Button|Link|a|button)$/]",
     message:
-      'Use a semantic color token from app/globals.css instead of the Tailwind palette color "$0".',
-  },
-  {
-    // 任意值里的十六进制色值和颜色函数；引用 CSS 变量的写法不受限制。
-    // 任意值用 _ 代替空格，_ 属于 \w，所以边界用显式字符集而不是 \b、\w。
-    pattern:
-      "^.*\\[[^\\]]*(?:#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z-])|(?<![a-zA-Z-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\().*$",
-    message:
-      'Define a color token in app/globals.css instead of the hard-coded color in "$0".',
-  },
-  {
-    // 只需拦任意值：不是任意值、又不在内置或 --radius-* 主题里的圆角 class 由 no-unknown-classes 报出。
-    pattern: "^(?:.*:)?!?rounded(?:-[a-z]{1,2})?-[[(].*$",
-    message:
-      'Use a built-in radius or a --radius-* token from app/globals.css instead of "$0".',
+      'Give a trigger or control one interactive element: pass the inner Button or Link as the outer component\'s render prop instead of nesting it. See "Use a component" in .claude/rules/components.md.',
   },
 ];
+
+const CATALOG_RELATIVE_IMPORT_MESSAGE =
+  "A UI catalog playground or example is copied on its own: import through @/ or a package, not a relative path.";
 
 // ---- UI 的常量结束 ----
 
@@ -181,6 +179,9 @@ const INTL_PROVIDER_RESTRICTION = {
 // 日期和时间按电脑所在时区显示，只有浏览器知道这个时区，所以只由 components/date-time.tsx 格式化。
 const DATE_TIME_MESSAGE =
   "Show a date or time with <DateTime> from @/components/date-time, which renders it in the browser in the computer's time zone. See .claude/rules/i18n.md.";
+// toLocaleString 看不出调用的是 Date 还是数字，所以消息两种都说。
+const LOCALE_STRING_MESSAGE =
+  "Show a date or time with <DateTime> from @/components/date-time, and a number with next-intl's useFormatter() or getFormatter(): toLocaleString formats in the runtime's locale and time zone, which differ between the server and the browser. See .claude/rules/i18n.md.";
 const DATE_TIME_FORMATTING = [
   {
     selector: "CallExpression[callee.property.name=/^dateTime(Range)?$/]",
@@ -190,6 +191,15 @@ const DATE_TIME_FORMATTING = [
     selector:
       "MemberExpression[object.name='Intl'][property.name='DateTimeFormat']",
     message: DATE_TIME_MESSAGE,
+  },
+  {
+    selector:
+      "CallExpression[callee.property.name=/^to(Locale)?(Date|Time)String$/]",
+    message: DATE_TIME_MESSAGE,
+  },
+  {
+    selector: "CallExpression[callee.property.name='toLocaleString']",
+    message: LOCALE_STRING_MESSAGE,
   },
 ];
 // 翻译函数不按 namespace 取，key 写完整路径：整个 app 只有一种 t，可以传给任何 owner 的 options 工厂和
@@ -226,6 +236,7 @@ const RESTRICTED_SYNTAX = [
   ...TRANSLATOR_NAMESPACE,
   ...ENV_ACCESS,
   ...NATIVE_ELEMENTS,
+  ...NESTED_INTERACTIVE,
 ];
 
 // 给豁免 RESTRICTED_SYNTAX 里一组限制的文件用，其余限制照旧。只设置级别的配置会沿用前面的选项，
@@ -247,6 +258,7 @@ const APPLICATION_CODE = {
 // 派生项目自己的检查和忽略项写在 eslint.config.project.mjs（.agents/skills/derived-project/SKILL.md），它导出的
 // 配置接在 template 的规则后面、Prettier 之前；没有这个文件时只用 template 的配置。项目的限制写成自己插件里的独立
 // 规则：在那里给文件设置 no-restricted-imports 或 no-restricted-syntax，会整个替换下面给同一批文件设的选项。
+// 追加 Tailwind class 的限制同理：restrict 先展开 TAILWIND_CLASS_RESTRICTIONS。
 // 应用代码的目录从 scripts/eslint/layers.mjs 取，不要复制：template 升级改了层级表，复制的那份不会跟着变。
 const PROJECT_CONFIG = join(PROJECT_ROOT, "eslint.config.project.mjs");
 const projectConfig = existsSync(PROJECT_CONFIG)
@@ -336,10 +348,17 @@ const eslintConfig = defineConfig([
   // ---- UI（.claude/rules/ 的 components.md、design-system.md、react.md、ui-catalog.md）----
   // - NATIVE_ELEMENTS 前面随 RESTRICTED_SYNTAX 生效，这里只放它的例外。所以这一段要排在设置 no-restricted-syntax 的配置之后、
   //   「架构」一段之前：那一段的组件入口配置给 components/ui/ 的 index 重设这条规则，例外排在它后面会把入口的限制整个替换掉。
-  // - React Hooks 和可访问性的检查来自最前面的 nextVitals。
+  // - React Hooks 和 jsx-a11y 的 ARIA 检查来自最前面的 nextVitals；下面把其中设为 warn 的提成 error，另加三条拦手写的
+  //   可点击元素。
   // - 组件目录的入口和引用（architecture/component-*）、UI 库只经封装引入（architecture/wrapper-imports）在「架构」一段。
   {
-    // 封装 Base UI 的地方，可以渲染 NATIVE_ELEMENTS 里的原生元素。
+    // 生成器按码点排序 import，插件按 Intl.Collator：示例 ID 或图标名互为前缀时两边不一致，lint-staged 的 --fix 改完，
+    // 下次生成又改回去，所以顺序以生成器为准。
+    files: ["features/ui-catalog/**/*.generated.ts"],
+    rules: { "simple-import-sort/imports": "off" },
+  },
+  {
+    // 封装 Base UI 的地方，可以渲染 NATIVE_ELEMENTS 里的原生元素和控件 role。
     files: ["components/ui/**"],
     ignores: APPLICATION_CODE.ignores,
     rules: { "no-restricted-syntax": restrictedSyntaxWithout(NATIVE_ELEMENTS) },
@@ -367,15 +386,72 @@ const eslintConfig = defineConfig([
   },
   {
     files: [SOURCE_GLOB],
+    rules: {
+      // nextVitals 把这几条设为 warn，而 lint 和 lint-staged 都不因 warning 失败。只设级别，沿用 nextVitals 的选项。
+      ...Object.fromEntries(
+        [
+          "jsx-a11y/alt-text",
+          "jsx-a11y/aria-props",
+          "jsx-a11y/aria-proptypes",
+          "jsx-a11y/aria-unsupported-elements",
+          "jsx-a11y/role-has-required-aria-props",
+          "jsx-a11y/role-supports-aria-props",
+          "react-hooks/exhaustive-deps",
+          "react-hooks/incompatible-library",
+          "react-hooks/unsupported-syntax",
+        ].map((rule) => [rule, "error"]),
+      ),
+      // 关掉这两条的组件和 hook，React Compiler 不编译。
+      "@eslint-community/eslint-comments/no-restricted-disable": [
+        "error",
+        "react-hooks/rules-of-hooks",
+        "react-hooks/exhaustive-deps",
+      ],
+      // 给 div、li 加点击处理的写法拦下，改用 Button 或 Link。
+      "jsx-a11y/no-static-element-interactions": "error",
+      "jsx-a11y/click-events-have-key-events": "error",
+      "jsx-a11y/no-noninteractive-element-interactions": "error",
+    },
+  },
+  {
+    files: [SOURCE_GLOB],
     // 测试里的 class 是 cn() 等函数的输入，不会渲染，会故意拼接或写成非规范形式。
     ignores: [`**/*.{test,spec}.${extensionGlob}`],
     plugins: { "better-tailwindcss": betterTailwindcss },
     settings: {
       "better-tailwindcss": {
+        // 插件按 ESLint 的 cwd 解析 tailwindcss 和 entryPoint：从子目录或 monorepo 根运行时不设它，主题 class 全报
+        // unknown，或者整组规则静默关掉。entryPoint 相对这里解析。
+        cwd: PROJECT_ROOT,
         entryPoint: "app/globals.css",
         // 不设时插件不做 px 到 rem 的换算，lg:max-h-[520px] 这类可以写成 lg:max-h-130 的 class 就查不出来。
         // globals.css 没有改根字号，按浏览器默认的 16px 算，和 Tailwind CSS IntelliSense 的默认值一致。
         rootFontSize: 16,
+        // 插件默认只读 className、cn()/cva() 和名为 className(s)、classes、style(s) 的变量；这里补上存 class 的常量和
+        // 查找表、xxxClassName prop、不经 cn() 的函数式 className。别的名字由 UI review 看。
+        selectors: [
+          ...getDefaultSelectors(),
+          {
+            kind: "variable",
+            name: "^.*(?:Class(?:Names?|es)?|_CLASS(?:_NAMES?|ES)?)$",
+            match: [{ type: "strings" }, { type: "objectValues" }],
+          },
+          {
+            kind: "attribute",
+            name: "^.+ClassName$",
+            match: [{ type: "strings" }],
+          },
+          {
+            kind: "attribute",
+            name: "^class(?:Name)?$",
+            match: [
+              {
+                type: "anonymousFunctionReturn",
+                match: [{ type: "strings" }],
+              },
+            ],
+          },
+        ],
       },
     },
     // class 的排序、去重和空白由 prettier-plugin-tailwindcss 处理，这里只开它覆盖不到的规则。
@@ -390,19 +466,34 @@ const eslintConfig = defineConfig([
       "better-tailwindcss/no-deprecated-classes": "error",
       // Tailwind 按完整 class 名扫描源码，拼接出来的 class 不会生成样式。
       "better-tailwindcss/no-concatenated-classes": "error",
-      // 颜色和圆角走主题 token，见 RESTRICTED_TAILWIND_CLASSES。
+      // 颜色和圆角走主题 token，见 scripts/eslint/tailwind-classes.mjs。
       "better-tailwindcss/no-restricted-classes": [
         "error",
-        { restrict: RESTRICTED_TAILWIND_CLASSES },
+        { restrict: TAILWIND_CLASS_RESTRICTIONS },
       ],
     },
   },
   {
     files: ["**/*.{jsx,tsx}"],
-    ignores: [
-      "**/*.{test,spec,story,stories,generated,gen}.{jsx,tsx}",
-      "**/{test,tests,__tests__,stories,generated,__generated__}/**",
-    ],
+    rules: {
+      // 组件写成具名 function 声明（components.md「Public API」）。
+      "react/function-component-definition": [
+        "error",
+        {
+          namedComponents: "function-declaration",
+          unnamedComponents: ["function-expression", "arrow-function"],
+        },
+      ],
+    },
+  },
+  {
+    files: [`**/{components,_components}/**/*.${extensionGlob}`],
+    // 这些目录里没有框架按默认导出加载的文件。
+    rules: { "import/no-default-export": "error" },
+  },
+  {
+    files: ["**/*.{jsx,tsx}"],
+    ignores: APPLICATION_CODE.ignores,
     rules: {
       // 函数过长时提醒检查职责，避免一个组件或 helper 承担过多逻辑。
       "max-lines-per-function": [
@@ -426,7 +517,7 @@ const eslintConfig = defineConfig([
   },
   {
     // UI catalog 把这些文件当作可复制的代码展示（.claude/rules/ui-catalog.md），所以只按包名或 @/ 引用：
-    // 相对路径的引用（含副作用导入）复制出去就解析不了。和下面 e2e/ 一样带上全局的限制。
+    // 相对路径的引用（含副作用导入、动态 import 和 import() 类型）复制出去就解析不了。和下面 e2e/ 一样带上全局的限制。
     files: [
       "features/ui-catalog/components/*-examples/playground.tsx",
       "features/ui-catalog/components/*-examples/*.example.tsx",
@@ -440,10 +531,19 @@ const eslintConfig = defineConfig([
             ...RESTRICTED_IMPORTS.patterns,
             {
               regex: "^\\.\\.?(/|$)",
-              message:
-                "A UI catalog playground or example is copied on its own: import through @/ or a package, not a relative path.",
+              message: CATALOG_RELATIVE_IMPORT_MESSAGE,
             },
           ],
+        },
+      ],
+      // no-restricted-imports 不查动态 import 和 import() 类型。
+      "no-restricted-syntax": [
+        "error",
+        ...RESTRICTED_SYNTAX,
+        {
+          selector:
+            ":matches(ImportExpression, TSImportType) > :matches(Literal[value=/^\\.\\.?(\\/|$)/], TemplateLiteral[quasis.0.value.raw=/^\\.\\.?(\\/|$)/])",
+          message: CATALOG_RELATIVE_IMPORT_MESSAGE,
         },
       ],
     },
@@ -491,7 +591,8 @@ const eslintConfig = defineConfig([
       "architecture/component-imports": "error",
       // 每个组件目录只保留一个实现入口，避免多个 index 扩展名产生解析歧义；允许声明文件并存。
       "architecture/component-entry": "error",
-      // React Query 和 UI 库只经项目封装引入：绕过封装会丢掉 QueryClient 策略，或者项目统一的样式、默认值和行为。
+      // React Query、cn 和 UI 库只经项目封装引入：绕过封装会丢掉 QueryClient 策略、按项目主题合并 class，或者项目
+      // 统一的样式、默认值和行为。
       "architecture/wrapper-imports": "error",
       // 跨 package 的依赖使用包名，避免相对路径穿透另一个包的边界。
       "import/no-relative-packages": "error",
@@ -520,12 +621,14 @@ const eslintConfig = defineConfig([
     ignores: ["lib/**", "features/*/server/**"],
     rules: { "architecture/data-access": ["error", DATABASE_ACCESS] },
   },
-  // 组件入口在所在位置的限制之外，禁止 export * 和 export * as，要求显式列出公开成员。
+  // 应用代码里组件目录的入口在所在位置的限制之外，禁止 export * 和 export * as，要求显式列出公开成员。只有根目录的
+  // components/ui/ 是组件集合，它的组件入口和那里的其他文件一样豁免 NATIVE_ELEMENTS。
   ...[
-    [`**/components/!(ui)/index.${extensionGlob}`, RESTRICTED_SYNTAX],
-    [`**/_components/*/index.${extensionGlob}`, RESTRICTED_SYNTAX],
+    [`components/!(ui)/index.${extensionGlob}`, RESTRICTED_SYNTAX],
+    [`features/*/components/*/index.${extensionGlob}`, RESTRICTED_SYNTAX],
+    [`app/**/_components/*/index.${extensionGlob}`, RESTRICTED_SYNTAX],
     [
-      `**/components/ui/*/index.${extensionGlob}`,
+      `components/ui/*/index.${extensionGlob}`,
       RESTRICTED_SYNTAX.filter(
         (restriction) => !NATIVE_ELEMENTS.includes(restriction),
       ),
@@ -538,12 +641,9 @@ const eslintConfig = defineConfig([
       "no-restricted-syntax": [
         "error",
         ...restrictions,
+        // export * as 也是 ExportAllDeclaration。
         {
           selector: "ExportAllDeclaration",
-          message: COMPONENT_INDEX_EXPORT_MESSAGE,
-        },
-        {
-          selector: "ExportNamespaceSpecifier",
           message: COMPONENT_INDEX_EXPORT_MESSAGE,
         },
       ],
