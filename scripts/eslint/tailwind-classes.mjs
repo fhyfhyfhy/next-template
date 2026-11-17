@@ -32,4 +32,12 @@ export const TAILWIND_CLASS_RESTRICTIONS = [
     message:
       'Use a built-in radius or a --radius-* token from app/globals.css instead of "$0".',
   },
+  {
+    // scale-*、translate-*、rotate-* 设的是各自的 scale、translate、rotate 属性，不是 transform，列表里写 transform 时
+    // 它们不过渡。
+    pattern:
+      "^(?:.*:)?!?transition-\\[(?:[^\\]]*,)?transform(?:,[^\\]]*)?\\]!?$",
+    message:
+      'scale-*, translate-*, and rotate-* set the scale, translate, and rotate properties, not transform: transition them with transition-transform, or name them in the list, as transition-[opacity,scale], instead of "$0".',
+  },
 ];

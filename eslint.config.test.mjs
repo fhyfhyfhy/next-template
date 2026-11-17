@@ -2060,9 +2060,26 @@ export default [
   });
 });
 
-describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", () => {
+describe("Tailwind class 按项目主题检查规范写法、颜色、圆角和过渡", () => {
   const eslint = new ESLint({ cwd: project });
   const filePath = join(project, "components/tailwind-classes.tsx");
+
+  // 每个 class 渲染在自己的一行，按行号认出 no-restricted-classes 报的是哪个：恰好是 restricted 里的那些。
+  async function expectRestricted(restricted, allowed) {
+    const classes = [...restricted, ...allowed];
+    const source = `export const panels = [\n${classes
+      .map((className) => `  <div className="${className}" />,`)
+      .join("\n")}\n];\n`;
+    const [result] = await eslint.lintText(source, { filePath });
+    expect(
+      result.messages
+        .filter(
+          ({ ruleId }) => ruleId === "better-tailwindcss/no-restricted-classes",
+        )
+        .map(({ line }) => classes[line - 2]),
+      JSON.stringify(result.messages, null, 2),
+    ).toStrictEqual(restricted);
+  }
 
   test("按项目主题和 16px 根字号改成规范写法", async () => {
     // h-control-sm 只在 app/globals.css 里定义，用来确认插件读到了项目主题。
@@ -2085,43 +2102,43 @@ describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", (
   });
 
   test("颜色只能用语义 token 和黑白，圆角只能用内置或项目 token", async () => {
-    const restricted = [
-      "bg-red-500",
-      "hover:text-zinc-400/50",
-      // Tailwind 4.2 新增的调色板，确认调色板名是从 tailwindcss 读出来的。
-      "border-t-mauve-200",
-      "bg-[#c83d21]",
-      "shadow-[0_0_0_1px_#000_inset]",
-      "shadow-[0_2px_4px_rgb(0_0_0/0.2)]",
-      "shadow-[0_0_0_1px_var(--color-zinc-200)]",
-      "hover:bg-[#c83d21]/50",
-      "rounded-[5px]",
-      "md:rounded-tl-(--my-radius)",
-    ];
-    const allowed = [
-      "bg-primary text-primary-foreground border-border",
-      "bg-white text-black/65",
-      "shadow-[0_0_0_1px_var(--color-border)]",
-      "fill-[url(#fade)]",
-      "[&_#abc]:hidden",
-      "rounded rounded-sm rounded-2xl rounded-full",
-      "rounded-control rounded-t-panel",
-      "rounded-[inherit]",
-      "text-sm border-2 ring-2 bg-transparent fill-current",
-    ];
-    const classes = [...restricted, ...allowed];
-    const source = `export const panels = [\n${classes
-      .map((className) => `  <div className="${className}" />,`)
-      .join("\n")}\n];\n`;
-    const [result] = await eslint.lintText(source, { filePath });
-    expect(
-      result.messages
-        .filter(
-          ({ ruleId }) => ruleId === "better-tailwindcss/no-restricted-classes",
-        )
-        .map(({ line }) => classes[line - 2]),
-      JSON.stringify(result.messages, null, 2),
-    ).toStrictEqual(restricted);
+    await expectRestricted(
+      [
+        "bg-red-500",
+        "hover:text-zinc-400/50",
+        // Tailwind 4.2 新增的调色板，确认调色板名是从 tailwindcss 读出来的。
+        "border-t-mauve-200",
+        "bg-[#c83d21]",
+        "shadow-[0_0_0_1px_#000_inset]",
+        "shadow-[0_2px_4px_rgb(0_0_0/0.2)]",
+        "shadow-[0_0_0_1px_var(--color-zinc-200)]",
+        "hover:bg-[#c83d21]/50",
+        "rounded-[5px]",
+        "md:rounded-tl-(--my-radius)",
+      ],
+      [
+        "bg-primary text-primary-foreground border-border",
+        "bg-white text-black/65",
+        "shadow-[0_0_0_1px_var(--color-border)]",
+        "fill-[url(#fade)]",
+        "[&_#abc]:hidden",
+        "rounded rounded-sm rounded-2xl rounded-full",
+        "rounded-control rounded-t-panel",
+        "rounded-[inherit]",
+        "text-sm border-2 ring-2 bg-transparent fill-current",
+      ],
+    );
+  });
+
+  test("过渡列表里的 transform 被拒绝", async () => {
+    await expectRestricted(
+      ["transition-[opacity,transform]", "data-open:transition-[transform]"],
+      [
+        "transition-transform",
+        "transition-[opacity,scale]",
+        "transition-[transform-origin]",
+      ],
+    );
   });
 
   test("常量、查找表、xxxClassName prop 和函数式 className 里的 class 也检查", async () => {
