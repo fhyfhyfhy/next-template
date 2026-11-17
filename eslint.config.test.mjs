@@ -399,6 +399,10 @@ addCase("组件目录显式 index.tsx 是公开入口", {
   to: "components/CASE/index.tsx",
   source: "@/components/CASE/index.tsx",
 });
+addCase("组件目录只有类型声明的 index.d.ts 时，它也是公开入口", {
+  to: "components/CASE/index.d.ts",
+  source: "@/components/CASE",
+});
 addCase("UI 组件目录隐式 index.tsx 是公开入口", {
   from: "app/CASE.ts",
   to: "components/ui/CASE/index.tsx",
@@ -1233,6 +1237,20 @@ for (const [name, from, files, messageIds] of [
       "app/placement-test/(shop)/_components/badge.test.ts":
         importing("./badge"),
       "app/placement-test/(shop)/a/page.ts": importing("../_components/badge"),
+    },
+    ["deeper"],
+  ],
+  [
+    "同一个 _components/ 里的 -test-helpers 文件也不算使用方",
+    "app/placement-test-helpers/(shop)/_components/badge.ts",
+    {
+      "app/placement-test-helpers/(shop)/_components/badge.ts":
+        "export const value = 1;",
+      "app/placement-test-helpers/(shop)/_components/badge-test-helpers.ts":
+        importing("./badge"),
+      "app/placement-test-helpers/(shop)/a/page.ts": importing(
+        "../_components/badge",
+      ),
     },
     ["deeper"],
   ],
@@ -2225,9 +2243,11 @@ describe("Tailwind class 按项目主题检查规范写法、颜色、圆角和�
         "hover:text-zinc-400/50",
         // Tailwind 4.2 新增的调色板，确认调色板名是从 tailwindcss 读出来的。
         "border-t-mauve-200",
+        "bg-red-500!",
         "bg-[#c83d21]",
         "shadow-[0_0_0_1px_#000_inset]",
         "shadow-[0_2px_4px_rgb(0_0_0/0.2)]",
+        "bg-[oklch(0.6_0.2_30)]",
         "shadow-[0_0_0_1px_var(--color-zinc-200)]",
         "hover:bg-[#c83d21]/50",
         "rounded-[5px]",
@@ -3143,6 +3163,13 @@ ${component(`(
     </>
   )`)}`,
       reported: ["env"],
+    },
+    {
+      // 这个测试文件不在磁盘上：源码不 import，import/no-cycle 不用定位它。
+      name: "components/ui/ 的测试文件不受应用代码的限制",
+      file: "components/ui/badge.test.tsx",
+      source: `export const url = process.env.DATABASE_URL;\n${component("<button />")}`,
+      reported: [],
     },
     {
       name: "components/ui/ 的组件入口可以渲染，入口限制照旧",
