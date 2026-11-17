@@ -47,10 +47,12 @@ export function TaskLogs({
   return (
     <section>
       <h2 className="mb-2 text-sm font-medium">{t("task.taskLogs.title")}</h2>
+      {/* 内容超出 max-h-48 时要滚动：Safari 不把滚动容器放进 Tab 顺序，键盘用户要靠 tabIndex 聚焦它才能滚。 */}
       <div
         role="log"
         aria-label={t("task.taskLogs.title")}
-        className="max-h-48 overflow-y-auto rounded-panel bg-secondary p-3 font-mono text-xs/5 text-secondary-foreground"
+        tabIndex={0}
+        className="max-h-48 overflow-y-auto rounded-panel bg-secondary p-3 font-mono text-xs/5 text-secondary-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {lines.length === 0 && state === "streaming" && (
           <p className="opacity-60">{t("task.taskLogs.waiting")}</p>

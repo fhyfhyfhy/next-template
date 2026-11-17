@@ -33,12 +33,7 @@ export function TaskListToolbar({ className }: { className?: string }) {
             key={status ?? "all"}
             values={{ status, page: null }}
             aria-current={selected === status ? "page" : undefined}
-            className={cn(
-              "rounded-control px-3 py-1.5 text-sm transition-colors",
-              selected === status
-                ? "bg-secondary text-secondary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-            )}
+            className="rounded-control px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-secondary aria-[current=page]:text-secondary-foreground"
           >
             {status
               ? t(`task.taskStatus.${status}`)

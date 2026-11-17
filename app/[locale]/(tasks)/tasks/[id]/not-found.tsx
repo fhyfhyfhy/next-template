@@ -13,7 +13,7 @@ export default function TaskNotFound() {
       action={
         <Link
           href={TASK_LIST_HREF}
-          className="text-sm text-primary hover:underline"
+          className="text-sm text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
         >
           {t("app.taskDetail.notFound.back")}
         </Link>

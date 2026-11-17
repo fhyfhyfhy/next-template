@@ -44,10 +44,9 @@ export function CommentList({ taskId }: { taskId: string }) {
           </div>
           {!comment.sending && (
             <Button
-              variant="ghost"
+              variant="quiet"
               size="icon-sm"
               aria-label={t("task.comments.delete")}
-              className="text-muted-foreground"
               onClick={() => deleteComment.mutate({ commentId: comment.id })}
             >
               <IconX aria-hidden />

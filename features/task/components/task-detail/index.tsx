@@ -16,6 +16,7 @@ import { DATE_TIME_FORMAT } from "../../constants/date-time";
 import { useRecentTaskIds } from "../../hooks/use-recent-task-ids";
 import { useRefreshListsWhenSettled } from "../../hooks/use-refresh-lists-when-settled";
 import type { TaskStatus } from "../../types/task-filters";
+import { QueryLoadFailed } from "../query-load-failed";
 import { TaskComments } from "../task-comments";
 import { TaskHeading } from "../task-heading";
 import { RelatedTasks } from "./related-tasks";
@@ -95,9 +96,10 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   }
   if (task.error) {
     return (
-      <p className="text-sm text-destructive">
-        {t("task.queryState.loadFailed")}
-      </p>
+      <QueryLoadFailed
+        onRetry={() => void task.refetch()}
+        retrying={task.isFetching}
+      />
     );
   }
   return (
