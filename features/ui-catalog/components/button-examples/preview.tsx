@@ -26,7 +26,14 @@ export function Preview({ source }: { source: string }) {
         <>
           <OptionControl
             {...field("variant")}
-            options={["primary", "secondary", "outline", "ghost", "danger"]}
+            options={[
+              "primary",
+              "secondary",
+              "outline",
+              "ghost",
+              "quiet",
+              "danger",
+            ]}
           />
           <OptionControl {...field("size")} options={["sm", "md", "lg"]} />
           <TextControl {...field("label")} />

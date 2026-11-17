@@ -19,7 +19,7 @@ export function Example() {
     <ProgressRoot value={null} className="w-full max-w-sm">
       <ProgressLabel>排队中</ProgressLabel>
       <ProgressTrack>
-        <ProgressIndicator className="w-1/3 animate-pulse" />
+        <ProgressIndicator />
       </ProgressTrack>
     </ProgressRoot>
   );
