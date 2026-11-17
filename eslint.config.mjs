@@ -107,7 +107,7 @@ const ENV_ACCESS = [
 // 可访问性才一致。选择器只匹配小写的原生标签和写成字符串的 role：<Form>、<form.Field> 这类组件和成员表达式不受影响。
 const nativeElement = (element, replacement, condition = "") => ({
   selector: `JSXOpeningElement[name.name='${element}']${condition}`,
-  message: `Native <${element}> renders only inside components/ui/: use ${replacement}. See .claude/rules/components.md.`,
+  message: `Native <${element}> renders only inside components/ui/: use ${replacement}. See "Wrap a UI library" in .claude/rules/design-system.md.`,
 });
 const NATIVE_ELEMENTS = [
   nativeElement("button", "Button from @/components/ui/button"),

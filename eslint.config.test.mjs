@@ -3,6 +3,7 @@ import {
   cpSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -2913,6 +2914,42 @@ ${component(`(
       expect(await restricted(file, source)).toStrictEqual(reported);
     });
   }
+
+  test("原生元素、控件 role 和 UI 库的消息指向 design-system.md 的「Wrap a UI library」", async () => {
+    const pointer =
+      'See "Wrap a UI library" in .claude/rules/design-system.md.';
+    expect(
+      readFileSync(join(project, ".claude/rules/design-system.md"), "utf8"),
+    ).toMatch(/^## Wrap a UI library$/m);
+    const [result] = await restrictedSyntaxLinter.lintText(
+      `import { Button } from "@base-ui/react/button";
+
+${component(`(
+    <>
+      <Button />
+      <button type="button" />
+      <div role="switch" />
+    </>
+  )`)}`,
+      {
+        filePath: join(
+          project,
+          "features/ui-catalog/components/example-list/example-card.tsx",
+        ),
+      },
+    );
+    const messages = result.messages
+      .filter(({ ruleId }) =>
+        ["no-restricted-syntax", "architecture/wrapper-imports"].includes(
+          ruleId,
+        ),
+      )
+      .map(({ message }) => message);
+    expect(messages, JSON.stringify(result.messages, null, 2)).toHaveLength(3);
+    for (const message of messages) {
+      expect(message.endsWith(pointer), message).toBe(true);
+    }
+  });
 });
 
 describe("给不是控件的元素加点击处理被拒绝", () => {
