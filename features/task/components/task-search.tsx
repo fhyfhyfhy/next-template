@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useQueryStates } from "nuqs";
 import { useState } from "react";
 
+import { FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { cn } from "@/lib/cn";
@@ -44,16 +45,15 @@ export function TaskSearch() {
 
   return (
     <div className="max-w-2xl">
-      <div className="relative">
+      <FieldRoot className="relative">
         <IconSearch
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
           aria-hidden
         />
-        <label htmlFor="task-search" className="sr-only">
+        <FieldLabel className="sr-only">
           {t("task.taskSearch.label")}
-        </label>
+        </FieldLabel>
         <Input
-          id="task-search"
           type="search"
           value={q}
           disabled={!hydrated}
@@ -65,7 +65,7 @@ export function TaskSearch() {
             void setSearchParams({ q: value });
           }}
         />
-      </div>
+      </FieldRoot>
       <div
         className="mt-4 min-h-6 text-sm text-muted-foreground"
         aria-live="polite"

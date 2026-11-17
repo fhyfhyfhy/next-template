@@ -20,7 +20,7 @@ export function TaskListSkeleton() {
       </div>
       <div className="mt-4 flex items-center justify-between">
         <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-8.5 w-20" />
+        <Skeleton className="h-control-sm w-20" />
       </div>
     </div>
   );

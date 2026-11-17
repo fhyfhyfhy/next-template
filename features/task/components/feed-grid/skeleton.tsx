@@ -15,7 +15,7 @@ export function FeedSkeleton() {
             <Skeleton className="aspect-4/3 w-full rounded-none" />
             <div className="flex items-center gap-2 p-3">
               <Skeleton className="h-4 w-32" />
-              <Skeleton className="ml-auto size-7" />
+              <Skeleton className="ml-auto size-control-sm" />
             </div>
           </div>
         ))}

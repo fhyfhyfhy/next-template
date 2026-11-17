@@ -24,11 +24,11 @@ export function FavoriteToggle({ task }: { task: Task }) {
   const updateFavorite = useMutation(updateTaskFavoriteMutationOptions(t));
   return (
     <Button
-      variant="ghost"
+      variant="quiet"
       size="icon-sm"
-      aria-label={t("task.taskList.favorite")}
+      aria-label={t("task.taskList.favorite", { name: task.name })}
       aria-pressed={optimisticFavorite}
-      className="text-muted-foreground not-data-disabled:hover:text-primary aria-pressed:text-primary"
+      className="not-data-disabled:hover:text-primary aria-pressed:text-primary"
       onClick={() => {
         const next = !optimisticFavorite;
         startTransition(async () => {
