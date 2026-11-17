@@ -45,11 +45,11 @@ export function OptionControl<Value extends string>({
           </SelectIcon>
         </SelectTrigger>
         <SelectPortal>
-          <SelectPositioner sideOffset={5} alignItemWithTrigger={false}>
+          <SelectPositioner>
             <SelectPopup>
               {options.map((option) => (
                 <SelectItem key={option} value={option}>
-                  <SelectItemText className="flex-1">{option}</SelectItemText>
+                  <SelectItemText>{option}</SelectItemText>
                   <SelectItemIndicator>
                     <IconCheck className="size-3.5" aria-hidden />
                   </SelectItemIndicator>

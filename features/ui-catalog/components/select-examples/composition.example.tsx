@@ -42,17 +42,11 @@ export function Example() {
           </SelectIcon>
         </SelectTrigger>
         <SelectPortal>
-          <SelectPositioner
-            side="top"
-            sideOffset={8}
-            alignItemWithTrigger={false}
-          >
+          <SelectPositioner side="top" sideOffset={8}>
             <SelectPopup className="border-primary">
               {items.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
-                  <SelectItemText className="flex-1">
-                    {item.label}
-                  </SelectItemText>
+                  <SelectItemText>{item.label}</SelectItemText>
                   <SelectItemIndicator>
                     <IconCheck className="size-4" aria-hidden />
                   </SelectItemIndicator>

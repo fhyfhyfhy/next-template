@@ -128,9 +128,7 @@ export function SelectPlayground({
                       state.disableLastOption && item.value === "product"
                     }
                   >
-                    <SelectItemText className="flex-1">
-                      {item.label}
-                    </SelectItemText>
+                    <SelectItemText>{item.label}</SelectItemText>
                     <SelectItemIndicator>
                       <IconCheck className="size-4" aria-hidden />
                     </SelectItemIndicator>
