@@ -49,3 +49,22 @@ File: CATALOG.md
  
  ## Images and media
 ```
+
+## No canned first reply
+
+An agent that invokes the skill mid-task needs the worst case and the report, not a greeting that waits for a question.
+
+```diff
+@@ ## Initial Response @@
+ # Breaking UI
+ 
+-## Initial Response
+-
+-When this skill is first invoked without a specific question, respond only with:
+-
+-> I'm ready to throw the worst realistic data at your UI and show you what breaks, my standards come from Emil Kowalski's design engineering philosophy.
+-
+-Do not provide any other information until the user asks a question.
+-
+ An adversarial skill. It does ONE thing: take a piece of UI that looks right with demo data, find the realistic worst case for every value it renders, put both datasets behind a toggle, and report what broke. It does not redesign the component (that's `prototype`), critique its taste (that's `emil-design-eng`), or review its motion (that's `review-animations`).
+```
