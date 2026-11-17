@@ -484,10 +484,7 @@ const eslintConfig = defineConfig([
   },
   {
     files: ["**/*.{jsx,tsx}"],
-    ignores: [
-      "**/*.{test,spec,story,stories,generated,gen}.{jsx,tsx}",
-      "**/{test,tests,__tests__,stories,generated,__generated__}/**",
-    ],
+    ignores: APPLICATION_CODE.ignores,
     rules: {
       // 函数过长时提醒检查职责，避免一个组件或 helper 承担过多逻辑。
       "max-lines-per-function": [

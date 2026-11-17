@@ -2782,6 +2782,34 @@ export function useProbe(value: number) {
   });
 });
 
+describe("文件和函数过长时提醒检查职责", () => {
+  const source = `export function Probe() {
+  return (
+    <>
+${"      <p />\n".repeat(210)}    </>
+  );
+}
+`;
+  test.each([
+    "features/ui-catalog/components/example-list/index.tsx",
+    // 和 stories、generated 这类目录同名的路由段照样检查。
+    "app/[locale]/stories/page.tsx",
+  ])("%s 报 max-lines 和 max-lines-per-function 的 warning", async (file) => {
+    const [result] = await restrictedSyntaxLinter.lintText(source, {
+      filePath: join(project, file),
+    });
+    expect(
+      result.messages
+        .filter(({ ruleId }) => ruleId?.startsWith("max-lines"))
+        .map(({ ruleId, severity }) => ({ ruleId, severity })),
+      JSON.stringify(result.messages, null, 2),
+    ).toStrictEqual([
+      { ruleId: "max-lines-per-function", severity: 1 },
+      { ruleId: "max-lines", severity: 1 },
+    ]);
+  });
+});
+
 describe("组件写成具名的 function 声明", () => {
   async function declarationRules(file, source) {
     const [result] = await restrictedSyntaxLinter.lintText(source, {
