@@ -33,7 +33,7 @@ export function ExampleCard({
         </div>
         <Button
           variant="ghost"
-          size="sm"
+          size="icon-sm"
           aria-label={t(
             showCode
               ? "ui-catalog.examples.hideCode"

@@ -1,7 +1,6 @@
 "use client";
 
-import { useId } from "react";
-
+import { FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
 export const metadata = {
@@ -10,15 +9,12 @@ export const metadata = {
   order: 10,
 };
 
-/** label 与输入框显式关联。 */
+/** FieldRoot 把 label 和输入框关联起来，两边都不用写 id。 */
 export function Example() {
-  const id = useId();
   return (
-    <div className="w-full max-w-xs space-y-2">
-      <label htmlFor={id} className="text-sm font-medium">
-        邮箱
-      </label>
-      <Input id={id} type="email" placeholder="you@example.com" />
-    </div>
+    <FieldRoot className="w-full max-w-xs">
+      <FieldLabel>邮箱</FieldLabel>
+      <Input type="email" placeholder="you@example.com" />
+    </FieldRoot>
   );
 }

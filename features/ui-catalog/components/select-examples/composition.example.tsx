@@ -1,13 +1,14 @@
 "use client";
 
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { useId, useState } from "react";
+import { useState } from "react";
 
 import {
   SelectIcon,
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
+  SelectLabel,
   SelectPopup,
   SelectPortal,
   SelectPositioner,
@@ -25,7 +26,6 @@ export const metadata = {
 /** 多选值由调用方维护，定位参数直接传给 Positioner。 */
 export function Example() {
   const [value, setValue] = useState(["design"]);
-  const id = useId();
   const items = [
     { value: "design", label: "设计" },
     { value: "code", label: "代码" },
@@ -33,28 +33,20 @@ export function Example() {
   ];
   return (
     <div className="w-full max-w-xs space-y-2">
-      <span id={id} className="text-sm font-medium">
-        兴趣领域
-      </span>
       <SelectRoot multiple items={items} value={value} onValueChange={setValue}>
-        <SelectTrigger aria-labelledby={id}>
+        <SelectLabel>兴趣领域</SelectLabel>
+        <SelectTrigger>
           <SelectValue placeholder="可选择多个领域" />
           <SelectIcon>
             <IconChevronDown className="size-4" aria-hidden />
           </SelectIcon>
         </SelectTrigger>
         <SelectPortal>
-          <SelectPositioner
-            side="top"
-            sideOffset={8}
-            alignItemWithTrigger={false}
-          >
+          <SelectPositioner side="top" sideOffset={8}>
             <SelectPopup className="border-primary">
               {items.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
-                  <SelectItemText className="flex-1">
-                    {item.label}
-                  </SelectItemText>
+                  <SelectItemText>{item.label}</SelectItemText>
                   <SelectItemIndicator>
                     <IconCheck className="size-4" aria-hidden />
                   </SelectItemIndicator>

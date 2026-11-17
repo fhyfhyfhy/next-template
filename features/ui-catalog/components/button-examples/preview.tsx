@@ -2,8 +2,10 @@
 
 import { usePlaygroundConfig } from "../../hooks/use-playground-config";
 import type { ComponentMetadata } from "../../types/examples";
-import { OptionControl, TextControl, ToggleControl } from "../controls";
+import { OptionControl } from "../option-control";
 import { Playground } from "../playground";
+import { TextControl } from "../text-control";
+import { ToggleControl } from "../toggle-control";
 import { ButtonPlayground, initialConfig } from "./playground";
 
 export const metadata = {
@@ -24,7 +26,14 @@ export function Preview({ source }: { source: string }) {
         <>
           <OptionControl
             {...field("variant")}
-            options={["primary", "secondary", "outline", "ghost", "danger"]}
+            options={[
+              "primary",
+              "secondary",
+              "outline",
+              "ghost",
+              "quiet",
+              "danger",
+            ]}
           />
           <OptionControl {...field("size")} options={["sm", "md", "lg"]} />
           <TextControl {...field("label")} />

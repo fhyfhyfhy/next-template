@@ -18,11 +18,11 @@ export function Example() {
   return (
     <div className="flex items-center gap-2">
       <Button
-        variant="ghost"
+        variant="quiet"
         size="icon-sm"
         aria-label="收藏"
         aria-pressed={starred}
-        className="text-muted-foreground not-data-disabled:hover:text-primary aria-pressed:text-primary"
+        className="not-data-disabled:hover:text-primary aria-pressed:text-primary"
         onClick={() => setStarred(!starred)}
       >
         {starred ? <IconStarFilled aria-hidden /> : <IconStar aria-hidden />}

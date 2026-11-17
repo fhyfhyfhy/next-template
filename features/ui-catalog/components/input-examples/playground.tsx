@@ -1,8 +1,10 @@
 "use client";
 
-import { type SetStateAction, useId, useState } from "react";
+import { type SetStateAction, useState } from "react";
 
+import { FieldDescription, FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Input, type InputProps } from "@/components/ui/input";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 export interface InputConfig {
   size: NonNullable<InputProps["size"]>;
@@ -32,49 +34,43 @@ export const initialConfig: InputConfig = (/* @example-config */ {
   "invalid": false
 } /* @end-example-config */);
 
-/** 不传参数时使用本地状态；UI catalog 页面传入同一份配置供面板与预览共享。 */
+/** 不传 config 和 onConfigChange 时使用本地状态；UI catalog 页面两个一起传，面板与预览共享同一份配置。 */
 export function InputPlayground({
   config,
   onConfigChange,
-}: {
-  config?: InputConfig;
-  onConfigChange?: (config: SetStateAction<InputConfig>) => void;
-} = {}) {
+}:
+  | {
+      config: InputConfig;
+      onConfigChange: (config: SetStateAction<InputConfig>) => void;
+    }
+  | { config?: undefined; onConfigChange?: undefined } = {}) {
   const [local, setLocal] = useState(initialConfig);
   const state = config ?? local;
   const change = onConfigChange ?? setLocal;
-  const id = useId();
+  // 受控输入框在 hydration 之前输入的字会被 hydration 盖掉，所以先不可用。
+  const hydrated = useHydrated();
   return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="text-sm font-medium">
+    <FieldRoot invalid={state.invalid} disabled={state.disabled || !hydrated}>
+      <FieldLabel>
         {state.label}
-        {state.required && <span className="ml-1 text-destructive">*</span>}
-      </label>
+        {state.required && (
+          <span aria-hidden className="ml-1 text-destructive">
+            *
+          </span>
+        )}
+      </FieldLabel>
       <Input
-        id={id}
         size={state.size}
         type={state.type}
         value={state.value}
         placeholder={state.placeholder}
-        disabled={state.disabled}
         readOnly={state.readOnly}
         required={state.required}
-        aria-invalid={state.invalid}
-        aria-describedby={`${id}-description`}
         onValueChange={(value) =>
           change((previous) => ({ ...previous, value }))
         }
       />
-      <p
-        id={`${id}-description`}
-        className={
-          state.invalid
-            ? "text-xs text-destructive"
-            : "text-xs text-muted-foreground"
-        }
-      >
-        {state.description}
-      </p>
-    </div>
+      <FieldDescription>{state.description}</FieldDescription>
+    </FieldRoot>
   );
 }
