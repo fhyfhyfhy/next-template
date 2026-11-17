@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, Request } from "@playwright/test";
 
 import { holdTable, unique } from "./backend";
 import {
@@ -219,7 +219,7 @@ test.describe("任务推进", () => {
 });
 
 test.describe("请求失败", () => {
-  test("相关任务首次加载失败时就地显示加载失败，不弹全局提示，重试后显示列表", async ({
+  test("相关任务首次加载失败时就地显示加载失败，不弹全局提示；重试期间提示不卸载、焦点留在按钮上，重试后显示列表", async ({
     page,
     tasks,
   }) => {
@@ -228,12 +228,12 @@ test.describe("请求失败", () => {
     // 进行中的任务才会轮询详情，拿到别处改过的 prompt。
     const task = await tasks.createTask({ status: "running", progress: 50 });
     await openTask(page, task.id);
+    const isRelatedRequest = (request: Request) =>
+      new URL(request.url()).searchParams.get("prompt") === prompt;
     // 拿到新 prompt 后，相关任务换成按它查询：这个 query 还没有数据，它的第一次请求失败就是首次加载失败。4xx 不重试。
-    const restore = await failRequests(
-      page,
-      (request) => new URL(request.url()).searchParams.get("prompt") === prompt,
-      { status: 400 },
-    );
+    const restore = await failRequests(page, isRelatedRequest, {
+      status: 400,
+    });
     await tasks.changePrompt(task.id, prompt);
 
     const failed = page.getByRole("alert").filter({ hasText: "加载失败" });
@@ -242,12 +242,17 @@ test.describe("请求失败", () => {
 
     await restore();
     // 可访问名称写明重试的是什么，和失败任务的 TaskActions 里的「重试」分得清。
-    await failed
-      .getByRole("button", {
-        name: "重试加载同 prompt 的其他任务",
-        exact: true,
-      })
-      .click();
+    const retry = failed.getByRole("button", {
+      name: "重试加载同 prompt 的其他任务",
+      exact: true,
+    });
+    // 重试的请求停在浏览器里：这期间提示不卸载，按钮停用，键盘焦点留在它上面。
+    const release = await holdRequests(page, isRelatedRequest);
+    await retry.press("Enter");
+    await expect(retry).toBeDisabled();
+    await expect(retry).toBeFocused();
+
+    release();
     await expect(
       page.getByRole("list", { name: "同 prompt 的其他任务" }),
     ).toContainText(other.name);

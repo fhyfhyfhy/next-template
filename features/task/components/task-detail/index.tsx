@@ -16,7 +16,7 @@ import { DATE_TIME_FORMAT } from "../../constants/date-time";
 import { useRecentTaskIds } from "../../hooks/use-recent-task-ids";
 import { useRefreshListsWhenSettled } from "../../hooks/use-refresh-lists-when-settled";
 import type { TaskStatus } from "../../types/task-filters";
-import { QueryLoadFailed } from "../query-load-failed";
+import { isQueryLoadFailed, QueryLoadFailed } from "../query-load-failed";
 import { TaskComments } from "../task-comments";
 import { TaskHeading } from "../task-heading";
 import { RelatedTasks } from "./related-tasks";
@@ -94,13 +94,9 @@ export function TaskDetail({ taskId }: { taskId: string }) {
       </div>
     );
   }
-  if (task.error) {
+  if (isQueryLoadFailed(task)) {
     return (
-      <QueryLoadFailed
-        subject={t("task.taskDetail.label")}
-        onRetry={() => void task.refetch()}
-        retrying={task.isFetching}
-      />
+      <QueryLoadFailed query={task} subject={t("task.taskDetail.label")} />
     );
   }
   return (
