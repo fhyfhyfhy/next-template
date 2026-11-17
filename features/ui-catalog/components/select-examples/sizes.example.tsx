@@ -1,13 +1,13 @@
 "use client";
 
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { useId } from "react";
 
 import {
   SelectIcon,
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
+  SelectLabel,
   SelectList,
   SelectPopup,
   SelectPortal,
@@ -26,7 +26,6 @@ export const metadata = {
 
 /** 每个 Root 管理自己的选择值，尺寸同时作用于触发器和 Portal 内的选项。 */
 export function Example() {
-  const id = useId();
   const sizes: readonly SelectSize[] = ["sm", "md", "lg"];
   const items = [
     { value: "zh", label: "简体中文" },
@@ -37,11 +36,9 @@ export function Example() {
     <div className="grid w-full gap-5 sm:grid-cols-3">
       {sizes.map((size) => (
         <div key={size} className="space-y-2">
-          <span id={`${id}-${size}`} className="text-sm font-medium">
-            {size}
-          </span>
           <SelectRoot size={size} items={items} defaultValue="zh">
-            <SelectTrigger aria-labelledby={`${id}-${size}`}>
+            <SelectLabel>{size}</SelectLabel>
+            <SelectTrigger>
               <SelectValue />
               <SelectIcon>
                 <IconChevronDown className="size-4" aria-hidden />

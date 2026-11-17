@@ -1,13 +1,13 @@
 "use client";
 
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { useId } from "react";
 
 import {
   SelectIcon,
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
+  SelectLabel,
   SelectPopup,
   SelectPortal,
   SelectPositioner,
@@ -22,9 +22,8 @@ export const metadata = {
   order: 10,
 };
 
-/** items 为 Value 提供显示文案。 */
+/** items 为 Value 提供显示文案；Label 放在 Root 里，给 trigger 命名，点击它聚焦 trigger。 */
 export function Example() {
-  const id = useId();
   const items = [
     { value: "zh", label: "简体中文" },
     { value: "en", label: "English" },
@@ -32,11 +31,9 @@ export function Example() {
   ];
   return (
     <div className="w-full max-w-xs space-y-2">
-      <span id={id} className="text-sm font-medium">
-        语言
-      </span>
       <SelectRoot items={items} defaultValue="zh">
-        <SelectTrigger aria-labelledby={id}>
+        <SelectLabel>语言</SelectLabel>
+        <SelectTrigger>
           <SelectValue />
           <SelectIcon>
             <IconChevronDown className="size-4" aria-hidden />

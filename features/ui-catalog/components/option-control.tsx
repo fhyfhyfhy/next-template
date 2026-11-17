@@ -1,11 +1,11 @@
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { useId } from "react";
 
 import {
   SelectIcon,
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
+  SelectLabel,
   SelectPopup,
   SelectPortal,
   SelectPositioner,
@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/cn";
 
 import { CONTROL_LABEL_CLASS } from "../constants/control-label";
 
@@ -29,12 +28,8 @@ export function OptionControl<Value extends string>({
   options: readonly Value[];
   onChange: (value: Value) => void;
 }) {
-  const id = useId();
   return (
     <div className="space-y-2">
-      <span id={id} className={cn("block", CONTROL_LABEL_CLASS)}>
-        {label}
-      </span>
       <SelectRoot
         size="sm"
         value={value}
@@ -42,7 +37,8 @@ export function OptionControl<Value extends string>({
           if (next !== null) onChange(next);
         }}
       >
-        <SelectTrigger aria-labelledby={id}>
+        <SelectLabel className={CONTROL_LABEL_CLASS}>{label}</SelectLabel>
+        <SelectTrigger>
           <SelectValue />
           <SelectIcon>
             <IconChevronDown className="size-3.5" aria-hidden />

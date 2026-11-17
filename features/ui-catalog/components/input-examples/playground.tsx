@@ -1,7 +1,8 @@
 "use client";
 
-import { type SetStateAction, useId, useState } from "react";
+import { type SetStateAction, useState } from "react";
 
+import { FieldDescription, FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Input, type InputProps } from "@/components/ui/input";
 
 export interface InputConfig {
@@ -43,38 +44,24 @@ export function InputPlayground({
   const [local, setLocal] = useState(initialConfig);
   const state = config ?? local;
   const change = onConfigChange ?? setLocal;
-  const id = useId();
   return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="text-sm font-medium">
+    <FieldRoot invalid={state.invalid} disabled={state.disabled}>
+      <FieldLabel>
         {state.label}
         {state.required && <span className="ml-1 text-destructive">*</span>}
-      </label>
+      </FieldLabel>
       <Input
-        id={id}
         size={state.size}
         type={state.type}
         value={state.value}
         placeholder={state.placeholder}
-        disabled={state.disabled}
         readOnly={state.readOnly}
         required={state.required}
-        aria-invalid={state.invalid}
-        aria-describedby={`${id}-description`}
         onValueChange={(value) =>
           change((previous) => ({ ...previous, value }))
         }
       />
-      <p
-        id={`${id}-description`}
-        className={
-          state.invalid
-            ? "text-xs text-destructive"
-            : "text-xs text-muted-foreground"
-        }
-      >
-        {state.description}
-      </p>
-    </div>
+      <FieldDescription>{state.description}</FieldDescription>
+    </FieldRoot>
   );
 }

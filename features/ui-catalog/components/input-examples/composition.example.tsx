@@ -1,7 +1,13 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 
+import {
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  FieldRoot,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
 export const metadata = {
@@ -10,32 +16,20 @@ export const metadata = {
   order: 20,
 };
 
-/** 调用方持有值与校验结果。 */
+/** 调用方持有值与校验结果；Field 把输入框标为无效，并把说明和错误关联到它。 */
 export function Example() {
   const [value, setValue] = useState("");
-  const id = useId();
   const invalid = value.length > 0 && value.length < 3;
   return (
-    <div className="w-full max-w-xs space-y-2">
-      <label htmlFor={id} className="text-sm font-medium">
-        用户名
-      </label>
+    <FieldRoot invalid={invalid} className="w-full max-w-xs">
+      <FieldLabel>用户名</FieldLabel>
       <Input
-        id={id}
         value={value}
         onValueChange={setValue}
-        aria-invalid={invalid}
-        aria-describedby={`${id}-hint`}
         placeholder="输入至少 3 个字符"
       />
-      <p
-        id={`${id}-hint`}
-        className={
-          invalid ? "text-xs text-destructive" : "text-xs text-muted-foreground"
-        }
-      >
-        {invalid ? "用户名至少需要 3 个字符。" : "用于显示在个人主页。"}
-      </p>
-    </div>
+      <FieldDescription>用于显示在个人主页。</FieldDescription>
+      <FieldError match={invalid}>用户名至少需要 3 个字符。</FieldError>
+    </FieldRoot>
   );
 }
