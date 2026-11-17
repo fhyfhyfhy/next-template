@@ -15,7 +15,11 @@ import {
 } from "@/lib/react-query";
 import { SchemaValidationError, shouldRetryRequest } from "@/lib/request/fetch";
 
-function handleRequestError(
+/**
+ * 请求失败时的全局处理（`QueryClient` 的 `onRequestError`）：每个请求一个 toast，文案用调用方的 `errorMessage`，
+ * 没有时用通用文案；调用方关掉提示时、以及服务端渲染时不弹。导出给单元测试。
+ */
+export function handleRequestError(
   error: unknown,
   { suppressErrorToast, errorMessage }: HandleRequestErrorOptions,
   { id }: FailedRequest,
