@@ -1492,6 +1492,51 @@ export const values = [local, helper, join, upstream, useState, scoped, styles];
   }
 });
 
+describe("UI catalog 的生成索引按生成器的顺序 import", () => {
+  // import/no-cycle 关掉：order-probe.ts 不在磁盘上。
+  const eslint = new ESLint({
+    cwd: project,
+    overrideConfig: { rules: { "import/no-cycle": "off" } },
+  });
+  // 生成器按码点排序，basic-disabled 排在 basic 前面。
+  const source = `// 此文件由 scripts/ui-catalog/index-generator.mjs 自动生成，请勿手动修改。
+
+"use client";
+
+import type { ExampleDefinition } from "../../types/examples";
+import {
+  Example as Example0,
+  metadata as metadata0,
+} from "./basic-disabled.example";
+import { Example as Example1, metadata as metadata1 } from "./basic.example";
+
+export const examples = [
+  { ...metadata0, id: "basic-disabled", component: Example0 },
+  { ...metadata1, id: "basic", component: Example1 },
+] satisfies readonly ExampleDefinition[];
+`;
+  const sortReports = async (file) => {
+    const [result] = await eslint.lintText(source, {
+      filePath: join(
+        project,
+        "features/ui-catalog/components/button-examples",
+        file,
+      ),
+    });
+    return result.messages.filter(
+      ({ ruleId }) => ruleId === "simple-import-sort/imports",
+    );
+  };
+
+  test("生成索引不检查 import 顺序", async () => {
+    expect(await sortReports("examples.generated.ts")).toStrictEqual([]);
+  });
+
+  test("同目录的其他文件照样检查", async () => {
+    expect(await sortReports("order-probe.ts")).toHaveLength(1);
+  });
+});
+
 describe("数据访问规则覆盖 React Query 封装、mutation 回调和请求库", () => {
   // import/no-cycle 遍历依赖图时要求被检查的文件真实存在，lintText 的虚拟文件会让它崩溃。
   const eslint = new ESLint({

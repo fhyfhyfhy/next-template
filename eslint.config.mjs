@@ -352,6 +352,12 @@ const eslintConfig = defineConfig([
   //   可点击元素。
   // - 组件目录的入口和引用（architecture/component-*）、UI 库只经封装引入（architecture/wrapper-imports）在「架构」一段。
   {
+    // 生成器按码点排序 import，插件按 Intl.Collator：示例 ID 或图标名互为前缀时两边不一致，lint-staged 的 --fix 改完，
+    // 下次生成又改回去，所以顺序以生成器为准。
+    files: ["features/ui-catalog/**/*.generated.ts"],
+    rules: { "simple-import-sort/imports": "off" },
+  },
+  {
     // 封装 Base UI 的地方，可以渲染 NATIVE_ELEMENTS 里的原生元素。
     files: ["components/ui/**"],
     ignores: APPLICATION_CODE.ignores,
