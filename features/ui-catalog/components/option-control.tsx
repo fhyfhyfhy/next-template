@@ -13,6 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/cn";
+
+import { CONTROL_LABEL_CLASS } from "../constants/control-label";
 
 /** 只允许从给定选项中选择，保留调用方的字符串联合类型。 */
 export function OptionControl<Value extends string>({
@@ -29,7 +32,7 @@ export function OptionControl<Value extends string>({
   const id = useId();
   return (
     <div className="space-y-2">
-      <span id={id} className="block font-mono text-xs text-muted-foreground">
+      <span id={id} className={cn("block", CONTROL_LABEL_CLASS)}>
         {label}
       </span>
       <SelectRoot

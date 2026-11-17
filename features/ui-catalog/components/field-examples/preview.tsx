@@ -2,8 +2,9 @@
 
 import { usePlaygroundConfig } from "../../hooks/use-playground-config";
 import type { ComponentMetadata } from "../../types/examples";
-import { TextControl, ToggleControl } from "../controls";
 import { Playground } from "../playground";
+import { TextControl } from "../text-control";
+import { ToggleControl } from "../toggle-control";
 import { FieldPlayground, initialConfig } from "./playground";
 
 export const metadata = {
