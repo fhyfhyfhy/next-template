@@ -2627,7 +2627,7 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
   for (const { name, file, source, reported } of [
     {
       name: "每种有对应组件的原生元素都被拒绝",
-      file: "features/ui-catalog/components/example-card.tsx",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
       source: component(`(
     <>
       <button />
@@ -2646,13 +2646,13 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
     },
     {
       name: "render prop 里的原生元素也被拒绝",
-      file: "features/ui-catalog/components/example-card.tsx",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
       source: `declare function Trigger(props: { render: unknown }): null;\n${component("<Trigger render={<button />} />")}`,
       reported: ["native-element"],
     },
     {
       name: "文件选择和隐藏字段的 input 保持原生",
-      file: "features/ui-catalog/components/example-card.tsx",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
       source: component(`(
     <>
       <input type="file" />
@@ -2663,7 +2663,7 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
     },
     {
       name: "同名组件和成员表达式不受影响",
-      file: "features/ui-catalog/components/example-card.tsx",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
       source: `declare function Form(): null;
 declare const form: { Field: () => null };
 ${component(`(
