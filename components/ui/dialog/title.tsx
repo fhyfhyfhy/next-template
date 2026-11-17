@@ -12,7 +12,10 @@ export function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-xl font-semibold tracking-tight", className)}
+      className={cn(
+        "text-xl font-semibold tracking-tight wrap-anywhere",
+        className,
+      )}
       {...props}
     />
   );
