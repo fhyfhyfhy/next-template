@@ -176,6 +176,9 @@ const INTL_PROVIDER_RESTRICTION = {
 // 日期和时间按电脑所在时区显示，只有浏览器知道这个时区，所以只由 components/date-time.tsx 格式化。
 const DATE_TIME_MESSAGE =
   "Show a date or time with <DateTime> from @/components/date-time, which renders it in the browser in the computer's time zone. See .claude/rules/i18n.md.";
+// toLocaleString 看不出调用的是 Date 还是数字，所以消息两种都说。
+const LOCALE_STRING_MESSAGE =
+  "Show a date or time with <DateTime> from @/components/date-time, and a number with next-intl's useFormatter() or getFormatter(): toLocaleString formats in the runtime's locale and time zone, which differ between the server and the browser. See .claude/rules/i18n.md.";
 const DATE_TIME_FORMATTING = [
   {
     selector: "CallExpression[callee.property.name=/^dateTime(Range)?$/]",
@@ -185,6 +188,15 @@ const DATE_TIME_FORMATTING = [
     selector:
       "MemberExpression[object.name='Intl'][property.name='DateTimeFormat']",
     message: DATE_TIME_MESSAGE,
+  },
+  {
+    selector:
+      "CallExpression[callee.property.name=/^to(Locale)?(Date|Time)String$/]",
+    message: DATE_TIME_MESSAGE,
+  },
+  {
+    selector: "CallExpression[callee.property.name='toLocaleString']",
+    message: LOCALE_STRING_MESSAGE,
   },
 ];
 // 翻译函数不按 namespace 取，key 写完整路径：整个 app 只有一种 t，可以传给任何 owner 的 options 工厂和

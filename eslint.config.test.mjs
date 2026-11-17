@@ -2343,6 +2343,20 @@ export default async function Probe() {
       reported: ["date-time"],
     },
     {
+      name: "Date 和数字的 toLocale*String、toDateString、toTimeString 被报告",
+      file: "features/ui-catalog/components/example-list/index.tsx",
+      source: `export const probe = (at: Date, n: number) => [
+  at.toLocaleDateString(),
+  at.toLocaleTimeString(),
+  at.toLocaleString(),
+  at.toDateString(),
+  at.toTimeString(),
+  n.toLocaleString(),
+];
+`,
+      reported: Array(6).fill("date-time"),
+    },
+    {
       name: "relative times and numbers still format anywhere",
       file: "features/ui-catalog/components/example-list/index.tsx",
       source: `"use client";
