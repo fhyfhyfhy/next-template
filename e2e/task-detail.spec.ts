@@ -172,7 +172,10 @@ test.describe("任务推进", () => {
     });
   });
 
-  test("生成日志用 SSE 推送，到终态后结束", async ({ page, tasks }) => {
+  test("生成日志用 SSE 推送，到终态后结束，聚焦的日志区不重新挂载", async ({
+    page,
+    tasks,
+  }) => {
     const task = await tasks.createTask();
     await openTask(page, task.id);
     const logs = page.getByRole("log", { name: "生成日志" });
@@ -201,6 +204,10 @@ test.describe("任务推进", () => {
     });
     await expect(logs).toContainText("生成完成");
     await expect(page.getByText("日志已结束")).toBeVisible();
+    // 任务到终态时日志重新订阅、读一遍完整日志，日志区还是同一个元素：Tab 进来的键盘焦点留在上面，不掉到 body。
+    await expect(page.getByTestId("task-status")).toHaveText("已完成");
+    await expect(logs).toContainText("开始生成");
+    await expect(logs).toBeFocused();
   });
 
   test("任务在别处被删除后显示已删除，不弹通用提示", async ({

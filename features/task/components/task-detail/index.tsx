@@ -34,7 +34,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   const { record } = useRecentTaskIds();
   useRefreshListsWhenSettled(task.data?.status);
   useEffect(() => record(taskId), [record, taskId]);
-  // 重试先乐观地显示 pending；服务端清空上一轮日志前就重新订阅，会读到旧日志和 end，所以等重试确认后再换日志的 key。
+  // 重试先乐观地显示 pending；服务端清空上一轮日志前就重新订阅，会读到旧日志和 end，所以等重试确认后日志才算进行中。
   const retrying =
     useIsMutating({ mutationKey: retryTaskMutationKey(taskId) }) > 0;
   const queryClient = useQueryClient();
@@ -81,8 +81,8 @@ export function TaskDetail({ taskId }: { taskId: string }) {
           </dl>
           {!deleted && <TaskActions task={data} />}
           <TaskLogs
-            key={isTaskActive(data.status) && !retrying ? "active" : "settled"}
             taskId={taskId}
+            active={isTaskActive(data.status) && !retrying}
             onEnd={refreshIfSettledElsewhere}
           />
           {!deleted && <TaskComments taskId={taskId} />}
