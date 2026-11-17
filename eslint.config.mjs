@@ -623,12 +623,9 @@ const eslintConfig = defineConfig([
       "no-restricted-syntax": [
         "error",
         ...restrictions,
+        // export * as 也是 ExportAllDeclaration。
         {
           selector: "ExportAllDeclaration",
-          message: COMPONENT_INDEX_EXPORT_MESSAGE,
-        },
-        {
-          selector: "ExportNamespaceSpecifier",
           message: COMPONENT_INDEX_EXPORT_MESSAGE,
         },
       ],
