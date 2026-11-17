@@ -13,7 +13,8 @@
   "queryState": {
     "loading": "Loading…",
     "loadFailed": "Couldn't load",
-    "retry": "Retry"
+    "retry": "Retry",
+    "retryLabel": "Retry loading {subject}"
   },
   "validation": {
     "nameRequired": "Enter a name",
@@ -90,6 +91,7 @@
     "favorite": "Favorite “{name}”"
   },
   "taskDetail": {
+    "label": "Task details",
     "deletedNotice": "This task has been deleted. Below is the last data it had.",
     "prompt": "Prompt",
     "createdAt": "Created"

@@ -16,7 +16,7 @@ import { DATE_TIME_FORMAT } from "../../constants/date-time";
 import { useRecentTaskIds } from "../../hooks/use-recent-task-ids";
 import { useRefreshListsWhenSettled } from "../../hooks/use-refresh-lists-when-settled";
 import type { TaskStatus } from "../../types/task-filters";
-import { QueryLoadFailed } from "../query-load-failed";
+import { isQueryLoadFailed, QueryLoadFailed } from "../query-load-failed";
 import { TaskComments } from "../task-comments";
 import { TaskHeading } from "../task-heading";
 import { RelatedTasks } from "./related-tasks";
@@ -34,7 +34,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   const { record } = useRecentTaskIds();
   useRefreshListsWhenSettled(task.data?.status);
   useEffect(() => record(taskId), [record, taskId]);
-  // 重试先乐观地显示 pending；服务端清空上一轮日志前就重新订阅，会读到旧日志和 end，所以等重试确认后再换日志的 key。
+  // 重试先乐观地显示 pending；服务端清空上一轮日志前就重新订阅，会读到旧日志和 end，所以等重试确认后日志才算进行中。
   const retrying =
     useIsMutating({ mutationKey: retryTaskMutationKey(taskId) }) > 0;
   const queryClient = useQueryClient();
@@ -81,8 +81,8 @@ export function TaskDetail({ taskId }: { taskId: string }) {
           </dl>
           {!deleted && <TaskActions task={data} />}
           <TaskLogs
-            key={isTaskActive(data.status) && !retrying ? "active" : "settled"}
             taskId={taskId}
+            active={isTaskActive(data.status) && !retrying}
             onEnd={refreshIfSettledElsewhere}
           />
           {!deleted && <TaskComments taskId={taskId} />}
@@ -94,12 +94,9 @@ export function TaskDetail({ taskId }: { taskId: string }) {
       </div>
     );
   }
-  if (task.error) {
+  if (isQueryLoadFailed(task)) {
     return (
-      <QueryLoadFailed
-        onRetry={() => void task.refetch()}
-        retrying={task.isFetching}
-      />
+      <QueryLoadFailed query={task} subject={t("task.taskDetail.label")} />
     );
   }
   return (

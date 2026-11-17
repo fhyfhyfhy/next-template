@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, Request } from "@playwright/test";
 
 import { holdTable, unique } from "./backend";
 import {
@@ -172,7 +172,10 @@ test.describe("任务推进", () => {
     });
   });
 
-  test("生成日志用 SSE 推送，到终态后结束", async ({ page, tasks }) => {
+  test("生成日志用 SSE 推送，到终态后结束，聚焦的日志区不重新挂载", async ({
+    page,
+    tasks,
+  }) => {
     const task = await tasks.createTask();
     await openTask(page, task.id);
     const logs = page.getByRole("log", { name: "生成日志" });
@@ -201,6 +204,10 @@ test.describe("任务推进", () => {
     });
     await expect(logs).toContainText("生成完成");
     await expect(page.getByText("日志已结束")).toBeVisible();
+    // 任务到终态时日志重新订阅、读一遍完整日志，日志区还是同一个元素：Tab 进来的键盘焦点留在上面，不掉到 body。
+    await expect(page.getByTestId("task-status")).toHaveText("已完成");
+    await expect(logs).toContainText("开始生成");
+    await expect(logs).toBeFocused();
   });
 
   test("任务在别处被删除后显示已删除，不弹通用提示", async ({
@@ -219,7 +226,7 @@ test.describe("任务推进", () => {
 });
 
 test.describe("请求失败", () => {
-  test("相关任务首次加载失败时就地显示加载失败，不弹全局提示，重试后显示列表", async ({
+  test("相关任务首次加载失败时就地显示加载失败，不弹全局提示；重试期间提示不卸载、焦点留在按钮上，重试后显示列表", async ({
     page,
     tasks,
   }) => {
@@ -228,21 +235,31 @@ test.describe("请求失败", () => {
     // 进行中的任务才会轮询详情，拿到别处改过的 prompt。
     const task = await tasks.createTask({ status: "running", progress: 50 });
     await openTask(page, task.id);
+    const isRelatedRequest = (request: Request) =>
+      new URL(request.url()).searchParams.get("prompt") === prompt;
     // 拿到新 prompt 后，相关任务换成按它查询：这个 query 还没有数据，它的第一次请求失败就是首次加载失败。4xx 不重试。
-    const restore = await failRequests(
-      page,
-      (request) => new URL(request.url()).searchParams.get("prompt") === prompt,
-      { status: 400 },
-    );
+    const restore = await failRequests(page, isRelatedRequest, {
+      status: 400,
+    });
     await tasks.changePrompt(task.id, prompt);
 
-    // 失败任务的 TaskActions 也有「重试」，按钮限定在提示里找。
     const failed = page.getByRole("alert").filter({ hasText: "加载失败" });
     await expect(failed).toBeVisible();
     await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(0);
 
     await restore();
-    await failed.getByRole("button", { name: "重试" }).click();
+    // 可访问名称写明重试的是什么，和失败任务的 TaskActions 里的「重试」分得清。
+    const retry = failed.getByRole("button", {
+      name: "重试加载同 prompt 的其他任务",
+      exact: true,
+    });
+    // 重试的请求停在浏览器里：这期间提示不卸载，按钮停用，键盘焦点留在它上面。
+    const release = await holdRequests(page, isRelatedRequest);
+    await retry.press("Enter");
+    await expect(retry).toBeDisabled();
+    await expect(retry).toBeFocused();
+
+    release();
     await expect(
       page.getByRole("list", { name: "同 prompt 的其他任务" }),
     ).toContainText(other.name);

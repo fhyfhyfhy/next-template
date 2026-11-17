@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useQuery } from "@/lib/react-query";
 
 import { favoriteTasksQueryOptions } from "../../api/get-tasks";
-import { QueryLoadFailed } from "../query-load-failed";
+import { isQueryLoadFailed, QueryLoadFailed } from "../query-load-failed";
 import { TaskNameLink } from "../task-name-link";
 import { FavoritesPanelFrame } from "./frame";
 import { FavoritesPanelSkeleton } from "./skeleton";
@@ -17,11 +17,11 @@ export function FavoritesPanel() {
   const t = useTranslations();
   const favorites = useQuery(favoriteTasksQueryOptions());
   if (!favorites.data) {
-    return favorites.error ? (
+    return isQueryLoadFailed(favorites) ? (
       <FavoritesPanelFrame>
         <QueryLoadFailed
-          onRetry={() => void favorites.refetch()}
-          retrying={favorites.isFetching}
+          query={favorites}
+          subject={t("task.favoritesPanel.title")}
         />
       </FavoritesPanelFrame>
     ) : (

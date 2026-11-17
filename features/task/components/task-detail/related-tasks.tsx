@@ -6,7 +6,7 @@ import { useQuery } from "@/lib/react-query";
 
 import { getTaskQueryOptions } from "../../api/get-task";
 import { relatedTasksQueryOptions } from "../../api/get-tasks";
-import { QueryLoadFailed } from "../query-load-failed";
+import { isQueryLoadFailed, QueryLoadFailed } from "../query-load-failed";
 import { TaskLinkRow } from "../task-link-row";
 
 /**
@@ -42,10 +42,10 @@ export function RelatedTasks({ taskId }: { taskId: string }) {
             ))}
           </ul>
         )
-      ) : related.error ? (
+      ) : isQueryLoadFailed(related) ? (
         <QueryLoadFailed
-          onRetry={() => void related.refetch()}
-          retrying={related.isFetching}
+          query={related}
+          subject={t("task.relatedTasks.title")}
         />
       ) : (
         <p className="text-sm text-muted-foreground">
