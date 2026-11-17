@@ -100,8 +100,8 @@ const ENV_ACCESS = [
 // ---- 数据的常量结束 ----
 
 // ---- UI（.claude/rules/ 的 components.md、design-system.md、react.md、ui-catalog.md）的常量，规则配置在下面配置数组的「UI」一段 ----
-// NATIVE_ELEMENTS 借用 no-restricted-syntax。这条规则还管着别的事，所以这一组合进下面的 RESTRICTED_SYNTAX；
-// 它的例外和 UI 的其余检查在配置数组的「UI」一段。
+// NATIVE_ELEMENTS 和 NESTED_INTERACTIVE 借用 no-restricted-syntax。这条规则还管着别的事，所以这两组合进下面的
+// RESTRICTED_SYNTAX；NATIVE_ELEMENTS 的例外和 UI 的其余检查在配置数组的「UI」一段。
 
 // Base UI 有对应组件的原生元素和带控件 role 的元素只在 components/ui/ 的封装里渲染，别处渲染封装，样式、状态和
 // 可访问性才一致。选择器只匹配小写的原生标签和写成字符串的 role：<Form>、<form.Field> 这类组件和成员表达式不受影响。
@@ -136,6 +136,17 @@ const NATIVE_ELEMENTS = [
       "JSXAttribute[name.name='role'] > Literal[value=/^(button|checkbox|switch|radio|radiogroup|slider|spinbutton|textbox|combobox|listbox|option|menu|menuitem|tab|tablist|tooltip|dialog|alertdialog|progressbar|meter|separator)$/]",
     message:
       'A control role, such as role="button", renders only inside components/ui/: render the component from @/components/ui/ that has it, or a wrapper of the matching Base UI component, adding it first if it is missing. See "Wrap a UI library" in .claude/rules/design-system.md.',
+  },
+];
+
+// 一个触发器或控件只有一个可交互元素。按名字认父元素，只看直接子元素，间接的嵌套由 UI review 看。不放进
+// NATIVE_ELEMENTS：components/ui/ 里同样生效。
+const NESTED_INTERACTIVE = [
+  {
+    selector:
+      "JSXElement[openingElement.name.name=/(Trigger|Close|Button|Link)$/] > JSXElement[openingElement.name.name=/^(Button|Link|a|button)$/]",
+    message:
+      'Give a trigger or control one interactive element: pass the inner Button or Link as the outer component\'s render prop instead of nesting it. See "Use a component" in .claude/rules/components.md.',
   },
 ];
 
@@ -210,6 +221,7 @@ const RESTRICTED_SYNTAX = [
   ...TRANSLATOR_NAMESPACE,
   ...ENV_ACCESS,
   ...NATIVE_ELEMENTS,
+  ...NESTED_INTERACTIVE,
 ];
 
 // 给豁免 RESTRICTED_SYNTAX 里一组限制的文件用，其余限制照旧。只设置级别的配置会沿用前面的选项，

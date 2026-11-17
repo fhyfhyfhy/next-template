@@ -2264,6 +2264,7 @@ const RESTRICTION_NAMES = [
   ["Read environment variables", "env"],
   ["Native <", "native-element"],
   ["A control role", "control-role"],
+  ["Give a trigger or control one interactive element", "nested-interactive"],
 ];
 
 // 每条 no-restricted-syntax 报告，按它来自哪条限制命名。file 用真实存在的路径：import/no-cycle 定位不了不在磁盘上的文件。
@@ -2950,6 +2951,65 @@ ${component(`(
       expect(message.endsWith(pointer), message).toBe(true);
     }
   });
+});
+
+describe("触发器和控件里直接嵌套 Button 或 Link 被拒绝", () => {
+  const declarations = ["Button", "Link", "DialogTrigger", "DialogClose"]
+    .map(
+      (name) =>
+        `declare function ${name}(props: { children?: unknown; render?: unknown; href?: string }): null;`,
+    )
+    .join("\n");
+  const component = (jsx) =>
+    `${declarations}\n\nexport function Probe() {\n  return ${jsx};\n}\n`;
+  for (const { name, file, source, reported } of [
+    {
+      name: "触发器、关闭按钮、Button 和 Link 里直接嵌套都报告",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
+      source: component(`(
+    <>
+      <DialogTrigger>
+        <Button />
+      </DialogTrigger>
+      <DialogClose>
+        <Link href="/" />
+      </DialogClose>
+      <Button>
+        <a href="/" />
+      </Button>
+      <Link href="/">
+        <Button />
+      </Link>
+    </>
+  )`),
+      reported: Array(4).fill("nested-interactive"),
+    },
+    {
+      name: "里面的 Button 或 Link 作为 render prop 传入不报",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
+      source: component(`(
+    <>
+      <DialogTrigger render={<Button />} />
+      <Button render={<Link href="/" />} />
+    </>
+  )`),
+      reported: [],
+    },
+    {
+      name: "components/ui/ 里同样报告",
+      file: "components/ui/badge.tsx",
+      source: component(`(
+    <Button>
+      <button type="button" />
+    </Button>
+  )`),
+      reported: ["nested-interactive"],
+    },
+  ]) {
+    test(name, async () => {
+      expect(await restricted(file, source)).toStrictEqual(reported);
+    });
+  }
 });
 
 describe("给不是控件的元素加点击处理被拒绝", () => {
