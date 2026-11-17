@@ -10,6 +10,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
 import betterTailwindcss from "eslint-plugin-better-tailwindcss";
+import { getDefaultSelectors } from "eslint-plugin-better-tailwindcss/defaults";
 import i18next from "eslint-plugin-i18next";
 import playwright from "eslint-plugin-playwright";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
@@ -354,6 +355,31 @@ const eslintConfig = defineConfig([
         // 不设时插件不做 px 到 rem 的换算，lg:max-h-[520px] 这类可以写成 lg:max-h-130 的 class 就查不出来。
         // globals.css 没有改根字号，按浏览器默认的 16px 算，和 Tailwind CSS IntelliSense 的默认值一致。
         rootFontSize: 16,
+        // 插件默认只读 className、cn()/cva() 和名为 className(s)、classes、style(s) 的变量；这里补上存 class 的常量和
+        // 查找表、xxxClassName prop、不经 cn() 的函数式 className。别的名字由 UI review 看。
+        selectors: [
+          ...getDefaultSelectors(),
+          {
+            kind: "variable",
+            name: "^.*(?:Class(?:Names?|es)?|_CLASS(?:_NAMES?|ES)?)$",
+            match: [{ type: "strings" }, { type: "objectValues" }],
+          },
+          {
+            kind: "attribute",
+            name: "^.+ClassName$",
+            match: [{ type: "strings" }],
+          },
+          {
+            kind: "attribute",
+            name: "^class(?:Name)?$",
+            match: [
+              {
+                type: "anonymousFunctionReturn",
+                match: [{ type: "strings" }],
+              },
+            ],
+          },
+        ],
       },
     },
     // class 的排序、去重和空白由 prettier-plugin-tailwindcss 处理，这里只开它覆盖不到的规则。

@@ -2117,6 +2117,47 @@ describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", (
       JSON.stringify(result.messages, null, 2),
     ).toStrictEqual(restricted);
   });
+
+  test("常量、查找表、xxxClassName prop 和函数式 className 里的 class 也检查", async () => {
+    const source = `declare function Popup(props: {
+  triggerClassName?: string;
+  className?: unknown;
+}): null;
+
+const itemClassName = "bg-red-500";
+export const ROW_CLASSES = { open: "bg-red-500" };
+export const LABEL_CLASS = "bg-red-500";
+
+export function Probe({ open }: { open: boolean }) {
+  return (
+    <>
+      <div className={itemClassName} />
+      <Popup triggerClassName={open ? "bg-red-500" : "bg-primary"} />
+      <Popup
+        className={(state: { open: boolean }) =>
+          state.open ? "bg-red-500" : ""
+        }
+      />
+    </>
+  );
+}
+`;
+    const [result] = await eslint.lintText(source, { filePath });
+    expect(
+      result.messages
+        .filter(
+          ({ ruleId }) => ruleId === "better-tailwindcss/no-restricted-classes",
+        )
+        .map(({ line }) => line),
+      JSON.stringify(result.messages, null, 2),
+    ).toStrictEqual(
+      source
+        .split("\n")
+        .flatMap((line, index) =>
+          line.includes("bg-red-500") ? [index + 1] : [],
+        ),
+    );
+  });
 });
 
 describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => {
