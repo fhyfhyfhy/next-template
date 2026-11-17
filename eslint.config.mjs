@@ -454,6 +454,24 @@ const eslintConfig = defineConfig([
   },
   {
     files: ["**/*.{jsx,tsx}"],
+    rules: {
+      // 组件写成具名 function 声明（components.md「Public API」）。
+      "react/function-component-definition": [
+        "error",
+        {
+          namedComponents: "function-declaration",
+          unnamedComponents: ["function-expression", "arrow-function"],
+        },
+      ],
+    },
+  },
+  {
+    files: [`**/{components,_components}/**/*.${extensionGlob}`],
+    // 这些目录里没有框架按默认导出加载的文件。
+    rules: { "import/no-default-export": "error" },
+  },
+  {
+    files: ["**/*.{jsx,tsx}"],
     ignores: [
       "**/*.{test,spec,story,stories,generated,gen}.{jsx,tsx}",
       "**/{test,tests,__tests__,stories,generated,__generated__}/**",

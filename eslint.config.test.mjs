@@ -1367,6 +1367,7 @@ describe("架构依赖和 feature、组件导入约定", () => {
     process.chdir(fixture);
     // 架构用例只验证依赖边界；import 排序由下方独立用例验证。
     // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
+    // 组件入口的 namespace 用例会默认导出，import/no-default-export 由下方「组件写成具名的 function 声明」验证。
     // fixture 没有 docs/features.md，feature 依赖图由 scripts/eslint/architecture/feature-dependencies.test.mjs 验证。
     // fixture 的 server/ 和 -action 文件只为验证依赖方向，不写 import "server-only" 和 "use server"；这两条规则由
     // 下方独立用例验证。
@@ -1381,6 +1382,7 @@ describe("架构依赖和 feature、组件导入约定", () => {
           "@typescript-eslint/consistent-type-definitions": "off",
           "@typescript-eslint/consistent-type-assertions": "off",
           "@typescript-eslint/no-non-null-assertion": "off",
+          "import/no-default-export": "off",
         },
       },
     });
@@ -2746,6 +2748,55 @@ export function useProbe(value: number) {
         .map(({ severity }) => severity),
       JSON.stringify(messages, null, 2),
     ).toStrictEqual([2]);
+  });
+});
+
+describe("组件写成具名的 function 声明", () => {
+  async function declarationRules(file, source) {
+    const [result] = await restrictedSyntaxLinter.lintText(source, {
+      filePath: join(project, file),
+    });
+    expect(result.fatalErrorCount).toBe(0);
+    return result.messages
+      .map(({ ruleId }) => ruleId)
+      .filter((ruleId) =>
+        [
+          "react/function-component-definition",
+          "import/no-default-export",
+        ].includes(ruleId),
+      );
+  }
+
+  test("箭头函数、函数表达式组件和组件目录里的默认导出被拒绝", async () => {
+    expect(
+      await declarationRules(
+        "features/ui-catalog/components/example-list/index.tsx",
+        `export const Arrow = () => <p />;
+export const Expression = function () {
+  return <p />;
+};
+export default function Probe() {
+  return <p />;
+}
+`,
+      ),
+    ).toStrictEqual([
+      "react/function-component-definition",
+      "react/function-component-definition",
+      "import/no-default-export",
+    ]);
+  });
+
+  test("框架按默认导出加载的文件可以默认导出", async () => {
+    expect(
+      await declarationRules(
+        "app/[locale]/page.tsx",
+        `export default function Page() {
+  return <p />;
+}
+`,
+      ),
+    ).toStrictEqual([]);
   });
 });
 
