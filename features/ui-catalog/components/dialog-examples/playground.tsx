@@ -89,8 +89,8 @@ export function DialogPlayground({
                 render={
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="-mt-1 -mr-2 px-2"
+                    size="icon-sm"
+                    className="-mt-1 -mr-2"
                   />
                 }
               >
