@@ -2344,6 +2344,48 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
   });
 });
 
+// 例外对象只去掉或追加一条限制，其余全局的限制照旧：source 都带上 axios，数的是 no-restricted-imports 的报告条数。
+async function restrictedImportCount(eslint, file, source) {
+  const [result] = await eslint.lintText(source, {
+    filePath: join(project, file),
+  });
+  expect(result.fatalErrorCount).toBe(0);
+  return result.messages.filter(
+    ({ ruleId }) => ruleId === "no-restricted-imports",
+  ).length;
+}
+
+describe("文案只经 ClientMessages 下发，ClientMessages 自己和单元测试除外", () => {
+  const eslint = new ESLint({ cwd: project });
+  const source = `import axios from "axios";
+import { NextIntlClientProvider } from "next-intl";
+
+export const probe = [axios, NextIntlClientProvider];
+`;
+  test.each([
+    ["components/probe.tsx", 2],
+    ["lib/i18n/probe.tsx", 1],
+    ["components/probe.test.tsx", 1],
+  ])("%s 报 %i 条", async (file, count) => {
+    expect(await restrictedImportCount(eslint, file, source)).toBe(count);
+  });
+});
+
+describe("e2e 的 test 和 expect 从 e2e/test.ts 引入", () => {
+  const eslint = new ESLint({ cwd: project });
+  const source = `import { test } from "@playwright/test";
+import axios from "axios";
+
+export const probe = [axios, test];
+`;
+  test.each([
+    ["e2e/probe.spec.ts", 2],
+    ["e2e/test.ts", 1],
+  ])("%s 报 %i 条", async (file, count) => {
+    expect(await restrictedImportCount(eslint, file, source)).toBe(count);
+  });
+});
+
 const restrictedSyntaxLinter = new ESLint({ cwd: project });
 const RESTRICTION_NAMES = [
   ["Show a date or time", "date-time"],
