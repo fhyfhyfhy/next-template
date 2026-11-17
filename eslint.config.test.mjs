@@ -2093,14 +2093,20 @@ describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", (
       "bg-[#c83d21]",
       "shadow-[0_0_0_1px_#000_inset]",
       "shadow-[0_2px_4px_rgb(0_0_0/0.2)]",
+      "shadow-[0_0_0_1px_var(--color-zinc-200)]",
+      "hover:bg-[#c83d21]/50",
       "rounded-[5px]",
       "md:rounded-tl-(--my-radius)",
     ];
     const allowed = [
       "bg-primary text-primary-foreground border-border",
       "bg-white text-black/65",
+      "shadow-[0_0_0_1px_var(--color-border)]",
+      "fill-[url(#fade)]",
+      "[&_#abc]:hidden",
       "rounded rounded-sm rounded-2xl rounded-full",
       "rounded-control rounded-t-panel",
+      "rounded-[inherit]",
       "text-sm border-2 ring-2 bg-transparent fill-current",
     ];
     const classes = [...restricted, ...allowed];
