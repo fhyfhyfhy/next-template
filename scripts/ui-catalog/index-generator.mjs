@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { format } from "prettier";
+import { format, resolveConfig } from "prettier";
 import ts from "typescript";
 
 const featurePath = "features/ui-catalog";
@@ -148,7 +148,13 @@ function discoverExamples(projectRoot) {
       const id = entry.name.slice(0, -directorySuffix.length);
       assertId(id, entry.name);
       const directory = join(componentsRoot, entry.name);
-      const files = entries(directory).filter((file) => file.isFile());
+      const children = entries(directory);
+      const nested = children.find((child) => child.isDirectory());
+      if (nested)
+        throw new Error(
+          `Expected only files in a UI catalog examples directory: ${join(directory, nested.name)}`,
+        );
+      const files = children.filter((file) => file.isFile());
       for (const filename of requiredFiles) {
         if (!files.some((file) => file.name === filename))
           throw new Error(
@@ -317,10 +323,14 @@ export async function generateExampleIndexes(projectRoot) {
       source: componentRegistry(components),
     },
   ];
+  // 按生成物所在位置的 Prettier 配置格式化，和 format:check、lint-staged 一致；临时目录里的 fixture 找不到配置时用默认选项。
   const formatted = await Promise.all(
     outputs.map(async (output) => ({
       ...output,
-      source: await format(output.source, { parser: "typescript" }),
+      source: await format(output.source, {
+        ...(await resolveConfig(output.filename)),
+        filepath: output.filename,
+      }),
     })),
   );
   const changed = [];

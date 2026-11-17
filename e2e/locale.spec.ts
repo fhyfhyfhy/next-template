@@ -6,7 +6,7 @@ import { expect, test } from "./test";
 
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
-test("切换语言后地址不变，之后的客户端导航和整页打开都按选择显示", async ({
+test("切换语言后地址不变，之后的客户端导航和整页打开都按选择显示，前进后退时地址不带 _rsc", async ({
   page,
 }) => {
   await page.goto("/search");
@@ -29,6 +29,20 @@ test("切换语言后地址不变，之后的客户端导航和整页打开都�
   await expect(
     page.getByRole("heading", { level: 1, name: "All tasks" }),
   ).toBeVisible();
+
+  // 切换语言的链接整页跳转（components/locale-switcher/locale-items.tsx 说明了原因）：切换前后的两页，前进后退
+  // 回去时地址都和当时一样，不带 _rsc。
+  const back = () => page.goBack();
+  const forward = () => page.goForward();
+  for (const [move, url] of [
+    [back, "/search"],
+    [back, "/search"],
+    [forward, "/search"],
+    [forward, "/tasks"],
+  ] as const) {
+    await move();
+    await expect(page).toHaveURL(url);
+  }
 
   await page.goto("/ui?component=select");
   // 标题后的句点只是装饰，不进可访问名称。
