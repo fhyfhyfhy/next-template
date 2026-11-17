@@ -358,7 +358,7 @@ const eslintConfig = defineConfig([
     rules: { "simple-import-sort/imports": "off" },
   },
   {
-    // 封装 Base UI 的地方，可以渲染 NATIVE_ELEMENTS 里的原生元素。
+    // 封装 Base UI 的地方，可以渲染 NATIVE_ELEMENTS 里的原生元素和控件 role。
     files: ["components/ui/**"],
     ignores: APPLICATION_CODE.ignores,
     rules: { "no-restricted-syntax": restrictedSyntaxWithout(NATIVE_ELEMENTS) },
@@ -622,7 +622,7 @@ const eslintConfig = defineConfig([
     rules: { "architecture/data-access": ["error", DATABASE_ACCESS] },
   },
   // 应用代码里组件目录的入口在所在位置的限制之外，禁止 export * 和 export * as，要求显式列出公开成员。只有根目录的
-  // components/ui/ 是组件集合，它的组件入口可以渲染原生元素。
+  // components/ui/ 是组件集合，它的组件入口和那里的其他文件一样豁免 NATIVE_ELEMENTS。
   ...[
     [`components/!(ui)/index.${extensionGlob}`, RESTRICTED_SYNTAX],
     [`features/*/components/*/index.${extensionGlob}`, RESTRICTED_SYNTAX],
