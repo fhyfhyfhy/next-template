@@ -2130,13 +2130,20 @@ describe("Tailwind class 按项目主题检查规范写法、颜色、圆角和�
     );
   });
 
-  test("过渡列表里的 transform 被拒绝", async () => {
+  test("过渡列表里的 transform、transition-all 和 ease-in 被拒绝", async () => {
     await expectRestricted(
-      ["transition-[opacity,transform]", "data-open:transition-[transform]"],
+      [
+        "transition-[opacity,transform]",
+        "data-open:transition-[transform]",
+        "md:transition-all",
+        "hover:ease-in",
+      ],
       [
         "transition-transform",
         "transition-[opacity,scale]",
         "transition-[transform-origin]",
+        "ease-out",
+        "ease-in-out",
       ],
     );
   });

@@ -40,4 +40,15 @@ export const TAILWIND_CLASS_RESTRICTIONS = [
     message:
       'scale-*, translate-*, and rotate-* set the scale, translate, and rotate properties, not transform: transition them with transition-transform, or name them in the list, as transition-[opacity,scale], instead of "$0".',
   },
+  {
+    // transition-all 让每个变化的属性都过渡，包括本该立即生效的，比如布局属性。
+    pattern: "^(?:.*:)?!?transition-all!?$",
+    message:
+      'Name the properties to transition, as transition-[opacity,scale] or transition-colors, instead of "$0".',
+  },
+  {
+    pattern: "^(?:.*:)?!?ease-in!?$",
+    message:
+      'Use ease-out or ease-in-out instead of "$0": ease-in delays the start of the motion the user is watching.',
+  },
 ];
