@@ -31,14 +31,16 @@ export const initialConfig: SwitchConfig = (/* @example-config */ {
   "required": false
 } /* @end-example-config */);
 
-/** 不传参数时使用本地状态；UI catalog 页面传入同一份配置供面板与预览共享。 */
+/** 不传 config 和 onConfigChange 时使用本地状态；UI catalog 页面两个一起传，面板与预览共享同一份配置。 */
 export function SwitchPlayground({
   config,
   onConfigChange,
-}: {
-  config?: SwitchConfig;
-  onConfigChange?: (config: SetStateAction<SwitchConfig>) => void;
-} = {}) {
+}:
+  | {
+      config: SwitchConfig;
+      onConfigChange: (config: SetStateAction<SwitchConfig>) => void;
+    }
+  | { config?: undefined; onConfigChange?: undefined } = {}) {
   const [local, setLocal] = useState(initialConfig);
   const state = config ?? local;
   const change = onConfigChange ?? setLocal;

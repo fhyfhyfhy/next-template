@@ -42,14 +42,19 @@ export const initialConfig: DialogConfig = (/* @example-config */ {
   "closeLabel": "知道了"
 } /* @end-example-config */);
 
-/** Popup 和 Backdrop 独立定制；调用方持有开关状态。 */
+/**
+ * Popup 和 Backdrop 独立定制；调用方持有开关状态。
+ * 不传 config 和 onConfigChange 时使用本地状态；UI catalog 页面两个一起传，面板与预览共享同一份配置。
+ */
 export function DialogPlayground({
   config,
   onConfigChange,
-}: {
-  config?: DialogConfig;
-  onConfigChange?: (config: SetStateAction<DialogConfig>) => void;
-} = {}) {
+}:
+  | {
+      config: DialogConfig;
+      onConfigChange: (config: SetStateAction<DialogConfig>) => void;
+    }
+  | { config?: undefined; onConfigChange?: undefined } = {}) {
   const [local, setLocal] = useState(initialConfig);
   const state = config ?? local;
   const change = onConfigChange ?? setLocal;

@@ -33,14 +33,16 @@ export const initialConfig: InputConfig = (/* @example-config */ {
   "invalid": false
 } /* @end-example-config */);
 
-/** 不传参数时使用本地状态；UI catalog 页面传入同一份配置供面板与预览共享。 */
+/** 不传 config 和 onConfigChange 时使用本地状态；UI catalog 页面两个一起传，面板与预览共享同一份配置。 */
 export function InputPlayground({
   config,
   onConfigChange,
-}: {
-  config?: InputConfig;
-  onConfigChange?: (config: SetStateAction<InputConfig>) => void;
-} = {}) {
+}:
+  | {
+      config: InputConfig;
+      onConfigChange: (config: SetStateAction<InputConfig>) => void;
+    }
+  | { config?: undefined; onConfigChange?: undefined } = {}) {
   const [local, setLocal] = useState(initialConfig);
   const state = config ?? local;
   const change = onConfigChange ?? setLocal;
@@ -48,7 +50,11 @@ export function InputPlayground({
     <FieldRoot invalid={state.invalid} disabled={state.disabled}>
       <FieldLabel>
         {state.label}
-        {state.required && <span className="ml-1 text-destructive">*</span>}
+        {state.required && (
+          <span aria-hidden className="ml-1 text-destructive">
+            *
+          </span>
+        )}
       </FieldLabel>
       <Input
         size={state.size}

@@ -61,14 +61,19 @@ export const initialConfig: SelectConfig = (/* @example-config */ {
   "alignItemWithTrigger": false
 } /* @end-example-config */);
 
-/** 保留 Root、Trigger、定位层和选项的独立组合边界。 */
+/**
+ * 保留 Root、Trigger、定位层和选项的独立组合边界。
+ * 不传 config 和 onConfigChange 时使用本地状态；UI catalog 页面两个一起传，面板与预览共享同一份配置。
+ */
 export function SelectPlayground({
   config,
   onConfigChange,
-}: {
-  config?: SelectConfig;
-  onConfigChange?: (config: SetStateAction<SelectConfig>) => void;
-} = {}) {
+}:
+  | {
+      config: SelectConfig;
+      onConfigChange: (config: SetStateAction<SelectConfig>) => void;
+    }
+  | { config?: undefined; onConfigChange?: undefined } = {}) {
   const [local, setLocal] = useState(initialConfig);
   const state = config ?? local;
   const change = onConfigChange ?? setLocal;
@@ -103,7 +108,11 @@ export function SelectPlayground({
       >
         <SelectLabel>
           {state.label}
-          {state.required && <span className="ml-1 text-destructive">*</span>}
+          {state.required && (
+            <span aria-hidden className="ml-1 text-destructive">
+              *
+            </span>
+          )}
         </SelectLabel>
         <SelectTrigger>
           <SelectValue placeholder={state.placeholder} />
