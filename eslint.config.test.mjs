@@ -3170,21 +3170,25 @@ describe("给不是控件的元素加点击处理被拒绝", () => {
 });
 
 describe("UI catalog 的 playground 和 example 不用相对路径引用", () => {
-  // no-restricted-imports 的每条报告：这条限制记作 "relative"，RESTRICTED_IMPORTS 里请求库的记作 "global"。
-  // file 和 restricted 一样用真实存在的路径。
+  // no-restricted-imports 和 no-restricted-syntax 的每条报告：这条限制记作 "relative"，RESTRICTED_IMPORTS 里请求库的
+  // 记作 "global"，原生元素记作 "native-element"。file 和 restricted 一样用真实存在的路径。
   async function restrictedImports(file, source) {
     const [result] = await restrictedSyntaxLinter.lintText(source, {
       filePath: join(project, file),
     });
     expect(result.fatalErrorCount).toBe(0);
     return result.messages
-      .filter(({ ruleId }) => ruleId === "no-restricted-imports")
+      .filter(({ ruleId }) =>
+        ["no-restricted-imports", "no-restricted-syntax"].includes(ruleId),
+      )
       .map(({ message }) =>
         message.includes("UI catalog")
           ? "relative"
           : message.includes("fetchApi")
             ? "global"
-            : message,
+            : message.startsWith("Native <")
+              ? "native-element"
+              : message,
       );
   }
   const example =
@@ -3201,6 +3205,22 @@ export { other } from "./other";
 export const result = value;
 `,
       reported: ["relative", "relative", "relative"],
+    },
+    {
+      name: "example 里相对路径的动态 import 和 import() 类型也报错",
+      file: example,
+      source: `import { lazy } from "react";
+
+export const Heavy = lazy(() => import("./heavy"));
+export type Shared = import("../shared").Shared;
+`,
+      reported: ["relative", "relative"],
+    },
+    {
+      name: "example 里全局的 no-restricted-syntax 限制照旧",
+      file: example,
+      source: `export function Probe() {\n  return <button type="button" />;\n}\n`,
+      reported: ["native-element"],
     },
     {
       name: "playground 里相对路径的 import 报错",

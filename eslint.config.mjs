@@ -150,6 +150,9 @@ const NESTED_INTERACTIVE = [
   },
 ];
 
+const CATALOG_RELATIVE_IMPORT_MESSAGE =
+  "A UI catalog playground or example is copied on its own: import through @/ or a package, not a relative path.";
+
 // ---- UI 的常量结束 ----
 
 // agent 读的指令，用英文写。和 .claude/rules/writing-style.md「Language by content」表里 Agent instructions
@@ -508,7 +511,7 @@ const eslintConfig = defineConfig([
   },
   {
     // UI catalog 把这些文件当作可复制的代码展示（.claude/rules/ui-catalog.md），所以只按包名或 @/ 引用：
-    // 相对路径的引用（含副作用导入）复制出去就解析不了。和下面 e2e/ 一样带上全局的限制。
+    // 相对路径的引用（含副作用导入、动态 import 和 import() 类型）复制出去就解析不了。和下面 e2e/ 一样带上全局的限制。
     files: [
       "features/ui-catalog/components/*-examples/playground.tsx",
       "features/ui-catalog/components/*-examples/*.example.tsx",
@@ -522,10 +525,19 @@ const eslintConfig = defineConfig([
             ...RESTRICTED_IMPORTS.patterns,
             {
               regex: "^\\.\\.?(/|$)",
-              message:
-                "A UI catalog playground or example is copied on its own: import through @/ or a package, not a relative path.",
+              message: CATALOG_RELATIVE_IMPORT_MESSAGE,
             },
           ],
+        },
+      ],
+      // no-restricted-imports 不查动态 import 和 import() 类型。
+      "no-restricted-syntax": [
+        "error",
+        ...RESTRICTED_SYNTAX,
+        {
+          selector:
+            ":matches(ImportExpression, TSImportType) > :matches(Literal[value=/^\\.\\.?(\\/|$)/], TemplateLiteral[quasis.0.value.raw=/^\\.\\.?(\\/|$)/])",
+          message: CATALOG_RELATIVE_IMPORT_MESSAGE,
         },
       ],
     },
