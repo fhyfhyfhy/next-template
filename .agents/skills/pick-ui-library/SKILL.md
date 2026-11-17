@@ -1,6 +1,6 @@
 ---
 name: pick-ui-library
-description: Choose the library for a task from a curated list. Use before adding a dependency or writing code that needs one, such as toasts, OTP inputs, command menus, animation, animated numbers, drag and drop, virtualization, state, styling, or syntax highlighting.
+description: Choose the library for a frontend need that .claude/rules/libraries.md leaves open, from a curated list. Use before adding a dependency or writing code that needs one, such as command menus, animation, animated numbers, drag and drop, virtualization, or syntax highlighting.
 ---
 
 # Picking The Right Library
@@ -8,6 +8,8 @@ description: Choose the library for a task from a curated list. Use before addin
 A lookup skill. When invoked with a task ("I need toasts", "what should I use for drag and drop?"), match the task to the curated list below and recommend the library. These are deliberate, taste-driven picks — don't substitute alternatives outside this list unless the user asks for one or the task genuinely isn't covered.
 
 ## How to use this
+
+`.claude/rules/libraries.md` holds this repo's picks, which take precedence over this list: read it first, and use this list for a need it leaves out.
 
 1. **Identify the task**, not the library the user named. "I need to show a dropdown" is a UI-primitives task (base-ui), even if they asked about something else.
 2. **Check what's already installed.** Look at `package.json` first. If the project already uses a listed library, use it. If it uses a competitor (e.g. react-window instead of Virtuoso), flag the recommendation but don't churn the dependency without being asked.
@@ -34,10 +36,10 @@ A lookup skill. When invoked with a task ("I need toasts", "what should I use fo
 | Animating numbers (counters, prices, stats) | [NumberFlow](https://number-flow.barvian.me) |
 | Animated text components | [torph](https://torph.lochie.me/) |
 | 3D globes | [Cobe](https://cobe.vercel.app) |
-| Dynamic OG images (HTML/CSS → SVG/PNG) | [Satori](https://github.com/vercel/satori) |
+| Dynamic OG images (HTML/CSS → PNG) | `ImageResponse` from `next/og`, built into Next.js, which runs [Satori](https://github.com/vercel/satori) |
 | Syntax highlighting | [shiki](https://shiki.style) |
 
-Reach for motion when you need springs, layout animations, exit animations, or gesture-driven values. A simple hover or fade doesn't need it — plain CSS transitions are the right tool there.
+Reach for motion when you need springs, layout animations, exit animations, or gesture-driven values. A simple hover or fade doesn't need it — plain CSS transitions are the right tool there. A Base UI part enters and exits through `data-starting-style` and `data-ending-style` with a CSS transition, so its exit needs no motion either.
 
 ### Interaction & performance
 

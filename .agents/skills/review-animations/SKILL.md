@@ -1,20 +1,13 @@
 ---
 name: review-animations
-description: Reviews animation and motion code against a high craft bar derived from Emil Kowalski's design engineering philosophy. Default to flagging; approval is earned.
-disable-model-invocation: true
+description: Reviews animation and motion code against a high craft bar derived from Emil Kowalski's design engineering philosophy. Use when asked to review or critique an animation, a transition, or the motion in a diff; for a whole codebase use improve-animations. Default to flagging; approval is earned.
 ---
 
 # Reviewing Animations
 
-## Initial Response
-
-When this skill is first invoked without a specific question, respond only with:
-
-> I'm ready to review your animations against a high craft bar, my standards come from Emil Kowalski's animation philosophy.
-
-Do not provide any other information until the user asks a question.
-
 A specialized review skill. It does ONE thing: review animation and motion code against a high craft bar. It does not write features, fix unrelated bugs, or review non-motion code. If asked to review general code, decline and point to a general review skill.
+
+This repo's motion conventions are in "In this repo" of the animate skill (`.agents/skills/animate/SKILL.md`), and they hold wherever this skill or STANDARDS.md says otherwise: motion is Tailwind classes, `hover:` is gated already, the `ease-out` and `ease-in-out` classes are the strong curves, and drawers, toasts, and drag to dismiss come from Base UI and Sonner. Reduced motion is global: `app/globals.css` ends every CSS transition and animation under `prefers-reduced-motion` (`.claude/rules/components.md`, Styles and variants), so CSS motion needs no reduced-motion variant of its own, and motion run from JavaScript checks `useReducedMotion` from `@mantine/hooks`. A missing reduced-motion variant or hover media query on CSS motion is not a finding.
 
 ## Operating Posture
 
