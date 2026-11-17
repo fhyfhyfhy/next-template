@@ -2,7 +2,7 @@
 
 // 源码内容变化也要更新此模块，让开发服务器重新读取展示和复制用的源码。
 export const exampleSourceRevision =
-  "97ab9d45288f0e12651ff63c514c5b96d3044be097b51d69d017e83612bfe29c";
+  "95ad343511eaf46b0118cfa4a98d7ae82a024e1e19c5f6e90eb01c511dc6502e";
 
 export const exampleFiles = {
   badge: [
@@ -49,6 +49,7 @@ export const exampleFiles = {
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
   ],
+  textarea: [{ id: "basic", filename: "basic.example.tsx" }],
   toaster: [
     { id: "action", filename: "action.example.tsx" },
     { id: "basic", filename: "basic.example.tsx" },

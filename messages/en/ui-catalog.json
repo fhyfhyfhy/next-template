@@ -74,6 +74,9 @@
     "switch": {
       "description": "A control that indicates whether a setting is on or off."
     },
+    "textarea": {
+      "description": "A multi-line text input that works with Field automatically when placed inside it."
+    },
     "toaster": {
       "description": "A brief message that appears temporarily and stacks with others."
     }

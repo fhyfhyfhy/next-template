@@ -1,6 +1,7 @@
 // 此文件由 scripts/ui-catalog/index-generator.mjs 自动生成，请勿手动修改。
 
 import {
+  IconAlignLeft,
   IconAppWindow,
   IconBell,
   IconCheckbox,
@@ -25,7 +26,8 @@ import { Preview as Component7Preview } from "./progress-examples";
 import { Preview as Component8Preview } from "./select-examples";
 import { Preview as Component9Preview } from "./skeleton-examples";
 import { Preview as Component10Preview } from "./switch-examples";
-import { Preview as Component11Preview } from "./toaster-examples";
+import { Preview as Component11Preview } from "./textarea-examples";
+import { Preview as Component12Preview } from "./toaster-examples";
 
 export const previewsByComponent = {
   badge: Component0Preview,
@@ -39,7 +41,8 @@ export const previewsByComponent = {
   select: Component8Preview,
   skeleton: Component9Preview,
   switch: Component10Preview,
-  toaster: Component11Preview,
+  textarea: Component11Preview,
+  toaster: Component12Preview,
 };
 
 export const iconsByComponent = {
@@ -54,5 +57,6 @@ export const iconsByComponent = {
   select: IconSelector,
   skeleton: IconSquareDashed,
   switch: IconToggleRight,
+  textarea: IconAlignLeft,
   toaster: IconBell,
 };
