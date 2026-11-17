@@ -9,6 +9,7 @@ import {
   FieldRoot,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 export const metadata = {
   title: "受控输入与校验",
@@ -18,10 +19,16 @@ export const metadata = {
 
 /** 调用方持有值与校验结果；Field 把输入框标为无效，并把说明和错误关联到它。 */
 export function Example() {
+  // 受控输入框在 hydration 之前输入的字会被 hydration 盖掉，所以先不可用。
+  const hydrated = useHydrated();
   const [value, setValue] = useState("");
   const invalid = value.length > 0 && value.length < 3;
   return (
-    <FieldRoot invalid={invalid} className="w-full max-w-xs">
+    <FieldRoot
+      invalid={invalid}
+      disabled={!hydrated}
+      className="w-full max-w-xs"
+    >
       <FieldLabel>用户名</FieldLabel>
       <Input
         value={value}

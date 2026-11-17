@@ -22,8 +22,8 @@ export function Preview({ source }: { source: string }) {
       {...playground}
       controls={
         <OptionControl
-          {...field("validationMode")}
-          options={["onSubmit", "onBlur", "onChange"]}
+          {...field("mode")}
+          options={["submit", "blur", "change"]}
         />
       }
     >

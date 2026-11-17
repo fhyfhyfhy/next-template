@@ -2,7 +2,7 @@
 
 // 源码内容变化也要更新此模块，让开发服务器重新读取展示和复制用的源码。
 export const exampleSourceRevision =
-  "e40eed1f7a4b4f9948d9f82950ead7bfdf47d029bc68563a4ad90a3aaa867084";
+  "7ed192f193b5b099ac53123d4943f19578971a305e4d4a448b3fd9531c023c2f";
 
 export const exampleFiles = {
   badge: [

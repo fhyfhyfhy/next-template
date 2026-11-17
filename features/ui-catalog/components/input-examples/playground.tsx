@@ -4,6 +4,7 @@ import { type SetStateAction, useState } from "react";
 
 import { FieldDescription, FieldLabel, FieldRoot } from "@/components/ui/field";
 import { Input, type InputProps } from "@/components/ui/input";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 export interface InputConfig {
   size: NonNullable<InputProps["size"]>;
@@ -46,8 +47,10 @@ export function InputPlayground({
   const [local, setLocal] = useState(initialConfig);
   const state = config ?? local;
   const change = onConfigChange ?? setLocal;
+  // 受控输入框在 hydration 之前输入的字会被 hydration 盖掉，所以先不可用。
+  const hydrated = useHydrated();
   return (
-    <FieldRoot invalid={state.invalid} disabled={state.disabled}>
+    <FieldRoot invalid={state.invalid} disabled={state.disabled || !hydrated}>
       <FieldLabel>
         {state.label}
         {state.required && (
