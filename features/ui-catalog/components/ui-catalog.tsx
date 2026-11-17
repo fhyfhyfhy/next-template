@@ -26,7 +26,7 @@ export function UiCatalog({
     <>
       <a
         href="#main-content"
-        className="sr-only fixed top-4 left-4 z-50 rounded-control bg-card p-3 text-card-foreground focus:not-sr-only"
+        className="sr-only fixed top-4 left-4 z-50 rounded-control bg-card p-3 text-card-foreground outline-none focus:not-sr-only focus-visible:ring-2 focus-visible:ring-ring"
       >
         {t("ui-catalog.skipToContent")}
       </a>
@@ -37,7 +37,7 @@ export function UiCatalog({
           <main id="main-content" className="min-w-0 px-5 py-8 sm:px-8 lg:p-12">
             <UiCatalogBusy>
               <div className="mb-9">
-                <div className="flex items-center gap-3 font-mono text-[10px] tracking-[0.16em] text-muted-foreground">
+                <div className="flex items-center gap-3 font-mono text-2xs tracking-[0.16em] text-muted-foreground">
                   <span>{t("ui-catalog.page.eyebrow")}</span>
                   <span>/</span>
                   <span className="text-primary">{item.title}</span>
@@ -62,7 +62,7 @@ export function UiCatalog({
               </div>
             </UiCatalogBusy>
             <footer className="mt-12 flex justify-end border-t border-border pt-6 text-muted-foreground">
-              <span className="font-mono text-[10px] tracking-wide">
+              <span className="font-mono text-2xs tracking-wide">
                 {t("ui-catalog.page.footer")}
               </span>
             </footer>
