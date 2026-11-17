@@ -2854,6 +2854,7 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
       source: component(`(
     <>
       <input type="file" />
+      <input type={"file"} />
       <input type="hidden" />
     </>
   )`),

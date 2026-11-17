@@ -114,8 +114,8 @@ const NATIVE_ELEMENTS = [
   // Base UI 没有文件选择和隐藏字段的组件，这两种 input 保持原生。
   nativeElement(
     "input",
-    "Input, Checkbox, or Switch from @/components/ui/",
-    ":not(:has(JSXAttribute[name.name='type'] > Literal[value=/^(file|hidden)$/]))",
+    "Input, Checkbox, or Switch from @/components/ui/; a radio or range input takes a wrapper of Base UI's Radio or Slider in components/ui/, adding it first if it is missing",
+    ":not(:has(> JSXAttribute[name.name='type']:matches([value.value=/^(file|hidden)$/], [value.expression.value=/^(file|hidden)$/])))",
   ),
   nativeElement("select", "the Select parts from @/components/ui/select"),
   nativeElement("progress", "the Progress parts from @/components/ui/progress"),
