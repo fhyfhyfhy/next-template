@@ -200,6 +200,18 @@ addCase("components/ui 可以依赖下层 hooks", {
   to: "hooks/CASE.ts",
   source: "@/hooks/CASE",
 });
+addCase("components/ui 不能引用 components/ 的单文件组件", {
+  from: "components/ui/CASE.ts",
+  to: "components/CASE-panel.ts",
+  source: "@/components/CASE-panel",
+  rule: "import/no-restricted-paths",
+});
+addCase("components/ui 的组件目录不能引用 components/ 的组件目录", {
+  from: "components/ui/CASE/root.ts",
+  to: "components/CASE-panel/index.ts",
+  source: "@/components/CASE-panel",
+  rule: "import/no-restricted-paths",
+});
 addCase("根目录反向依赖仍然禁止", {
   from: "utils/CASE.ts",
   to: "lib/CASE.ts",
