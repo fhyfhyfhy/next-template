@@ -2677,6 +2677,76 @@ export function useCleanedUp(onResize: () => void, tick: () => void) {
   }
 });
 
+describe("React Compiler 跳过的写法和可访问性检查是 error", () => {
+  async function lint(source) {
+    const [result] = await restrictedSyntaxLinter.lintText(source, {
+      filePath: join(
+        project,
+        "features/ui-catalog/components/example-list/index.tsx",
+      ),
+    });
+    expect(result.fatalErrorCount).toBe(0);
+    return result.messages;
+  }
+
+  test("jsx-a11y 的 ARIA 和 alt 检查报 error", async () => {
+    const messages = (
+      await lint(`export function Probe({ src }: { src: string }) {
+  return (
+    <div aria-foo="x" role="checkbox">
+      <img src={src} />
+    </div>
+  );
+}
+`)
+    ).filter(({ ruleId }) => ruleId?.startsWith("jsx-a11y/"));
+    expect(
+      messages.map(({ severity }) => severity),
+      JSON.stringify(messages, null, 2),
+    ).toStrictEqual(Array(messages.length).fill(2));
+    expect(messages.map(({ ruleId }) => ruleId)).toStrictEqual(
+      expect.arrayContaining([
+        "jsx-a11y/aria-props",
+        "jsx-a11y/role-has-required-aria-props",
+        "jsx-a11y/alt-text",
+      ]),
+    );
+  });
+
+  test("禁用 react-hooks/exhaustive-deps 被拒绝", async () => {
+    const messages = await lint(`import { useEffect } from "react";
+
+export function useProbe(value: number) {
+  useEffect(() => {
+    console.info(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 探针
+  }, []);
+}
+`);
+    expect(
+      messages.map(({ ruleId }) => ruleId),
+      JSON.stringify(messages, null, 2),
+    ).toContain("@eslint-community/eslint-comments/no-restricted-disable");
+  });
+
+  test("effect 漏了依赖报 error", async () => {
+    const messages = await lint(`import { useEffect } from "react";
+
+export function useProbe(value: number) {
+  useEffect(() => {
+    console.info(value);
+  }, []);
+}
+`);
+    expect(
+      messages
+        .filter(({ ruleId }) => ruleId === "react-hooks/exhaustive-deps")
+        .map(({ severity }) => severity),
+      JSON.stringify(messages, null, 2),
+    ).toStrictEqual([2]);
+  });
+});
+
 describe("agent 指令和 identifier 用英文写", () => {
   const eslint = new ESLint({ cwd: project });
   const englishOnly = async (file, source) => {

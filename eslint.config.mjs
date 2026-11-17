@@ -321,7 +321,8 @@ const eslintConfig = defineConfig([
   // ---- UI（.claude/rules/ 的 components.md、design-system.md、react.md、ui-catalog.md）----
   // - NATIVE_ELEMENTS 前面随 RESTRICTED_SYNTAX 生效，这里只放它的例外。所以这一段要排在设置 no-restricted-syntax 的配置之后、
   //   「架构」一段之前：那一段的组件入口配置给 components/ui/ 的 index 重设这条规则，例外排在它后面会把入口的限制整个替换掉。
-  // - React Hooks 和 jsx-a11y 的 ARIA 检查来自最前面的 nextVitals；下面另加三条拦手写的可点击元素。
+  // - React Hooks 和 jsx-a11y 的 ARIA 检查来自最前面的 nextVitals；下面把其中设为 warn 的提成 error，另加三条拦手写的
+  //   可点击元素。
   // - 组件目录的入口和引用（architecture/component-*）、UI 库只经封装引入（architecture/wrapper-imports）在「架构」一段。
   {
     // 封装 Base UI 的地方，可以渲染 NATIVE_ELEMENTS 里的原生元素。
@@ -353,6 +354,26 @@ const eslintConfig = defineConfig([
   {
     files: [SOURCE_GLOB],
     rules: {
+      // nextVitals 把这几条设为 warn，而 lint 和 lint-staged 都不因 warning 失败。只设级别，沿用 nextVitals 的选项。
+      ...Object.fromEntries(
+        [
+          "jsx-a11y/alt-text",
+          "jsx-a11y/aria-props",
+          "jsx-a11y/aria-proptypes",
+          "jsx-a11y/aria-unsupported-elements",
+          "jsx-a11y/role-has-required-aria-props",
+          "jsx-a11y/role-supports-aria-props",
+          "react-hooks/exhaustive-deps",
+          "react-hooks/incompatible-library",
+          "react-hooks/unsupported-syntax",
+        ].map((rule) => [rule, "error"]),
+      ),
+      // 关掉这两条的组件和 hook，React Compiler 不编译。
+      "@eslint-community/eslint-comments/no-restricted-disable": [
+        "error",
+        "react-hooks/rules-of-hooks",
+        "react-hooks/exhaustive-deps",
+      ],
       // 给 div、li 加点击处理的写法拦下，改用 Button 或 Link。
       "jsx-a11y/no-static-element-interactions": "error",
       "jsx-a11y/click-events-have-key-events": "error",
