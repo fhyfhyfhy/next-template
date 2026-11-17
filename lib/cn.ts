@@ -1,4 +1,3 @@
-import type { ClassValue } from "cn";
 import { createCn } from "cn/config";
 
 const mergeClasses = createCn({
@@ -12,9 +11,23 @@ const mergeClasses = createCn({
   },
 });
 
+// 不用 cn 包的 ClassValue：它的对象写法是 [id: string]: any，函数也能赋给它，函数式 className 放错位置时
+// tsc 不报、运行时被丢掉。这里的对象写法用 Record<string, unknown>，函数传进来就是类型错误。
+type ClassDictionary = Record<string, unknown>;
+type ClassArray = ClassValue[];
+type ClassValue =
+  | ClassArray
+  | ClassDictionary
+  | string
+  | number
+  | bigint
+  | boolean
+  | null
+  | undefined;
+
 type StateClassName<State> = (state: State) => string | undefined;
 
-/** 按项目主题合并样式；函数式 className 在收到组件 state 后求值。 */
+/** 按项目主题合并样式；函数式 className 只能作为第二个也是最后一个参数，收到组件 state 后求值。 */
 export function cn(base: ClassValue, className?: string): string;
 export function cn<State>(
   base: ClassValue,

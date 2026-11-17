@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 
 /** 供 Server/Client 组件复用按钮外观；链接可应用这些样式并保留原生语义。 */
 export const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-control border font-medium whitespace-nowrap transition-[background-color,color,border-color,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card data-disabled:cursor-not-allowed data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 touch-manipulation items-center justify-center gap-2 rounded-control border font-medium whitespace-nowrap transition-[background-color,color,border-color,box-shadow,opacity,scale] duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card not-data-disabled:active:scale-98 data-disabled:cursor-not-allowed data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -17,13 +17,16 @@ export const buttonVariants = cva(
           "border-input bg-card text-card-foreground not-data-disabled:hover:bg-accent not-data-disabled:hover:text-accent-foreground",
         ghost:
           "border-transparent text-foreground not-data-disabled:hover:bg-accent not-data-disabled:hover:text-accent-foreground",
+        // 静止时是次要文字色的 ghost，用于列表、卡片里成排的图标操作。
+        quiet:
+          "border-transparent text-muted-foreground not-data-disabled:hover:bg-accent not-data-disabled:hover:text-accent-foreground",
         danger:
-          "border-transparent bg-destructive text-white not-data-disabled:hover:opacity-85",
+          "border-transparent bg-destructive text-destructive-foreground not-data-disabled:hover:opacity-85",
       },
       size: {
         sm: "h-control-sm px-3 text-xs",
         md: "h-control-md px-4 text-sm",
-        lg: "h-control-lg px-5 text-sm",
+        lg: "h-control-lg px-5 text-base",
         // 只放图标的按钮：正方形，可访问名称由调用方的 aria-label 提供。
         "icon-sm": "size-control-sm",
         "icon-md": "size-control-md",

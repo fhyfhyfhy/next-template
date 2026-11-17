@@ -1,5 +1,12 @@
 {
   "localeSwitcher": {
     "label": "切换语言"
+  },
+  "progress": {
+    "indeterminate": "进度未知"
+  },
+  "toaster": {
+    "label": "通知",
+    "close": "关闭通知"
   }
 }
