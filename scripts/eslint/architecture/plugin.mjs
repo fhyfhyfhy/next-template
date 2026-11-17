@@ -68,9 +68,9 @@ export default function createArchitecturePlugin(projectRoot) {
       (part) => part === "components" || part === "_components",
     );
     if (parts[0] === ".." || componentsIndex === -1) return null;
-    // ui/ 是组件集合；components/ui/dialog/ 才是独立组件目录。
+    // 只有根目录的 components/ui/ 是组件集合；components/ui/dialog/ 才是独立组件目录。
     const componentIndex =
-      componentsIndex + (parts[componentsIndex + 1] === "ui" ? 2 : 1);
+      componentsIndex + (componentsIndex === 0 && parts[1] === "ui" ? 2 : 1);
     if (parts.length <= componentIndex + 1) return null;
     return resolve(projectRoot, ...parts.slice(0, componentIndex + 1));
   }

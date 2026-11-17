@@ -603,12 +603,14 @@ const eslintConfig = defineConfig([
     ignores: ["lib/**", "features/*/server/**"],
     rules: { "architecture/data-access": ["error", DATABASE_ACCESS] },
   },
-  // 组件入口在所在位置的限制之外，禁止 export * 和 export * as，要求显式列出公开成员。
+  // 应用代码里组件目录的入口在所在位置的限制之外，禁止 export * 和 export * as，要求显式列出公开成员。只有根目录的
+  // components/ui/ 是组件集合，它的组件入口可以渲染原生元素。
   ...[
-    [`**/components/!(ui)/index.${extensionGlob}`, RESTRICTED_SYNTAX],
-    [`**/_components/*/index.${extensionGlob}`, RESTRICTED_SYNTAX],
+    [`components/!(ui)/index.${extensionGlob}`, RESTRICTED_SYNTAX],
+    [`features/*/components/*/index.${extensionGlob}`, RESTRICTED_SYNTAX],
+    [`app/**/_components/*/index.${extensionGlob}`, RESTRICTED_SYNTAX],
     [
-      `**/components/ui/*/index.${extensionGlob}`,
+      `components/ui/*/index.${extensionGlob}`,
       RESTRICTED_SYNTAX.filter(
         (restriction) => !NATIVE_ELEMENTS.includes(restriction),
       ),

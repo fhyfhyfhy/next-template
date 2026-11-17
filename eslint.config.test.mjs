@@ -353,6 +353,12 @@ addCase("feature 根入口不能直接转导出组件私有文件", {
   syntax: "reexport",
   rule: componentRule,
 });
+addCase("只有根目录的 components/ui/ 是组件集合，feature 里的 ui/ 是组件目录", {
+  from: "features/CASE/components/consumer.ts",
+  to: "features/CASE/components/ui/helper.ts",
+  source: "./ui/helper",
+  rule: componentRule,
+});
 addCase("app 内组件目录同样具有私有边界", {
   from: "app/CASE/page.tsx",
   to: "app/CASE/_components/widget/private.ts",
@@ -1974,6 +1980,12 @@ describe("应用代码只包括「Layers」表里的目录", () => {
 
   test("派生项目自己加的目录，比如 tests/，不受应用代码的限制", async () => {
     expect(await ruleIds("tests/http/probe.ts")).not.toContain(
+      "no-restricted-syntax",
+    );
+  });
+
+  test("应用代码之外名为 components 的目录不套组件入口的限制", async () => {
+    expect(await ruleIds("e2e/components/task-row/index.ts")).not.toContain(
       "no-restricted-syntax",
     );
   });
