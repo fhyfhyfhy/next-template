@@ -25,6 +25,7 @@ export function Preview({ source }: { source: string }) {
         <>
           <TextControl {...field("label")} />
           <TextControl {...field("placeholder")} />
+          <TextControl {...field("description")} />
           <ToggleControl {...field("invalid")} />
           <TextControl {...field("error")} />
         </>

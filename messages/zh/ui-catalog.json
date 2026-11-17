@@ -54,7 +54,7 @@
       "description": "在整个页面之上打开的弹窗。"
     },
     "field": {
-      "description": "把标签、控件和错误信息组合在一起，状态由 TanStack Form 提供。"
+      "description": "把标签、控件、说明和错误信息组合在一起，状态由 TanStack Form 提供。"
     },
     "form": {
       "description": "提交时校验各个字段、聚焦第一个无效字段的表单。"

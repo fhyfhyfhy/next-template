@@ -1,11 +1,17 @@
 "use client";
 
-import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
+import {
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  FieldRoot,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
 export interface FieldConfig {
   label: string;
   placeholder: string;
+  description: string;
   invalid: boolean;
   error: string;
 }
@@ -15,6 +21,7 @@ export interface FieldConfig {
 export const initialConfig: FieldConfig = (/* @example-config */ {
   "label": "项目名称",
   "placeholder": "例如：我的设计系统",
+  "description": "所有能看到这个项目的人都会看到它。",
   "invalid": true,
   "error": "名称已被其他项目占用"
 } /* @end-example-config */);
@@ -26,6 +33,9 @@ export function FieldPlayground({
     <FieldRoot name="name" invalid={config.invalid} className="w-full max-w-xs">
       <FieldLabel>{config.label}</FieldLabel>
       <Input placeholder={config.placeholder} />
+      {config.description && (
+        <FieldDescription>{config.description}</FieldDescription>
+      )}
       <FieldError match={config.invalid}>{config.error}</FieldError>
     </FieldRoot>
   );
