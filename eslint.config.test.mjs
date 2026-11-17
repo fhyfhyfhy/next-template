@@ -2101,6 +2101,19 @@ describe("Tailwind class 按项目主题检查规范写法、颜色、圆角和�
     );
   });
 
+  test("从子目录运行也按项目主题检查", async () => {
+    const source = `export const panel = <div className="h-control-sm lg:max-h-[520px]" />;\n`;
+    const [result] = await new ESLint({
+      cwd: join(project, "components"),
+    }).lintText(source, { filePath });
+    expect(
+      result.messages.map(({ ruleId, severity }) => ({ ruleId, severity })),
+      JSON.stringify(result.messages, null, 2),
+    ).toStrictEqual([
+      { ruleId: "better-tailwindcss/enforce-canonical-classes", severity: 2 },
+    ]);
+  });
+
   test("颜色只能用语义 token 和黑白，圆角只能用内置或项目 token", async () => {
     await expectRestricted(
       [

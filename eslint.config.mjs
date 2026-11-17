@@ -351,6 +351,9 @@ const eslintConfig = defineConfig([
     plugins: { "better-tailwindcss": betterTailwindcss },
     settings: {
       "better-tailwindcss": {
+        // 插件按 ESLint 的 cwd 解析 tailwindcss 和 entryPoint：从子目录或 monorepo 根运行时不设它，主题 class 全报
+        // unknown，或者整组规则静默关掉。entryPoint 相对这里解析。
+        cwd: PROJECT_ROOT,
         entryPoint: "app/globals.css",
         // 不设时插件不做 px 到 rem 的换算，lg:max-h-[520px] 这类可以写成 lg:max-h-130 的 class 就查不出来。
         // globals.css 没有改根字号，按浏览器默认的 16px 算，和 Tailwind CSS IntelliSense 的默认值一致。
