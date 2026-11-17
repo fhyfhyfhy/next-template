@@ -13,6 +13,7 @@ export function formatExampleSource(source: string, config: object): string {
   ) {
     throw new Error("Expected one ordered example config marker pair");
   }
+  // U+2028、U+2029 看不见，编辑器会当成换行，所以展示和复制的代码里把它们转义。
   const json = JSON.stringify(config, null, 2)
     .replaceAll("\u2028", "\\u2028")
     .replaceAll("\u2029", "\\u2029");
