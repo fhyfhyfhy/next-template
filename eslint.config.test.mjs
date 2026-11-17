@@ -2178,6 +2178,21 @@ describe("Tailwind class 按项目主题检查规范写法、颜色、圆角和�
     );
   });
 
+  // 第一列是源码里 className 的写法。
+  test.each([
+    ['"pxx-2"', "no-unknown-classes"],
+    ['"p-2 p-4"', "no-conflicting-classes"],
+    ['"flex-shrink-0"', "no-deprecated-classes"],
+    ["{`p-${size}`}", "no-concatenated-classes"],
+  ])("className=%s 报 %s", async (value, rule) => {
+    const source = `export function Probe({ size }: { size: number }) {\n  return <div className=${value} data-size={size} />;\n}\n`;
+    const [result] = await eslint.lintText(source, { filePath });
+    expect(
+      result.messages.map(({ ruleId }) => ruleId),
+      JSON.stringify(result.messages, null, 2),
+    ).toContain(`better-tailwindcss/${rule}`);
+  });
+
   test("从子目录运行也按项目主题检查", async () => {
     const source = `export const panel = <div className="h-control-sm lg:max-h-[520px]" />;\n`;
     const [result] = await new ESLint({
@@ -2733,16 +2748,26 @@ export function useSave(action: (state: number) => number) {
       name: "effect 里的监听和定时器没在 cleanup 里撤掉时报错",
       source: `import { useEffect } from "react";
 
-export function useLeaks(onResize: () => void, tick: () => void) {
+export function useLeaks(
+  element: Element,
+  onResize: () => void,
+  tick: () => void,
+) {
   useEffect(() => {
     window.addEventListener("resize", onResize);
     setInterval(tick, 1000);
-  }, [onResize, tick]);
+    setTimeout(tick, 1000);
+    new ResizeObserver(onResize).observe(element);
+    new IntersectionObserver(tick).observe(element);
+  }, [element, onResize, tick]);
 }
 `,
       reported: [
         "web-api-no-leaked-event-listener",
         "web-api-no-leaked-interval",
+        "web-api-no-leaked-timeout",
+        "web-api-no-leaked-resize-observer",
+        "web-api-no-leaked-intersection-observer",
       ],
     },
     {
