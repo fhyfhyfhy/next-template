@@ -1,3 +1,2 @@
-export { metadata, Preview } from "./preview";
-export { ToasterPlayground } from "./playground";
+export { Preview } from "./preview";
 export { examples } from "./examples.generated";

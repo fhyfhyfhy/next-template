@@ -54,7 +54,7 @@
       "description": "A popup that opens on top of the entire page."
     },
     "field": {
-      "description": "Groups a label, control, and error message; TanStack Form supplies the state."
+      "description": "Groups a label, control, description, and error message; TanStack Form supplies the state."
     },
     "form": {
       "description": "A form that validates its fields on submit and focuses the first invalid one."
@@ -73,6 +73,9 @@
     },
     "switch": {
       "description": "A control that indicates whether a setting is on or off."
+    },
+    "textarea": {
+      "description": "A multi-line text input that works with Field automatically when placed inside it."
     },
     "toaster": {
       "description": "A brief message that appears temporarily and stacks with others."

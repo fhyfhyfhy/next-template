@@ -1,5 +1,12 @@
 {
   "localeSwitcher": {
     "label": "Language"
+  },
+  "progress": {
+    "indeterminate": "Progress unknown"
+  },
+  "toaster": {
+    "label": "Notifications",
+    "close": "Close notification"
   }
 }

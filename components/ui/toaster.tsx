@@ -7,6 +7,7 @@ import {
   IconInfoCircle,
   IconLoader,
 } from "@tabler/icons-react";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import type { CSSProperties } from "react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
@@ -40,16 +41,22 @@ const icons: ToasterProps["icons"] = {
   loading: <IconLoader className="size-4 animate-spin" />,
 };
 
-/** toast 的容器，在根布局渲染一次；`toast()` 在任意客户端代码中调用。需要在 next-themes 的 ThemeProvider 内。 */
+/**
+ * toast 的容器，在根布局渲染一次；`toast()` 在任意客户端代码中调用。需要在 next-themes 的 ThemeProvider 内，
+ * 也要在下发 `ui` namespace 的 next-intl provider 内：sonner 默认用英文命名通知区域和关闭按钮，区域在没有 toast 时也渲染。
+ */
 export function Toaster({ style, toastOptions, ...props }: ToasterProps) {
   const { resolvedTheme } = useTheme();
+  const t = useTranslations();
   return (
     <Sonner
       position="top-right"
       theme={resolvedTheme === "dark" ? "dark" : "light"}
       icons={icons}
       style={{ ...baseStyle, ...style }}
+      containerAriaLabel={t("ui.toaster.label")}
       toastOptions={{
+        closeButtonAriaLabel: t("ui.toaster.close"),
         ...toastOptions,
         classNames: {
           ...toastOptions?.classNames,

@@ -13,7 +13,7 @@ import type { Task } from "../../api/get-task";
 import { getTaskModel } from "../../api/get-task-model";
 import { retryTaskMutationOptions } from "../../api/retry-task";
 import { TASK_NOT_RETRYABLE } from "../../constants/error-codes";
-import { DeleteTaskDialog } from "../delete-task-dialog";
+import { DeleteTaskDialog } from "./delete-task-dialog";
 
 export function TaskActions({ task }: { task: Task }) {
   const t = useTranslations();
@@ -26,6 +26,7 @@ export function TaskActions({ task }: { task: Task }) {
           <Button
             variant="outline"
             disabled={retry.isPending}
+            focusableWhenDisabled
             onClick={() => retry.mutate()}
           >
             <IconRefresh aria-hidden />
@@ -36,6 +37,7 @@ export function TaskActions({ task }: { task: Task }) {
           <Button
             variant="outline"
             disabled={downloading}
+            focusableWhenDisabled
             onClick={async () => {
               setDownloading(true);
               try {

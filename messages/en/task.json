@@ -12,7 +12,9 @@
   },
   "queryState": {
     "loading": "Loading…",
-    "loadFailed": "Couldn't load"
+    "loadFailed": "Couldn't load",
+    "retry": "Retry",
+    "retryLabel": "Retry loading {subject}"
   },
   "validation": {
     "nameRequired": "Enter a name",
@@ -51,7 +53,7 @@
     "total": "{total, plural, one {# task} other {# tasks}} in total",
     "previousPage": "Previous",
     "nextPage": "Next",
-    "favorite": "Favorite"
+    "favorite": "Favorite “{name}”"
   },
   "taskListToolbar": {
     "statusFilter": "Filter by status",
@@ -86,9 +88,10 @@
     "label": "Models",
     "noMore": "No more models",
     "loadMoreFailed": "Couldn't load. Scroll here to retry.",
-    "favorite": "Favorite"
+    "favorite": "Favorite “{name}”"
   },
   "taskDetail": {
+    "label": "Task details",
     "deletedNotice": "This task has been deleted. Below is the last data it had.",
     "prompt": "Prompt",
     "createdAt": "Created"

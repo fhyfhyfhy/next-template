@@ -77,12 +77,12 @@ export function UiCatalogHeader({ brand, actions }: UiCatalogHeaderProps) {
               </SelectIcon>
             </SelectTrigger>
             <SelectPortal>
-              <SelectPositioner sideOffset={6} alignItemWithTrigger={false}>
+              <SelectPositioner>
                 <SelectPopup>
                   {themes.map(({ value, icon: Icon }) => (
                     <SelectItem key={value} value={value}>
                       <Icon className="size-4" aria-hidden />
-                      <SelectItemText className="flex-1">
+                      <SelectItemText>
                         {t(`ui-catalog.header.theme.${value}`)}
                       </SelectItemText>
                       <SelectItemIndicator>

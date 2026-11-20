@@ -7,7 +7,10 @@ import { useEffect, useEffectEvent } from "react";
 import { environmentManager, useInfiniteQuery } from "@/lib/react-query";
 
 import { getFeedInfiniteQueryOptions } from "../../api/get-feed";
+import { isQueryLoadFailed, QueryLoadFailed } from "../query-load-failed";
 import { FeedCard } from "./feed-card";
+
+export { FeedSkeleton } from "./skeleton";
 
 /** 作品广场由 React Query 负责：滚到底部时追加下一页。第一页来自服务端缓存的 hydration state。 */
 export function FeedGrid() {
@@ -56,12 +59,8 @@ export function FeedGrid() {
       </div>
     );
   }
-  if (feed.error) {
-    return (
-      <p className="text-sm text-destructive">
-        {t("task.queryState.loadFailed")}
-      </p>
-    );
+  if (isQueryLoadFailed(feed)) {
+    return <QueryLoadFailed query={feed} subject={t("task.feed.label")} />;
   }
   return (
     <p className="text-sm text-muted-foreground">

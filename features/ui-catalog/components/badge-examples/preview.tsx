@@ -2,8 +2,9 @@
 
 import { usePlaygroundConfig } from "../../hooks/use-playground-config";
 import type { ComponentMetadata } from "../../types/examples";
-import { OptionControl, TextControl } from "../controls";
+import { OptionControl } from "../option-control";
 import { Playground } from "../playground";
+import { TextControl } from "../text-control";
 import { BadgePlayground, initialConfig } from "./playground";
 
 export const metadata = {

@@ -1,13 +1,14 @@
 "use client";
 
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { type SetStateAction, useId, useState } from "react";
+import { type SetStateAction, useState } from "react";
 
 import {
   SelectIcon,
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
+  SelectLabel,
   SelectList,
   SelectPopup,
   SelectPortal,
@@ -60,18 +61,22 @@ export const initialConfig: SelectConfig = (/* @example-config */ {
   "alignItemWithTrigger": false
 } /* @end-example-config */);
 
-/** 保留 Root、Trigger、定位层和选项的独立组合边界。 */
+/**
+ * 保留 Root、Trigger、定位层和选项的独立组合边界。
+ * 不传 config 和 onConfigChange 时使用本地状态；UI catalog 页面两个一起传，面板与预览共享同一份配置。
+ */
 export function SelectPlayground({
   config,
   onConfigChange,
-}: {
-  config?: SelectConfig;
-  onConfigChange?: (config: SetStateAction<SelectConfig>) => void;
-} = {}) {
+}:
+  | {
+      config: SelectConfig;
+      onConfigChange: (config: SetStateAction<SelectConfig>) => void;
+    }
+  | { config?: undefined; onConfigChange?: undefined } = {}) {
   const [local, setLocal] = useState(initialConfig);
   const state = config ?? local;
   const change = onConfigChange ?? setLocal;
-  const id = useId();
   const items = [
     { value: "design", label: state.firstOption },
     { value: "engineering", label: "开发者" },
@@ -79,10 +84,6 @@ export function SelectPlayground({
   ];
   return (
     <div className="space-y-2">
-      <span id={id} className="text-sm font-medium">
-        {state.label}
-        {state.required && <span className="ml-1 text-destructive">*</span>}
-      </span>
       <SelectRoot<string, boolean>
         size={state.size}
         items={items}
@@ -105,7 +106,15 @@ export function SelectPlayground({
         required={state.required}
         modal={state.modal}
       >
-        <SelectTrigger aria-labelledby={id}>
+        <SelectLabel>
+          {state.label}
+          {state.required && (
+            <span aria-hidden className="ml-1 text-destructive">
+              *
+            </span>
+          )}
+        </SelectLabel>
+        <SelectTrigger>
           <SelectValue placeholder={state.placeholder} />
           <SelectIcon>
             <IconChevronDown className="size-4" aria-hidden />
@@ -128,9 +137,7 @@ export function SelectPlayground({
                       state.disableLastOption && item.value === "product"
                     }
                   >
-                    <SelectItemText className="flex-1">
-                      {item.label}
-                    </SelectItemText>
+                    <SelectItemText>{item.label}</SelectItemText>
                     <SelectItemIndicator>
                       <IconCheck className="size-4" aria-hidden />
                     </SelectItemIndicator>

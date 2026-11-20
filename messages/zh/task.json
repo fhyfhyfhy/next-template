@@ -12,7 +12,9 @@
   },
   "queryState": {
     "loading": "加载中…",
-    "loadFailed": "加载失败"
+    "loadFailed": "加载失败",
+    "retry": "重试",
+    "retryLabel": "重试加载{subject}"
   },
   "validation": {
     "nameRequired": "请输入名称",
@@ -51,7 +53,7 @@
     "total": "共 {total} 个任务",
     "previousPage": "上一页",
     "nextPage": "下一页",
-    "favorite": "收藏"
+    "favorite": "收藏“{name}”"
   },
   "taskListToolbar": {
     "statusFilter": "按状态筛选",
@@ -86,9 +88,10 @@
     "label": "作品",
     "noMore": "没有更多作品了",
     "loadMoreFailed": "加载失败，滚动到这里会重试",
-    "favorite": "收藏"
+    "favorite": "收藏“{name}”"
   },
   "taskDetail": {
+    "label": "任务详情",
     "deletedNotice": "任务已被删除，下面是删除前的最后一份数据。",
     "prompt": "Prompt",
     "createdAt": "创建时间"

@@ -89,7 +89,7 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
           </FieldRoot>
         )}
       </form.Field>
-      <Button type="submit" disabled={rename.isPending}>
+      <Button type="submit" disabled={rename.isPending} focusableWhenDisabled>
         {t("task.renameTask.save")}
       </Button>
       <Button type="button" variant="ghost" onClick={onDone}>

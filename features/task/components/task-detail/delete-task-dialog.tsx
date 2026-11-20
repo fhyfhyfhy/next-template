@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { useMutation } from "@/lib/react-query";
 
-import { deleteTaskMutationOptions } from "../api/delete-task";
-import { TASK_LIST_HREF } from "../constants/task-list";
+import { deleteTaskMutationOptions } from "../../api/delete-task";
+import { TASK_LIST_HREF } from "../../constants/task-list";
 
 interface DeleteTaskDialogProps {
   taskId: string;
@@ -51,6 +51,7 @@ export function DeleteTaskDialog({ taskId, taskName }: DeleteTaskDialogProps) {
             <Button
               variant="danger"
               disabled={deleteTask.isPending}
+              focusableWhenDisabled
               onClick={() =>
                 deleteTask.mutate(
                   { taskId },

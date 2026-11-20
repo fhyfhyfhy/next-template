@@ -6,7 +6,9 @@ import type {
   PlaygroundField,
   PlaygroundNumberField,
 } from "../../hooks/use-playground-config";
-import { OptionControl, TextControl, ToggleControl } from "../controls";
+import { OptionControl } from "../option-control";
+import { TextControl } from "../text-control";
+import { ToggleControl } from "../toggle-control";
 import type { SelectConfig } from "./playground";
 
 /** 将选择器的内容、状态和定位参数呈现为可调控件。 */

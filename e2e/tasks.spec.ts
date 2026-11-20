@@ -16,6 +16,7 @@ import {
 import {
   createTaskThroughForm as createTask,
   expect,
+  favoriteToggle,
   filterByStatus,
   isActiveTasksRequest,
   navigateThroughHeader,
@@ -358,7 +359,7 @@ test("收藏立即生效，请求完成前就显示已收藏", async ({ page }) 
   const { id, name } = await createTask(page);
   // 收藏的 Server Action 放行之前，星标只能来自乐观更新。
   const release = await holdRequests(page, isServerAction);
-  const star = taskRow(page, name).getByRole("button", { name: "收藏" });
+  const star = favoriteToggle(page, name);
 
   await star.click();
   await expect(star).toHaveAttribute("aria-pressed", "true");
@@ -368,16 +369,17 @@ test("收藏立即生效，请求完成前就显示已收藏", async ({ page }) 
   release();
   await saved;
   await page.reload();
-  await expect(
-    taskRow(page, name).getByRole("button", { name: "收藏" }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await expect(favoriteToggle(page, name)).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 });
 
 test("收藏失败时星标恢复原状，只弹一个全局提示", async ({ page }) => {
   await openTasksPage(page);
   const { name } = await createTask(page);
   await failRequests(page, isServerAction);
-  const star = taskRow(page, name).getByRole("button", { name: "收藏" });
+  const star = favoriteToggle(page, name);
 
   await star.click();
 

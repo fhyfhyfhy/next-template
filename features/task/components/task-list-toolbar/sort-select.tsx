@@ -46,11 +46,11 @@ export function SortSelect() {
         </SelectIcon>
       </SelectTrigger>
       <SelectPortal>
-        <SelectPositioner sideOffset={6} alignItemWithTrigger={false}>
+        <SelectPositioner>
           <SelectPopup>
             {items.map((item) => (
               <SelectItem key={item.value} value={item.value}>
-                <SelectItemText className="flex-1">{item.label}</SelectItemText>
+                <SelectItemText>{item.label}</SelectItemText>
                 <SelectItemIndicator>
                   <IconCheck className="size-4" aria-hidden />
                 </SelectItemIndicator>

@@ -19,12 +19,19 @@ function Labels() {
 }
 
 // 组件渲染过程中对自己的 state 做的更新，React 会先应用再重新渲染一次；服务端渲染也
-// 一样，所以这里看到的是改动一次之后的 config。
-function ChangedSize() {
-  const { config, field } = usePlaygroundConfig(initialConfig, source);
-  const size = field("size");
-  if (size.value === "md") size.onChange("sm");
-  return `${config.size} ${config.label}`;
+// 一样，所以这里看到的是改动之后的 config。一次渲染里连改三个 key，每次 onChange 都要
+// 基于前一次改动之后的 config，否则只留下最后一次。
+function ChangedEveryKey() {
+  const { config, field, numberField } = usePlaygroundConfig(
+    initialConfig,
+    source,
+  );
+  if (config.label === "Start") {
+    field("size").onChange("sm");
+    numberField("rows").onChange("5");
+    field("label").onChange("Changed");
+  }
+  return `${config.size} ${config.rows} ${config.label}`;
 }
 
 function NumberFields() {
@@ -58,8 +65,8 @@ test("field 不传 label 时以 key 为标签，value 是这个 key 的值", () 
   expect(renderToString(<Labels />)).toBe("size=md aria-label=Start");
 });
 
-test("field 的 onChange 只改自己的 key，config 的其余部分不变", () => {
-  expect(renderToString(<ChangedSize />)).toBe("sm Start");
+test("field 和 numberField 的 onChange 都在最新的 config 上只改自己的 key，连续改几个都保留", () => {
+  expect(renderToString(<ChangedEveryKey />)).toBe("sm 5 Changed");
 });
 
 test("numberField 把 key 的数字显示成文字，写回文字对应的数字，其余部分不变", () => {

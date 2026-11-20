@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { useQuery } from "@/lib/react-query";
 
 import { favoriteTasksQueryOptions } from "../../api/get-tasks";
-import { taskDetailHref } from "../../utils/task-urls";
+import { isQueryLoadFailed, QueryLoadFailed } from "../query-load-failed";
+import { TaskNameLink } from "../task-name-link";
 import { FavoritesPanelFrame } from "./frame";
 import { FavoritesPanelSkeleton } from "./skeleton";
 
@@ -17,11 +17,12 @@ export function FavoritesPanel() {
   const t = useTranslations();
   const favorites = useQuery(favoriteTasksQueryOptions());
   if (!favorites.data) {
-    return favorites.error ? (
+    return isQueryLoadFailed(favorites) ? (
       <FavoritesPanelFrame>
-        <p className="text-sm text-destructive">
-          {t("task.queryState.loadFailed")}
-        </p>
+        <QueryLoadFailed
+          query={favorites}
+          subject={t("task.favoritesPanel.title")}
+        />
       </FavoritesPanelFrame>
     ) : (
       <FavoritesPanelSkeleton />
@@ -40,12 +41,7 @@ export function FavoritesPanel() {
         >
           {favorites.data.items.map((task) => (
             <li key={task.id}>
-              <Link
-                href={taskDetailHref(task.id)}
-                className="hover:text-primary"
-              >
-                {task.name}
-              </Link>
+              <TaskNameLink task={task} />
             </li>
           ))}
         </ul>

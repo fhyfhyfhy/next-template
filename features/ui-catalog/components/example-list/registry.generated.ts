@@ -13,7 +13,8 @@ import { examples as component7Examples } from "../progress-examples";
 import { examples as component8Examples } from "../select-examples";
 import { examples as component9Examples } from "../skeleton-examples";
 import { examples as component10Examples } from "../switch-examples";
-import { examples as component11Examples } from "../toaster-examples";
+import { examples as component11Examples } from "../textarea-examples";
+import { examples as component12Examples } from "../toaster-examples";
 
 export const examplesByComponent = {
   badge: component0Examples,
@@ -27,5 +28,6 @@ export const examplesByComponent = {
   select: component8Examples,
   skeleton: component9Examples,
   switch: component10Examples,
-  toaster: component11Examples,
+  textarea: component11Examples,
+  toaster: component12Examples,
 };

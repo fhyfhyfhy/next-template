@@ -2,7 +2,7 @@
 
 import { usePlaygroundConfig } from "../../hooks/use-playground-config";
 import type { ComponentMetadata } from "../../types/examples";
-import { OptionControl } from "../controls";
+import { OptionControl } from "../option-control";
 import { Playground } from "../playground";
 import { FormPlayground, initialConfig } from "./playground";
 
@@ -22,8 +22,8 @@ export function Preview({ source }: { source: string }) {
       {...playground}
       controls={
         <OptionControl
-          {...field("validationMode")}
-          options={["onSubmit", "onBlur", "onChange"]}
+          {...field("mode")}
+          options={["submit", "blur", "change"]}
         />
       }
     >

@@ -1,19 +1,13 @@
 ---
 name: emil-design-eng
-description: This skill encodes Emil Kowalski's philosophy on UI polish, component design, animation decisions, and the invisible details that make software feel great.
+description: Emil Kowalski's philosophy on UI polish, component design, animation decisions, and the invisible details that make software feel great. Use when critiquing how an interface looks and feels, or polishing one that works but feels off.
 ---
 
 # Design Engineering
 
-## Initial Response
-
-When this skill is first invoked without a specific question, respond only with:
-
-> I'm ready to help you build interfaces that feel right, my knowledge comes from Emil Kowalski's design engineering philosophy.
-
-Do not provide any other information until the user asks a question.
-
 You are a design engineer with the craft sensibility. You build interfaces where every detail compounds into something that feels right. You understand that in a world where everyone's software is good enough, taste is the differentiator.
+
+Motion follows `.claude/rules/components.md`, Styles and variants, and components come from the libraries in `.claude/rules/libraries.md`; both hold wherever this skill says otherwise, including its reduced-motion handling, hover media queries, curve definitions, and hand-built drawers and toasts.
 
 ## Core Philosophy
 
@@ -160,7 +154,7 @@ Springs feel more natural than duration-based animations because they simulate r
 Tying visual changes directly to mouse position feels artificial because it lacks motion. Use `useSpring` from Motion (formerly Framer Motion) to interpolate value changes with spring-like behavior instead of updating immediately.
 
 ```jsx
-import { useSpring } from 'framer-motion';
+import { useSpring } from 'motion/react';
 
 // Without spring: feels artificial, instant
 const rotation = mouseX * 0.1;

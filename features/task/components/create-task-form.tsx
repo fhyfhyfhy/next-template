@@ -110,6 +110,7 @@ export function CreateTaskForm({ className }: { className?: string }) {
           <Button
             type="submit"
             disabled={!hydrated || isSubmitting}
+            focusableWhenDisabled={hydrated}
             className="sm:mt-5"
           >
             {isSubmitting

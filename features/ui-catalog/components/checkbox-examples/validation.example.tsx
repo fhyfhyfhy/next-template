@@ -1,9 +1,10 @@
 "use client";
 
 import { IconCheck } from "@tabler/icons-react";
-import { useId, useState } from "react";
+import { useState } from "react";
 
 import { CheckboxIndicator, CheckboxRoot } from "@/components/ui/checkbox";
+import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
 
 export const metadata = {
   title: "勾选校验",
@@ -11,36 +12,24 @@ export const metadata = {
   order: 30,
 };
 
-/** 调用方维护勾选状态及校验结果。 */
+/**
+ * 调用方维护勾选状态和校验结果；Field 把复选框标为无效，并把错误关联到它。
+ * label 包住复选框，复选框的名称取自 label 的文字。
+ */
 export function Example() {
   const [checked, setChecked] = useState(false);
-  const descriptionId = useId();
   const invalid = !checked;
-
   return (
-    <div className="space-y-2">
-      <label className="flex items-center gap-3 text-sm">
-        <CheckboxRoot
-          checked={checked}
-          onCheckedChange={setChecked}
-          required
-          aria-invalid={invalid}
-          aria-describedby={descriptionId}
-        >
+    <FieldRoot invalid={invalid}>
+      <FieldLabel className="flex items-center gap-3">
+        <CheckboxRoot checked={checked} onCheckedChange={setChecked} required>
           <CheckboxIndicator>
             <IconCheck aria-hidden />
           </CheckboxIndicator>
         </CheckboxRoot>
         我已阅读并同意使用条款
-      </label>
-      <p
-        id={descriptionId}
-        className={
-          invalid ? "text-xs text-destructive" : "text-xs text-muted-foreground"
-        }
-      >
-        {invalid ? "请先同意使用条款。" : "已同意使用条款，可以继续。"}
-      </p>
-    </div>
+      </FieldLabel>
+      <FieldError match={invalid}>请先同意使用条款。</FieldError>
+    </FieldRoot>
   );
 }
