@@ -9,7 +9,7 @@ A fix-it skill. It does ONE thing: take a web app that feels like a website on a
 
 In this repo, these hold wherever the fixes below say otherwise:
 
-- Write a fix as Tailwind classes with the theme tokens of `app/globals.css` (`.claude/rules/components.md`, Styles and variants), not with the variables below, such as `--gray-3`, which this repo lacks. `hover:` applies only under `@media (hover: hover)` already, and Tailwind's preflight already sets `-webkit-tap-highlight-color` and `-webkit-text-size-adjust`.
+- Write a fix as Tailwind classes with the theme tokens of `app/globals.css` (`.claude/rules/components.md`, Styles and variants), not with the variables below, such as `--gray-3`, which this repo lacks. Tailwind's preflight already sets `-webkit-tap-highlight-color` and `-webkit-text-size-adjust`.
 - A control's own fix, such as a 16px font size on touch devices, goes in its wrapper in `components/ui/`, as `pointer-coarse:text-base`: a rule in the `@layer base` of `app/globals.css` loses to the wrapper's classes. Page-wide CSS, such as `overscroll-behavior` on `html`, goes in that `@layer base`.
 - Viewport and theme-color settings go in a `viewport` export, typed with `Viewport` from `next`, of both files that render `<html>`: `app/[locale]/layout.tsx` and `app/global-not-found.tsx`. Next.js writes the viewport meta tag itself, so never add a `<meta>` for them.
 

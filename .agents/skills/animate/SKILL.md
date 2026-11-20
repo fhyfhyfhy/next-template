@@ -7,16 +7,7 @@ description: Build an animation from scratch, making the decisions in the order 
 
 A construction skill. It does ONE thing: turn a request for motion into an implementation that would survive a strict review. It does not audit a codebase (that's `improve-animations`), critique a diff (that's `review-animations`), hunt for places that could animate (that's `find-animation-opportunities`), or build for React Native (that's `animate-expo`).
 
-## In this repo
-
-Motion here is Tailwind classes on the component (`.claude/rules/components.md`, Styles and variants). Where this skill or RECIPES.md says otherwise, these hold:
-
-- **Reduced motion is global.** `app/globals.css` sets every CSS transition and animation duration to zero under `prefers-reduced-motion`, and no class overrides it, so a CSS transition or animation takes no `motion-reduce:` variant. Motion run from JavaScript checks the preference with `useReducedMotion` from `@mantine/hooks`.
-- **Hover is gated already.** Tailwind's `hover:` applies only under `@media (hover: hover)`, so it needs no media query of its own.
-- **Curves.** The `ease-out` and `ease-in-out` classes are this skill's curves: `app/globals.css` overrides Tailwind's weaker ones of the same names. Add `--ease-drawer` beside them the first time a drawer needs it (`.claude/rules/design-system.md`, Theme tokens).
-- **Transforms.** `scale-*`, `translate-*`, and `rotate-*` set the `scale`, `translate`, and `rotate` properties, not `transform`: transition them with `transition-transform`, or name them, as `transition-[opacity,scale]`.
-- **Enter and exit.** A Base UI part enters and exits through `data-starting-style:` and `data-ending-style:` classes and a CSS transition, growing from `origin-(--transform-origin)` when a trigger anchors it, as `node_modules/@base-ui/react/docs/react/handbook/animation.md` shows. Any other element enters with `starting:`, Tailwind's `@starting-style` variant, not a mount flag set in an effect. Neither needs Motion.
-- **Drawers, toasts, and drag to dismiss** come from libraries: Base UI's `Drawer`, which swipes to dismiss and snaps, wrapped in `components/ui/` (`.claude/rules/design-system.md`, Wrap a UI library), and Sonner through `Toaster` in `components/ui/toaster.tsx`. The recipes for them show what those libraries already do.
+Motion follows `.claude/rules/components.md`, Styles and variants, and components come from the libraries in `.claude/rules/libraries.md`; both hold wherever this skill or RECIPES.md says otherwise, including their reduced-motion handling, hover media queries, curve definitions, and hand-built drawers and toasts.
 
 ## Operating Posture
 

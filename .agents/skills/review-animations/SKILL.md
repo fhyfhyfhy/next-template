@@ -7,7 +7,7 @@ description: Reviews animation and motion code against a high craft bar derived 
 
 A specialized review skill. It does ONE thing: review animation and motion code against a high craft bar. It does not write features, fix unrelated bugs, or review non-motion code. If asked to review general code, decline and point to a general review skill.
 
-This repo's motion conventions are in "In this repo" of the animate skill (`.agents/skills/animate/SKILL.md`), and they hold wherever this skill or STANDARDS.md says otherwise: motion is Tailwind classes, `hover:` is gated already, the `ease-out` and `ease-in-out` classes are the strong curves, and drawers, toasts, and drag to dismiss come from Base UI and Sonner. Reduced motion is global: `app/globals.css` ends every CSS transition and animation under `prefers-reduced-motion` (`.claude/rules/components.md`, Styles and variants), so CSS motion needs no reduced-motion variant of its own, and motion run from JavaScript checks `useReducedMotion` from `@mantine/hooks`. A missing reduced-motion variant or hover media query on CSS motion is not a finding.
+Motion follows `.claude/rules/components.md`, Styles and variants, and components come from the libraries in `.claude/rules/libraries.md`; both hold wherever this skill or STANDARDS.md says otherwise, including their reduced-motion handling, hover media queries, curve definitions, and hand-built drawers and toasts. A missing reduced-motion variant or hover media query on CSS motion is not a finding.
 
 ## Operating Posture
 

@@ -36,12 +36,12 @@ An agent that invokes the skill mid-task needs the review, not a greeting that w
 
 ## This repo's motion conventions
 
-The animate skill's patch records this repo's motion conventions, and `.claude/rules/components.md` settles reduced motion, so the skill's gentler-not-zero reduced motion, its hover media queries, and its plain CSS don't apply here as written.
+This repo keeps its motion conventions in `.claude/rules/components.md` and its library picks in `.claude/rules/libraries.md`, so the skill's gentler-not-zero reduced motion, its hover media queries, and its plain CSS don't apply here as written.
 
 ```diff
 @@ before ## Operating Posture @@
  
-+This repo's motion conventions are in "In this repo" of the animate skill (`.agents/skills/animate/SKILL.md`), and they hold wherever this skill or STANDARDS.md says otherwise: motion is Tailwind classes, `hover:` is gated already, the `ease-out` and `ease-in-out` classes are the strong curves, and drawers, toasts, and drag to dismiss come from Base UI and Sonner. Reduced motion is global: `app/globals.css` ends every CSS transition and animation under `prefers-reduced-motion` (`.claude/rules/components.md`, Styles and variants), so CSS motion needs no reduced-motion variant of its own, and motion run from JavaScript checks `useReducedMotion` from `@mantine/hooks`. A missing reduced-motion variant or hover media query on CSS motion is not a finding.
++Motion follows `.claude/rules/components.md`, Styles and variants, and components come from the libraries in `.claude/rules/libraries.md`; both hold wherever this skill or STANDARDS.md says otherwise, including their reduced-motion handling, hover media queries, curve definitions, and hand-built drawers and toasts. A missing reduced-motion variant or hover media query on CSS motion is not a finding.
 +
  ## Operating Posture
 ```
