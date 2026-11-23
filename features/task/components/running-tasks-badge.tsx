@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@/lib/react-query";
 
 import { activeTasksQueryOptions } from "../api/get-tasks";
+import { isQueryLoadFailed } from "../utils/query-load-state";
 import { RunningTasksBadgeSkeleton } from "./running-tasks-badge-skeleton";
 
 /**
@@ -15,7 +16,8 @@ import { RunningTasksBadgeSkeleton } from "./running-tasks-badge-skeleton";
  */
 export function RunningTasksBadge() {
   const t = useTranslations();
-  const { data, error } = useQuery(activeTasksQueryOptions());
+  const activeTasks = useQuery(activeTasksQueryOptions());
+  const { data } = activeTasks;
   if (data) {
     return (
       <Badge variant={data.total > 0 ? "primary" : "muted"}>
@@ -29,7 +31,8 @@ export function RunningTasksBadge() {
       </Badge>
     );
   }
-  if (error) {
+  // 没有数据时也照常轮询（`activeTasksQueryOptions`），只看 `error` 的话每次轮询都会闪回骨架屏。
+  if (isQueryLoadFailed(activeTasks)) {
     return <Badge variant="outline">{t("task.queryState.loadFailed")}</Badge>;
   }
   return <RunningTasksBadgeSkeleton />;

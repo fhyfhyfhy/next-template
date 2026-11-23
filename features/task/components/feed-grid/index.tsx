@@ -7,7 +7,8 @@ import { useEffect, useEffectEvent } from "react";
 import { environmentManager, useInfiniteQuery } from "@/lib/react-query";
 
 import { getFeedInfiniteQueryOptions } from "../../api/get-feed";
-import { isQueryLoadFailed, QueryLoadFailed } from "../query-load-failed";
+import { isQueryLoadFailed } from "../../utils/query-load-state";
+import { QueryLoadFailed } from "../query-load-failed";
 import { FeedCard } from "./feed-card";
 
 export { FeedSkeleton } from "./skeleton";
@@ -60,7 +61,9 @@ export function FeedGrid() {
     );
   }
   if (isQueryLoadFailed(feed)) {
-    return <QueryLoadFailed query={feed} subject={t("task.feed.label")} />;
+    return (
+      <QueryLoadFailed query={feed} retryLabel={t("task.feed.retryLabel")} />
+    );
   }
   return (
     <p className="text-sm text-muted-foreground">

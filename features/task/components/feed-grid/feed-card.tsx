@@ -18,11 +18,8 @@ export function FeedCard({ task }: { task: Task }) {
   return (
     <article className="overflow-hidden rounded-panel border border-border bg-card">
       <TaskCover coverUrl={task.coverUrl} className="aspect-4/3 w-full" />
-      <div className="flex items-center gap-2 p-3">
-        <TaskNameLink
-          task={task}
-          className="min-w-0 flex-1 truncate text-sm font-medium"
-        />
+      <div className="flex items-center gap-2 p-3 text-sm">
+        <TaskNameLink task={task} className="min-w-0 flex-1 truncate" />
         <Button
           variant="quiet"
           size="icon-sm"

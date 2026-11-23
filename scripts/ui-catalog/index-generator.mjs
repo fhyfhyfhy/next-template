@@ -16,6 +16,7 @@ const featurePath = "features/ui-catalog";
 const exampleSuffix = ".example.tsx";
 const directorySuffix = "-examples";
 const requiredFiles = ["preview.tsx", "playground.tsx", "index.ts"];
+const componentIndexFile = "examples.generated.ts";
 const generatedHeader =
   "// 此文件由 scripts/ui-catalog/index-generator.mjs 自动生成，请勿手动修改。\n";
 const kebabCase = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
@@ -295,7 +296,7 @@ export async function generateExampleIndexes(projectRoot) {
   const { components, revision } = discoverExamples(root);
   const outputs = [
     ...components.map(({ directory, examples }) => ({
-      filename: join(directory, "examples.generated.ts"),
+      filename: join(directory, componentIndexFile),
       source: componentIndex(examples),
     })),
     {
@@ -353,14 +354,14 @@ export async function generateExampleIndexes(projectRoot) {
   return changed;
 }
 
+// 示例目录里的任何变化都重新生成，子目录和其中的文件也算：生成要因它们报错。只跳过生成器自己写的组件索引，
+// 否则每次写入都会多触发一轮生成。
 function isSourceEvent(filename) {
   if (!filename) return true;
   const parts = filename.toString().split(sep);
-  if (!parts[0].endsWith(directorySuffix)) return false;
   return (
-    parts.length === 1 ||
-    (parts.length === 2 &&
-      (parts[1].endsWith(exampleSuffix) || requiredFiles.includes(parts[1])))
+    parts[0].endsWith(directorySuffix) &&
+    !(parts.length === 2 && parts[1] === componentIndexFile)
   );
 }
 

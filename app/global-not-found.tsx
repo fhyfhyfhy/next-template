@@ -35,7 +35,7 @@ export default async function GlobalNotFound() {
             action={
               <Link
                 href="/"
-                className="text-sm text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                className="text-sm text-primary focus-ring hover:underline"
               >
                 {t("app.globalNotFound.home")}
               </Link>

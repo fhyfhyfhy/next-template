@@ -34,7 +34,7 @@ export default function TaskPagesLayout({ children }: { children: ReactNode }) {
           brand={
             <Link
               href="/"
-              className="flex items-center gap-2 rounded-control font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex items-center gap-2 rounded-control font-semibold focus-ring"
             >
               <span className="flex size-8 items-center justify-center rounded-control bg-primary text-primary-foreground">
                 <IconStack2 className="size-5" aria-hidden />

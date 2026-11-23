@@ -1,9 +1,8 @@
 ---
 paths:
   - "components/ui/**"
-  - "app/globals.css"
-  - "lib/cn.ts"
-  - "lib/cn.test.mjs"
+  - "app/globals.*"
+  - "lib/cn*"
 ---
 
 # Design system

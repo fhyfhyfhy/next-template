@@ -2,7 +2,7 @@
 
 // 源码内容变化也要更新此模块，让开发服务器重新读取展示和复制用的源码。
 export const exampleSourceRevision =
-  "95ad343511eaf46b0118cfa4a98d7ae82a024e1e19c5f6e90eb01c511dc6502e";
+  "d009da4624f1a9bfa753692e1a7f2cdc7036a97fe08ab125fcd7b2b21e9035b7";
 
 export const exampleFiles = {
   badge: [
@@ -29,7 +29,7 @@ export const exampleFiles = {
     { id: "server-errors", filename: "server-errors.example.tsx" },
     { id: "tanstack-form", filename: "tanstack-form.example.tsx" },
   ],
-  form: [{ id: "basic", filename: "basic.example.tsx" }],
+  form: [{ id: "first-invalid", filename: "first-invalid.example.tsx" }],
   input: [
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },

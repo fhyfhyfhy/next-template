@@ -4,8 +4,8 @@ import { useTranslations } from "next-intl";
 
 import type { ComponentId } from "../../constants/catalog";
 import type { ExampleDefinition, ExampleSources } from "../../types/examples";
-import { compareExamples } from "../../utils/example-order";
 import { ExampleCard } from "./example-card";
+import { compareExamples } from "./example-order";
 import { examplesByComponent } from "./registry.generated";
 
 /** 按 compareExamples 的顺序展示自动发现的示例。 */

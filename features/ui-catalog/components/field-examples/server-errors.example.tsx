@@ -13,7 +13,7 @@ import { useHydrated } from "@/hooks/use-hydrated";
 export const metadata = {
   title: "服务端返回的字段错误",
   description:
-    "服务端拒绝时只返回错误码，界面按错误码选文案，用 setErrorMap 记到对应字段上，显示在字段下，改动后清除。",
+    "服务端拒绝时只返回错误码，界面按错误码选文案，用 setErrorMap 记到对应字段上：显示在字段下，焦点移到这个字段，改动后清除。",
   order: 20,
 };
 
@@ -46,7 +46,7 @@ export function Example() {
       if (!result.ok) {
         setSaved(null);
         if (result.code === "NAME_TAKEN") {
-          // 记在 onSubmit 下：改动后重新校验通过时，TanStack Form 会清掉它。文案按错误码在界面里选。
+          // 记在 onSubmit 下：改动后重新校验通过时，TanStack Form 会清掉它。
           formApi.setErrorMap({
             onSubmit: {
               fields: { name: [{ message: "名称已被其他任务占用" }] },
@@ -63,7 +63,7 @@ export function Example() {
       className="w-full max-w-xs space-y-3"
       onSubmit={(event) => {
         event.preventDefault();
-        void form.handleSubmit();
+        return form.handleSubmit();
       }}
     >
       <form.Field name="name">

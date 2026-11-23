@@ -5,8 +5,10 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/cn";
 
+// Tailwind v4 把 aria-* 排在 focus-visible 后面，无效时 aria-invalid:border-destructive 盖住 focus-visible:border-ring；
+// aria-invalid:focus-visible:ring-ring 让这时的焦点仍有醒目的 ring，不是多余的 class。
 const inputVariants = cva(
-  "w-full min-w-0 rounded-control border border-input bg-card text-card-foreground transition-[border-color,box-shadow] outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus:ring-destructive/15",
+  "w-full min-w-0 rounded-control border border-input bg-card text-card-foreground transition-[border-color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:ring-ring",
   {
     variants: {
       // 触屏上字号小于 16px 的输入框聚焦时 iOS Safari 会放大页面，所以按指针类型（不是屏宽）换成 text-base。

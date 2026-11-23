@@ -62,7 +62,7 @@ export function RenameTaskForm({ task, onDone }: RenameTaskFormProps) {
       className="flex flex-wrap items-start gap-2"
       onSubmit={(event) => {
         event.preventDefault();
-        void form.handleSubmit();
+        return form.handleSubmit();
       }}
     >
       <form.Field name="name">

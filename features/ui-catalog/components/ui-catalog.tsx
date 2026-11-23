@@ -26,7 +26,7 @@ export function UiCatalog({
     <>
       <a
         href="#main-content"
-        className="sr-only fixed top-4 left-4 z-50 rounded-control bg-card p-3 text-card-foreground outline-none focus:not-sr-only focus-visible:ring-2 focus-visible:ring-ring"
+        className="sr-only fixed top-4 left-4 z-50 rounded-control bg-card p-3 text-card-foreground focus-ring focus:not-sr-only"
       >
         {t("ui-catalog.skipToContent")}
       </a>

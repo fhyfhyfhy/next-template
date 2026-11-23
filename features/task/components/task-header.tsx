@@ -54,7 +54,7 @@ export function TaskHeader({ brand, badge, actions }: TaskHeaderProps) {
                 key={link.href}
                 href={link.href}
                 aria-current={current}
-                className="rounded-control px-3 py-1.5 text-sm text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current]:bg-primary/10 aria-[current]:font-medium aria-[current]:text-primary"
+                className="rounded-control px-3 py-1.5 text-sm text-muted-foreground focus-ring transition-colors hover:bg-accent hover:text-accent-foreground aria-[current]:bg-primary/10 aria-[current]:font-medium aria-[current]:text-primary"
               >
                 {t(`task.nav.${link.key}`)}
               </Link>

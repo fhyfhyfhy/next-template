@@ -4,7 +4,7 @@ import { IconCheck } from "@tabler/icons-react";
 import { useState } from "react";
 
 import { CheckboxIndicator, CheckboxRoot } from "@/components/ui/checkbox";
-import { FieldError, FieldLabel, FieldRoot } from "@/components/ui/field";
+import { FieldError, FieldRoot } from "@/components/ui/field";
 
 export const metadata = {
   title: "勾选校验",
@@ -21,14 +21,14 @@ export function Example() {
   const invalid = !checked;
   return (
     <FieldRoot invalid={invalid}>
-      <FieldLabel className="flex items-center gap-3">
+      <label className="flex items-center gap-3 text-sm">
         <CheckboxRoot checked={checked} onCheckedChange={setChecked} required>
           <CheckboxIndicator>
             <IconCheck aria-hidden />
           </CheckboxIndicator>
         </CheckboxRoot>
         我已阅读并同意使用条款
-      </FieldLabel>
+      </label>
       <FieldError match={invalid}>请先同意使用条款。</FieldError>
     </FieldRoot>
   );

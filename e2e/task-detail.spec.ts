@@ -1,6 +1,6 @@
-import type { Page, Request } from "@playwright/test";
+import type { Locator, Page, Request } from "@playwright/test";
 
-import { holdTable, unique } from "./backend";
+import { failQueriesWaitingFor, holdTable, unique } from "./backend";
 import {
   delayRequests,
   failRequests,
@@ -18,6 +18,7 @@ import {
   isActiveTasksRequest,
   openTasksPage,
   runningCount,
+  type TaskData,
   taskRow,
   taskRows,
   test,
@@ -30,6 +31,9 @@ import { GLOBAL_ERROR_TOAST } from "./test";
 
 const comments = (page: Page) =>
   page.getByRole("list", { name: "评论" }).getByRole("listitem");
+const logs = (page: Page) => page.getByRole("log", { name: "生成日志" });
+/** 日志区里的每一行。 */
+const logLines = (log: Locator) => log.getByRole("paragraph");
 
 /**
  * 打开详情并等 hydration 完成：首屏 HTML 先到，hydration 之前的点击和文件选择没有事件处理。
@@ -42,6 +46,78 @@ async function openTask(page: Page, taskId: string) {
       .getByRole("list", { name: "同 prompt 的其他任务" })
       .or(page.getByText("没有其他任务")),
   ).toBeVisible();
+}
+
+/** 建一个刚失败的任务并打开详情，等日志读完上一轮：失败的那行和「日志已结束」都在。 */
+async function openFailedTask(page: Page, tasks: TaskData) {
+  const task = await tasks.createTask({ status: "running", progress: 75 });
+  await tasks.reportProgress(task.id, {
+    status: "failed",
+    progress: 100,
+    log: "生成失败：材质计算出错",
+  });
+  await openTask(page, task.id);
+  await expect(logs(page)).toContainText("生成失败：材质计算出错");
+  await expect(page.getByText("日志已结束")).toBeVisible();
+  return task;
+}
+
+/**
+ * 让详情页的“同 prompt 的其他任务”首次加载失败，等加载失败的提示出现。进行中的任务才会轮询详情、拿到别处改过的
+ * prompt；拿到新 prompt 后相关任务换成按它查询，这个 query 还没有数据，它的第一次请求失败就是首次加载失败。4xx 不重试。
+ */
+async function failRelatedTasksFirstLoad(page: Page, tasks: TaskData) {
+  const prompt = unique("e2e prompt");
+  const other = await tasks.createTask({ prompt, status: "done" });
+  const task = await tasks.createTask({ status: "running", progress: 50 });
+  await openTask(page, task.id);
+  const isRelatedRequest = (request: Request) =>
+    new URL(request.url()).searchParams.get("prompt") === prompt;
+  const restore = await failRequests(page, isRelatedRequest, { status: 400 });
+  await tasks.changePrompt(task.id, prompt);
+  const failed = page.getByRole("alert").filter({ hasText: "加载失败" });
+  await expect(failed).toBeVisible();
+  return {
+    other,
+    failed,
+    // 可访问名称写明重试的是什么，和失败任务的 TaskActions 里的「重试」分得清。
+    retry: failed.getByRole("button", {
+      name: "重试加载同 prompt 的其他任务",
+      exact: true,
+    }),
+    isRelatedRequest,
+    restore,
+  };
+}
+
+/**
+ * 打开任务详情，让评论首次加载失败，等评论区的加载失败出现，返回恢复评论请求的函数。服务端读评论时锁住评论表，再取消
+ * 等锁的读取，像数据库读失败：流式送到浏览器的评论 query 跟着失败，浏览器重试时请求评论接口，这里也让它失败（4xx 不再
+ * 重试），错误到达评论区的错误边界。
+ */
+async function openTaskWithCommentsFailed(
+  page: Page,
+  tasks: TaskData,
+  taskId: string,
+) {
+  const restore = await failRequests(
+    page,
+    hasPath(`/api/tasks/${taskId}/comments`),
+    { status: 400 },
+  );
+  const release = await holdTable("task_comments");
+  try {
+    await page.goto(`/tasks/${taskId}`, { waitUntil: "commit" });
+    await expect
+      .poll(() => failQueriesWaitingFor("task_comments"))
+      .toBeGreaterThan(0);
+  } finally {
+    await release();
+  }
+  await expect(
+    page.getByRole("alert").filter({ hasText: "评论加载失败" }),
+  ).toBeVisible();
+  return restore;
 }
 
 async function expectTaskNotFound(page: Page) {
@@ -172,17 +248,12 @@ test.describe("任务推进", () => {
     });
   });
 
-  test("生成日志用 SSE 推送，到终态后结束，聚焦的日志区不重新挂载", async ({
+  test("生成日志用 SSE 推送，任务到终态后重新读一遍完整日志并结束", async ({
     page,
     tasks,
   }) => {
     const task = await tasks.createTask();
     await openTask(page, task.id);
-    const logs = page.getByRole("log", { name: "生成日志" });
-    // 日志区超出高度时要滚动，键盘用户得能 Tab 到它：它是排队中任务的「删除任务」之后的下一个 Tab 位置。
-    await page.getByRole("button", { name: "删除任务" }).focus();
-    await page.keyboard.press("Tab");
-    await expect(logs).toBeFocused();
 
     await tasks.reportProgress(task.id, {
       status: "running",
@@ -194,20 +265,94 @@ test.describe("任务推进", () => {
       progress: 25,
       log: "解析 prompt",
     });
-    await expect(logs).toContainText("开始生成");
-    await expect(logs).toContainText("解析 prompt");
+    await expect(logLines(logs(page))).toHaveText(["开始生成", "解析 prompt"]);
 
     await tasks.reportProgress(task.id, {
       status: "done",
       progress: 100,
       log: "生成完成",
     });
-    await expect(logs).toContainText("生成完成");
-    await expect(page.getByText("日志已结束")).toBeVisible();
-    // 任务到终态时日志重新订阅、读一遍完整日志，日志区还是同一个元素：Tab 进来的键盘焦点留在上面，不掉到 body。
+    // 详情显示终态的那次渲染里日志重新订阅、状态回到推送中，之后出现的「日志已结束」来自读完整日志的这次订阅。
     await expect(page.getByTestId("task-status")).toHaveText("已完成");
-    await expect(logs).toContainText("开始生成");
-    await expect(logs).toBeFocused();
+    await expect(page.getByText("日志已结束")).toBeVisible();
+    // 比较完整的日志：重新订阅时没清空，或者收下了上一次订阅中止后交出的事件，都会出现重复的行。
+    await expect(logLines(logs(page))).toHaveText([
+      "开始生成",
+      "解析 prompt",
+      "生成完成",
+    ]);
+  });
+
+  test("日志区在 Tab 顺序里，内容超出高度时键盘用户能聚焦它来滚动", async ({
+    page,
+    tasks,
+  }) => {
+    const task = await tasks.createTask();
+    await openTask(page, task.id);
+
+    // 排队中的任务的「删除任务」之后，下一个 Tab 位置就是日志区。
+    await page.getByRole("button", { name: "删除任务" }).focus();
+    await page.keyboard.press("Tab");
+
+    await expect(logs(page)).toBeFocused();
+  });
+
+  test("任务到终态、日志重新订阅时，聚焦的日志区不重新挂载", async ({
+    page,
+    tasks,
+  }) => {
+    const task = await tasks.createTask({ status: "running", progress: 50 });
+    await openTask(page, task.id);
+    await logs(page).focus();
+
+    await tasks.reportProgress(task.id, {
+      status: "done",
+      progress: 100,
+      log: "生成完成",
+    });
+    await expect(page.getByTestId("task-status")).toHaveText("已完成");
+    await expect(page.getByText("日志已结束")).toBeVisible();
+
+    // 日志区还是同一个元素，焦点留在上面，不掉到 body。
+    await expect(logs(page)).toBeFocused();
+  });
+
+  test("重试确认后日志清空上一轮，重新开始推送", async ({ page, tasks }) => {
+    const task = await openFailedTask(page, tasks);
+    const retried = waitForServerAction(page);
+    await page.getByRole("button", { name: "重试", exact: true }).click();
+    await retried;
+
+    await expect(logs(page)).not.toContainText("生成失败");
+    await expect(page.getByText("日志已结束")).toHaveCount(0);
+    await tasks.reportProgress(task.id, {
+      status: "running",
+      progress: 0,
+      log: "开始生成",
+    });
+    await expect(logLines(logs(page))).toHaveText(["开始生成"]);
+  });
+
+  test("重试时日志重新订阅，聚焦的日志区不重新挂载", async ({
+    page,
+    tasks,
+  }) => {
+    const task = await openFailedTask(page, tasks);
+    const release = await holdRequests(page, isServerAction);
+    await page.getByRole("button", { name: "重试", exact: true }).click();
+    // 「重试」随乐观更新消失，在重试确认之前把焦点放到日志区上。
+    await logs(page).focus();
+    const retried = waitForServerAction(page);
+    release();
+    await retried;
+
+    await tasks.reportProgress(task.id, {
+      status: "running",
+      progress: 0,
+      log: "开始生成",
+    });
+    await expect(logs(page)).toContainText("开始生成");
+    await expect(logs(page)).toBeFocused();
   });
 
   test("任务在别处被删除后显示已删除，不弹通用提示", async ({
@@ -226,43 +371,81 @@ test.describe("任务推进", () => {
 });
 
 test.describe("请求失败", () => {
-  test("相关任务首次加载失败时就地显示加载失败，不弹全局提示；重试期间提示不卸载、焦点留在按钮上，重试后显示列表", async ({
+  test("相关任务首次加载失败时就地显示加载失败，不弹全局提示", async ({
     page,
     tasks,
   }) => {
-    const prompt = unique("e2e prompt");
-    const other = await tasks.createTask({ prompt, status: "done" });
-    // 进行中的任务才会轮询详情，拿到别处改过的 prompt。
-    const task = await tasks.createTask({ status: "running", progress: 50 });
-    await openTask(page, task.id);
-    const isRelatedRequest = (request: Request) =>
-      new URL(request.url()).searchParams.get("prompt") === prompt;
-    // 拿到新 prompt 后，相关任务换成按它查询：这个 query 还没有数据，它的第一次请求失败就是首次加载失败。4xx 不重试。
-    const restore = await failRequests(page, isRelatedRequest, {
-      status: 400,
-    });
-    await tasks.changePrompt(task.id, prompt);
+    const { failed } = await failRelatedTasksFirstLoad(page, tasks);
 
-    const failed = page.getByRole("alert").filter({ hasText: "加载失败" });
     await expect(failed).toBeVisible();
     await expect(page.getByText(GLOBAL_ERROR_TOAST)).toHaveCount(0);
+  });
 
+  test("相关任务重试期间加载失败的提示不卸载，按钮停用、键盘焦点留在按钮上", async ({
+    page,
+    tasks,
+  }) => {
+    const { retry, isRelatedRequest, restore } =
+      await failRelatedTasksFirstLoad(page, tasks);
     await restore();
-    // 可访问名称写明重试的是什么，和失败任务的 TaskActions 里的「重试」分得清。
-    const retry = failed.getByRole("button", {
-      name: "重试加载同 prompt 的其他任务",
-      exact: true,
-    });
-    // 重试的请求停在浏览器里：这期间提示不卸载，按钮停用，键盘焦点留在它上面。
+    // 重试的请求停在浏览器里，断言请求进行中的样子。
     const release = await holdRequests(page, isRelatedRequest);
+
     await retry.press("Enter");
+
     await expect(retry).toBeDisabled();
     await expect(retry).toBeFocused();
-
     release();
+  });
+
+  test("相关任务重试成功后显示列表", async ({ page, tasks }) => {
+    const { other, retry, restore } = await failRelatedTasksFirstLoad(
+      page,
+      tasks,
+    );
+    await restore();
+
+    await retry.click();
+
     await expect(
       page.getByRole("list", { name: "同 prompt 的其他任务" }),
     ).toContainText(other.name);
+  });
+
+  test("评论首次加载失败时就地显示加载失败，重试按钮的名称写明重试的是评论", async ({
+    page,
+    tasks,
+  }) => {
+    const task = await tasks.createTask({ status: "done" });
+
+    await openTaskWithCommentsFailed(page, tasks, task.id);
+
+    await expect(
+      page
+        .getByRole("alert")
+        .filter({ hasText: "评论加载失败" })
+        .getByRole("button"),
+    ).toHaveAccessibleName("重试加载评论");
+  });
+
+  test("评论加载失败后重试，评论出现，键盘焦点移到评论区标题", async ({
+    page,
+    tasks,
+  }) => {
+    const task = await tasks.createTask({ status: "done" });
+    await tasks.addComments(task.id, ["第一条评论"]);
+    const restore = await openTaskWithCommentsFailed(page, tasks, task.id);
+    await restore();
+
+    await page
+      .getByRole("button", { name: "重试加载评论", exact: true })
+      .press("Enter");
+
+    await expect(comments(page)).toHaveText([/第一条评论/]);
+    // 重新加载时 Suspense 的 fallback 换掉了按钮；评论出现后焦点在评论区标题上，不在 body 上。
+    await expect(
+      page.getByRole("heading", { name: "评论", exact: true }),
+    ).toBeFocused();
   });
 
   test("已有数据时刷新失败，保留数据并弹全局提示", async ({ page, tasks }) => {
@@ -332,7 +515,7 @@ test.describe("写入", () => {
     await openTask(page, task.id);
     // 重试的 Server Action 放行之前，排队中只能来自乐观更新；等 action 返回后再推进，任务才已经回到 pending。
     const release = await holdRequests(page, isServerAction);
-    await page.getByRole("button", { name: "重试" }).click();
+    await page.getByRole("button", { name: "重试", exact: true }).click();
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
     const retried = waitForServerAction(page);
     release();
@@ -358,7 +541,7 @@ test.describe("写入", () => {
     await failRequests(page, isServerAction);
     const release = await holdRequests(page, isServerAction);
 
-    await page.getByRole("button", { name: "重试" }).click();
+    await page.getByRole("button", { name: "重试", exact: true }).click();
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
     release();
 
@@ -371,7 +554,7 @@ test.describe("写入", () => {
     await openTask(page, task.id);
     await tasks.retryTask(task.id);
 
-    await page.getByRole("button", { name: "重试" }).click();
+    await page.getByRole("button", { name: "重试", exact: true }).click();
 
     await expect(page.getByText("任务状态已变化")).toBeVisible();
     await expect(page.getByTestId("task-status")).toHaveText("排队中");
@@ -403,6 +586,48 @@ test.describe("写入", () => {
     await expect(taskRow(page, task.name)).toHaveCount(0);
     await page.goto(`/tasks/${task.id}`);
     await expectTaskNotFound(page);
+  });
+
+  test("删除的请求进行中「删除」停用但保持键盘焦点，失败提示之后焦点仍在上面", async ({
+    page,
+    tasks,
+  }) => {
+    const task = await tasks.createTask({ status: "done" });
+    await openTask(page, task.id);
+    await page.getByRole("button", { name: "删除任务" }).click();
+    const confirm = page
+      .getByRole("dialog")
+      .getByRole("button", { name: "删除", exact: true });
+    await failRequests(page, isServerAction);
+    const release = await holdRequests(page, isServerAction);
+
+    await confirm.press("Enter");
+    await expect(confirm).toBeDisabled();
+    await expect(confirm).toBeFocused();
+    release();
+
+    await expect(page.getByText("删除任务失败，请稍后重试")).toBeVisible();
+    await expect(confirm).toBeFocused();
+  });
+
+  test("任务名很长、中间没有能断行的地方时，删除对话框的标题换行，不撑出对话框", async ({
+    page,
+    tasks,
+  }) => {
+    // 名称最多 40 个字；一长串拉丁字母中间没有断行的位置，不换行的话比对话框宽。
+    const task = await tasks.createTask({ name: unique("W".repeat(32)) });
+    await openTask(page, task.id);
+
+    await page.getByRole("button", { name: "删除任务" }).click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading")).toContainText(task.name);
+    // 内容比对话框宽时，对话框能横向滚动：滚动宽度大于可见宽度。
+    expect(
+      await dialog.evaluate(
+        (element) => element.scrollWidth - element.clientWidth,
+      ),
+    ).toBe(0);
   });
 
   test("重命名表单从当前数据开始编辑，撞名时在字段上提示", async ({
@@ -697,7 +922,10 @@ test.describe("评论", () => {
     const htmlPage = await openWithoutScripts(page, "/tasks/task-01");
 
     await expect(htmlPage.getByLabel("写评论")).toBeDisabled();
-    await expect(htmlPage.getByRole("button", { name: "发表" })).toBeDisabled();
+    // 要原生的 disabled：toBeDisabled 对 aria-disabled 也算通过，那样的按钮在 hydration 之前仍能原生提交表单。
+    await expect(
+      htmlPage.getByRole("button", { name: "发表" }),
+    ).toHaveAttribute("disabled");
     await htmlPage.close();
   });
 });

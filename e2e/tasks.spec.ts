@@ -255,9 +255,10 @@ test("hydration 之前创建表单不可用", async ({ page }) => {
 
   await expect(htmlPage.getByLabel("名称")).toBeDisabled();
   await expect(htmlPage.getByLabel("Prompt")).toBeDisabled();
+  // 要原生的 disabled：toBeDisabled 对 aria-disabled 也算通过，那样的按钮在 hydration 之前仍能原生提交表单。
   await expect(
     htmlPage.getByRole("button", { name: "创建任务" }),
-  ).toBeDisabled();
+  ).toHaveAttribute("disabled");
   await htmlPage.close();
 });
 
@@ -359,7 +360,7 @@ test("收藏立即生效，请求完成前就显示已收藏", async ({ page }) 
   const { id, name } = await createTask(page);
   // 收藏的 Server Action 放行之前，星标只能来自乐观更新。
   const release = await holdRequests(page, isServerAction);
-  const star = favoriteToggle(page, name);
+  const star = favoriteToggle(rows(page), name);
 
   await star.click();
   await expect(star).toHaveAttribute("aria-pressed", "true");
@@ -369,7 +370,7 @@ test("收藏立即生效，请求完成前就显示已收藏", async ({ page }) 
   release();
   await saved;
   await page.reload();
-  await expect(favoriteToggle(page, name)).toHaveAttribute(
+  await expect(favoriteToggle(rows(page), name)).toHaveAttribute(
     "aria-pressed",
     "true",
   );
@@ -379,7 +380,7 @@ test("收藏失败时星标恢复原状，只弹一个全局提示", async ({ pa
   await openTasksPage(page);
   const { name } = await createTask(page);
   await failRequests(page, isServerAction);
-  const star = favoriteToggle(page, name);
+  const star = favoriteToggle(rows(page), name);
 
   await star.click();
 

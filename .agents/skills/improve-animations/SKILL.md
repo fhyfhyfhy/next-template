@@ -87,6 +87,8 @@ Write for the weakest executor: exact file paths and current-code excerpts, the 
 
 Finish by creating or updating `docs/animation-plans/README.md`: recommended execution order, dependencies between plans, and a status column.
 
+Write the plans and their README in the prose language that `.claude/rules/writing-style.md` sets for plans, translating PLAN-TEMPLATE.md's headings too, and keep code, paths, class names, and other terms as they are.
+
 Commit the plans and their README in a PR of their own, and the changes a `reconcile` makes the same way: an executor's worktree starts from main, so `execute <plan>` takes a plan that has reached main. The PR that carries out a plan marks it DONE in the README.
 
 ## Invocation Variants

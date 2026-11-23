@@ -53,7 +53,7 @@ export function CommentForm({ taskId }: { taskId: string }) {
       className="mt-3 flex items-start gap-2"
       onSubmit={(event) => {
         event.preventDefault();
-        void form.handleSubmit();
+        return form.handleSubmit();
       }}
     >
       <form.Field name="content">

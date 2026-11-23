@@ -1,4 +1,4 @@
-import type { ExampleMetadata } from "../types/examples";
+import type { ExampleMetadata } from "../../types/examples";
 
 /**
  * 示例的展示顺序：先按 `order`（未设为 0），再按 ID。order 相同时比较的是 ID 而不是文件名，

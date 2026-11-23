@@ -52,10 +52,7 @@ export function TaskList({ tasksPromise }: TaskListProps) {
                 className="size-14 shrink-0 rounded-control"
               />
               <div className="min-w-0 flex-1">
-                <TaskNameLink
-                  task={task}
-                  className="block truncate font-medium"
-                />
+                <TaskNameLink task={task} className="block truncate" />
                 <p className="mt-1 text-xs text-muted-foreground">
                   <DateTime value={task.createdAt} format={DATE_TIME_FORMAT} />
                 </p>

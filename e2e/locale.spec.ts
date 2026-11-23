@@ -1,3 +1,5 @@
+import type { Page } from "@playwright/test";
+
 import { clickForClientNavigation } from "./browser";
 import { expect, test } from "./test";
 
@@ -6,18 +8,17 @@ import { expect, test } from "./test";
 
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
-test("切换语言后地址不变，之后的客户端导航和整页打开都按选择显示，前进后退时地址不带 _rsc", async ({
-  page,
-}) => {
+/** 在搜索页用语言切换器换成英文，等英文页面出现。切换器的链接是整页跳转的 <a>，不用等 hydrate。 */
+async function switchToEnglish(page: Page) {
   await page.goto("/search");
   const switcher = page.getByRole("navigation", { name: "切换语言" });
-  // 切换器的链接是整页跳转的 <a>，不用等 hydrate。
   await expect(switcher.getByRole("link", { name: "English" })).toBeVisible();
   await switcher.getByRole("link", { name: "English" }).click();
-  await expect(page).toHaveURL("/search");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
+}
 
-  // 客户端导航：地址和中文页面相同，拿到的要是英文页面。搜索框在 hydration 之后才可用，可用了再点导航链接。
+/** 在英文的搜索页上经导航栏客户端导航到全部任务页。搜索框在 hydration 之后才可用，可用了再点导航链接。 */
+async function navigateToTasksInEnglish(page: Page) {
   await expect(page.getByLabel("Search tasks")).toBeEnabled();
   await clickForClientNavigation(
     page,
@@ -26,12 +27,32 @@ test("切换语言后地址不变，之后的客户端导航和整页打开都�
       .getByRole("link", { name: "All tasks" }),
     "/tasks",
   );
+}
+
+test("切换语言后地址不变，页面换成所选的语言", async ({ page }) => {
+  await switchToEnglish(page);
+
+  await expect(page).toHaveURL("/search");
+  await expect(page.getByLabel("Search tasks")).toBeVisible();
+});
+
+test("切换语言后的客户端导航按选择显示", async ({ page }) => {
+  await switchToEnglish(page);
+
+  // 地址和中文页面相同，拿到的要是英文页面。
+  await navigateToTasksInEnglish(page);
+
   await expect(
     page.getByRole("heading", { level: 1, name: "All tasks" }),
   ).toBeVisible();
+});
+
+test("切换语言前后的页面，前进后退回去时地址不带 _rsc", async ({ page }) => {
+  await switchToEnglish(page);
+  await navigateToTasksInEnglish(page);
 
   // 切换语言的链接整页跳转（components/locale-switcher/locale-items.tsx 说明了原因）：切换前后的两页，前进后退
-  // 回去时地址都和当时一样，不带 _rsc。
+  // 回去时地址都和当时一样。
   const back = () => page.goBack();
   const forward = () => page.goForward();
   for (const [move, url] of [
@@ -43,6 +64,12 @@ test("切换语言后地址不变，之后的客户端导航和整页打开都�
     await move();
     await expect(page).toHaveURL(url);
   }
+});
+
+test("切换语言后整页打开别的页面也按选择显示，在那里切回中文时地址不变", async ({
+  page,
+}) => {
+  await switchToEnglish(page);
 
   await page.goto("/ui?component=select");
   // 标题后的句点只是装饰，不进可访问名称。

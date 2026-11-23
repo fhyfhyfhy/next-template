@@ -13,7 +13,7 @@ const LOCALE_NAMES: Record<Locale, string> = {
 };
 
 const itemClassName =
-  "rounded-control px-2 py-1 text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring";
+  "rounded-control px-2 py-1 text-muted-foreground transition-colors hover:text-foreground focus-ring";
 
 interface LocaleItemsProps {
   /** 当前页面的地址，含 query，不含 basePath。不传时其他语言也只显示文字，用作链接就绪前的占位。 */

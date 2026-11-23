@@ -10,7 +10,7 @@ export function ComponentNavigation() {
   return (
     <aside className="min-w-0 border-b border-border md:border-r md:border-b-0">
       <div className="p-5 md:sticky md:top-0 md:px-6 md:py-10 lg:px-8">
-        <p className="mb-5 hidden font-mono text-2xs tracking-[0.18em] text-muted-foreground md:block">
+        <p className="mb-5 hidden font-mono text-2xs tracking-[0.16em] text-muted-foreground md:block">
           {t("ui-catalog.navigation.eyebrow")}
         </p>
         <nav

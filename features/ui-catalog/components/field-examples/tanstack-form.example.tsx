@@ -43,7 +43,7 @@ export function Example() {
       className="w-full max-w-xs space-y-3"
       onSubmit={(event) => {
         event.preventDefault();
-        void form.handleSubmit();
+        return form.handleSubmit();
       }}
     >
       {fields.map(({ name, label, placeholder }) => (

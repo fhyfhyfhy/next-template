@@ -3,6 +3,7 @@ import { createCn } from "cn/config";
 const mergeClasses = createCn({
   extend: {
     theme: {
+      animate: ["progress-indeterminate"],
       blur: ["overlay"],
       radius: ["control", "panel"],
       shadow: ["popover"],

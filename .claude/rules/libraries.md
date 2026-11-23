@@ -24,6 +24,8 @@ ESLint enforces this list through `wrappedPackages` in `scripts/eslint/architect
 Used directly:
 
 - Icons: `@tabler/icons-react`
+- i18n: `next-intl`, as [i18n.md](i18n.md) describes
+- URL state: `nuqs`, as [URL state](data-flow.md#url-state) describes
 - Forms: `@tanstack/react-form`, with Base UI `Field` in `components/ui/field/`
 - Shared client state: `zustand`, its stores in a feature's `stores/` ([Feature structure](architecture.md#feature-structure))
 - Charts: `@tanstack/react-charts`

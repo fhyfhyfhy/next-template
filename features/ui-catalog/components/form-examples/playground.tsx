@@ -22,7 +22,7 @@ export const initialConfig: FormConfig = (/* @example-config */ {
 } /* @end-example-config */);
 
 const schema = z.object({
-  name: z.string().trim().min(1, "请输入项目名称").min(3, "至少 3 个字"),
+  name: z.string().trim().min(1, "请输入项目名称").min(3, "至少 3 个字符"),
 });
 
 /** 不传参数时使用默认配置；UI catalog 页面传入同一份配置供面板与预览共享。 */
@@ -43,7 +43,7 @@ export function FormPlayground({
       className="w-full max-w-xs space-y-3"
       onSubmit={(event) => {
         event.preventDefault();
-        void form.handleSubmit();
+        return form.handleSubmit();
       }}
     >
       <form.Field name="name">
@@ -57,7 +57,7 @@ export function FormPlayground({
           >
             <FieldLabel>项目名称</FieldLabel>
             <Input
-              placeholder="至少 3 个字"
+              placeholder="至少 3 个字符"
               value={field.state.value}
               onValueChange={(value) => field.handleChange(value)}
               onBlur={field.handleBlur}

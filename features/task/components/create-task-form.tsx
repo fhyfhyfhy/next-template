@@ -78,7 +78,7 @@ export function CreateTaskForm({ className }: { className?: string }) {
       )}
       onSubmit={(event) => {
         event.preventDefault();
-        void form.handleSubmit();
+        return form.handleSubmit();
       }}
     >
       {fields.map(({ name, labelKey, placeholderKey }) => (

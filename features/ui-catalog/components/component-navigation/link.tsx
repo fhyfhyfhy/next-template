@@ -27,7 +27,7 @@ export function ComponentNavigationLink({
         void setSearchParams({ component });
       }}
       aria-current={current ? "page" : undefined}
-      className="group flex shrink-0 items-center gap-3 rounded-control p-3 text-sm text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-primary/10 aria-[current=page]:font-medium aria-[current=page]:text-primary"
+      className="group flex shrink-0 items-center gap-3 rounded-control p-3 text-sm text-muted-foreground focus-ring transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-primary/10 aria-[current=page]:font-medium aria-[current=page]:text-primary"
     >
       {children}
       {current && (

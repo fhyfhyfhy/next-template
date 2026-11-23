@@ -2,7 +2,7 @@
 
 import { type SetStateAction, useState } from "react";
 
-import { FieldDescription, FieldLabel, FieldRoot } from "@/components/ui/field";
+import { FieldDescription, FieldRoot } from "@/components/ui/field";
 import {
   SwitchRoot,
   type SwitchRootProps,
@@ -46,25 +46,23 @@ export function SwitchPlayground({
   const change = onConfigChange ?? setLocal;
   return (
     <div className="rounded-panel border border-border bg-card p-5 text-card-foreground">
-      <FieldRoot
-        disabled={state.disabled}
-        className="flex-row items-center justify-between gap-5"
-      >
-        <div className="flex flex-col gap-1">
-          <FieldLabel>{state.label}</FieldLabel>
-          <FieldDescription>{state.description}</FieldDescription>
-        </div>
-        <SwitchRoot
-          size={state.size}
-          checked={state.checked}
-          readOnly={state.readOnly}
-          required={state.required}
-          onCheckedChange={(checked) =>
-            change((previous) => ({ ...previous, checked }))
-          }
-        >
-          <SwitchThumb />
-        </SwitchRoot>
+      {/* 说明放在 label 外面：label 里的文字都会进开关的名称。 */}
+      <FieldRoot disabled={state.disabled}>
+        <label className="flex items-center justify-between gap-5 text-sm">
+          {state.label}
+          <SwitchRoot
+            size={state.size}
+            checked={state.checked}
+            readOnly={state.readOnly}
+            required={state.required}
+            onCheckedChange={(checked) =>
+              change((previous) => ({ ...previous, checked }))
+            }
+          >
+            <SwitchThumb />
+          </SwitchRoot>
+        </label>
+        <FieldDescription>{state.description}</FieldDescription>
       </FieldRoot>
     </div>
   );

@@ -7,19 +7,16 @@ import { taskDetailHref } from "../utils/task-urls";
 
 interface TaskNameLinkProps {
   task: Pick<Task, "id" | "name">;
-  /** 布局：截断、字重、在行里占多宽，由所在的列表或卡片决定。 */
+  /** 只放布局：截断、在行里占多宽，由所在的列表或卡片决定。 */
   className?: string;
 }
 
-/** 任务名，链接到任务详情。 */
+/** 链接到任务详情的任务名。列表、卡片和面板里的任务名都用它，字重、hover 和 focus 的样式才一致。 */
 export function TaskNameLink({ task, className }: TaskNameLinkProps) {
   return (
     <Link
       href={taskDetailHref(task.id)}
-      className={cn(
-        "outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring",
-        className,
-      )}
+      className={cn("font-medium focus-ring hover:text-primary", className)}
     >
       {task.name}
     </Link>

@@ -2,6 +2,7 @@ import { createRef } from "react";
 import { renderToString } from "react-dom/server";
 import { expect, expectTypeOf, test } from "vitest";
 
+import { FieldRoot } from "./field";
 import { Textarea } from "./textarea";
 
 test("属性和事件按 textarea 定义，textarea 的属性渲染到元素上", () => {
@@ -11,7 +12,6 @@ test("属性和事件按 textarea 定义，textarea 的属性渲染到元素上"
       rows={3}
       wrap="hard"
       defaultValue="项目简介"
-      className={(state) => (state.disabled ? "opacity-50" : undefined)}
       onChange={(event) => {
         expectTypeOf(event.currentTarget).toExtend<HTMLTextAreaElement>();
       }}
@@ -21,8 +21,36 @@ test("属性和事件按 textarea 定义，textarea 的属性渲染到元素上"
     />,
   );
 
-  expect(html).toMatch(/^<textarea [^>]*rows="3"[^>]*wrap="hard"/);
+  expect(html).toMatch(/^<textarea /);
+  expect(html).toContain('rows="3"');
+  expect(html).toContain('wrap="hard"');
   expect(html).toContain("项目简介</textarea>");
+});
+
+test("函数形式的 className 按 Field 状态求值", () => {
+  const className = (state: { disabled: boolean }) =>
+    state.disabled ? "italic" : undefined;
+  const classOf = (html: string) => /class="([^"]*)"/.exec(html)?.[1];
+
+  expect(
+    classOf(renderToString(<Textarea disabled className={className} />)),
+  ).toContain("italic");
+  expect(
+    classOf(renderToString(<Textarea className={className} />)),
+  ).not.toContain("italic");
+});
+
+test("调用方的 aria-describedby 交给 Field 合并，字段无效时 aria-invalid 以 Field 为准", () => {
+  // FieldDescription 在 layout effect 里登记 id，服务端渲染时还没有，所以这里只能看到调用方的 id；
+  // 和说明 id 拼接要在浏览器里检查。
+  const html = renderToString(
+    <FieldRoot invalid>
+      <Textarea aria-describedby="hint" aria-invalid={false} />
+    </FieldRoot>,
+  );
+
+  expect(html).toContain('aria-describedby="hint"');
+  expect(html).toContain('aria-invalid="true"');
 });
 
 test("input 才有的属性是类型错误", () => {

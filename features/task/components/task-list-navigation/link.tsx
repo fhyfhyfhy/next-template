@@ -32,10 +32,7 @@ export function TaskListLink({
   return (
     <Link
       {...props}
-      className={cn(
-        "outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        className,
-      )}
+      className={cn("focus-ring", className)}
       href={serializeTaskListSearchParams(TASK_LIST_HREF, target)}
       // 用 onNavigate 而不是 onClick：Ctrl/Cmd 点击在新标签页打开时不触发它，交给浏览器处理。
       onNavigate={(event) => {

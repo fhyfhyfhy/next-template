@@ -45,12 +45,11 @@ export function Playground({
           variant="ghost"
           size="sm"
           aria-expanded={showCode}
+          className="aria-expanded:bg-accent aria-expanded:text-accent-foreground"
           onClick={() => setShowCode(!showCode)}
         >
           <IconCode aria-hidden />
-          {showCode
-            ? t("ui-catalog.playground.hideCode")
-            : t("ui-catalog.playground.showCode")}
+          {t("ui-catalog.playground.code")}
         </Button>
       </div>
       <div className="grid lg:grid-cols-[minmax(0,1fr)_264px]">

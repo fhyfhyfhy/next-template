@@ -27,11 +27,24 @@ const config = {
         `vitest related --run --project unit --passWithNoTests ${args(code)}`,
       );
     }
-    // 这两个测试按文件内容检查，不经过 import，vitest related 找不到它们。
+    // 这几个测试按文件内容检查，不经过 import，vitest related 找不到它们。
     if (files.some((file) => file.startsWith("messages/"))) {
       commands.push("vitest run --project unit messages/messages.test.ts");
     }
-    if (files.some((file) => file.endsWith(".md"))) {
+    if (files.some((file) => file.startsWith("features/ui-catalog/"))) {
+      commands.push(
+        "vitest run --project unit scripts/ui-catalog/index-freshness.test.mjs",
+      );
+    }
+    // docs-links 也检查 ESLint 消息指向的规则小节。
+    if (
+      files.some(
+        (file) =>
+          file.endsWith(".md") ||
+          file === "eslint.config.mjs" ||
+          file.startsWith("scripts/eslint/"),
+      )
+    ) {
       commands.push("vitest run --project unit scripts/docs-links.test.mjs");
     }
     return commands;

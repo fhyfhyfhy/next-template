@@ -1,9 +1,7 @@
 import {
-  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -11,9 +9,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative } from "node:path";
+import { dirname, join } from "node:path";
 import { setTimeout } from "node:timers/promises";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 import { expect, onTestFinished, test } from "vitest";
 
 import {
@@ -22,7 +20,6 @@ import {
 } from "./index-generator.mjs";
 
 const featurePath = "features/ui-catalog";
-const project = fileURLToPath(new URL("../..", import.meta.url));
 let moduleVersion = 0;
 
 function fixture() {
@@ -112,6 +109,17 @@ function componentRegistrySource(root) {
   return readFileSync(componentRegistryPath(root), "utf8");
 }
 
+/** 这些组件的索引和四个共用索引里，已经写到磁盘上的那些。 */
+function writtenIndexes(root, ids) {
+  return [
+    ...ids.map((id) => componentPath(root, id, "examples.generated.ts")),
+    sourceIndexPath(root),
+    registryPath(root),
+    catalogPath(root),
+    componentRegistryPath(root),
+  ].filter((filename) => existsSync(filename));
+}
+
 // 用到它的用例，超时要比这 5 秒长：否则失败时报的是用例超时，看不到最后一次断言的差异。
 async function eventually(check) {
   const deadline = Date.now() + 5000;
@@ -169,14 +177,35 @@ test("示例目录里有子目录时报错，不写入任何索引", async () =>
     "folder.example.tsx/basic.tsx",
   ]) {
     const root = fixture();
+    // 和"非法示例名称在写入索引前报错"一样，anchor 先通过校验：边校验边写的话，它的索引会留下来。
+    component(root, "anchor");
     component(root, "checkbox");
     write(root, "checkbox", nested);
 
     await expect(generateExampleIndexes(root)).rejects.toThrow(
       `Expected only files in a UI catalog examples directory: ${componentPath(root, "checkbox", dirname(nested))}`,
     );
-    expect(existsSync(sourceIndexPath(root))).toBe(false);
+    expect(writtenIndexes(root, ["anchor", "checkbox"])).toStrictEqual([]);
   }
+});
+
+test("按生成物所在位置的 Prettier 配置格式化", async () => {
+  const root = fixture();
+  writeFileSync(join(root, ".prettierrc"), JSON.stringify({ semi: false }));
+  component(root, "checkbox");
+  write(root, "checkbox", "basic.example.tsx");
+
+  const generated = await generateExampleIndexes(root);
+  expect(generated).toHaveLength(5);
+  for (const filename of generated) {
+    expect(readFileSync(filename, "utf8"), filename).not.toMatch(/;$/m);
+  }
+  expect(
+    readFileSync(
+      componentPath(root, "checkbox", "examples.generated.ts"),
+      "utf8",
+    ),
+  ).toMatch(/^"use client"$/m);
 });
 
 test("没有组件目录时明确报错，不生成无法使用的空目录", async () => {
@@ -443,16 +472,7 @@ test("非法示例名称在写入索引前报错", async () => {
   await expect(generateExampleIndexes(root)).rejects.toThrow(
     /Expected a kebab-case UI catalog ID: Bad_name\.example\.tsx/,
   );
-  expect(
-    [
-      componentPath(root, "anchor", "examples.generated.ts"),
-      componentPath(root, "checkbox", "examples.generated.ts"),
-      sourceIndexPath(root),
-      registryPath(root),
-      catalogPath(root),
-      componentRegistryPath(root),
-    ].filter((filename) => existsSync(filename)),
-  ).toStrictEqual([]);
+  expect(writtenIndexes(root, ["anchor", "checkbox"])).toStrictEqual([]);
 });
 
 test("LF 和 CRLF 源码生成相同摘要", async () => {
@@ -607,6 +627,33 @@ test(
 );
 
 test(
+  "watch 在示例目录里新建子目录、改子目录里的文件时都报错",
+  { timeout: 15_000 },
+  async () => {
+    const root = fixture();
+    component(root, "checkbox");
+    const errors = [];
+    const watcher = await watchExampleIndexes(root, {
+      onError: (error) => errors.push(error),
+    });
+    onTestFinished(() => watcher.close());
+    const nested = /Expected only files in a UI catalog examples directory/;
+
+    mkdirSync(componentPath(root, "checkbox", "nested"));
+    await eventually(() =>
+      expect(errors.at(-1)?.message ?? "").toMatch(nested),
+    );
+
+    const errorCount = errors.length;
+    write(root, "checkbox", "nested/deeper/basic.example.tsx");
+    await eventually(() => {
+      expect(errors.length).toBeGreaterThan(errorCount);
+      expect(errors.at(-1).message).toMatch(nested);
+    });
+  },
+);
+
+test(
   "watch 首次生成失败时关闭监听并抛错，修好文件后也不再生成",
   { timeout: 15_000 },
   async () => {
@@ -618,54 +665,21 @@ test(
       watchExampleIndexes(failed, { onError: (error) => errors.push(error) }),
     ).rejects.toThrow(/Cannot parse UI catalog metadata/);
 
-    // 对照：正常启动的 watcher 收到同样的修改会重新生成。等它生成完，失败的一侧要是还在监听，也已经生成了。
+    // 对照：正常启动的 watcher 收到同样的修改会重新生成。两边防抖和生成的耗时相同，所以等对照组生成第二次：
+    // 失败的一侧要是还在监听，第一次修改这时早已生成完。
     const control = fixture();
     component(control, "checkbox");
     const watcher = await watchExampleIndexes(control);
     onTestFinished(() => watcher.close());
 
-    for (const root of [failed, control])
-      write(root, "checkbox", "preview.tsx", preview({ title: "Fixed" }));
-    await eventually(async () => {
-      expect((await readCatalog(control)).catalog[0].title).toBe("Fixed");
-    });
+    for (const title of ["Fixed", "Fixed again"]) {
+      for (const root of [failed, control])
+        write(root, "checkbox", "preview.tsx", preview({ title }));
+      await eventually(async () => {
+        expect((await readCatalog(control)).catalog[0].title).toBe(title);
+      });
+    }
     expect(existsSync(catalogPath(failed))).toBe(false);
     expect(errors).toStrictEqual([]);
   },
 );
-
-test("仓库里的生成索引和 *-examples 源文件一致", async () => {
-  // 副本放在项目里而不是系统临时目录：Prettier 按生成物的位置找配置，这样才和仓库里的生成物用同一份配置格式化。
-  const cache = join(project, "node_modules/.cache");
-  mkdirSync(cache, { recursive: true });
-  const root = mkdtempSync(join(cache, "ui-catalog-indexes-"));
-  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  cpSync(join(project, featurePath), join(root, featurePath), {
-    recursive: true,
-  });
-
-  expect(
-    (await generateExampleIndexes(root)).map((file) => relative(root, file)),
-    "生成索引过期：运行 pnpm generate:examples，并提交它更新的文件",
-  ).toStrictEqual([]);
-});
-
-test("components/ui 的每个组件都有自己的示例目录，每个示例目录都对应一个组件", () => {
-  const components = [
-    ...new Set(
-      readdirSync(join(project, "components/ui"))
-        // 跳过测试和 .DS_Store 这类隐藏文件；其余文件名去掉扩展名就是组件 ID。
-        .filter((name) => !name.includes(".test.") && !name.startsWith("."))
-        .map((name) => name.split(".")[0]),
-    ),
-  ].sort();
-  const examples = readdirSync(join(project, featurePath, "components"))
-    .filter((name) => name.endsWith("-examples"))
-    .map((name) => name.slice(0, -"-examples".length))
-    .sort();
-
-  expect(
-    examples,
-    "每个 components/ui 组件都要有 features/ui-catalog/components/<id>-examples/（.claude/rules/ui-catalog.md）",
-  ).toStrictEqual(components);
-});

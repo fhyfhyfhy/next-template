@@ -65,7 +65,7 @@ These are extra examples or extra records (Phase 3). Don't skip them because the
 
 This repo needs no toggle. Put the worst case where the demo data already is (Hard Rule 2):
 
-- **A component in `components/ui/`**: one `*.example.tsx` per state in `features/ui-catalog/components/<component-id>-examples/` (`.claude/rules/ui-catalog.md`), as `long-labels.example.tsx` in `features/ui-catalog/components/select-examples/` is. The UI catalog page `/ui?component=<component-id>` then shows the demo examples and the worst case together.
+- **A component in `components/ui/`**: one `*.example.tsx` per state in `features/ui-catalog/components/<component-id>-examples/` (`.claude/rules/ui-catalog.md`), as `features/ui-catalog/components/select-examples/long-labels.example.tsx` is. The UI catalog page `/ui?component=<component-id>` then shows the demo examples and the worst case together.
 - **A feature component or a page**: create the records in the local `dev` dataset only, through the app's own UI or SQL. `scripts/local-services/seed.sql` is the starting data that `pnpm db:reset` and the `test` and `e2e` datasets reset to, so it stays as it is. Empty, one, and 1,000 rows are states of that data too.
 
 ### Phase 4 — Break it

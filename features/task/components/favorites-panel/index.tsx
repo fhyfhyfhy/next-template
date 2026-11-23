@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import { useQuery } from "@/lib/react-query";
 
 import { favoriteTasksQueryOptions } from "../../api/get-tasks";
-import { isQueryLoadFailed, QueryLoadFailed } from "../query-load-failed";
+import { isQueryLoadFailed } from "../../utils/query-load-state";
+import { QueryLoadFailed } from "../query-load-failed";
 import { TaskNameLink } from "../task-name-link";
 import { FavoritesPanelFrame } from "./frame";
 import { FavoritesPanelSkeleton } from "./skeleton";
@@ -21,7 +22,7 @@ export function FavoritesPanel() {
       <FavoritesPanelFrame>
         <QueryLoadFailed
           query={favorites}
-          subject={t("task.favoritesPanel.title")}
+          retryLabel={t("task.favoritesPanel.retryLabel")}
         />
       </FavoritesPanelFrame>
     ) : (

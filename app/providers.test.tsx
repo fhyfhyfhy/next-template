@@ -1,23 +1,22 @@
-import { NextIntlClientProvider } from "next-intl";
-import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { z } from "zod";
 
+import { toast } from "@/components/ui/toaster";
 import { environmentManager } from "@/lib/react-query";
 import { SchemaValidationError } from "@/lib/request/fetch";
-import app from "@/messages/zh/app.json";
 
 import { handleRequestError } from "./providers";
 
-const toastError = vi.hoisted(() => vi.fn());
-vi.mock("@/components/ui/toaster", () => ({
-  toast: { error: toastError },
-  Toaster: () => null,
-}));
-
+// 只测 e2e 观察不到的情况：服务端渲染、schema 不匹配的日志、按错误选文案。弹出的 toast 从 sonner 的
+// toast.getToasts() 读，也就是 <Toaster /> 要显示的那些。
 const runtimeIsServer = environmentManager.isServer();
-const failure = new Error("Injected failure");
 const request = { id: "request-1" };
+
+const shownToasts = () =>
+  toast.getToasts().map((shown) => ({
+    id: shown.id,
+    title: "title" in shown ? shown.title : undefined,
+  }));
 
 beforeEach(() => {
   // 和浏览器里一样：toast 只在浏览器里弹。
@@ -26,55 +25,31 @@ beforeEach(() => {
 
 afterEach(() => {
   environmentManager.setIsServer(() => runtimeIsServer);
+  toast.dismiss();
   vi.restoreAllMocks();
-  toastError.mockReset();
 });
 
-test("请求失败时按请求 id 弹一个 toast，文案用调用方给的", () => {
-  handleRequestError(failure, { errorMessage: "保存失败" }, request);
+test("errorMessage 是函数时，按这次的错误选文案", () => {
+  const notFound = new Error("not found");
   handleRequestError(
-    failure,
+    notFound,
     { errorMessage: (error) => `失败：${String(error)}` },
-    { id: "request-2" },
+    request,
   );
 
-  expect(toastError.mock.calls).toStrictEqual([
-    ["保存失败", { id: "request-1" }],
-    [`失败：${String(failure)}`, { id: "request-2" }],
+  expect(shownToasts()).toStrictEqual([
+    { id: "request-1", title: `失败：${String(notFound)}` },
   ]);
-});
-
-test("调用方没给文案时，toast 显示通用文案", () => {
-  handleRequestError(failure, {}, request);
-
-  const [[message, options]] = toastError.mock.calls;
-  // 它渲染在 <Toaster /> 里，那里有页面的 next-intl provider。
-  const shown = renderToString(
-    <NextIntlClientProvider locale="zh" messages={{ app }}>
-      {message}
-    </NextIntlClientProvider>,
-  );
-  expect(shown).toBe(app.requestError);
-  expect(options).toStrictEqual({ id: "request-1" });
-});
-
-test.each([
-  ["一律", true],
-  ["对这个错误", () => true],
-])("调用方%s关掉提示时不弹", (_when, suppress) => {
-  handleRequestError(failure, { suppressErrorToast: suppress }, request);
-  expect(toastError).not.toHaveBeenCalled();
-});
-
-test("调用方只对别的错误关掉提示时，照常弹", () => {
-  handleRequestError(failure, { suppressErrorToast: () => false }, request);
-  expect(toastError).toHaveBeenCalledOnce();
 });
 
 test("服务端不弹：那里的 toast 永远不会被关闭", () => {
   environmentManager.setIsServer(() => true);
-  handleRequestError(failure, { errorMessage: "保存失败" }, request);
-  expect(toastError).not.toHaveBeenCalled();
+  handleRequestError(
+    new Error("failure"),
+    { errorMessage: "保存失败" },
+    request,
+  );
+  expect(shownToasts()).toStrictEqual([]);
 });
 
 test("响应不符合 schema 时记一条错误日志，关掉提示也记", () => {
@@ -86,5 +61,5 @@ test("响应不符合 schema 时记一条错误日志，关掉提示也记", () 
   handleRequestError(mismatch, { suppressErrorToast: true }, request);
 
   expect(log).toHaveBeenCalledWith(mismatch);
-  expect(toastError).not.toHaveBeenCalled();
+  expect(shownToasts()).toStrictEqual([]);
 });

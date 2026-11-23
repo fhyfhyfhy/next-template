@@ -21,6 +21,7 @@ import {
   openTasksPage,
   type TaskData,
   taskRow,
+  taskRows,
   test,
   untilPolled,
 } from "./tasks";
@@ -35,9 +36,8 @@ const cards = (page: Page) =>
   page.getByRole("list", { name: "作品" }).getByRole("listitem");
 const favorites = (page: Page) =>
   page.getByRole("list", { name: "我的收藏" }).getByRole("listitem");
-/** 作品 `name` 卡片上的星标。按钮的名称带着作品名，读屏才分得清是哪张卡片的。 */
-const star = (page: Page, name: string) =>
-  cards(page).getByRole("button", { name: `收藏“${name}”`, exact: true });
+/** 作品 `name` 卡片上的星标。 */
+const star = (page: Page, name: string) => favoriteToggle(cards(page), name);
 
 /**
  * 先刷新快照（`refreshFeedSnapshot`），再经导航栏进入作品广场，等第一页出现。第一页的卡片在静态 shell 里，整页
@@ -232,7 +232,7 @@ test("在作品广场收藏后，列表页立即显示已收藏", async ({ page,
   const { name } = await finishNewWork(page, tasks);
   // 先让“已完成”筛选的缓存里有这个未收藏的作品：之后列表要靠收藏的 Server Action 失效才显示已收藏。
   await filterByStatus(page, "已完成", "/tasks?status=done");
-  await expect(favoriteToggle(page, name)).toHaveAttribute(
+  await expect(favoriteToggle(taskRows(page), name)).toHaveAttribute(
     "aria-pressed",
     "false",
   );
@@ -244,7 +244,7 @@ test("在作品广场收藏后，列表页立即显示已收藏", async ({ page,
   await saved;
 
   await page.goto("/tasks?status=done");
-  await expect(favoriteToggle(page, name)).toHaveAttribute(
+  await expect(favoriteToggle(taskRows(page), name)).toHaveAttribute(
     "aria-pressed",
     "true",
   );
@@ -260,7 +260,7 @@ test("在全部任务页收藏后回到作品广场，卡片和“我的收藏�
   await navigateThroughHeader(page, "全部任务", "/tasks");
   // 列表的变化信号也会调 Server Action，按任务 id 认出这次收藏。
   const saved = waitForServerAction(page, requestBodyIncludes(id));
-  await favoriteToggle(page, name).click();
+  await favoriteToggle(taskRows(page), name).click();
   await saved;
 
   await navigateThroughHeader(page, "作品广场", "/feed");

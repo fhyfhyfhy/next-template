@@ -52,7 +52,7 @@ The repo's chart pick is `@tanstack/react-charts`, listed in `.claude/rules/libr
 
 ## Class names come from the project's `cn`
 
-`.claude/rules/components.md` sets `cn` from `@/lib/cn` for conditional and merged class names, so the skill leaves that choice to it.
+`.claude/rules/components.md` sets `cn` in `lib/cn.ts` for conditional and merged class names, so the skill leaves that choice to it.
 
 ```diff
 @@ ### State & styling @@

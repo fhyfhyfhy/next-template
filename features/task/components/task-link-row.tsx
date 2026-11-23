@@ -10,7 +10,7 @@ interface TaskLinkRowProps {
 export function TaskLinkRow({ task }: TaskLinkRowProps) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <TaskNameLink task={task} className="min-w-0 truncate font-medium" />
+      <TaskNameLink task={task} className="min-w-0 truncate" />
       <TaskStatusBadge status={task.status} />
     </div>
   );

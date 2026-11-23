@@ -143,10 +143,9 @@ const NATIVE_ELEMENTS = [
   },
 ];
 
-// 一个触发器或控件只有一个可交互元素。按名字认父元素，只看直接子元素，间接的嵌套由 UI review 看。不放进
-// NATIVE_ELEMENTS：components/ui/ 里同样生效。按钮套按钮时，里面的 Button 作为外面组件的 render 传入；牵涉链接时
-// 只留下链接本身：Next 的 Link 和 <a> 没有 render，Base UI 的 Button 给它渲染的元素加上按钮语义，不用来渲染链接
-// （Base UI Button 文档的「Rendering links as buttons」），像按钮的链接用 buttonVariants 设样式。
+// 一个触发器或控件只有一个可交互元素。按名字认父元素，只看直接子元素，间接的嵌套由
+// docs/agents/code-review.md「UI」一节的 review 看。不放进 NATIVE_ELEMENTS：components/ui/ 里同样生效。Base UI 的
+// Button 不渲染链接，出自 node_modules/@base-ui/react/docs/react/components/button.md 的「Rendering links as buttons」。
 const NESTED_LINK_MESSAGE =
   'Give a link one interactive element: render the link alone, neither inside a button or link nor holding one, with buttonVariants from @/components/ui/button as its className when it should look like a button, as in <Link href="/tasks" className={buttonVariants({ variant: "outline" })}>. Next\'s Link and <a> take no render prop, and Base UI\'s Button gives what it renders button semantics, so it never renders a link. See "Use a component" in .claude/rules/components.md.';
 const NESTED_INTERACTIVE = [
@@ -276,7 +275,7 @@ const APPLICATION_CODE = {
 // 派生项目自己的检查和忽略项写在 eslint.config.project.mjs（.agents/skills/derived-project/SKILL.md），它导出的
 // 配置接在 template 的规则后面、Prettier 之前；没有这个文件时只用 template 的配置。项目的限制写成自己插件里的独立
 // 规则：在那里给文件设置 no-restricted-imports 或 no-restricted-syntax，会整个替换下面给同一批文件设的选项。
-// 追加 Tailwind class 的限制同理：restrict 先展开 TAILWIND_CLASS_RESTRICTIONS。
+// 追加 Tailwind class 的限制见 scripts/eslint/tailwind-classes.mjs 的 TAILWIND_CLASS_RESTRICTIONS。
 // 应用代码的目录从 scripts/eslint/layers.mjs 取，不要复制：template 升级改了层级表，复制的那份不会跟着变。
 const PROJECT_CONFIG = join(PROJECT_ROOT, "eslint.config.project.mjs");
 const projectConfig = existsSync(PROJECT_CONFIG)
@@ -368,10 +367,13 @@ const eslintConfig = defineConfig([
   //   「架构」一段之前：那一段的组件入口配置给 components/ui/ 的 index 重设这条规则，例外排在它后面会把入口的限制整个替换掉。
   // - React Hooks 和 jsx-a11y 的 ARIA 检查来自最前面的 nextVitals；下面把其中设为 warn 的提成 error，另加三条拦手写的
   //   可点击元素。
-  // - 组件目录的入口和引用（architecture/component-*）、UI 库只经封装引入（architecture/wrapper-imports）在「架构」一段。
+  // - 组件目录的入口和引用（architecture/component-*）、组件和 UI catalog 示例目录的对应（architecture/catalog-examples）、
+  //   UI 库只经封装引入（architecture/wrapper-imports）在「架构」一段。
   {
-    // 生成器按码点排序 import，插件按 Intl.Collator：示例 ID 或图标名互为前缀时两边不一致，lint-staged 的 --fix 改完，
-    // 下次生成又改回去，所以顺序以生成器为准。
+    // 生成器按码点排序 import，插件不是（node_modules/eslint-plugin-simple-import-sort/shared.js 的 getSource、compare）：
+    // 它先把路径里的 . 和 / 改写成排在 - 和 _ 之前，所以一个示例 ID 是另一个的前缀时（select、select-all）顺序不同；
+    // 再用不分大小写、按数值比较数字的 Intl.Collator，所以图标名的顺序也不同（IconArrowUp 和 IconArrowsDiagonal、
+    // IconBadge2 和 IconBadge10）。lint-staged 的 --fix 改完，下次生成又改回去，所以顺序以生成器为准。
     files: ["features/ui-catalog/**/*.generated.ts"],
     rules: { "simple-import-sort/imports": "off" },
   },
@@ -446,7 +448,8 @@ const eslintConfig = defineConfig([
         // globals.css 没有改根字号，按浏览器默认的 16px 算，和 Tailwind CSS IntelliSense 的默认值一致。
         rootFontSize: 16,
         // 插件默认只读 className、cn()/cva() 和名为 className(s)、classes、style(s) 的变量；这里补上存 class 的常量和
-        // 查找表、xxxClassName prop、不经 cn() 的函数式 className。别的名字由 UI review 看。
+        // 查找表、xxxClassName prop、不经 cn() 的函数式 className。别的名字由 docs/agents/code-review.md「UI」一节的
+        // review 看。
         selectors: [
           ...getDefaultSelectors(),
           {
@@ -484,7 +487,7 @@ const eslintConfig = defineConfig([
       "better-tailwindcss/no-deprecated-classes": "error",
       // Tailwind 按完整 class 名扫描源码，拼接出来的 class 不会生成样式。
       "better-tailwindcss/no-concatenated-classes": "error",
-      // 颜色和圆角走主题 token，见 scripts/eslint/tailwind-classes.mjs。
+      // 颜色、圆角和过渡的限制，见 scripts/eslint/tailwind-classes.mjs。
       "better-tailwindcss/no-restricted-classes": [
         "error",
         { restrict: TAILWIND_CLASS_RESTRICTIONS },
@@ -609,6 +612,8 @@ const eslintConfig = defineConfig([
       "architecture/component-imports": "error",
       // 每个组件目录只保留一个实现入口，避免多个 index 扩展名产生解析歧义；允许声明文件并存。
       "architecture/component-entry": "error",
+      // components/ui/ 的组件和 UI catalog 的示例目录一一对应。
+      "architecture/catalog-examples": "error",
       // React Query、cn 和 UI 库只经项目封装引入：绕过封装会丢掉 QueryClient 策略、按项目主题合并 class，或者项目
       // 统一的样式、默认值和行为。
       "architecture/wrapper-imports": "error",

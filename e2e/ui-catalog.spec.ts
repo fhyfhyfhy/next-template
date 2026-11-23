@@ -9,9 +9,9 @@ import {
 import { expect, test } from "./test";
 
 /**
- * 整页打开 UI catalog 的一个地址，等它 hydrate。header 的主题选择在 hydration 之后才可用；页面也把 header 当作
- * Suspense 的 fallback 渲染，它可能在目录到达之前就 hydrate 了：等目录的导航出现，fallback 已经换掉，这时可用的
- * 才是边界里的那个，同一个边界里的 playground 和示例也都已经 hydrate。
+ * 整页打开 UI catalog 的一个地址，等它 hydrate。header 的主题选择在 hydration 之后才可用；`app/[locale]/ui/page.tsx`
+ * 也把 header 当作 Suspense 的 fallback 渲染，它可能在目录到达之前就 hydrate 了：等目录的导航出现，fallback 已经换掉，
+ * 这时可用的才是边界里的那个，同一个边界里的 playground 和示例也都已经 hydrate。
  */
 async function openUiCatalog(page: Page, path: string) {
   await page.goto(path);
@@ -61,7 +61,7 @@ function exampleCard(page: Page, title: string) {
 
 async function openPlaygroundSource(page: Page) {
   await playground(page)
-    .getByRole("button", { name: "查看代码", exact: true })
+    .getByRole("button", { name: "代码", exact: true })
     .click();
   return playground(page).getByRole("region", { name: "playground.tsx 源码" });
 }
@@ -190,20 +190,23 @@ test("重置也让可调预览自己保存的状态回到初始值", async ({ pa
   await expect(playground(page).getByText("已触发 0 次")).toBeVisible();
 });
 
-test("示例的源码可以展开查看", async ({ page }) => {
+test("示例的源码可以展开查看，按钮的名称不变，由 aria-expanded 表示展开", async ({
+  page,
+}) => {
   await openComponent(page, "switch", "Switch");
+  const toggle = page.getByRole("button", {
+    name: "基本用法：代码",
+    exact: true,
+  });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
 
-  await page
-    .getByRole("button", { name: "基本用法：查看代码", exact: true })
-    .click();
+  await toggle.click();
 
   // 只有 basic.example.tsx 里有这句：每个示例都导出 Example，按函数名认不出是哪个文件。
   await expect(
     page.getByRole("region", { name: "basic.example.tsx 源码" }),
   ).toContainText("开启通知");
-  await expect(
-    page.getByRole("button", { name: "基本用法：收起代码", exact: true }),
-  ).toHaveAttribute("aria-expanded", "true");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
 });
 
 test.describe("复制源码", () => {
@@ -235,37 +238,54 @@ test.describe("复制源码", () => {
     ).toBeVisible();
   });
 
-  test("复制被拒绝时提示手动选择，直到下一次复制", async ({ page }) => {
-    // 模拟拒绝写剪贴板的浏览器：第一次写入被拒绝，之后的照常写入。
+  test("复制被拒绝时按钮旁的状态行提示手动选择，按钮名称不变，提示保留到下一次复制", async ({
+    page,
+  }) => {
+    // 模拟拒绝写剪贴板的浏览器：前两次写入被拒绝，之后的照常写入。
     await page.addInitScript(() => {
       const write = navigator.clipboard.writeText.bind(navigator.clipboard);
-      let refused = false;
+      let refusals = 2;
       navigator.clipboard.writeText = (text) => {
-        if (refused) return write(text);
-        refused = true;
+        if (refusals === 0) return write(text);
+        refusals -= 1;
         return Promise.reject(
           new DOMException("Write permission denied.", "NotAllowedError"),
         );
       };
     });
     await openSwitchSource(page);
-    const failed = playground(page).getByRole("button", {
-      name: "复制失败，请手动选择",
+    const status = playground(page).getByRole("status");
+    const copy = playground(page).getByRole("button", {
+      name: "复制代码",
       exact: true,
     });
 
-    await playground(page)
-      .getByRole("button", { name: "复制代码", exact: true })
-      .click();
+    await copy.click();
 
-    await expect(failed).toBeVisible();
+    await expect(status).toHaveText("复制失败，请手动选择");
     await page.clock.fastForward(3000);
-    await expect(failed).toBeVisible();
+    await expect(status).toHaveText("复制失败，请手动选择");
+    await expect(copy).toBeVisible();
 
-    await failed.click();
+    // 再失败一次时状态行先清空、再显示提示：文字从无到有，读屏才会重新播报。
+    await status.evaluate((element) => {
+      const texts: string[] = [];
+      Object.assign(globalThis, { statusTexts: texts });
+      new MutationObserver(() => texts.push(element.textContent)).observe(
+        element,
+        { childList: true, characterData: true, subtree: true },
+      );
+    });
+    await copy.click();
+    await expect
+      .poll(() => page.evaluate(() => Reflect.get(globalThis, "statusTexts")))
+      .toStrictEqual(["", "复制失败，请手动选择"]);
+
+    await copy.click();
     await expect(
       playground(page).getByRole("button", { name: "已复制", exact: true }),
     ).toBeVisible();
+    await expect(status).toHaveText("");
   });
 });
 
@@ -319,6 +339,34 @@ test("进度未知时指示条只占轨道的三分之一，不是满条", async
     .toBeCloseTo(1 / 3, 1);
 });
 
+test("减少动效时，进度未知的指示条停在轨道中间，不贴着左端", async ({
+  page,
+}) => {
+  // 减少动效时动画时长归零，指示条停在不带动画时的位置；贴着左端时它像完成了三分之一的进度。
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await openComponent(page, "progress", "Progress");
+  await playground(page)
+    .getByRole("switch", { name: "indeterminate", exact: true })
+    .click();
+  const progress = playground(page).getByRole("progressbar", {
+    name: "生成进度",
+  });
+  const box = (slot: string) =>
+    progress.locator(`[data-slot=${slot}]`).boundingBox();
+
+  // 指示条的宽度由上一个用例量（三分之一），这里比较它左右两边到轨道的距离。
+  await expect
+    .poll(async () => {
+      const track = await box("progress-track");
+      const indicator = await box("progress-indicator");
+      if (!track || !indicator) return Number.POSITIVE_INFINITY;
+      const left = indicator.x - track.x;
+      const right = track.x + track.width - (indicator.x + indicator.width);
+      return Math.abs(left - right);
+    })
+    .toBeLessThanOrEqual(1);
+});
+
 for (const { id, title, role, name } of [
   { id: "checkbox", title: "Checkbox", role: "checkbox", name: "接收产品更新" },
   { id: "input", title: "Input", role: "textbox", name: "项目名称" },
@@ -359,36 +407,86 @@ test("playground 和参数面板的可见标签给控件命名，点 Select 的�
   ).toBeVisible();
 });
 
+// hydration 之前的禁用查原生的 disabled 属性：toBeDisabled 对 aria-disabled 也通过，而只带 aria-disabled 的
+// 按钮照样能提交表单，输入框照样能输入。
 test("hydration 之前 Form 页的输入框和提交按钮不可用", async ({ page }) => {
   // 服务端渲染的表单在 hydration 之前提交，会变成浏览器原生的 GET 提交、整页刷新。
   const htmlPage = await openWithoutScripts(page, "/ui?component=form");
   await expect(componentHeading(htmlPage, "Form")).toBeVisible();
 
   const submits = htmlPage.getByRole("button", { name: "提交", exact: true });
+  const textboxes = htmlPage.getByRole("textbox");
   await expect(submits).not.toHaveCount(0);
-  for (const submit of await submits.all()) await expect(submit).toBeDisabled();
-  for (const name of ["项目名称", "邮箱"]) {
-    await expect(
-      htmlPage.getByRole("textbox", { name, exact: true }),
-    ).toBeDisabled();
+  await expect(textboxes).not.toHaveCount(0);
+  for (const control of [
+    ...(await submits.all()),
+    ...(await textboxes.all()),
+  ]) {
+    await expect(control).toHaveAttribute("disabled");
   }
   await htmlPage.close();
 });
 
-test("Form 示例显示自己写的错误文案，提交成功后地址不变", async ({ page }) => {
+test("hydration 之前 Input 页的受控输入框不可用", async ({ page }) => {
+  // 受控输入框在 hydration 之前输入的字会被 hydration 盖掉。
+  const htmlPage = await openWithoutScripts(page, "/ui?component=input");
+  await expect(componentHeading(htmlPage, "Input")).toBeVisible();
+
+  for (const textbox of [
+    playground(htmlPage).getByRole("textbox", {
+      name: "项目名称",
+      exact: true,
+    }),
+    exampleCard(htmlPage, "受控输入与校验").getByRole("textbox", {
+      name: "用户名",
+      exact: true,
+    }),
+    controlsPanel(htmlPage).getByRole("textbox", {
+      name: "label",
+      exact: true,
+    }),
+  ]) {
+    await expect(textbox).toHaveAttribute("disabled");
+  }
+  await htmlPage.close();
+});
+
+test("Form 提交失败时焦点移到第一个无效字段，第一次提交也一样", async ({
+  page,
+}) => {
   await openUiCatalog(page, "/ui?component=form");
-  const form = exampleCard(page, "基本用法");
+  const form = exampleCard(page, "聚焦第一个无效字段");
   const email = form.getByRole("textbox", { name: "邮箱", exact: true });
   const submit = form.getByRole("button", { name: "提交", exact: true });
   // 提交按钮在这个表单 hydrate 之后才可用。
   await expect(submit).toBeEnabled();
 
+  // 第一次提交时字段还没校验过，Form 放行，TanStack Form 校验后才有无效字段。焦点越过填好的名称，
+  // 落在第一个无效的邮箱上，不留在按钮上。
+  await submit.click();
+  await expect(email).toBeFocused();
+
+  // 字段已经无效时，Form 在调用 onSubmit 之前拦下提交，同样聚焦。
+  await form.getByRole("textbox", { name: "名称", exact: true }).click();
+  await submit.click();
+  await expect(email).toBeFocused();
+});
+
+test("Form 示例显示自己写的错误文案，提交成功后地址不变", async ({ page }) => {
+  await openUiCatalog(page, "/ui?component=form");
+  const form = exampleCard(page, "聚焦第一个无效字段");
+  const email = form.getByRole("textbox", { name: "邮箱", exact: true });
+  const submit = form.getByRole("button", { name: "提交", exact: true });
+  await expect(submit).toBeEnabled();
+
   await submit.click();
   await expect(form.getByText("请输入邮箱", { exact: true })).toBeVisible();
+  await expect(form.getByText("请输入团队", { exact: true })).toBeVisible();
   // 提交过一次以后，每次改动都重新校验。
   await email.fill("abc");
   await expect(form.getByText("邮箱格式不正确", { exact: true })).toBeVisible();
   await email.fill("someone@example.com");
+  await form.getByRole("textbox", { name: "团队", exact: true }).fill("设计组");
   await submit.click();
 
   await expect(form.getByRole("status")).toHaveText(
@@ -409,13 +507,14 @@ test("Form playground 显示自己写的错误文案，mode 决定第一次提�
     name: "提交",
     exact: true,
   });
-  const tooShort = playground(page).getByText("至少 3 个字", { exact: true });
+  const tooShort = playground(page).getByText("至少 3 个字符", { exact: true });
   await expect(submit).toBeEnabled();
 
   await submit.click();
   await expect(
     playground(page).getByText("请输入项目名称", { exact: true }),
   ).toBeVisible();
+  await expect(name).toBeFocused();
   await name.fill("ab");
   await expect(tooShort).toBeVisible();
 
@@ -425,6 +524,19 @@ test("Form playground 显示自己写的错误文案，mode 决定第一次提�
   await expect(name).toHaveValue("ab");
   await expect(tooShort).toHaveCount(0);
   await submit.click();
+  await expect(tooShort).toBeVisible();
+
+  // mode 是 blur：第一次提交之前，离开输入框时才校验。
+  await resetButton(page).click();
+  await chooseOption(
+    page,
+    controlsPanel(page).getByRole("combobox", { name: "mode", exact: true }),
+    "blur",
+  );
+  await name.fill("ab");
+  await expect(name).toHaveValue("ab");
+  await expect(tooShort).toHaveCount(0);
+  await name.blur();
   await expect(tooShort).toBeVisible();
 
   // mode 是 change：第一次提交之前边输入边校验。
@@ -470,6 +582,8 @@ test("服务端拒绝的名称显示在字段下，改动后清除；空名称�
 
   await save.click();
   await expect(taken).toBeVisible();
+  // 错误在 onSubmit 的 Promise 结束之前写回，Form 随后聚焦这个字段。
+  await expect(name).toBeFocused();
   await name.fill("低多边形狐狸 2");
   await expect(taken).toHaveCount(0);
 
@@ -507,4 +621,82 @@ test("Textarea 的参数控制行数、无效和禁用，说明经 aria-describe
     .getByRole("switch", { name: "disabled", exact: true })
     .click();
   await expect(textarea).toBeDisabled();
+});
+
+for (const { id, title, name } of [
+  { id: "input", title: "Input", name: "项目名称" },
+  { id: "textarea", title: "Textarea", name: "项目简介" },
+]) {
+  test(`无效的 ${title} 聚焦时显示焦点环，不被无效样式盖住`, async ({
+    page,
+  }) => {
+    await openComponent(page, id, title);
+    await controlsPanel(page)
+      .getByRole("switch", { name: "invalid", exact: true })
+      .click();
+    const field = playground(page).getByRole("textbox", { name, exact: true });
+    await expect(field).toHaveAttribute("aria-invalid", "true");
+
+    await field.focus();
+
+    // 浅色主题的 --ring 是 #c83d21：焦点环用它，而不是无效状态那层 15% 透明度的红色。
+    await expect(field).toHaveCSS("box-shadow", /rgb\(200, 61, 33\)/);
+  });
+}
+
+test("Checkbox 勾选校验的错误关联到复选框，勾选后清除", async ({ page }) => {
+  await openUiCatalog(page, "/ui?component=checkbox");
+  const checkbox = exampleCard(page, "勾选校验").getByRole("checkbox", {
+    name: "我已阅读并同意使用条款",
+    exact: true,
+  });
+  await expect(checkbox).toHaveAccessibleDescription("请先同意使用条款。");
+
+  await checkbox.click();
+
+  await expect(checkbox).toHaveAccessibleDescription("");
+});
+
+test("Switch playground 的说明关联到开关", async ({ page }) => {
+  await openUiCatalog(page, "/ui?component=switch");
+
+  await expect(
+    playground(page).getByRole("switch", { name: "自动保存", exact: true }),
+  ).toHaveAccessibleDescription("修改内容后自动保存到云端。");
+});
+
+test("Input 的说明和错误关联到输入框", async ({ page }) => {
+  await openUiCatalog(page, "/ui?component=input");
+  await expect(
+    playground(page).getByRole("textbox", { name: "项目名称", exact: true }),
+  ).toHaveAccessibleDescription("给你的下一个想法起个名字。");
+  const username = exampleCard(page, "受控输入与校验").getByRole("textbox", {
+    name: "用户名",
+    exact: true,
+  });
+  await expect(username).toHaveAccessibleDescription("用于显示在个人主页。");
+
+  await username.fill("ab");
+
+  // 说明和错误都在 aria-describedby 里，各自出现在描述中。
+  await expect(username).toHaveAccessibleDescription(/用于显示在个人主页。/);
+  await expect(username).toHaveAccessibleDescription(
+    /用户名至少需要 3 个字符。/,
+  );
+});
+
+test("Toaster 的关闭按钮用界面语言命名", async ({ page }) => {
+  await openUiCatalog(page, "/ui?component=toaster");
+  await controlsPanel(page)
+    .getByRole("switch", { name: "closeButton", exact: true })
+    .click();
+
+  await playground(page)
+    .getByRole("button", { name: "显示提示", exact: true })
+    .click();
+
+  // 通知渲染在根布局的 Toaster 里，不在 playground 的区域内。
+  await expect(
+    page.getByRole("button", { name: "关闭通知", exact: true }),
+  ).toBeVisible();
 });

@@ -18,6 +18,7 @@ import {
   SOURCE_EXTENSIONS,
 } from "../imports.mjs";
 import createAppComponentPlacementRule from "./app-component-placement.mjs";
+import createCatalogExamplesRule from "./catalog-examples.mjs";
 import componentExportsRule from "./component-exports.mjs";
 import { featureDependencies } from "./feature-cycles.mjs";
 import {
@@ -558,6 +559,7 @@ export default function createArchitecturePlugin(projectRoot) {
       "component-imports": componentImportsRule,
       "component-entry": componentEntryRule,
       "component-exports": componentExportsRule,
+      "catalog-examples": createCatalogExamplesRule(projectRoot),
       "wrapper-imports": wrapperImportsRule,
       "side-effect-imports": sideEffectImportsRule,
       "data-access": dataAccessRule,

@@ -12,5 +12,6 @@ test("通知区域按页面语言命名，没有 toast 时也是", () => {
       <Toaster />
     </NextIntlClientProvider>,
   );
-  expect(html).toContain('aria-label="通知 alt+T"');
+  // sonner 在名称后面拼上快捷键提示，那部分随 sonner 的写法变，只看开头。
+  expect(html).toMatch(/aria-label="通知/);
 });

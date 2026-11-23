@@ -57,6 +57,28 @@ export async function holdTable(table: string) {
   };
 }
 
+/**
+ * 让服务端正在等 `holdTable(table)` 锁的查询失败，像读数据时数据库出错：取消这些查询，返回取消了几个。
+ * 服务端的查询发出之前调用会返回 0，调用方用 `expect.poll` 等到它大于 0。
+ */
+export async function failQueriesWaitingFor(table: string) {
+  const client = new pg.Client({ connectionString: E2E_DATABASE_URL });
+  await client.connect();
+  try {
+    const { rows } = await client.query<{ cancelled: boolean }>(
+      `select pg_cancel_backend(pid) as cancelled
+       from pg_stat_activity
+       where datname = current_database()
+         and wait_event_type = 'Lock'
+         and query like $1`,
+      [`%"${table}"%`],
+    );
+    return rows.filter((row) => row.cancelled).length;
+  } finally {
+    await client.end();
+  }
+}
+
 /** 名称后面接一段随机串：用例之间、复用服务多跑几轮时都不会撞名，也不会被别的用例的搜索搜到。 */
 export function unique(label: string) {
   return `${label} ${nanoid(6)}`;

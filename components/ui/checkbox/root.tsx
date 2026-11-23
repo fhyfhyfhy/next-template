@@ -5,6 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/cn";
 
+// aria-invalid:focus-visible:ring-ring 让焦点 ring 压过无效时的红色 ring（原因见 components/ui/input.tsx），不是多余的 class。
 const checkboxVariants = cva(
   "inline-flex shrink-0 items-center justify-center rounded-sm border border-input bg-card text-card-foreground transition-[background-color,border-color] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/15 aria-invalid:focus-visible:ring-ring data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground aria-invalid:data-checked:border-primary data-disabled:cursor-not-allowed data-disabled:opacity-40 data-indeterminate:border-primary data-indeterminate:bg-primary data-indeterminate:text-primary-foreground aria-invalid:data-indeterminate:border-primary",
   {

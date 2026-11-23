@@ -34,14 +34,7 @@ export function ExampleCard({
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label={t(
-            showCode
-              ? "ui-catalog.examples.hideCode"
-              : "ui-catalog.examples.showCode",
-            {
-              title,
-            },
-          )}
+          aria-label={t("ui-catalog.examples.code", { title })}
           aria-expanded={showCode}
           onClick={() => setShowCode(!showCode)}
         >
