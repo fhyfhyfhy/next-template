@@ -25,6 +25,7 @@ Used directly:
 
 - Icons: `@tabler/icons-react`
 - Forms: `@tanstack/react-form`, with Base UI `Field` in `components/ui/field/`
+- Shared client state: `zustand`, its stores in a feature's `stores/` ([Feature structure](architecture.md#feature-structure))
 - Charts: `@tanstack/react-charts`
 - Dates, times, and numbers: show them as [Dates and numbers](i18n.md#dates-and-numbers) says; do date math with native `Date`, and `dayjs` for what it can't handle
 - IDs: `nanoid`

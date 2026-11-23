@@ -32,3 +32,33 @@ This repo keeps its motion conventions in `.claude/rules/components.md` and its 
 +
  ## Operating Posture
 ```
+
+## Plans are committed under `docs/`
+
+The skill writes its plans to a root `plans/` that it never commits, so `git worktree remove` refuses the worktree holding them, and the worktree that `execute <plan>` starts from main has none of them. This repo keeps its documents in `docs/`, so the plans go to `docs/animation-plans/` and reach main in a PR of their own, the one commit Hard Rule 2 allows.
+
+```diff
+@@ ## Hard Rules @@
+ ## Hard Rules
+ 
+-1. **Never modify source code.** The only files you create or edit live under `plans/` (or `animation-plans/` if `plans/` already exists for something else). If asked to "just fix it", decline and point to `improve-animations execute <plan>` or to running the plan with any agent.
+-2. **No mutating operations.** No installs, no builds with side effects, no commits, no formatters. Read-only analysis only.
++1. **Never modify source code.** The only files you create or edit live under `docs/animation-plans/`. If asked to "just fix it", decline and point to `improve-animations execute <plan>` or to running the plan with any agent.
++2. **No mutating operations.** No installs, no builds with side effects, no formatters, and no commits other than the plans' own PR (Phase 4). Read-only analysis only.
+ 3. **Plans must be fully self-contained.** The executor has zero context from this conversation and zero taste. Never write "use the easing discussed above" — inline the exact cubic-bezier, the exact duration, the exact file path and code excerpt.
+```
+
+```diff
+@@ end of ### Phase 4 — Write plans @@
+ Finish by creating or updating `plans/README.md`: recommended execution order, dependencies between plans, and a status column.
++
++Commit the plans and their README in a PR of their own, and the changes a `reconcile` makes the same way: an executor's worktree starts from main, so `execute <plan>` takes a plan that has reached main. The PR that carries out a plan marks it DONE in the README.
+ 
+ ## Invocation Variants
+```
+
+| Upstream | Workspace |
+| --- | --- |
+| `plans/` | `docs/animation-plans/` |
+
+Scope: `SKILL.md` and `PLAN-TEMPLATE.md`, as in `plans/README.md`, which becomes `docs/animation-plans/README.md`.
