@@ -11,9 +11,9 @@
     "home": "Back to home"
   },
   "pageError": {
-    "title": "Couldn't load the page",
-    "description": "The network or the service may be briefly unavailable. Please try again later.",
-    "retry": "Retry"
+    "title": "Something went wrong",
+    "description": "Reloading usually fixes this. If it doesn't, try again in a moment.",
+    "reload": "Reload"
   },
   "tasks": {
     "title": "All tasks"
