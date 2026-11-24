@@ -4,8 +4,6 @@ import { IconArrowRight } from "@tabler/icons-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { cn } from "@/lib/cn";
-
 import type { ComponentId } from "../../constants/catalog";
 import { serializeUiCatalogSearchParams } from "../../utils/ui-catalog-search-params";
 import { useUiCatalogSearchParams } from "../ui-catalog-navigation";
@@ -29,12 +27,7 @@ export function ComponentNavigationLink({
         void setSearchParams({ component });
       }}
       aria-current={current ? "page" : undefined}
-      className={cn(
-        "group flex shrink-0 items-center gap-3 rounded-control p-3 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        current
-          ? "bg-primary/10 font-medium text-primary"
-          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-      )}
+      className="group flex shrink-0 items-center gap-3 rounded-control p-3 text-sm text-muted-foreground focus-ring transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-primary/10 aria-[current=page]:font-medium aria-[current=page]:text-foreground"
     >
       {children}
       {current && (

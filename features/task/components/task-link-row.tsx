@@ -1,7 +1,5 @@
-import Link from "next/link";
-
 import type { Task } from "../api/get-task";
-import { taskDetailHref } from "../utils/task-urls";
+import { TaskNameLink } from "./task-name-link";
 import { TaskStatusBadge } from "./task-status-badge";
 
 interface TaskLinkRowProps {
@@ -12,12 +10,7 @@ interface TaskLinkRowProps {
 export function TaskLinkRow({ task }: TaskLinkRowProps) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <Link
-        href={taskDetailHref(task.id)}
-        className="min-w-0 truncate font-medium hover:text-primary"
-      >
-        {task.name}
-      </Link>
+      <TaskNameLink task={task} className="min-w-0 truncate" />
       <TaskStatusBadge status={task.status} />
     </div>
   );

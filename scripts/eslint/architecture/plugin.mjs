@@ -18,6 +18,7 @@ import {
   SOURCE_EXTENSIONS,
 } from "../imports.mjs";
 import createAppComponentPlacementRule from "./app-component-placement.mjs";
+import createCatalogExamplesRule from "./catalog-examples.mjs";
 import componentExportsRule from "./component-exports.mjs";
 import { featureDependencies } from "./feature-cycles.mjs";
 import {
@@ -68,9 +69,9 @@ export default function createArchitecturePlugin(projectRoot) {
       (part) => part === "components" || part === "_components",
     );
     if (parts[0] === ".." || componentsIndex === -1) return null;
-    // ui/ 是组件集合；components/ui/dialog/ 才是独立组件目录。
+    // 只有根目录的 components/ui/ 是组件集合；components/ui/dialog/ 才是独立组件目录。
     const componentIndex =
-      componentsIndex + (parts[componentsIndex + 1] === "ui" ? 2 : 1);
+      componentsIndex + (componentsIndex === 0 && parts[1] === "ui" ? 2 : 1);
     if (parts.length <= componentIndex + 1) return null;
     return resolve(projectRoot, ...parts.slice(0, componentIndex + 1));
   }
@@ -379,11 +380,14 @@ export default function createArchitecturePlugin(projectRoot) {
     },
   };
 
-  const reactQueryWrappers = new Set(
-    SOURCE_EXTENSIONS.map((extension) =>
-      resolve(projectRoot, `lib/react-query.${extension}`),
-    ),
-  );
+  const libWrappers = (name) =>
+    new Set(
+      SOURCE_EXTENSIONS.map((extension) =>
+        resolve(projectRoot, `lib/${name}.${extension}`),
+      ),
+    );
+  const reactQueryWrappers = libWrappers("react-query");
+  const cnWrappers = libWrappers("cn");
 
   const isUiWrapper = (filename) =>
     relative(projectRoot, filename)
@@ -392,11 +396,19 @@ export default function createArchitecturePlugin(projectRoot) {
       .startsWith("components/ui/");
 
   // 只能由封装文件引用的包。UI 库是 .claude/rules/libraries.md 里「used through their wrappers」那几个；
-  // openSubpaths 是不渲染 UI 的工具，封装之外也能直接用。
+  // openSubpaths 是不渲染 UI 的工具，封装之外也能直接用。cn 只经 lib/cn.ts 引入，那里按项目主题合并 class 并处理
+  // 函数式 className。
   const wrappedPackages = [
     {
       name: "@tanstack/react-query",
+      wrapper: "@/lib/react-query",
       isWrapper: (filename) => reactQueryWrappers.has(filename),
+      messageId: "wrapper",
+    },
+    {
+      name: "cn",
+      wrapper: "@/lib/cn",
+      isWrapper: (filename) => cnWrappers.has(filename),
       messageId: "wrapper",
     },
     ...["@base-ui/react", "sonner", "input-otp"].map((name) => ({
@@ -422,9 +434,9 @@ export default function createArchitecturePlugin(projectRoot) {
       schema: [],
       messages: {
         wrapper:
-          "Import from @/lib/react-query. Only that wrapper may access the original package.",
+          "Import from {{wrapper}}. Only that wrapper may access the original package.",
         uiLibrary:
-          "Use the project's wrapper of {{name}} from @/components/ui/. When it lacks the part you need, add that part to the wrapper. See .claude/rules/components.md.",
+          'Use the project\'s wrapper of {{name}} from @/components/ui/. When it lacks the part you need, add that part to the wrapper. See "Wrap a UI library" in .claude/rules/design-system.md.',
       },
     },
     create(context) {
@@ -446,7 +458,7 @@ export default function createArchitecturePlugin(projectRoot) {
           context.report({
             node: source,
             messageId: wrapped.messageId,
-            data: { name: wrapped.name },
+            data: { name: wrapped.name, wrapper: wrapped.wrapper },
           });
         }
       });
@@ -547,6 +559,7 @@ export default function createArchitecturePlugin(projectRoot) {
       "component-imports": componentImportsRule,
       "component-entry": componentEntryRule,
       "component-exports": componentExportsRule,
+      "catalog-examples": createCatalogExamplesRule(projectRoot),
       "wrapper-imports": wrapperImportsRule,
       "side-effect-imports": sideEffectImportsRule,
       "data-access": dataAccessRule,

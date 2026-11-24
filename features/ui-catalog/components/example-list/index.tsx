@@ -5,9 +5,10 @@ import { useTranslations } from "next-intl";
 import type { ComponentId } from "../../constants/catalog";
 import type { ExampleDefinition, ExampleSources } from "../../types/examples";
 import { ExampleCard } from "./example-card";
+import { compareExamples } from "./example-order";
 import { examplesByComponent } from "./registry.generated";
 
-/** 按示例自身的顺序和文件名展示自动发现的场景。 */
+/** 按 compareExamples 的顺序展示自动发现的示例。 */
 export function ExampleList({
   component,
   sources,
@@ -19,11 +20,7 @@ export function ExampleList({
   const examples: readonly ExampleDefinition[] = examplesByComponent[component];
   if (examples.length === 0) return null;
 
-  const ordered = [...examples].sort(
-    (left, right) =>
-      (left.order ?? 0) - (right.order ?? 0) ||
-      left.id.localeCompare(right.id, "en"),
-  );
+  const ordered = [...examples].sort(compareExamples);
   return (
     <div className="space-y-5">
       <h2 className="text-lg font-medium">{t("ui-catalog.examples.title")}</h2>

@@ -1,7 +1,8 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
+// aria-invalid:focus-visible:ring-ring 让无效时的焦点仍有醒目的 ring（原因见 components/ui/input.tsx），不是多余的 class。
 export const selectTriggerVariants = cva(
-  "flex w-full items-center justify-between gap-3 rounded-control border border-input bg-card text-left whitespace-nowrap text-card-foreground transition-[border-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-ring/25 aria-invalid:border-destructive data-disabled:cursor-not-allowed data-disabled:opacity-40 data-placeholder:text-muted-foreground data-popup-open:border-ring [&_svg]:shrink-0",
+  "flex w-full items-center justify-between gap-3 rounded-control border border-input bg-card text-left whitespace-nowrap text-card-foreground transition-[border-color,box-shadow] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:outline-hidden aria-invalid:border-destructive aria-invalid:focus-visible:ring-ring data-disabled:cursor-not-allowed data-disabled:opacity-40 data-placeholder:text-muted-foreground data-popup-open:border-ring [&_svg]:shrink-0",
   {
     variants: {
       size: {
@@ -18,8 +19,10 @@ export type SelectSize = NonNullable<
   VariantProps<typeof selectTriggerVariants>["size"]
 >;
 
+// 弹层盖在 trigger 上时（alignItemWithTrigger，data-side=none）直接出现和消失，不缩放：
+// 和 node_modules/@base-ui/react/docs/react/components/select.md 的示例一致。
 export const selectPopupVariants = cva(
-  "max-h-(--available-height) max-w-(--available-width) min-w-[min(var(--anchor-width),var(--available-width))] overflow-y-auto rounded-panel border border-border bg-popover text-popover-foreground shadow-popover outline-none",
+  "max-h-(--available-height) max-w-(--available-width) min-w-[min(var(--anchor-width),var(--available-width))] origin-(--transform-origin) overflow-y-auto rounded-panel border border-border bg-popover text-popover-foreground shadow-popover transition-[opacity,scale] duration-200 ease-out outline-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0 data-[side=none]:data-ending-style:transition-none data-[side=none]:data-starting-style:scale-100 data-[side=none]:data-starting-style:opacity-100 data-[side=none]:data-starting-style:transition-none",
   {
     variants: {
       size: {
@@ -32,8 +35,10 @@ export const selectPopupVariants = cva(
   },
 );
 
+// 强制颜色模式去掉 bg-accent 时，data-highlighted:outline-hidden 改由一圈系统色的 outline 标出高亮项，平时不画
+// （见 app/globals.css 的 focus-ring）；负 offset 把它画在项内侧，不被会滚动的弹层裁掉。
 export const selectItemVariants = cva(
-  "relative flex cursor-default items-center gap-2 rounded-control wrap-anywhere outline-none data-disabled:opacity-40 data-highlighted:bg-accent data-highlighted:text-accent-foreground",
+  "relative flex cursor-default items-center gap-2 rounded-control wrap-anywhere outline-none data-disabled:opacity-40 data-highlighted:bg-accent data-highlighted:text-accent-foreground data-highlighted:outline-hidden data-highlighted:-outline-offset-2",
   {
     variants: {
       size: {

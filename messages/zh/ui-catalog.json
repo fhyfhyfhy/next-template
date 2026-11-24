@@ -21,8 +21,7 @@
   "playground": {
     "label": "交互实验室",
     "preview": "实时预览",
-    "showCode": "查看代码",
-    "hideCode": "收起代码",
+    "code": "代码",
     "canvas": "INTERACTIVE CANVAS",
     "hint": "调整参数，探索不同状态",
     "panelLabel": "参数面板",
@@ -31,14 +30,13 @@
   },
   "examples": {
     "title": "使用示例",
-    "showCode": "{title}：查看代码",
-    "hideCode": "{title}：收起代码"
+    "code": "{title}：代码"
   },
   "sourceCode": {
     "label": "{filename} 源码",
     "copy": "复制代码",
     "copied": "已复制",
-    "copyFailed": "复制失败，请手动选择"
+    "copyFailed": "复制失败，请手动选中代码后复制"
   },
   "components": {
     "badge": {
@@ -54,7 +52,7 @@
       "description": "在整个页面之上打开的弹窗。"
     },
     "field": {
-      "description": "把标签、控件和错误信息组合在一起，状态由 TanStack Form 提供。"
+      "description": "把标签、控件、说明和错误信息组合在一起，状态由 TanStack Form 提供。"
     },
     "form": {
       "description": "提交时校验各个字段、聚焦第一个无效字段的表单。"
@@ -73,6 +71,9 @@
     },
     "switch": {
       "description": "表示某项设置开启还是关闭的控件。"
+    },
+    "textarea": {
+      "description": "多行文本输入框，放在 Field 里自动和它配合。"
     },
     "toaster": {
       "description": "短暂出现、和其他提示叠放的简短消息。"

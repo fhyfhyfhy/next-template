@@ -15,7 +15,8 @@ import {
 } from "@/lib/react-query";
 import { SchemaValidationError, shouldRetryRequest } from "@/lib/request/fetch";
 
-function handleRequestError(
+/** `QueryClient` 的 `onRequestError`，导出给单元测试。 */
+export function handleRequestError(
   error: unknown,
   { suppressErrorToast, errorMessage }: HandleRequestErrorOptions,
   { id }: FailedRequest,
@@ -71,7 +72,7 @@ interface ProvidersProps {
 
 /**
  * 浏览器端的 context provider 都放在这里。要在服务端读数据的 `RootClientMessages` 留在根 layout、包在外面：
- * 这是 Client Component，渲染不了 Server Component，而这里的 `RequestErrorMessage` 要用它下发的文案。
+ * 这是 Client Component，渲染不了 Server Component，而这里的 `RequestErrorMessage` 和 `<Toaster />` 要用它下发的文案。
  */
 export function Providers({ children }: ProvidersProps) {
   return (

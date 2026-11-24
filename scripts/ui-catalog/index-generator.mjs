@@ -9,13 +9,16 @@ import {
 } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { format } from "prettier";
+import { format, resolveConfig } from "prettier";
 import ts from "typescript";
 
 const featurePath = "features/ui-catalog";
+/** 示例目录所在的目录，相对项目根目录；其中名字以 directorySuffix 结尾的目录各是一个组件的示例。 */
+export const examplesPath = `${featurePath}/components`;
+export const directorySuffix = "-examples";
 const exampleSuffix = ".example.tsx";
-const directorySuffix = "-examples";
 const requiredFiles = ["preview.tsx", "playground.tsx", "index.ts"];
+const componentIndexFile = "examples.generated.ts";
 const generatedHeader =
   "// 此文件由 scripts/ui-catalog/index-generator.mjs 自动生成，请勿手动修改。\n";
 const kebabCase = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
@@ -138,7 +141,7 @@ function readMetadata(directory) {
 }
 
 function discoverExamples(projectRoot) {
-  const componentsRoot = join(projectRoot, featurePath, "components");
+  const componentsRoot = join(projectRoot, examplesPath);
   const sourceHash = createHash("sha256");
   const components = entries(componentsRoot)
     .filter(
@@ -148,7 +151,13 @@ function discoverExamples(projectRoot) {
       const id = entry.name.slice(0, -directorySuffix.length);
       assertId(id, entry.name);
       const directory = join(componentsRoot, entry.name);
-      const files = entries(directory).filter((file) => file.isFile());
+      const children = entries(directory);
+      const nested = children.find((child) => child.isDirectory());
+      if (nested)
+        throw new Error(
+          `Expected only files in a UI catalog examples directory: ${join(directory, nested.name)}`,
+        );
+      const files = children.filter((file) => file.isFile());
       for (const filename of requiredFiles) {
         if (!files.some((file) => file.name === filename))
           throw new Error(
@@ -289,7 +298,7 @@ export async function generateExampleIndexes(projectRoot) {
   const { components, revision } = discoverExamples(root);
   const outputs = [
     ...components.map(({ directory, examples }) => ({
-      filename: join(directory, "examples.generated.ts"),
+      filename: join(directory, componentIndexFile),
       source: componentIndex(examples),
     })),
     {
@@ -317,10 +326,14 @@ export async function generateExampleIndexes(projectRoot) {
       source: componentRegistry(components),
     },
   ];
+  // 按生成物所在位置的 Prettier 配置格式化，和 format:check、lint-staged 一致；临时目录里的 fixture 找不到配置时用默认选项。
   const formatted = await Promise.all(
     outputs.map(async (output) => ({
       ...output,
-      source: await format(output.source, { parser: "typescript" }),
+      source: await format(output.source, {
+        ...(await resolveConfig(output.filename)),
+        filepath: output.filename,
+      }),
     })),
   );
   const changed = [];
@@ -343,14 +356,14 @@ export async function generateExampleIndexes(projectRoot) {
   return changed;
 }
 
+// 示例目录里的任何变化都重新生成，子目录和其中的文件也算：生成要因它们报错。只跳过生成器自己写的组件索引，
+// 否则每次写入都会多触发一轮生成。
 function isSourceEvent(filename) {
   if (!filename) return true;
   const parts = filename.toString().split(sep);
-  if (!parts[0].endsWith(directorySuffix)) return false;
   return (
-    parts.length === 1 ||
-    (parts.length === 2 &&
-      (parts[1].endsWith(exampleSuffix) || requiredFiles.includes(parts[1])))
+    parts[0].endsWith(directorySuffix) &&
+    !(parts.length === 2 && parts[1] === componentIndexFile)
   );
 }
 
@@ -367,7 +380,7 @@ export async function watchExampleIndexes(
   let closed = false;
   let pending = Promise.resolve();
   const watcher = watch(
-    join(root, featurePath, "components"),
+    join(root, examplesPath),
     { recursive: true },
     (_event, filename) => {
       if (closed || !isSourceEvent(filename)) return;

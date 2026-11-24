@@ -4,6 +4,8 @@ import Link from "next/link";
 import type { Nullable } from "nuqs";
 import type { ComponentProps } from "react";
 
+import { cn } from "@/lib/cn";
+
 import { TASK_LIST_HREF } from "../../constants/task-list";
 import {
   serializeTaskListSearchParams,
@@ -20,12 +22,17 @@ type TaskListLinkProps = Omit<
 };
 
 /** 指向全部任务页另一个状态的链接，目标基于当前选择：导航进行中再点，在这次选择的基础上继续改。 */
-export function TaskListLink({ values, ...props }: TaskListLinkProps) {
+export function TaskListLink({
+  values,
+  className,
+  ...props
+}: TaskListLinkProps) {
   const [current, setSearchParams] = useTaskListSearchParams();
   const target = { ...current, ...values };
   return (
     <Link
       {...props}
+      className={cn("focus-ring", className)}
       href={serializeTaskListSearchParams(TASK_LIST_HREF, target)}
       // 用 onNavigate 而不是 onClick：Ctrl/Cmd 点击在新标签页打开时不触发它，交给浏览器处理。
       onNavigate={(event) => {

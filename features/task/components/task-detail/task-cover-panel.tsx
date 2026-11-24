@@ -46,7 +46,7 @@ export function TaskCoverPanel({ task, editable }: TaskCoverPanelProps) {
         <label
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
-            "w-full cursor-pointer has-focus-visible:ring-2 has-focus-visible:ring-ring",
+            "w-full cursor-pointer has-focus-visible:ring-2 has-focus-visible:ring-ring has-focus-visible:ring-offset-2 has-focus-visible:ring-offset-card has-focus-visible:outline-hidden",
           )}
           data-disabled={upload.isPending || undefined}
         >

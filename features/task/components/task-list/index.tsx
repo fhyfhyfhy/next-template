@@ -1,20 +1,23 @@
 "use client";
 
 import { useMounted } from "@mantine/hooks";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { use } from "react";
 
 import { DateTime } from "@/components/date-time";
+import { buttonVariants } from "@/components/ui/button";
 
 import type { TaskPage } from "../../api/get-tasks";
 import { DATE_TIME_FORMAT } from "../../constants/date-time";
-import { taskDetailHref, toTaskFilters } from "../../utils/task-urls";
+import { toTaskFilters } from "../../utils/task-urls";
 import { TaskCover } from "../task-cover";
 import { TaskListLink, useTaskListSearchParams } from "../task-list-navigation";
+import { TaskNameLink } from "../task-name-link";
 import { TaskStatusBadge } from "../task-status-badge";
 import { TaskListChangeSignal } from "./change-signal";
 import { FavoriteToggle } from "./favorite-toggle";
+
+export { TaskListSkeleton } from "./skeleton";
 
 interface TaskListProps {
   /** Server Component 不 await 直接传下来的读取结果，这里用 `use()` 取值，未完成时由外层 Suspense 显示骨架屏。 */
@@ -49,12 +52,7 @@ export function TaskList({ tasksPromise }: TaskListProps) {
                 className="size-14 shrink-0 rounded-control"
               />
               <div className="min-w-0 flex-1">
-                <Link
-                  href={taskDetailHref(task.id)}
-                  className="block truncate font-medium outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {task.name}
-                </Link>
+                <TaskNameLink task={task} className="block truncate" />
                 <p className="mt-1 text-xs text-muted-foreground">
                   <DateTime value={task.createdAt} format={DATE_TIME_FORMAT} />
                 </p>
@@ -76,7 +74,7 @@ export function TaskList({ tasksPromise }: TaskListProps) {
           {page > 1 && (
             <TaskListLink
               values={{ page: page - 1 }}
-              className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               {t("task.taskList.previousPage")}
             </TaskListLink>
@@ -84,7 +82,7 @@ export function TaskList({ tasksPromise }: TaskListProps) {
           {hasNextPage && (
             <TaskListLink
               values={{ page: page + 1 }}
-              className="rounded-control border border-border px-3 py-1.5 hover:bg-accent"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               {t("task.taskList.nextPage")}
             </TaskListLink>

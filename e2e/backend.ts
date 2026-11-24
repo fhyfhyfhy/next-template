@@ -9,6 +9,7 @@ import pg from "pg";
 
 import { localEnv } from "../scripts/local-services/datasets.mjs";
 import { createLocalStorageClient } from "../scripts/local-services/storage.mjs";
+import { expect } from "./test";
 
 // 用例的测试数据直接写进 e2e 数据集（playwright.config.ts 的 webServer 用的同一个库），不经过应用。这里是和业务无关的
 // 部分；按项目的表写数据的 fixture 建在它上面。
@@ -55,6 +56,42 @@ export async function holdTable(table: string) {
     await client.query("rollback");
     await client.end();
   };
+}
+
+/**
+ * 让 `act` 引起的服务端读取 `table` 失败，像读数据时数据库出错：锁住这张表，执行 `act`（比如打开页面、点重试），
+ * 取消等锁的读取，再释放锁。服务端可能在 `act` 返回之后才发出读取，所以轮询到取消了一个为止。
+ */
+export async function failServerRead(
+  table: string,
+  act: () => Promise<unknown>,
+) {
+  const release = await holdTable(table);
+  try {
+    await act();
+    await expect.poll(() => failQueriesWaitingFor(table)).toBeGreaterThan(0);
+  } finally {
+    await release();
+  }
+}
+
+/** 取消服务端正在等 `holdTable(table)` 锁的查询，返回取消了几个；查询还没发出时是 0。 */
+async function failQueriesWaitingFor(table: string) {
+  const client = new pg.Client({ connectionString: E2E_DATABASE_URL });
+  await client.connect();
+  try {
+    const { rows } = await client.query<{ cancelled: boolean }>(
+      `select pg_cancel_backend(pid) as cancelled
+       from pg_stat_activity
+       where datname = current_database()
+         and wait_event_type = 'Lock'
+         and query like $1`,
+      [`%"${table}"%`],
+    );
+    return rows.filter((row) => row.cancelled).length;
+  } finally {
+    await client.end();
+  }
 }
 
 /** 名称后面接一段随机串：用例之间、复用服务多跑几轮时都不会撞名，也不会被别的用例的搜索搜到。 */

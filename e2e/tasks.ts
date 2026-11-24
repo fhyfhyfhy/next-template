@@ -1,5 +1,5 @@
 import { PutObjectCommand, type S3Client } from "@aws-sdk/client-s3";
-import type { Page, Request } from "@playwright/test";
+import type { Locator, Page, Request } from "@playwright/test";
 import type { Kysely } from "kysely";
 import { nanoid } from "nanoid";
 
@@ -198,6 +198,15 @@ export class TaskData {
       .execute();
   }
 
+  /** 在别处改了任务的 prompt。 */
+  async changePrompt(taskId: string, prompt: string) {
+    await this.db
+      .updateTable("tasks")
+      .set({ prompt, updated_at: new Date() })
+      .where("id", "=", taskId)
+      .execute();
+  }
+
   /** 失败的任务回到排队中，和应用里的重试一样清空日志。 */
   async retryTask(taskId: string) {
     await this.db.transaction().execute(async (trx) => {
@@ -293,6 +302,13 @@ export const taskRows = (page: Page) =>
 /** 列表里名称含 `name` 的那一行。 */
 export const taskRow = (page: Page, name: string) =>
   taskRows(page).filter({ hasText: name });
+
+/**
+ * `container` 里名为 `name` 的任务的收藏按钮，比如全部任务页的行（`taskRows`）或作品广场的卡片。按钮的名称带着
+ * 任务名，读屏才分得清是哪一个的星标。
+ */
+export const favoriteToggle = (container: Locator, name: string) =>
+  container.getByRole("button", { name: `收藏“${name}”`, exact: true });
 
 // 有进行中的任务时页面每 3 秒检查一次（种子数据里一直有：e2e 里 generator 关着，排队和生成中的种子任务不会结束），
 // 发现变化后再重新读取列表，等列表跟上要比默认的 5 秒宽。

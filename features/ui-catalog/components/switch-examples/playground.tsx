@@ -1,7 +1,8 @@
 "use client";
 
-import { type SetStateAction, useId, useState } from "react";
+import { type SetStateAction, useState } from "react";
 
+import { FieldDescription, FieldRoot } from "@/components/ui/field";
 import {
   SwitchRoot,
   type SwitchRootProps,
@@ -30,42 +31,39 @@ export const initialConfig: SwitchConfig = (/* @example-config */ {
   "required": false
 } /* @end-example-config */);
 
-/** 不传参数时使用本地状态；UI catalog 页面传入同一份配置供面板与预览共享。 */
+/** 不传 config 和 onConfigChange 时使用本地状态；UI catalog 页面两个一起传，面板与预览共享同一份配置。 */
 export function SwitchPlayground({
   config,
   onConfigChange,
-}: {
-  config?: SwitchConfig;
-  onConfigChange?: (config: SetStateAction<SwitchConfig>) => void;
-} = {}) {
+}:
+  | {
+      config: SwitchConfig;
+      onConfigChange: (config: SetStateAction<SwitchConfig>) => void;
+    }
+  | { config?: undefined; onConfigChange?: undefined } = {}) {
   const [local, setLocal] = useState(initialConfig);
   const state = config ?? local;
   const change = onConfigChange ?? setLocal;
-  const id = useId();
   return (
-    <div className="flex items-center justify-between gap-5 rounded-panel border border-border bg-card p-5 text-card-foreground">
-      <div>
-        <label htmlFor={id} className="text-sm font-medium">
+    <div className="rounded-panel border border-border bg-card p-5 text-card-foreground">
+      {/* 说明放在 label 外面：label 里的文字都会进开关的名称。 */}
+      <FieldRoot disabled={state.disabled}>
+        <label className="flex items-center justify-between gap-5 text-sm">
           {state.label}
+          <SwitchRoot
+            size={state.size}
+            checked={state.checked}
+            readOnly={state.readOnly}
+            required={state.required}
+            onCheckedChange={(checked) =>
+              change((previous) => ({ ...previous, checked }))
+            }
+          >
+            <SwitchThumb />
+          </SwitchRoot>
         </label>
-        <p id={`${id}-hint`} className="mt-1 text-xs/5 text-muted-foreground">
-          {state.description}
-        </p>
-      </div>
-      <SwitchRoot
-        id={id}
-        size={state.size}
-        checked={state.checked}
-        disabled={state.disabled}
-        readOnly={state.readOnly}
-        required={state.required}
-        aria-describedby={`${id}-hint`}
-        onCheckedChange={(checked) =>
-          change((previous) => ({ ...previous, checked }))
-        }
-      >
-        <SwitchThumb />
-      </SwitchRoot>
+        <FieldDescription>{state.description}</FieldDescription>
+      </FieldRoot>
     </div>
   );
 }

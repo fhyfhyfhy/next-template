@@ -33,7 +33,10 @@ export default async function GlobalNotFound() {
             title={t("app.globalNotFound.title")}
             description={t("app.globalNotFound.description")}
             action={
-              <Link href="/" className="text-sm text-primary hover:underline">
+              <Link
+                href="/"
+                className="text-sm text-primary focus-ring hover:underline"
+              >
                 {t("app.globalNotFound.home")}
               </Link>
             }

@@ -12,5 +12,6 @@ export const catalog = [
   { id: "select", title: "Select" },
   { id: "skeleton", title: "Skeleton" },
   { id: "switch", title: "Switch" },
+  { id: "textarea", title: "Textarea" },
   { id: "toaster", title: "Toaster" },
 ] as const;

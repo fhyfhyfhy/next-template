@@ -14,7 +14,8 @@ export type TaskLogEvent =
 
 /**
  * 订阅任务的生成日志。SSE 响应按传输例外用 raw `fetch` 读取：先收到已有日志，之后每条新日志一个事件，
- * 任务到终态时收到 `end` 并结束。调用方通过 `signal` 在卸载时中止。
+ * 任务到终态时收到 `end` 并结束。调用方通过 `signal` 中止订阅；中止只停住之后的读取，已经读到、还没交出的事件
+ * 仍会一个个交出来，调用方要自己丢弃。
  */
 export async function* streamTaskLogs(
   taskId: string,

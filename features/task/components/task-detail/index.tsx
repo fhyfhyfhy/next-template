@@ -16,13 +16,17 @@ import { DATE_TIME_FORMAT } from "../../constants/date-time";
 import { useRecentTaskIds } from "../../hooks/use-recent-task-ids";
 import { useRefreshListsWhenSettled } from "../../hooks/use-refresh-lists-when-settled";
 import type { TaskStatus } from "../../types/task-filters";
-import { RelatedTasks } from "../related-tasks";
+import { isQueryLoadFailed } from "../../utils/query-load-state";
+import { QueryLoadFailed } from "../query-load-failed";
 import { TaskComments } from "../task-comments";
-import { TaskLogs } from "../task-logs";
+import { TaskHeading } from "../task-heading";
+import { RelatedTasks } from "./related-tasks";
 import { TaskActions } from "./task-actions";
 import { TaskCoverPanel } from "./task-cover-panel";
-import { TaskHeading } from "./task-heading";
+import { TaskLogs } from "./task-logs";
 import { TaskProgress } from "./task-progress";
+
+export { TaskDetailSkeleton } from "./skeleton";
 
 /** 任务详情由 React Query 负责：任务会在用户停留时自己推进，pending、running 时轮询。首屏数据来自服务端 prefetch。 */
 export function TaskDetail({ taskId }: { taskId: string }) {
@@ -31,7 +35,7 @@ export function TaskDetail({ taskId }: { taskId: string }) {
   const { record } = useRecentTaskIds();
   useRefreshListsWhenSettled(task.data?.status);
   useEffect(() => record(taskId), [record, taskId]);
-  // 重试先乐观地显示 pending；服务端清空上一轮日志前就重新订阅，会读到旧日志和 end，所以等重试确认后再换日志的 key。
+  // 重试先乐观地显示 pending；服务端清空上一轮日志前就重新订阅，会读到旧日志和 end，所以等重试确认后日志才算进行中。
   const retrying =
     useIsMutating({ mutationKey: retryTaskMutationKey(taskId) }) > 0;
   const queryClient = useQueryClient();
@@ -78,8 +82,8 @@ export function TaskDetail({ taskId }: { taskId: string }) {
           </dl>
           {!deleted && <TaskActions task={data} />}
           <TaskLogs
-            key={isTaskActive(data.status) && !retrying ? "active" : "settled"}
             taskId={taskId}
+            active={isTaskActive(data.status) && !retrying}
             onEnd={refreshIfSettledElsewhere}
           />
           {!deleted && <TaskComments taskId={taskId} />}
@@ -91,11 +95,12 @@ export function TaskDetail({ taskId }: { taskId: string }) {
       </div>
     );
   }
-  if (task.error) {
+  if (isQueryLoadFailed(task)) {
     return (
-      <p className="text-sm text-destructive">
-        {t("task.queryState.loadFailed")}
-      </p>
+      <QueryLoadFailed
+        query={task}
+        retryLabel={t("task.taskDetail.retryLabel")}
+      />
     );
   }
   return (

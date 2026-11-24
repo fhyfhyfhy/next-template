@@ -12,6 +12,7 @@ import {
 
 export type {
   DehydratedState,
+  FetchStatus,
   InfiniteData,
   QueryKey,
 } from "@tanstack/react-query";
@@ -24,8 +25,10 @@ export {
   keepPreviousData,
   mutationOptions,
   noop,
+  onlineManager,
   QueryClientProvider,
   QueryErrorResetBoundary,
+  QueryObserver,
   queryOptions,
   skipToken,
   useInfiniteQuery,
@@ -43,7 +46,8 @@ export {
 export interface HandleRequestErrorOptions extends Record<string, unknown> {
   /**
    * 不弹错误提示；传函数时按错误逐个判断。mutation 默认 `false`。
-   * query 已有数据时默认 `false`：组件继续显示旧数据，提示是刷新失败的唯一信号；没有数据时默认 `true`，由组件渲染错误。
+   * query 没有数据时总是不弹，由组件渲染错误，这里的值只管已有数据的 query：默认 `false`，组件继续显示旧数据，
+   * 提示是刷新失败的唯一信号。
    */
   suppressErrorToast?: boolean | ((error: unknown) => boolean);
   /**
@@ -79,8 +83,8 @@ export interface QueryClientOptions extends Omit<
   queryCache?: never;
   mutationCache?: never;
   /**
-   * query 或 mutation 最终失败时调用（query 在重试用完后）。
-   * query 默认只在已有数据时提示（见 `suppressErrorToast`）；`meta` 的字段逐个覆盖默认值。
+   * query 或 mutation 最终失败时调用（query 在重试用完后），收到的是 `meta`。query 的 `suppressErrorToast`
+   * 已经按它的规则算成 boolean，mutation 的原样传入。
    */
   onRequestError?: RequestErrorHandler;
 }
@@ -104,15 +108,21 @@ export class QueryClient extends TanstackQueryClient {
     }
     super({
       queryCache: new QueryCache({
-        onError: (error, query) =>
+        onError: (error, query) => {
+          const { suppressErrorToast = false } = query.meta ?? {};
           onRequestError?.(
             error,
             {
-              suppressErrorToast: query.state.data === undefined,
               ...query.meta,
+              suppressErrorToast:
+                query.state.data === undefined ||
+                (typeof suppressErrorToast === "function"
+                  ? suppressErrorToast(error)
+                  : suppressErrorToast),
             },
             { id: `query:${query.queryHash}` },
-          ),
+          );
+        },
       }),
       mutationCache: new MutationCache({
         onError: (error, _variables, _onMutateResult, mutation) =>

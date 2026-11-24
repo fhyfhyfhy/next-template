@@ -29,7 +29,7 @@ export default function UiCatalogPage({
       brand={
         <Link
           href="/"
-          className="flex items-center gap-3 rounded-control outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex items-center gap-3 rounded-control focus-ring"
         >
           <span className="flex size-9 items-center justify-center rounded-control bg-primary text-primary-foreground">
             <IconStack2 className="size-6" aria-hidden />

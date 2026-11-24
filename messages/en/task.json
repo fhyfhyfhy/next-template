@@ -12,7 +12,8 @@
   },
   "queryState": {
     "loading": "Loading…",
-    "loadFailed": "Couldn't load"
+    "loadFailed": "Couldn't load",
+    "retry": "Retry"
   },
   "validation": {
     "nameRequired": "Enter a name",
@@ -51,7 +52,7 @@
     "total": "{total, plural, one {# task} other {# tasks}} in total",
     "previousPage": "Previous",
     "nextPage": "Next",
-    "favorite": "Favorite"
+    "favorite": "Favorite “{name}”"
   },
   "taskListToolbar": {
     "statusFilter": "Filter by status",
@@ -76,22 +77,26 @@
   },
   "favoritesPanel": {
     "title": "My favorites",
-    "empty": "No favorites yet"
+    "empty": "No favorites yet",
+    "retryLabel": "Retry loading your favorites"
   },
   "relatedTasks": {
     "title": "Other tasks with the same prompt",
-    "empty": "No other tasks"
+    "empty": "No other tasks",
+    "retryLabel": "Retry loading other tasks with the same prompt"
   },
   "feed": {
     "label": "Models",
     "noMore": "No more models",
     "loadMoreFailed": "Couldn't load. Scroll here to retry.",
-    "favorite": "Favorite"
+    "favorite": "Favorite “{name}”",
+    "retryLabel": "Retry loading models"
   },
   "taskDetail": {
     "deletedNotice": "This task has been deleted. Below is the last data it had.",
     "prompt": "Prompt",
-    "createdAt": "Created"
+    "createdAt": "Created",
+    "retryLabel": "Retry loading task details"
   },
   "taskProgress": {
     "queued": "Queued",
@@ -150,10 +155,8 @@
     "placeholder": "Write your comment",
     "submit": "Post",
     "createFailed": "Couldn't post the comment. Please try again later.",
-    "deleteFailed": "Couldn't delete the comment. Please try again later."
-  },
-  "queryErrorBoundary": {
-    "retry": "Retry"
+    "deleteFailed": "Couldn't delete the comment. Please try again later.",
+    "retryLabel": "Retry loading comments"
   },
   "favorite": {
     "failed": "Couldn't update the favorite. Please try again later."

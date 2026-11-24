@@ -50,6 +50,7 @@ function addCase(
     syntax = "import",
     rule,
     messageId,
+    message,
   },
 ) {
   const id = `case-${cases.length}`;
@@ -68,6 +69,7 @@ function addCase(
     },
     rules: rule ? [rule] : [],
     messageIds: messageId ? [messageId] : undefined,
+    messages: message ? [message] : undefined,
   });
 }
 
@@ -198,6 +200,18 @@ addCase("components/ui 可以依赖下层 hooks", {
   from: "components/ui/CASE.ts",
   to: "hooks/CASE.ts",
   source: "@/hooks/CASE",
+});
+addCase("components/ui 不能引用 components/ 的单文件组件", {
+  from: "components/ui/CASE.ts",
+  to: "components/CASE-panel.ts",
+  source: "@/components/CASE-panel",
+  rule: "import/no-restricted-paths",
+});
+addCase("components/ui 的组件目录不能引用 components/ 的组件目录", {
+  from: "components/ui/CASE/root.ts",
+  to: "components/CASE-panel/index.ts",
+  source: "@/components/CASE-panel",
+  rule: "import/no-restricted-paths",
 });
 addCase("根目录反向依赖仍然禁止", {
   from: "utils/CASE.ts",
@@ -352,6 +366,12 @@ addCase("feature 根入口不能直接转导出组件私有文件", {
   syntax: "reexport",
   rule: componentRule,
 });
+addCase("只有根目录的 components/ui/ 是组件集合，feature 里的 ui/ 是组件目录", {
+  from: "features/CASE/components/consumer.ts",
+  to: "features/CASE/components/ui/helper.ts",
+  source: "./ui/helper",
+  rule: componentRule,
+});
 addCase("app 内组件目录同样具有私有边界", {
   from: "app/CASE/page.tsx",
   to: "app/CASE/_components/widget/private.ts",
@@ -379,6 +399,10 @@ addCase("组件目录显式 index.tsx 是公开入口", {
   from: "app/CASE.ts",
   to: "components/CASE/index.tsx",
   source: "@/components/CASE/index.tsx",
+});
+addCase("组件目录只有类型声明的 index.d.ts 时，它也是公开入口", {
+  to: "components/CASE/index.d.ts",
+  source: "@/components/CASE",
 });
 addCase("UI 组件目录隐式 index.tsx 是公开入口", {
   from: "app/CASE.ts",
@@ -593,6 +617,12 @@ for (const extension of [
   }
 }
 
+// wrapper-imports 的完整消息：断言整段文本，消息里的 {{wrapper}}、{{name}} 漏传就会原样留在文本里。
+const wrapperMessage = (wrapper) =>
+  `Import from ${wrapper}. Only that wrapper may access the original package.`;
+const uiLibraryMessage = (name) =>
+  `Use the project's wrapper of ${name} from @/components/ui/. When it lacks the part you need, add that part to the wrapper. See "Wrap a UI library" in .claude/rules/design-system.md.`;
+
 for (const syntax of [
   "import",
   "dynamic",
@@ -609,6 +639,7 @@ for (const syntax of [
     source: "@tanstack/react-query",
     syntax,
     rule: wrapperRule,
+    message: wrapperMessage("@/lib/react-query"),
   });
   addCase(`${syntax} 允许通过公开 React Query 封装入口引用`, {
     from: "app/CASE.ts",
@@ -620,6 +651,7 @@ addCase("React Query 原包的子路径也只能由封装引用", {
   from: "app/CASE.ts",
   source: "@tanstack/react-query/build/modern/index.js",
   rule: wrapperRule,
+  message: wrapperMessage("@/lib/react-query"),
 });
 addCase("相似包名不被误认为 React Query 原包", {
   from: "app/CASE.ts",
@@ -640,18 +672,35 @@ addCase("lib 子目录中的同名文件不能享有封装豁免", {
   source: "@tanstack/react-query",
   rule: wrapperRule,
 });
+for (const source of ["cn", "cn/config"]) {
+  addCase(`业务代码不能直接引用 ${source}`, {
+    from: "app/CASE.ts",
+    source,
+    rule: wrapperRule,
+    message: wrapperMessage("@/lib/cn"),
+  });
+}
+cases.push({
+  name: "lib/cn.ts 封装可以引用 cn 原包",
+  from: "lib/cn.ts",
+  files: {
+    "lib/cn.ts":
+      'import { value as packageValue } from "cn/config"; export const value = packageValue;',
+  },
+  rules: [],
+});
 
-for (const source of [
-  "@base-ui/react",
-  "@base-ui/react/button",
-  "@base-ui/react/internals/useRenderElement",
-  "sonner",
-  "input-otp",
+for (const [source, name] of [
+  ["@base-ui/react", "@base-ui/react"],
+  ["@base-ui/react/button", "@base-ui/react"],
+  ["@base-ui/react/internals/useRenderElement", "@base-ui/react"],
+  ["sonner", "sonner"],
+  ["input-otp", "input-otp"],
 ]) {
   addCase(`${source} 只能由 components/ui/ 的封装引用`, {
     source,
     rule: wrapperRule,
-    messageId: "uiLibrary",
+    message: uiLibraryMessage(name),
   });
 }
 for (const source of [
@@ -675,7 +724,7 @@ addCase("根目录 components/ 不算 UI 库的封装", {
   from: "components/CASE.ts",
   source: "@base-ui/react/button",
   rule: wrapperRule,
-  messageId: "uiLibrary",
+  message: uiLibraryMessage("@base-ui/react"),
 });
 addCase("相似包名不被误认为 UI 库", {
   from: "app/CASE.ts",
@@ -1014,6 +1063,16 @@ cases.push({
   rules: ["no-restricted-syntax"],
 });
 cases.push({
+  name: "feature 里 components/ 的组件入口同样禁止星号转导出",
+  from: "features/star-entry/components/widget/index.ts",
+  files: {
+    "features/star-entry/components/widget/parts.ts": "export const value = 1;",
+    "features/star-entry/components/widget/index.ts":
+      'export * from "./parts";',
+  },
+  rules: ["no-restricted-syntax"],
+});
+cases.push({
   name: "app 里 _components/ 的组件入口同样不能整体转出 namespace",
   from: "app/namespace-entry/_components/widget/index.ts",
   files: {
@@ -1201,6 +1260,20 @@ for (const [name, from, files, messageIds] of [
     ["deeper"],
   ],
   [
+    "同一个 _components/ 里的 -test-helpers 文件也不算使用方",
+    "app/placement-test-helpers/(shop)/_components/badge.ts",
+    {
+      "app/placement-test-helpers/(shop)/_components/badge.ts":
+        "export const value = 1;",
+      "app/placement-test-helpers/(shop)/_components/badge-test-helpers.ts":
+        importing("./badge"),
+      "app/placement-test-helpers/(shop)/a/page.ts": importing(
+        "../_components/badge",
+      ),
+    },
+    ["deeper"],
+  ],
+  [
     "组件目录整体算一个模块，在它的 index 上报告",
     "app/placement-directory/(shop)/_components/dialog/index.ts",
     {
@@ -1334,6 +1407,12 @@ function createConfigFixture() {
     join(project, "scripts/build-dirs.mjs"),
     join(fixture, "scripts/build-dirs.mjs"),
   );
+  // architecture/catalog-examples 从生成器取示例目录的位置。
+  mkdirSync(join(fixture, "scripts/ui-catalog"));
+  copyFileSync(
+    join(project, "scripts/ui-catalog/index-generator.mjs"),
+    join(fixture, "scripts/ui-catalog/index-generator.mjs"),
+  );
   copyFileSync(join(project, "tsconfig.json"), join(fixture, "tsconfig.json"));
   // import/no-relative-packages 要找被 lint 文件所属的 package.json，找不到会直接抛错。
   copyFileSync(join(project, "package.json"), join(fixture, "package.json"));
@@ -1366,7 +1445,11 @@ describe("架构依赖和 feature、组件导入约定", () => {
     process.chdir(fixture);
     // 架构用例只验证依赖边界；import 排序由下方独立用例验证。
     // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
+    // 组件入口的 namespace 用例会默认导出，import/no-default-export 由下方「组件写成具名的 function 声明」验证。
     // fixture 没有 docs/features.md，feature 依赖图由 scripts/eslint/architecture/feature-dependencies.test.mjs 验证。
+    // fixture 里 components/ui/ 的文件没有 UI catalog 示例目录：规则本身由
+    // scripts/eslint/architecture/catalog-examples.test.mjs 验证，项目配置开着它由下方「components/ui/ 的组件和
+    // UI catalog 的示例目录一一对应」验证。
     // fixture 的 server/ 和 -action 文件只为验证依赖方向，不写 import "server-only" 和 "use server"；这两条规则由
     // 下方独立用例验证。
     eslint = new ESLint({
@@ -1374,12 +1457,14 @@ describe("架构依赖和 feature、组件导入约定", () => {
       overrideConfig: {
         rules: {
           "architecture/feature-dependencies": "off",
+          "architecture/catalog-examples": "off",
           "data-flow/server-only": "off",
           "data-flow/action-module": "off",
           "simple-import-sort/imports": "off",
           "@typescript-eslint/consistent-type-definitions": "off",
           "@typescript-eslint/consistent-type-assertions": "off",
           "@typescript-eslint/no-non-null-assertion": "off",
+          "import/no-default-export": "off",
         },
       },
     });
@@ -1390,7 +1475,7 @@ describe("架构依赖和 feature、组件导入约定", () => {
     rmSync(fixture, { recursive: true, force: true });
   });
 
-  for (const { name, from, rules, messageIds } of cases) {
+  for (const { name, from, rules, messageIds, messages } of cases) {
     test(name, async () => {
       const [result] = await eslint.lintFiles([join(fixture, from)]);
       expect(
@@ -1401,6 +1486,11 @@ describe("架构依赖和 feature、组件导入约定", () => {
         expect(
           result.messages.map(({ messageId }) => messageId).sort(),
         ).toStrictEqual([...messageIds].sort());
+      }
+      if (messages) {
+        expect(
+          result.messages.map(({ message }) => message).sort(),
+        ).toStrictEqual([...messages].sort());
       }
     });
   }
@@ -1464,6 +1554,51 @@ export const values = [local, helper, join, upstream, useState, scoped, styles];
       expect(stable.messages).toStrictEqual([]);
     });
   }
+});
+
+describe("UI catalog 的生成索引按生成器的顺序 import", () => {
+  // import/no-cycle 关掉：order-probe.ts 不在磁盘上。
+  const eslint = new ESLint({
+    cwd: project,
+    overrideConfig: { rules: { "import/no-cycle": "off" } },
+  });
+  // 生成器按码点排序，basic-disabled 排在 basic 前面。
+  const source = `// 此文件由 scripts/ui-catalog/index-generator.mjs 自动生成，请勿手动修改。
+
+"use client";
+
+import type { ExampleDefinition } from "../../types/examples";
+import {
+  Example as Example0,
+  metadata as metadata0,
+} from "./basic-disabled.example";
+import { Example as Example1, metadata as metadata1 } from "./basic.example";
+
+export const examples = [
+  { ...metadata0, id: "basic-disabled", component: Example0 },
+  { ...metadata1, id: "basic", component: Example1 },
+] satisfies readonly ExampleDefinition[];
+`;
+  const sortReports = async (file) => {
+    const [result] = await eslint.lintText(source, {
+      filePath: join(
+        project,
+        "features/ui-catalog/components/button-examples",
+        file,
+      ),
+    });
+    return result.messages.filter(
+      ({ ruleId }) => ruleId === "simple-import-sort/imports",
+    );
+  };
+
+  test("生成索引不检查 import 顺序", async () => {
+    expect(await sortReports("examples.generated.ts")).toStrictEqual([]);
+  });
+
+  test("同目录的其他文件照样检查", async () => {
+    expect(await sortReports("order-probe.ts")).toHaveLength(1);
+  });
 });
 
 describe("数据访问规则覆盖 React Query 封装、mutation 回调和请求库", () => {
@@ -2021,6 +2156,12 @@ describe("应用代码只包括「Layers」表里的目录", () => {
       "no-restricted-syntax",
     );
   });
+
+  test("应用代码之外名为 components 的目录不套组件入口的限制", async () => {
+    expect(await ruleIds("e2e/components/task-row/index.ts")).not.toContain(
+      "no-restricted-syntax",
+    );
+  });
 });
 
 describe("页面上的 HTML 只由 React 渲染", () => {
@@ -2059,9 +2200,34 @@ describe("派生项目的 eslint.config.project.mjs 接在 template 的配置后
 
   beforeAll(() => {
     fixture = createConfigFixture();
+    // better-tailwindcss 按 app/globals.css 读项目主题。
+    mkdirSync(join(fixture, "app"));
+    copyFileSync(
+      join(project, "app/globals.css"),
+      join(fixture, "app/globals.css"),
+    );
     writeFileSync(
       join(fixture, "eslint.config.project.mjs"),
-      `export default [{ files: ["probe/**"], rules: { "no-console": "error" } }];\n`,
+      `import { TAILWIND_CLASS_RESTRICTIONS } from "./scripts/eslint/tailwind-classes.mjs";
+
+export default [
+  { files: ["probe/**"], rules: { "no-console": "error" } },
+  {
+    files: ["components/**"],
+    rules: {
+      "better-tailwindcss/no-restricted-classes": [
+        "error",
+        {
+          restrict: [
+            ...TAILWIND_CLASS_RESTRICTIONS,
+            { pattern: "^text-sm$", message: "PROBE" },
+          ],
+        },
+      ],
+    },
+  },
+];
+`,
     );
   });
 
@@ -2079,11 +2245,66 @@ describe("派生项目的 eslint.config.project.mjs 接在 template 的配置后
       JSON.stringify(result.messages, null, 2),
     ).toContain("no-console");
   });
+
+  test("项目追加 Tailwind 限制后 template 的限制照旧", async () => {
+    const eslint = new ESLint({ cwd: fixture });
+    const [result] = await eslint.lintText(
+      `export const probe = <div className="bg-red-500 text-sm" />;\n`,
+      { filePath: join(fixture, "components/probe.tsx") },
+    );
+    expect(
+      result.messages
+        .filter(
+          ({ ruleId }) => ruleId === "better-tailwindcss/no-restricted-classes",
+        )
+        .map(({ message }) =>
+          message.includes("Tailwind palette color") ? "palette" : message,
+        ),
+      JSON.stringify(result.messages, null, 2),
+    ).toStrictEqual(["palette", "PROBE"]);
+  });
 });
 
-describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", () => {
+// 用项目自己的配置 lint 源码片段；经 messagesFor 的用例共用这一个实例。
+const projectLinter = new ESLint({ cwd: project });
+
+/**
+ * 用项目配置 lint 一段源码，返回 ruleIds 里那些规则的报告；以 / 结尾的一项代表整个插件，比如 "jsx-a11y/"。
+ * file 用真实存在的路径：import/no-cycle 定位不了不在磁盘上的文件。源码没有 import 时它不用定位，路径可以不存在。
+ */
+async function messagesFor(file, source, ruleIds) {
+  const [result] = await projectLinter.lintText(source, {
+    filePath: join(project, file),
+  });
+  expect(result.fatalErrorCount).toBe(0);
+  return result.messages.filter(({ ruleId }) =>
+    ruleIds.some((id) =>
+      id.endsWith("/") ? ruleId?.startsWith(id) : ruleId === id,
+    ),
+  );
+}
+
+describe("Tailwind class 按项目主题检查规范写法、颜色、圆角和过渡", () => {
   const eslint = new ESLint({ cwd: project });
-  const filePath = join(project, "components/tailwind-classes.tsx");
+  const file = "components/tailwind-classes.tsx";
+  const filePath = join(project, file);
+  const restrictedLines = async (source) =>
+    (
+      await messagesFor(file, source, [
+        "better-tailwindcss/no-restricted-classes",
+      ])
+    ).map(({ line }) => line);
+
+  // 每个 class 渲染在自己的一行，按行号认出 no-restricted-classes 报的是哪个：恰好是 restricted 里的那些。
+  async function expectRestricted(restricted, allowed) {
+    const classes = [...restricted, ...allowed];
+    const source = `export const panels = [\n${classes
+      .map((className) => `  <div className="${className}" />,`)
+      .join("\n")}\n];\n`;
+    expect(
+      (await restrictedLines(source)).map((line) => classes[line - 2]),
+    ).toStrictEqual(restricted);
+  }
 
   test("按项目主题和 16px 根字号改成规范写法", async () => {
     // h-control-sm 只在 app/globals.css 里定义，用来确认插件读到了项目主题。
@@ -2105,38 +2326,114 @@ describe("Tailwind class 按项目主题检查规范写法、颜色和圆角", (
     );
   });
 
-  test("颜色只能用语义 token 和黑白，圆角只能用内置或项目 token", async () => {
-    const restricted = [
-      "bg-red-500",
-      "hover:text-zinc-400/50",
-      // Tailwind 4.2 新增的调色板，确认调色板名是从 tailwindcss 读出来的。
-      "border-t-mauve-200",
-      "bg-[#c83d21]",
-      "shadow-[0_0_0_1px_#000_inset]",
-      "shadow-[0_2px_4px_rgb(0_0_0/0.2)]",
-      "rounded-[5px]",
-      "md:rounded-tl-(--my-radius)",
-    ];
-    const allowed = [
-      "bg-primary text-primary-foreground border-border",
-      "bg-white text-black/65",
-      "rounded rounded-sm rounded-2xl rounded-full",
-      "rounded-control rounded-t-panel",
-      "text-sm border-2 ring-2 bg-transparent fill-current",
-    ];
-    const classes = [...restricted, ...allowed];
-    const source = `export const panels = [\n${classes
-      .map((className) => `  <div className="${className}" />,`)
-      .join("\n")}\n];\n`;
-    const [result] = await eslint.lintText(source, { filePath });
+  // 第一列是源码里 className 的写法。
+  test.each([
+    ['"pxx-2"', "no-unknown-classes"],
+    ['"p-2 p-4"', "no-conflicting-classes"],
+    ['"flex-shrink-0"', "no-deprecated-classes"],
+    ["{`p-${size}`}", "no-concatenated-classes"],
+  ])("className=%s 报 %s", async (value, rule) => {
+    const source = `export function Probe({ size }: { size: number }) {\n  return <div className=${value} data-size={size} />;\n}\n`;
     expect(
-      result.messages
-        .filter(
-          ({ ruleId }) => ruleId === "better-tailwindcss/no-restricted-classes",
-        )
-        .map(({ line }) => classes[line - 2]),
+      (await messagesFor(file, source, ["better-tailwindcss/"])).map(
+        ({ ruleId }) => ruleId,
+      ),
+    ).toContain(`better-tailwindcss/${rule}`);
+  });
+
+  test("从子目录运行也按项目主题检查", async () => {
+    const source = `export const panel = <div className="h-control-sm lg:max-h-[520px]" />;\n`;
+    const [result] = await new ESLint({
+      cwd: join(project, "components"),
+    }).lintText(source, { filePath });
+    expect(
+      result.messages.map(({ ruleId, severity }) => ({ ruleId, severity })),
       JSON.stringify(result.messages, null, 2),
-    ).toStrictEqual(restricted);
+    ).toStrictEqual([
+      { ruleId: "better-tailwindcss/enforce-canonical-classes", severity: 2 },
+    ]);
+  });
+
+  test("颜色只能用语义 token 和黑白，圆角只能用内置或项目 token", async () => {
+    await expectRestricted(
+      [
+        "bg-red-500",
+        "hover:text-zinc-400/50",
+        // Tailwind 4.2 新增的调色板，确认调色板名是从 tailwindcss 读出来的。
+        "border-t-mauve-200",
+        "bg-red-500!",
+        "bg-[#c83d21]",
+        "shadow-[0_0_0_1px_#000_inset]",
+        "shadow-[0_2px_4px_rgb(0_0_0/0.2)]",
+        "bg-[oklch(0.6_0.2_30)]",
+        "shadow-[0_0_0_1px_var(--color-zinc-200)]",
+        "hover:bg-[#c83d21]/50",
+        "rounded-[5px]",
+        "md:rounded-tl-(--my-radius)",
+      ],
+      [
+        "bg-primary text-primary-foreground border-border",
+        "bg-white text-black/65",
+        "shadow-[0_0_0_1px_var(--color-border)]",
+        "fill-[url(#fade)]",
+        "[&_#abc]:hidden",
+        "rounded rounded-sm rounded-2xl rounded-full",
+        "rounded-control rounded-t-panel",
+        "rounded-[inherit]",
+        "text-sm border-2 ring-2 bg-transparent fill-current",
+      ],
+    );
+  });
+
+  test("过渡列表里的 transform、transition-all 和 ease-in 被拒绝", async () => {
+    await expectRestricted(
+      [
+        "transition-[opacity,transform]",
+        "data-open:transition-[transform]",
+        "md:transition-all",
+        "hover:ease-in",
+      ],
+      [
+        "transition-transform",
+        "transition-[opacity,scale]",
+        "transition-[transform-origin]",
+        "ease-out",
+        "ease-in-out",
+      ],
+    );
+  });
+
+  test("常量、查找表、xxxClassName prop 和函数式 className 里的 class 也检查", async () => {
+    const source = `declare function Popup(props: {
+  triggerClassName?: string;
+  className?: unknown;
+}): null;
+
+const itemClassName = "bg-red-500";
+export const ROW_CLASSES = { open: "bg-red-500" };
+export const LABEL_CLASS = "bg-red-500";
+
+export function Probe({ open }: { open: boolean }) {
+  return (
+    <>
+      <div className={itemClassName} />
+      <Popup triggerClassName={open ? "bg-red-500" : "bg-primary"} />
+      <Popup
+        className={(state: { open: boolean }) =>
+          state.open ? "bg-red-500" : ""
+        }
+      />
+    </>
+  );
+}
+`;
+    expect(await restrictedLines(source)).toStrictEqual(
+      source
+        .split("\n")
+        .flatMap((line, index) =>
+          line.includes("bg-red-500") ? [index + 1] : [],
+        ),
+    );
   });
 });
 
@@ -2189,7 +2486,40 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
   });
 });
 
-const restrictedSyntaxLinter = new ESLint({ cwd: project });
+// 例外对象只去掉或追加一条限制，其余全局的限制照旧：source 都带上 axios，数的是 no-restricted-imports 的报告条数。
+async function restrictedImportCount(file, source) {
+  return (await messagesFor(file, source, ["no-restricted-imports"])).length;
+}
+
+describe("文案只经 ClientMessages 下发，ClientMessages 自己和单元测试除外", () => {
+  const source = `import axios from "axios";
+import { NextIntlClientProvider } from "next-intl";
+
+export const probe = [axios, NextIntlClientProvider];
+`;
+  test.each([
+    ["components/probe.tsx", 2],
+    ["lib/i18n/probe.tsx", 1],
+    ["components/probe.test.tsx", 1],
+  ])("%s 报 %i 条", async (file, count) => {
+    expect(await restrictedImportCount(file, source)).toBe(count);
+  });
+});
+
+describe("e2e 的 test 和 expect 从 e2e/test.ts 引入", () => {
+  const source = `import { test } from "@playwright/test";
+import axios from "axios";
+
+export const probe = [axios, test];
+`;
+  test.each([
+    ["e2e/probe.spec.ts", 2],
+    ["e2e/test.ts", 1],
+  ])("%s 报 %i 条", async (file, count) => {
+    expect(await restrictedImportCount(file, source)).toBe(count);
+  });
+});
+
 const RESTRICTION_NAMES = [
   ["Show a date or time", "date-time"],
   [
@@ -2199,21 +2529,18 @@ const RESTRICTION_NAMES = [
   ["List public API", "component-entry"],
   ["Read environment variables", "env"],
   ["Native <", "native-element"],
+  ["A control role", "control-role"],
+  ["Give a trigger or control one interactive element", "nested-interactive"],
+  ["Give a link one interactive element", "nested-link"],
 ];
 
-// 每条 no-restricted-syntax 报告，按它来自哪条限制命名。file 用真实存在的路径：import/no-cycle 定位不了不在磁盘上的文件。
+// 每条 no-restricted-syntax 报告，按它来自哪条限制命名。
 async function restricted(file, source) {
-  const [result] = await restrictedSyntaxLinter.lintText(source, {
-    filePath: join(project, file),
-  });
-  expect(result.fatalErrorCount).toBe(0);
-  return result.messages
-    .filter(({ ruleId }) => ruleId === "no-restricted-syntax")
-    .map(
-      ({ message }) =>
-        RESTRICTION_NAMES.find(([prefix]) => message.startsWith(prefix))?.[1] ??
-        message,
-    );
+  return (await messagesFor(file, source, ["no-restricted-syntax"])).map(
+    ({ message }) =>
+      RESTRICTION_NAMES.find(([prefix]) => message.startsWith(prefix))?.[1] ??
+      message,
+  );
 }
 
 describe("日期和时间只在 components/date-time.tsx 里格式化", () => {
@@ -2258,6 +2585,20 @@ export default async function Probe() {
       reported: ["date-time"],
     },
     {
+      name: "Date 和数字的 toLocale*String、toDateString、toTimeString 被报告",
+      file: "features/ui-catalog/components/example-list/index.tsx",
+      source: `export const probe = (at: Date, n: number) => [
+  at.toLocaleDateString(),
+  at.toLocaleTimeString(),
+  at.toLocaleString(),
+  at.toDateString(),
+  at.toTimeString(),
+  n.toLocaleString(),
+];
+`,
+      reported: Array(6).fill("date-time"),
+    },
+    {
       name: "relative times and numbers still format anywhere",
       file: "features/ui-catalog/components/example-list/index.tsx",
       source: `"use client";
@@ -2286,6 +2627,29 @@ export function Probe({ at, count }: { at: number; count: number }) {
       expect(await restricted(file, source)).toStrictEqual(reported);
     });
   }
+
+  test("toLocaleString 的消息日期和数字都说，和日期的消息不同；toISOString 不报", async () => {
+    const messages = await messagesFor(
+      "features/ui-catalog/components/example-list/index.tsx",
+      `export const probe = (at: Date) => [
+  at.toLocaleString(),
+  at.toDateString(),
+  at.toISOString(),
+];
+`,
+      ["no-restricted-syntax"],
+    );
+    expect(messages.map(({ line, message }) => [line, message])).toStrictEqual([
+      [
+        2,
+        "Show a date or time with <DateTime> from @/components/date-time, and a number with next-intl's useFormatter() or getFormatter(): toLocaleString formats in the runtime's locale and time zone, which differ between the server and the browser. See .claude/rules/i18n.md.",
+      ],
+      [
+        3,
+        "Show a date or time with <DateTime> from @/components/date-time, which renders it in the browser in the computer's time zone. See .claude/rules/i18n.md.",
+      ],
+    ]);
+  });
 });
 
 describe("翻译函数不按 namespace 取", () => {
@@ -2339,13 +2703,9 @@ export async function probe(locale: string) {
 
 describe("每个 key 的第一段是文件 owner 的 namespace", () => {
   async function keyProblems(file, source) {
-    const [result] = await restrictedSyntaxLinter.lintText(source, {
-      filePath: join(project, file),
-    });
-    expect(result.fatalErrorCount).toBe(0);
-    return result.messages
-      .filter(({ ruleId }) => ruleId === "i18n/message-keys")
-      .map(({ messageId, line }) => [messageId, line]);
+    return (await messagesFor(file, source, ["i18n/message-keys"])).map(
+      ({ messageId, line }) => [messageId, line],
+    );
   }
 
   for (const { name, file, source, reported } of [
@@ -2478,18 +2838,15 @@ export const probe = (at: number) => new Intl.DateTimeFormat("en").format(at);
 });
 
 describe("React 19 写法和 effect 清理由 @eslint-react 检查", () => {
-  // 报告的 @eslint-react 规则，去掉前缀。file 用真实存在的路径，原因同 restricted。
+  // 报告的 @eslint-react 规则，去掉前缀。
   async function reactRules(source) {
-    const [result] = await restrictedSyntaxLinter.lintText(source, {
-      filePath: join(
-        project,
+    return (
+      await messagesFor(
         "features/ui-catalog/components/example-list/index.tsx",
-      ),
-    });
-    expect(result.fatalErrorCount).toBe(0);
-    return result.messages
-      .filter(({ ruleId }) => ruleId?.startsWith("@eslint-react/"))
-      .map(({ ruleId }) => ruleId.slice("@eslint-react/".length));
+        source,
+        ["@eslint-react/"],
+      )
+    ).map(({ ruleId }) => ruleId.slice("@eslint-react/".length));
   }
 
   for (const { name, source, reported } of [
@@ -2577,16 +2934,26 @@ export function useSave(action: (state: number) => number) {
       name: "effect 里的监听和定时器没在 cleanup 里撤掉时报错",
       source: `import { useEffect } from "react";
 
-export function useLeaks(onResize: () => void, tick: () => void) {
+export function useLeaks(
+  element: Element,
+  onResize: () => void,
+  tick: () => void,
+) {
   useEffect(() => {
     window.addEventListener("resize", onResize);
     setInterval(tick, 1000);
-  }, [onResize, tick]);
+    setTimeout(tick, 1000);
+    new ResizeObserver(onResize).observe(element);
+    new IntersectionObserver(tick).observe(element);
+  }, [element, onResize, tick]);
 }
 `,
       reported: [
         "web-api-no-leaked-event-listener",
         "web-api-no-leaked-interval",
+        "web-api-no-leaked-timeout",
+        "web-api-no-leaked-resize-observer",
+        "web-api-no-leaked-intersection-observer",
       ],
     },
     {
@@ -2611,6 +2978,178 @@ export function useCleanedUp(onResize: () => void, tick: () => void) {
       expect(await reactRules(source)).toStrictEqual(reported);
     });
   }
+});
+
+describe("React Compiler 跳过的写法和可访问性检查是 error", () => {
+  const file = "features/ui-catalog/components/example-list/index.tsx";
+
+  // nextVitals 把这些规则设为 warn，eslint.config.mjs 提成 error：每条一个最小的违例片段。
+  test.each([
+    ["jsx-a11y/alt-text", '<img src="/probe.png" />'],
+    ["jsx-a11y/aria-props", '<div aria-foo="x" />'],
+    ["jsx-a11y/aria-proptypes", '<div aria-hidden="yes" />'],
+    ["jsx-a11y/aria-unsupported-elements", '<meta aria-hidden="true" />'],
+    ["jsx-a11y/role-has-required-aria-props", '<div role="checkbox" />'],
+    ["jsx-a11y/role-supports-aria-props", '<li aria-checked="true" />'],
+  ])("%s 报 error", async (rule, jsx) => {
+    const messages = await messagesFor(file, `export const probe = ${jsx};\n`, [
+      "jsx-a11y/",
+    ]);
+    expect(
+      messages.map(({ ruleId, severity }) => ({ ruleId, severity })),
+      JSON.stringify(messages, null, 2),
+    ).toStrictEqual([{ ruleId: rule, severity: 2 }]);
+  });
+
+  test.each([
+    [
+      "react-hooks/incompatible-library",
+      `import { useVirtualizer } from "@tanstack/react-virtual";
+
+export function Probe({ count }: { count: number }) {
+  const virtualizer = useVirtualizer({
+    count,
+    getScrollElement: () => null,
+    estimateSize: () => 10,
+  });
+  return <p>{virtualizer.getTotalSize()}</p>;
+}
+`,
+    ],
+    [
+      "react-hooks/unsupported-syntax",
+      `export function Probe({ code }: { code: string }) {
+  return <p>{String(eval(code))}</p>;
+}
+`,
+    ],
+    [
+      "react-hooks/exhaustive-deps",
+      `import { useEffect } from "react";
+
+export function useProbe(value: number) {
+  useEffect(() => {
+    console.info(value);
+  }, []);
+}
+`,
+    ],
+  ])("%s 报 error", async (rule, source) => {
+    const messages = await messagesFor(file, source, ["react-hooks/"]);
+    expect(
+      messages.map(({ ruleId, severity }) => ({ ruleId, severity })),
+      JSON.stringify(messages, null, 2),
+    ).toStrictEqual([{ ruleId: rule, severity: 2 }]);
+  });
+
+  test.each([
+    [
+      "react-hooks/rules-of-hooks",
+      `export function useProbe(on: boolean) {
+  if (on) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- 探针
+    useProbe(false);
+  }
+}
+`,
+    ],
+    [
+      "react-hooks/exhaustive-deps",
+      `import { useEffect } from "react";
+
+export function useProbe(value: number) {
+  useEffect(() => {
+    console.info(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 探针
+  }, []);
+}
+`,
+    ],
+  ])("禁用 %s 被拒绝", async (rule, source) => {
+    expect(
+      (
+        await messagesFor(file, source, [
+          "@eslint-community/eslint-comments/no-restricted-disable",
+        ])
+      ).map(({ message }) => message),
+    ).toStrictEqual([expect.stringContaining(rule)]);
+  });
+});
+
+describe("文件和函数过长时提醒检查职责", () => {
+  const source = `export function Probe() {
+  return (
+    <>
+${"      <p />\n".repeat(210)}    </>
+  );
+}
+`;
+  const maxLines = async (file) =>
+    (
+      await messagesFor(file, source, ["max-lines-per-function", "max-lines"])
+    ).map(({ ruleId, severity }) => ({ ruleId, severity }));
+
+  test.each([
+    "features/ui-catalog/components/example-list/index.tsx",
+    // max-lines 只豁免测试文件，路由段叫什么都照样检查。
+    "app/[locale]/stories/page.tsx",
+  ])("%s 报 max-lines 和 max-lines-per-function 的 warning", async (file) => {
+    expect(await maxLines(file)).toStrictEqual([
+      { ruleId: "max-lines-per-function", severity: 1 },
+      { ruleId: "max-lines", severity: 1 },
+    ]);
+  });
+
+  test("测试文件不报", async () => {
+    expect(
+      await maxLines(
+        "features/ui-catalog/components/example-list/index.test.tsx",
+      ),
+    ).toStrictEqual([]);
+  });
+});
+
+describe("组件写成具名的 function 声明", () => {
+  async function declarationRules(file, source) {
+    return (
+      await messagesFor(file, source, [
+        "react/function-component-definition",
+        "import/no-default-export",
+      ])
+    ).map(({ ruleId }) => ruleId);
+  }
+
+  test("箭头函数、函数表达式组件和组件目录里的默认导出被拒绝", async () => {
+    expect(
+      await declarationRules(
+        "features/ui-catalog/components/example-list/index.tsx",
+        `export const Arrow = () => <p />;
+export const Expression = function () {
+  return <p />;
+};
+export default function Probe() {
+  return <p />;
+}
+`,
+      ),
+    ).toStrictEqual([
+      "react/function-component-definition",
+      "react/function-component-definition",
+      "import/no-default-export",
+    ]);
+  });
+
+  test("框架按默认导出加载的文件可以默认导出", async () => {
+    expect(
+      await declarationRules(
+        "app/[locale]/page.tsx",
+        `export default function Page() {
+  return <p />;
+}
+`,
+      ),
+    ).toStrictEqual([]);
+  });
 });
 
 describe("agent 指令和 identifier 用英文写", () => {
@@ -2686,17 +3225,18 @@ describe("agent 指令和 identifier 用英文写", () => {
   });
 });
 
-describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染", () => {
+describe("有封装的原生元素和控件 role 只在 components/ui/ 里渲染", () => {
   const component = (jsx) => `export function Probe() {\n  return ${jsx};\n}\n`;
   for (const { name, file, source, reported } of [
     {
       name: "每种有对应组件的原生元素都被拒绝",
-      file: "features/ui-catalog/components/example-card.tsx",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
       source: component(`(
     <>
       <button />
       <input />
       <input type="checkbox" />
+      <textarea />
       <select />
       <progress />
       <dialog />
@@ -2706,20 +3246,21 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
       <hr />
     </>
   )`),
-      reported: Array(10).fill("native-element"),
+      reported: Array(11).fill("native-element"),
     },
     {
       name: "render prop 里的原生元素也被拒绝",
-      file: "features/ui-catalog/components/example-card.tsx",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
       source: `declare function Trigger(props: { render: unknown }): null;\n${component("<Trigger render={<button />} />")}`,
       reported: ["native-element"],
     },
     {
       name: "文件选择和隐藏字段的 input 保持原生",
-      file: "features/ui-catalog/components/example-card.tsx",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
       source: component(`(
     <>
       <input type="file" />
+      <input type={"file"} />
       <input type="hidden" />
     </>
   )`),
@@ -2727,7 +3268,7 @@ describe("Base UI 有对应组件的原生元素只在 components/ui/ 里渲染"
     },
     {
       name: "同名组件和成员表达式不受影响",
-      file: "features/ui-catalog/components/example-card.tsx",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
       source: `declare function Form(): null;
 declare const form: { Field: () => null };
 ${component(`(
@@ -2739,10 +3280,45 @@ ${component(`(
       reported: [],
     },
     {
+      name: "控件 role 被拒绝，其他 role 不受影响",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
+      source: component(`(
+    <>
+      <div role="button" tabIndex={0} />
+      <span role="checkbox" aria-checked="false" tabIndex={0} />
+      <p role="status" />
+    </>
+  )`),
+      reported: ["control-role", "control-role"],
+    },
+    {
+      name: "写成表达式的字符串 role 同样被拒绝",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
+      source: component(`(
+    <>
+      <div role={"button"} tabIndex={0} />
+      <p role={"status"} />
+    </>
+  )`),
+      reported: ["control-role"],
+    },
+    {
       name: "components/ui/ 的封装可以渲染，其他限制照旧",
       file: "components/ui/badge.tsx",
-      source: `export const url = process.env.DATABASE_URL;\n${component("<button />")}`,
+      source: `export const url = process.env.DATABASE_URL;\n${component(`(
+    <>
+      <button />
+      <div role="button" />
+    </>
+  )`)}`,
       reported: ["env"],
+    },
+    {
+      // 这个测试文件不在磁盘上：源码不 import，import/no-cycle 不用定位它。
+      name: "components/ui/ 的测试文件不受应用代码的限制",
+      file: "components/ui/badge.test.tsx",
+      source: `export const url = process.env.DATABASE_URL;\n${component("<button />")}`,
+      reported: [],
     },
     {
       name: "components/ui/ 的组件入口可以渲染，入口限制照旧",
@@ -2756,30 +3332,252 @@ ${component(`(
       source: `${component("<button />")}export * from "./locale-items";\n`,
       reported: ["native-element", "component-entry"],
     },
+    {
+      // 只有根目录的 components/ui/ 是组件集合：feature 里的 components/ui/ 是一个组件目录，下面的 index 只是它的私有文件。
+      name: "feature 里 components/ui/<目录>/index.tsx 不豁免原生元素",
+      file: "features/ui-catalog/components/ui/select/index.tsx",
+      source: component("<select />"),
+      reported: ["native-element"],
+    },
   ]) {
     test(name, async () => {
       expect(await restricted(file, source)).toStrictEqual(reported);
     });
   }
+
+  test("原生元素、控件 role 和 UI 库的消息指向 design-system.md 的「Wrap a UI library」", async () => {
+    // 小节标题是否存在由 scripts/docs-links.test.mjs 检查。
+    const pointer =
+      'See "Wrap a UI library" in .claude/rules/design-system.md.';
+    const messages = (
+      await messagesFor(
+        "features/ui-catalog/components/example-list/example-card.tsx",
+        `import { Button } from "@base-ui/react/button";
+
+${component(`(
+    <>
+      <Button />
+      <button type="button" />
+      <div role="switch" />
+    </>
+  )`)}`,
+        ["no-restricted-syntax", "architecture/wrapper-imports"],
+      )
+    ).map(({ message }) => message);
+    expect(messages).toHaveLength(3);
+    for (const message of messages) {
+      expect(message.endsWith(pointer), message).toBe(true);
+    }
+  });
+});
+
+describe("触发器和控件里直接嵌套 Button 或 Link 被拒绝", () => {
+  const declarations = [
+    "Button",
+    "Link",
+    "DialogTrigger",
+    "DialogClose",
+    "DialogPopup",
+  ]
+    .map(
+      (name) =>
+        `declare function ${name}(props: { children?: unknown; render?: unknown; href?: string }): null;`,
+    )
+    .join("\n");
+  const component = (jsx) =>
+    `${declarations}\n\nexport function Probe() {\n  return ${jsx};\n}\n`;
+  for (const { name, file, source, reported } of [
+    {
+      name: "触发器、关闭按钮、Button 和 Link 里直接嵌套都报告",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
+      source: component(`(
+    <>
+      <DialogTrigger>
+        <Button />
+      </DialogTrigger>
+      <DialogClose>
+        <Link href="/" />
+      </DialogClose>
+      <Button>
+        <a href="/" />
+      </Button>
+      <Link href="/">
+        <Button />
+      </Link>
+    </>
+  )`),
+      reported: [
+        "nested-interactive",
+        "nested-link",
+        "nested-link",
+        "nested-link",
+      ],
+    },
+    {
+      name: "原生 a 里直接嵌套 Button 或链接也报告",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
+      source: component(`(
+    <>
+      <a href="/">
+        <Button />
+      </a>
+      <a href="/">
+        <Link href="/" />
+      </a>
+    </>
+  )`),
+      reported: ["nested-link", "nested-link"],
+    },
+    {
+      name: "里面的 Button 作为 render prop 传入、链接单独渲染都不报",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
+      source: component(`(
+    <>
+      <DialogTrigger render={<Button />} />
+      <DialogClose render={<Button />} />
+      <Link href="/" className="inline-flex" />
+      <a href="/" />
+    </>
+  )`),
+      reported: [],
+    },
+    {
+      name: "原生元素和不是触发器、控件的组件里放 Button 或 Link 不报",
+      file: "features/ui-catalog/components/example-list/example-card.tsx",
+      source: component(`(
+    <>
+      <div>
+        <Button />
+      </div>
+      <DialogPopup>
+        <Button />
+        <Link href="/" />
+      </DialogPopup>
+    </>
+  )`),
+      reported: [],
+    },
+    {
+      name: "components/ui/ 里同样报告",
+      file: "components/ui/badge.tsx",
+      source: component(`(
+    <Button>
+      <button type="button" />
+    </Button>
+  )`),
+      reported: ["nested-interactive"],
+    },
+    {
+      name: "原生 button 里直接嵌套 Button 或链接也报告",
+      file: "components/ui/badge.tsx",
+      source: component(`(
+    <>
+      <button type="button">
+        <Button />
+      </button>
+      <button type="button">
+        <a href="/" />
+      </button>
+    </>
+  )`),
+      reported: ["nested-interactive", "nested-link"],
+    },
+  ]) {
+    test(name, async () => {
+      expect(await restricted(file, source)).toStrictEqual(reported);
+    });
+  }
+
+  test("牵涉链接的消息让链接用 buttonVariants，不把它作为 render prop 传入", async () => {
+    // Next 的 Link 没有 render，Base UI 的 Button 不渲染链接：消息只能指向 buttonVariants，它得真的能从这里取到并用作
+    // className。这个仓库没开 import/named（eslint.config.mjs 和 eslint-config-next 都没设），.mjs 也不经 tsc 检查，
+    // 导入名写错不会报错，所以直接加载模块调用它。
+    const { buttonVariants } = await import("@/components/ui/button");
+    expect(buttonVariants({ variant: "outline" })).toMatch(/\S/);
+    const messages = (
+      await messagesFor(
+        "features/ui-catalog/components/example-list/example-card.tsx",
+        component(`(
+    <Link href="/">
+      <Button />
+    </Link>
+  )`),
+        ["no-restricted-syntax"],
+      )
+    ).map(({ message }) => message);
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toContain(
+      "with buttonVariants from @/components/ui/button as its className",
+    );
+    expect(messages[0]).not.toContain("as the outer component's render prop");
+  });
+});
+
+describe("给不是控件的元素加点击处理被拒绝", () => {
+  test("li 和 div 的 onClick 都报告", async () => {
+    const messages = await messagesFor(
+      "features/ui-catalog/components/example-list/example-card.tsx",
+      `export function Probe() {
+  return (
+    <ul>
+      <li onClick={() => {}} />
+      <div onClick={() => {}} />
+    </ul>
+  );
+}
+`,
+      ["jsx-a11y/"],
+    );
+    expect(
+      messages.map(({ ruleId }) => ruleId).sort(),
+      JSON.stringify(messages, null, 2),
+    ).toStrictEqual([
+      "jsx-a11y/click-events-have-key-events",
+      "jsx-a11y/click-events-have-key-events",
+      "jsx-a11y/no-noninteractive-element-interactions",
+      "jsx-a11y/no-static-element-interactions",
+    ]);
+  });
+});
+
+describe("components/ui/ 的组件和 UI catalog 的示例目录一一对应", () => {
+  // 规则本身由 scripts/eslint/architecture/catalog-examples.test.mjs 验证，这里确认项目配置对两类文件都开着它。
+  // 仓库里既没有 catalog-probe 组件也没有它的示例目录，两个文件各缺另一边。
+  test.each([
+    ["components/ui/catalog-probe.tsx", "missingExamples"],
+    [
+      "features/ui-catalog/components/catalog-probe-examples/index.ts",
+      "missingComponent",
+    ],
+  ])("%s 报 %s", async (file, messageId) => {
+    expect(
+      (
+        await messagesFor(file, "export const value = 1;\n", [
+          "architecture/catalog-examples",
+        ])
+      ).map((message) => message.messageId),
+    ).toStrictEqual([messageId]);
+  });
 });
 
 describe("UI catalog 的 playground 和 example 不用相对路径引用", () => {
-  // no-restricted-imports 的每条报告：这条限制记作 "relative"，RESTRICTED_IMPORTS 里请求库的记作 "global"。
-  // file 和 restricted 一样用真实存在的路径。
+  // no-restricted-imports 和 no-restricted-syntax 的每条报告：这条限制记作 "relative"，RESTRICTED_IMPORTS 里请求库的
+  // 记作 "global"，原生元素记作 "native-element"。
   async function restrictedImports(file, source) {
-    const [result] = await restrictedSyntaxLinter.lintText(source, {
-      filePath: join(project, file),
-    });
-    expect(result.fatalErrorCount).toBe(0);
-    return result.messages
-      .filter(({ ruleId }) => ruleId === "no-restricted-imports")
-      .map(({ message }) =>
-        message.includes("UI catalog")
-          ? "relative"
-          : message.includes("fetchApi")
-            ? "global"
+    return (
+      await messagesFor(file, source, [
+        "no-restricted-imports",
+        "no-restricted-syntax",
+      ])
+    ).map(({ message }) =>
+      message.includes("UI catalog")
+        ? "relative"
+        : message.includes("fetchApi")
+          ? "global"
+          : message.startsWith("Native <")
+            ? "native-element"
             : message,
-      );
+    );
   }
   const example =
     "features/ui-catalog/components/button-examples/basic.example.tsx";
@@ -2795,6 +3593,47 @@ export { other } from "./other";
 export const result = value;
 `,
       reported: ["relative", "relative", "relative"],
+    },
+    {
+      name: "example 里相对路径的动态 import 和 import() 类型也报错",
+      file: example,
+      source: `import { lazy } from "react";
+
+export const Heavy = lazy(() => import("./heavy"));
+export type Shared = import("../shared").Shared;
+`,
+      reported: ["relative", "relative"],
+    },
+    {
+      name: "example 里模板字符串写的相对路径动态 import 也报错",
+      file: example,
+      source: `import { lazy } from "react";
+
+declare const name: string;
+
+export const Heavy = lazy(() => import(\`./\${name}\`));
+export const Parent = lazy(() => import(\`../heavy\`));
+`,
+      reported: ["relative", "relative"],
+    },
+    {
+      name: "example 里经 @/ 或包名的动态 import 不报错",
+      file: example,
+      source: `import { lazy } from "react";
+
+declare const name: string;
+
+export const Shared = lazy(() => import("@/components/ui/button"));
+export const Package = import("react");
+export const ByName = import(\`@/components/\${name}\`);
+`,
+      reported: [],
+    },
+    {
+      name: "example 里全局的 no-restricted-syntax 限制照旧",
+      file: example,
+      source: `export function Probe() {\n  return <button type="button" />;\n}\n`,
+      reported: ["native-element"],
     },
     {
       name: "playground 里相对路径的 import 报错",

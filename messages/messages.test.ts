@@ -74,6 +74,19 @@ describe.each(routing.locales)("%s", (locale) => {
       expect(invalid).toStrictEqual([]);
     },
   );
+
+  // LoadFailedAlert（features/task/components/load-failed-alert.tsx）把 retryLabel 用作重试按钮的可访问名称，
+  // 按钮上显示的是 queryState.retry：可访问名称要以看得见的文字开头，语音控制才能按看到的字点到它。
+  test("task 的每个 retryLabel 都以重试按钮上的 queryState.retry 开头", () => {
+    const messages = readMessages(locale, "task");
+    const retry = String(messages.get("queryState.retry"));
+    const labels = [...messages].filter(([key]) => key.endsWith(".retryLabel"));
+    expect(labels).not.toHaveLength(0);
+    const mismatched = labels.flatMap(([key, label]) =>
+      String(label).startsWith(retry) ? [] : [`${key}: ${String(label)}`],
+    );
+    expect(mismatched).toStrictEqual([]);
+  });
 });
 
 /** message 用到的插值参数和 rich text 标签名，包括 plural、select 分支里的。 */

@@ -45,24 +45,16 @@ export function Playground({
           variant="ghost"
           size="sm"
           aria-expanded={showCode}
+          className="aria-expanded:bg-accent"
           onClick={() => setShowCode(!showCode)}
         >
           <IconCode aria-hidden />
-          {showCode
-            ? t("ui-catalog.playground.hideCode")
-            : t("ui-catalog.playground.showCode")}
+          {t("ui-catalog.playground.code")}
         </Button>
       </div>
       <div className="grid lg:grid-cols-[minmax(0,1fr)_264px]">
-        <div
-          className="relative flex min-h-72 min-w-0 items-center justify-center overflow-hidden p-8 sm:min-h-96"
-          style={{
-            backgroundImage:
-              "radial-gradient(var(--border) 0.7px, transparent 0.7px)",
-            backgroundSize: "18px 18px",
-          }}
-        >
-          <span className="absolute top-5 left-5 font-mono text-[10px] tracking-widest text-muted-foreground">
+        <div className="relative flex min-h-72 min-w-0 items-center justify-center overflow-hidden bg-[radial-gradient(var(--border)_0.7px,transparent_0.7px)] bg-size-[18px_18px] p-8 sm:min-h-96">
+          <span className="absolute top-5 left-5 font-mono text-2xs tracking-widest text-muted-foreground">
             {t("ui-catalog.playground.canvas")}
           </span>
           <div className="w-full max-w-sm">

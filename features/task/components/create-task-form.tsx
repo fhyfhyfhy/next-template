@@ -78,7 +78,7 @@ export function CreateTaskForm({ className }: { className?: string }) {
       )}
       onSubmit={(event) => {
         event.preventDefault();
-        void form.handleSubmit();
+        return form.handleSubmit();
       }}
     >
       {fields.map(({ name, labelKey, placeholderKey }) => (
@@ -110,6 +110,7 @@ export function CreateTaskForm({ className }: { className?: string }) {
           <Button
             type="submit"
             disabled={!hydrated || isSubmitting}
+            focusableWhenDisabled={hydrated}
             className="sm:mt-5"
           >
             {isSubmitting

@@ -9,10 +9,8 @@ import {
 import { join } from "node:path";
 import { expect, test } from "vitest";
 
-import {
-  fixture as projectFixture,
-  writeFile,
-} from "../fixture-test-helpers.mjs";
+import { writeFile } from "../../temp-dir-test-helpers.mjs";
+import { fixture as projectFixture } from "../fixture-test-helpers.mjs";
 import { createProjectResolver, SOURCE_EXTENSIONS } from "../imports.mjs";
 import { createFeatureCycleChecker } from "./feature-cycles.mjs";
 

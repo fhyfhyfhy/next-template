@@ -3,13 +3,20 @@ import { dirname, join, relative } from "node:path";
 import { describe, expect, test } from "vitest";
 
 import { SAMPLE_PRODUCT } from "./sample-product.mjs";
+import { tempDir } from "./temp-dir-test-helpers.mjs";
 
 // agent 读的文档靠相对链接互相引用；移动或改名文件时，这里会指出失效的链接。指向本仓库 GitHub 的链接另外检查
 // （见 SAMPLE_PRODUCT），其他外部链接和 node_modules 里的安装文档不检查。
 
+// 下面的检查函数都按 root 读文件，默认是本仓库；自测传入 tempDir() 建的临时目录，不依赖仓库文档的现状。
 const projectRoot = join(import.meta.dirname, "..");
-const read = (file) =>
-  readFileSync(join(projectRoot, file), "utf8").replace(/\r\n/g, "\n");
+const read = (file, root = projectRoot) =>
+  readFileSync(join(root, file), "utf8").replace(/\r\n/g, "\n");
+
+// 自测 fixture 里的规则文件。
+const GUIDE = {
+  ".claude/rules/guide.md": "# Guide\n\n## Hydration\n\n## Test data\n",
+};
 
 // 第三方 skill 是上游原文，只随升级变化，不在检查范围内（skills-lock.json）。
 const thirdPartySkills = new Set(
@@ -31,18 +38,23 @@ function prose(text) {
   return text.replace(/^(```|````)[\s\S]*?^\1/gm, "").replace(/`[^`\n]*`/g, "");
 }
 
-/** GitHub 给标题生成的锚点：小写，去掉标点，空格换成连字符，重名的依次加 -1、-2。 */
-function anchors(file) {
+/** GitHub 给标题生成的锚点：小写，去掉标点，空格换成连字符。 */
+function slug(heading) {
+  return heading
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/`/g, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_-]/gu, "")
+    .replace(/\s/g, "-");
+}
+
+/** 文件里各个标题的锚点，重名的依次加 -1、-2。 */
+function anchors(file, root = projectRoot) {
   const seen = new Map();
   const result = new Set();
-  const text = read(file).replace(/^(```|````)[\s\S]*?^\1/gm, "");
+  const text = read(file, root).replace(/^(```|````)[\s\S]*?^\1/gm, "");
   for (const [, heading] of text.matchAll(/^#{1,6} +(.+?) *#*$/gm)) {
-    const base = heading
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-      .replace(/`/g, "")
-      .toLowerCase()
-      .replace(/[^\p{L}\p{N}\s_-]/gu, "")
-      .replace(/\s/g, "-");
+    const base = slug(heading);
     const count = seen.get(base) ?? 0;
     seen.set(base, count + 1);
     result.add(count === 0 ? base : `${base}-${count}`);
@@ -50,7 +62,7 @@ function anchors(file) {
   return result;
 }
 
-function brokenLinks(file, text = read(file)) {
+function brokenLinks(file, text = read(file), root = projectRoot) {
   const broken = [];
   for (const [, target] of prose(text).matchAll(
     /\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g,
@@ -58,15 +70,15 @@ function brokenLinks(file, text = read(file)) {
     if (/^[a-z][a-z0-9+.-]*:/i.test(target)) continue;
     const [path, anchor] = target.split("#");
     const resolved = path
-      ? relative(projectRoot, join(projectRoot, dirname(file), path))
+      ? relative(root, join(root, dirname(file), path))
       : file;
     if (resolved.startsWith("node_modules")) continue;
-    if (!existsSync(join(projectRoot, resolved))) {
+    if (!existsSync(join(root, resolved))) {
       broken.push(target);
     } else if (
       anchor &&
-      statSync(join(projectRoot, resolved)).isFile() &&
-      !anchors(resolved).has(anchor)
+      statSync(join(root, resolved)).isFile() &&
+      !anchors(resolved, root).has(anchor)
     ) {
       broken.push(target);
     }
@@ -84,9 +96,10 @@ test("检查本身能发现失效的链接和锚点", () => {
   expect(
     brokenLinks(
       ".claude/rules/example.md",
-      "[a](e2e.md#hydration) [b](missing.md) [c](e2e.md#no-such-heading) `[d](missing.md)`",
+      "[a](guide.md#hydration) [b](missing.md) [c](guide.md#no-such-heading) `[d](missing.md)`",
+      tempDir(GUIDE),
     ),
-  ).toStrictEqual(["missing.md", "e2e.md#no-such-heading"]);
+  ).toStrictEqual(["missing.md", "guide.md#no-such-heading"]);
 });
 
 // agent 读的文档引用 Sample product 时链接到模板在 GitHub 上的版本，链接文字是从仓库根开始的路径
@@ -109,6 +122,117 @@ const agentDocs = docs.filter(
 const MARKDOWN_LINK = /\[((?:[^[\]]|\[[^[\]]*\])*)\]\(([^)\s]+)\)/g;
 const withoutCodeBlocks = (text) =>
   text.replace(/^(```|````)[\s\S]*?^\1/gm, "");
+
+// docs/agents/code-review.md 把要读的规则写成行内代码的路径和小节名，比如 **Use a component** in `components.md`：
+// prose() 去掉了行内代码，上面的链接检查看不到它们。只查这一个文件，规则里有示意用的路径。
+const SECTION_NAME = /"([^"\n]+)"|\*\*([^*\n]+)\*\*/g;
+// 一个或几个小节名接 in `<文件>`：**A** in `a.md`，"A" and "B" in `a.md`。
+const SECTION_REFERENCE =
+  /((?:(?:"[^"\n]+"|\*\*[^*\n]+\*\*)(?:,? and |, ))*(?:"[^"\n]+"|\*\*[^*\n]+\*\*)) in `([^`\s]+)`/g;
+const isFile = (path, root = projectRoot) =>
+  existsSync(join(root, path)) && statSync(join(root, path)).isFile();
+
+/** 代码块以外，行内代码写的仓库路径和按名称指向的小节里，找不到的那些。 */
+function brokenCodeReferences(text, root = projectRoot) {
+  const rest = withoutCodeBlocks(text);
+  const broken = [];
+  for (const [, span] of rest.matchAll(/`([^`\n]+)`/g)) {
+    // 含空白或 { } * < > 的是命令、模板和 glob。第一段在项目根存在才算仓库路径：裸文件名、
+    // ESLint 规则名（react-hooks/exhaustive-deps）、feature 里的相对目录（api/）都不算。
+    if (/[\s{}*<>]/.test(span)) continue;
+    if (!existsSync(join(root, span.split("/")[0]))) continue;
+    if (!existsSync(join(root, span))) broken.push(span);
+  }
+  for (const [, sections, file] of rest.matchAll(SECTION_REFERENCE)) {
+    // 文件先按仓库路径找，找不到再当成 .claude/rules/ 里的规则名。
+    const resolved = [file, `.claude/rules/${file}`].find((path) =>
+      isFile(path, root),
+    );
+    if (!resolved) {
+      broken.push(file);
+      continue;
+    }
+    const headings = anchors(resolved, root);
+    for (const [, quoted, bold] of sections.matchAll(SECTION_NAME)) {
+      const anchor = slug(quoted ?? bold);
+      if (!headings.has(anchor)) broken.push(`${resolved}#${anchor}`);
+    }
+  }
+  return broken;
+}
+
+test("docs/agents/code-review.md 里写成代码的仓库路径和小节都存在", () => {
+  expect(
+    brokenCodeReferences(read("docs/agents/code-review.md")),
+  ).toStrictEqual([]);
+});
+
+test("检查本身能发现失效的路径和小节", () => {
+  expect(
+    brokenCodeReferences(
+      [
+        "`.claude/rules/guide.md`, `.claude/rules/missing.md`, `react-hooks/exhaustive-deps`, `messages/{locale}/`",
+        '**Test data** in `.claude/rules/guide.md`, "Hydration" and "No such section" in `guide.md`',
+        "**Setup** in `missing.md`",
+      ].join("\n"),
+      tempDir(GUIDE),
+    ),
+  ).toStrictEqual([
+    ".claude/rules/missing.md",
+    ".claude/rules/guide.md#no-such-section",
+    "missing.md",
+  ]);
+});
+
+// ESLint 的消息用 See "小节" in <文件> 指向规则，和 SECTION_REFERENCE 一样，只是文件不写成行内代码。
+const LINT_SECTION_REFERENCE =
+  /((?:"[^"\n]+"(?:,? and |, ))*"[^"\n]+") in ((?:[\w.-]+\/)*[\w-]+\.md)\b/g;
+const lintSources = [
+  "eslint.config.mjs",
+  ...globSync("scripts/eslint/**/*.mjs", { cwd: projectRoot }).filter(
+    (file) => !file.endsWith(".test.mjs"),
+  ),
+].map((file) => file.split("\\").join("/"));
+
+/** 按名称指向的小节里，找不到的那些；名字是 ${…} 插值的要到运行时才知道，跳过。 */
+function brokenSectionPointers(text, root = projectRoot) {
+  const broken = [];
+  for (const [, sections, file] of text.matchAll(LINT_SECTION_REFERENCE)) {
+    if (!isFile(file, root)) {
+      broken.push(file);
+      continue;
+    }
+    const headings = anchors(file, root);
+    for (const [, name] of sections.matchAll(/"([^"\n]+)"/g)) {
+      if (name.includes("${")) continue;
+      const anchor = slug(name);
+      if (!headings.has(anchor)) broken.push(`${file}#${anchor}`);
+    }
+  }
+  return broken;
+}
+
+describe("ESLint 消息里按名称指向的小节都存在", () => {
+  test.each(lintSources)("%s", (file) => {
+    expect(brokenSectionPointers(read(file))).toStrictEqual([]);
+  });
+});
+
+test("检查本身能发现 ESLint 消息里失效的小节", () => {
+  expect(
+    brokenSectionPointers(
+      [
+        `const a = 'See "Hydration" in .claude/rules/guide.md.';`,
+        'const b = `See "${section}" and "No such section" in .claude/rules/guide.md.`;',
+        `const c = 'See "Hydration" in .claude/rules/missing.md.';`,
+      ].join("\n"),
+      tempDir(GUIDE),
+    ),
+  ).toStrictEqual([
+    ".claude/rules/guide.md#no-such-section",
+    ".claude/rules/missing.md",
+  ]);
+});
 
 /** 指向本仓库 GitHub 的链接：`checkFiles` 时路径要在本地存在，链接文字写成代码时要和路径一致。 */
 function brokenGithubLinks(

@@ -12,7 +12,8 @@
   },
   "queryState": {
     "loading": "加载中…",
-    "loadFailed": "加载失败"
+    "loadFailed": "加载失败",
+    "retry": "重试"
   },
   "validation": {
     "nameRequired": "请输入名称",
@@ -51,7 +52,7 @@
     "total": "共 {total} 个任务",
     "previousPage": "上一页",
     "nextPage": "下一页",
-    "favorite": "收藏"
+    "favorite": "收藏“{name}”"
   },
   "taskListToolbar": {
     "statusFilter": "按状态筛选",
@@ -76,22 +77,26 @@
   },
   "favoritesPanel": {
     "title": "我的收藏",
-    "empty": "还没有收藏"
+    "empty": "还没有收藏",
+    "retryLabel": "重试加载我的收藏"
   },
   "relatedTasks": {
     "title": "同 prompt 的其他任务",
-    "empty": "没有其他任务"
+    "empty": "没有其他任务",
+    "retryLabel": "重试加载同 prompt 的其他任务"
   },
   "feed": {
     "label": "作品",
     "noMore": "没有更多作品了",
     "loadMoreFailed": "加载失败，滚动到这里会重试",
-    "favorite": "收藏"
+    "favorite": "收藏“{name}”",
+    "retryLabel": "重试加载作品"
   },
   "taskDetail": {
     "deletedNotice": "任务已被删除，下面是删除前的最后一份数据。",
     "prompt": "Prompt",
-    "createdAt": "创建时间"
+    "createdAt": "创建时间",
+    "retryLabel": "重试加载任务详情"
   },
   "taskProgress": {
     "queued": "排队中",
@@ -150,10 +155,8 @@
     "placeholder": "写下你的评论",
     "submit": "发表",
     "createFailed": "发表评论失败，请稍后重试",
-    "deleteFailed": "删除评论失败，请稍后重试"
-  },
-  "queryErrorBoundary": {
-    "retry": "重试"
+    "deleteFailed": "删除评论失败，请稍后重试",
+    "retryLabel": "重试加载评论"
   },
   "favorite": {
     "failed": "更新收藏失败，请稍后重试"

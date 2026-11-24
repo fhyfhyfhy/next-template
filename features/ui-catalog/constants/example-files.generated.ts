@@ -2,7 +2,7 @@
 
 // 源码内容变化也要更新此模块，让开发服务器重新读取展示和复制用的源码。
 export const exampleSourceRevision =
-  "b504efa2431e4852fa830b6a27ddb9134f6a3b438699e7532d83073ae8d9c238";
+  "bb6b887f9a5b1f438d260700966c74f830ec45d725d475f38362ae9a1bb8d778";
 
 export const exampleFiles = {
   badge: [
@@ -29,13 +29,14 @@ export const exampleFiles = {
     { id: "server-errors", filename: "server-errors.example.tsx" },
     { id: "tanstack-form", filename: "tanstack-form.example.tsx" },
   ],
-  form: [{ id: "basic", filename: "basic.example.tsx" }],
+  form: [{ id: "first-invalid", filename: "first-invalid.example.tsx" }],
   input: [
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
   ],
   progress: [
     { id: "basic", filename: "basic.example.tsx" },
+    { id: "file-count", filename: "file-count.example.tsx" },
     { id: "indeterminate", filename: "indeterminate.example.tsx" },
   ],
   select: [
@@ -49,6 +50,7 @@ export const exampleFiles = {
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
   ],
+  textarea: [{ id: "basic", filename: "basic.example.tsx" }],
   toaster: [
     { id: "action", filename: "action.example.tsx" },
     { id: "basic", filename: "basic.example.tsx" },

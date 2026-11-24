@@ -1,3 +1,2 @@
-export { metadata, Preview } from "./preview";
-export { FormPlayground } from "./playground";
+export { Preview } from "./preview";
 export { examples } from "./examples.generated";

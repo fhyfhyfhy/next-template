@@ -5,8 +5,6 @@ import { useSelectedLayoutSegments } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
-import { cn } from "@/lib/cn";
-
 import { TASK_LIST_HREF } from "../constants/task-list";
 
 const links = [
@@ -56,12 +54,7 @@ export function TaskHeader({ brand, badge, actions }: TaskHeaderProps) {
                 key={link.href}
                 href={link.href}
                 aria-current={current}
-                className={cn(
-                  "rounded-control px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  current
-                    ? "bg-primary/10 font-medium text-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                )}
+                className="rounded-control px-3 py-1.5 text-sm text-muted-foreground focus-ring transition-colors hover:bg-accent hover:text-accent-foreground aria-[current]:bg-primary/10 aria-[current]:font-medium aria-[current]:text-foreground"
               >
                 {t(`task.nav.${link.key}`)}
               </Link>

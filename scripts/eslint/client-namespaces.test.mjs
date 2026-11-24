@@ -3,11 +3,8 @@ import { join, relative, sep } from "node:path";
 import { ESLint } from "eslint";
 import { expect, test } from "vitest";
 
-import {
-  fixture as projectFixture,
-  parser,
-  writeFile,
-} from "./fixture-test-helpers.mjs";
+import { writeFile } from "../temp-dir-test-helpers.mjs";
+import { fixture as projectFixture, parser } from "./fixture-test-helpers.mjs";
 import createI18nPlugin from "./i18n-plugin.mjs";
 
 const SOURCE = "**/*.{js,jsx,ts,tsx,mjs,cjs}";

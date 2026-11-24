@@ -73,11 +73,24 @@ function sourceIndexPath(root) {
   return join(root, featurePath, "constants/example-files.generated.ts");
 }
 
-function registrySource(root) {
-  return readFileSync(
-    join(root, featurePath, "components/example-list/registry.generated.ts"),
-    "utf8",
+function registryPath(root) {
+  return join(
+    root,
+    featurePath,
+    "components/example-list/registry.generated.ts",
   );
+}
+
+function catalogPath(root) {
+  return join(root, featurePath, "constants/catalog.generated.ts");
+}
+
+function componentRegistryPath(root) {
+  return join(root, featurePath, "components/component-registry.generated.ts");
+}
+
+function registrySource(root) {
+  return readFileSync(registryPath(root), "utf8");
 }
 
 function readSources(root) {
@@ -87,17 +100,27 @@ function readSources(root) {
 }
 
 function readCatalog(root) {
-  const filename = join(root, featurePath, "constants/catalog.generated.ts");
-  return import(`${pathToFileURL(filename).href}?version=${moduleVersion++}`);
-}
-
-function componentRegistrySource(root) {
-  return readFileSync(
-    join(root, featurePath, "components/component-registry.generated.ts"),
-    "utf8",
+  return import(
+    `${pathToFileURL(catalogPath(root)).href}?version=${moduleVersion++}`
   );
 }
 
+function componentRegistrySource(root) {
+  return readFileSync(componentRegistryPath(root), "utf8");
+}
+
+/** 这些组件的索引和四个共用索引里，已经写到磁盘上的那些。 */
+function writtenIndexes(root, ids) {
+  return [
+    ...ids.map((id) => componentPath(root, id, "examples.generated.ts")),
+    sourceIndexPath(root),
+    registryPath(root),
+    catalogPath(root),
+    componentRegistryPath(root),
+  ].filter((filename) => existsSync(filename));
+}
+
+// 用到它的用例，超时要比这 5 秒长：否则失败时报的是用例超时，看不到最后一次断言的差异。
 async function eventually(check) {
   const deadline = Date.now() + 5000;
   while (true) {
@@ -111,7 +134,7 @@ async function eventually(check) {
   }
 }
 
-test("自动发现零个、一个和三个示例，忽略辅助文件与嵌套目录", async () => {
+test("自动发现零个、一个和三个示例，忽略辅助文件", async () => {
   const root = fixture();
   for (const id of ["empty", "button", "checkbox"]) component(root, id);
   write(root, "button", "basic.example.tsx");
@@ -121,8 +144,6 @@ test("自动发现零个、一个和三个示例，忽略辅助文件与嵌套�
   write(root, "checkbox", "playground.tsx");
   write(root, "checkbox", "helper.tsx");
   write(root, "checkbox", "ignored.example.ts");
-  write(root, "checkbox", "nested/ignored.example.tsx");
-  mkdirSync(componentPath(root, "checkbox", "folder.example.tsx"));
 
   await generateExampleIndexes(root);
   const { exampleFiles } = await readSources(root);
@@ -142,9 +163,49 @@ test("自动发现零个、一个和三个示例，忽略辅助文件与嵌套�
   expect(checkboxIndex).toMatch(/"use client";/);
   expect(checkboxIndex).toMatch(/from "\.\/select-all\.example"/);
   expect(checkboxIndex).toMatch(/satisfies readonly ExampleDefinition\[\]/);
-  expect(checkboxIndex).not.toMatch(/playground|helper|ignored|folder/);
+  expect(checkboxIndex).not.toMatch(/playground|helper|ignored/);
   expect(registrySource(root)).toMatch(/from "\.\.\/empty-examples";/);
+  expect(registrySource(root)).toMatch(
+    /import \{ examples as (\w+) \} from "\.\.\/checkbox-examples";[\s\S]*checkbox: \1,/,
+  );
   expect(registrySource(root)).not.toMatch(/examples\.generated/);
+});
+
+test("示例目录里有子目录时报错，不写入任何索引", async () => {
+  for (const nested of [
+    "nested/basic.example.tsx",
+    "folder.example.tsx/basic.tsx",
+  ]) {
+    const root = fixture();
+    // 和"非法示例名称在写入索引前报错"一样，anchor 先通过校验：边校验边写的话，它的索引会留下来。
+    component(root, "anchor");
+    component(root, "checkbox");
+    write(root, "checkbox", nested);
+
+    await expect(generateExampleIndexes(root)).rejects.toThrow(
+      `Expected only files in a UI catalog examples directory: ${componentPath(root, "checkbox", dirname(nested))}`,
+    );
+    expect(writtenIndexes(root, ["anchor", "checkbox"])).toStrictEqual([]);
+  }
+});
+
+test("按生成物所在位置的 Prettier 配置格式化", async () => {
+  const root = fixture();
+  writeFileSync(join(root, ".prettierrc"), JSON.stringify({ semi: false }));
+  component(root, "checkbox");
+  write(root, "checkbox", "basic.example.tsx");
+
+  const generated = await generateExampleIndexes(root);
+  expect(generated).not.toHaveLength(0);
+  for (const filename of generated) {
+    expect(readFileSync(filename, "utf8"), filename).not.toMatch(/;$/m);
+  }
+  expect(
+    readFileSync(
+      componentPath(root, "checkbox", "examples.generated.ts"),
+      "utf8",
+    ),
+  ).toMatch(/^"use client"$/m);
 });
 
 test("没有组件目录时明确报错，不生成无法使用的空目录", async () => {
@@ -182,6 +243,11 @@ test("组件目录按 order 和 id 排序，Preview 与去重的图标使用静�
   expect(registry).toMatch(
     /import \{ Preview as \w+ \} from "\.\/alpha-examples";/,
   );
+  // 用反向引用比对绑定名：每个 ID 配到自己目录的 Preview，错位一格就对不上；绑定名怎么起都成立。
+  expect(registry).toMatch(
+    /import \{ Preview as (\w+) \} from "\.\/zebra-examples";[\s\S]*zebra: \1,/,
+  );
+  expect(registry).toMatch(/zebra: IconZoom,/);
   expect(registry).toMatch(/export const previewsByComponent =/);
   expect(registry).toMatch(/export const iconsByComponent =/);
   expect(registry).not.toMatch(/use client|\/preview"/);
@@ -399,11 +465,14 @@ test("相同输入不重写文件，源码变化只更新源码索引的内容�
 
 test("非法示例名称在写入索引前报错", async () => {
   const root = fixture();
+  // 组件按 ID 排序处理，合法的 anchor 先通过校验，checkbox 才报错：边校验边写的话，anchor 的索引会留下来。
+  component(root, "anchor");
   component(root, "checkbox");
   write(root, "checkbox", "Bad_name.example.tsx");
   await expect(generateExampleIndexes(root)).rejects.toThrow(
     /Expected a kebab-case UI catalog ID: Bad_name\.example\.tsx/,
   );
+  expect(writtenIndexes(root, ["anchor", "checkbox"])).toStrictEqual([]);
 });
 
 test("LF 和 CRLF 源码生成相同摘要", async () => {
@@ -424,125 +493,193 @@ test("LF 和 CRLF 源码生成相同摘要", async () => {
   }
 });
 
-test("watch 自动处理文件和目录增删、重命名及源码内容修改", async () => {
-  const root = fixture();
-  component(root, "anchor");
-  const errors = [];
-  const watcher = await watchExampleIndexes(root, {
-    onError: (error) => errors.push(error),
-  });
-  onTestFinished(() => watcher.close());
+test(
+  "watch 自动处理文件和目录增删、重命名及源码内容修改",
+  { timeout: 15_000 },
+  async () => {
+    const root = fixture();
+    component(root, "anchor");
+    const errors = [];
+    const watcher = await watchExampleIndexes(root, {
+      onError: (error) => errors.push(error),
+    });
+    onTestFinished(() => watcher.close());
 
-  component(root, "checkbox");
-  write(root, "checkbox", "basic.example.tsx", "export const value = 1;");
-  write(root, "checkbox", "disabled.example.tsx");
-  write(root, "checkbox", "select-all.example.tsx");
-  await eventually(async () => {
-    expect((await readSources(root)).exampleFiles.checkbox?.length).toBe(3);
-    expect((await readCatalog(root)).catalog.map(({ id }) => id)).toStrictEqual(
-      ["anchor", "checkbox"],
-    );
-  });
-
-  for (const filename of ["basic.example.tsx", "playground.tsx"]) {
-    const previous = (await readSources(root)).exampleSourceRevision;
-    write(root, "checkbox", filename, "export const value = 2;");
+    component(root, "checkbox");
+    write(root, "checkbox", "basic.example.tsx", "export const value = 1;");
+    write(root, "checkbox", "disabled.example.tsx");
+    write(root, "checkbox", "select-all.example.tsx");
     await eventually(async () => {
-      expect((await readSources(root)).exampleSourceRevision).not.toBe(
-        previous,
-      );
+      expect((await readSources(root)).exampleFiles.checkbox?.length).toBe(3);
+      expect(
+        (await readCatalog(root)).catalog.map(({ id }) => id),
+      ).toStrictEqual(["anchor", "checkbox"]);
     });
-  }
 
-  renameSync(
-    componentPath(root, "checkbox", "basic.example.tsx"),
-    componentPath(root, "checkbox", "renamed.example.tsx"),
-  );
-  rmSync(componentPath(root, "checkbox", "disabled.example.tsx"));
-  await eventually(async () => {
-    expect((await readSources(root)).exampleFiles.checkbox).toStrictEqual([
-      { id: "renamed", filename: "renamed.example.tsx" },
-      { id: "select-all", filename: "select-all.example.tsx" },
-    ]);
-  });
+    for (const filename of ["basic.example.tsx", "playground.tsx"]) {
+      const previous = (await readSources(root)).exampleSourceRevision;
+      write(root, "checkbox", filename, "export const value = 2;");
+      await eventually(async () => {
+        expect((await readSources(root)).exampleSourceRevision).not.toBe(
+          previous,
+        );
+      });
+    }
 
-  renameSync(componentPath(root, "checkbox"), componentPath(root, "button"));
-  await eventually(async () => {
-    const { exampleFiles } = await readSources(root);
-    expect(Object.keys(exampleFiles)).toStrictEqual(["anchor", "button"]);
-    expect(registrySource(root)).toMatch(/button-examples/);
-    expect(registrySource(root)).not.toMatch(/checkbox-examples/);
-    expect(componentRegistrySource(root)).toMatch(/button-examples/);
-    expect(componentRegistrySource(root)).not.toMatch(/checkbox-examples/);
-    expect((await readCatalog(root)).catalog.map(({ id }) => id)).toStrictEqual(
-      ["anchor", "button"],
+    renameSync(
+      componentPath(root, "checkbox", "basic.example.tsx"),
+      componentPath(root, "checkbox", "renamed.example.tsx"),
     );
-  });
-  rmSync(componentPath(root, "button"), { recursive: true });
-  await eventually(async () => {
-    expect((await readSources(root)).exampleFiles).toStrictEqual({
-      anchor: [],
+    rmSync(componentPath(root, "checkbox", "disabled.example.tsx"));
+    await eventually(async () => {
+      expect((await readSources(root)).exampleFiles.checkbox).toStrictEqual([
+        { id: "renamed", filename: "renamed.example.tsx" },
+        { id: "select-all", filename: "select-all.example.tsx" },
+      ]);
     });
-    expect((await readCatalog(root)).catalog.map(({ id }) => id)).toStrictEqual(
-      ["anchor"],
+
+    renameSync(componentPath(root, "checkbox"), componentPath(root, "button"));
+    await eventually(async () => {
+      const { exampleFiles } = await readSources(root);
+      expect(Object.keys(exampleFiles)).toStrictEqual(["anchor", "button"]);
+      expect(registrySource(root)).toMatch(/button-examples/);
+      expect(registrySource(root)).not.toMatch(/checkbox-examples/);
+      expect(componentRegistrySource(root)).toMatch(/button-examples/);
+      expect(componentRegistrySource(root)).not.toMatch(/checkbox-examples/);
+      expect(
+        (await readCatalog(root)).catalog.map(({ id }) => id),
+      ).toStrictEqual(["anchor", "button"]);
+    });
+    rmSync(componentPath(root, "button"), { recursive: true });
+    await eventually(async () => {
+      expect((await readSources(root)).exampleFiles).toStrictEqual({
+        anchor: [],
+      });
+      expect(
+        (await readCatalog(root)).catalog.map(({ id }) => id),
+      ).toStrictEqual(["anchor"]);
+    });
+    expect(errors).toStrictEqual([]);
+  },
+);
+
+test(
+  "watch 校验 preview metadata 与必需文件，并在修正后恢复生成",
+  { timeout: 15_000 },
+  async () => {
+    const root = fixture();
+    component(root, "checkbox");
+    const errors = [];
+    const watcher = await watchExampleIndexes(root, {
+      onError: (error) => errors.push(error),
+    });
+    onTestFinished(() => watcher.close());
+    const initialCatalog = (await readCatalog(root)).catalog;
+
+    write(root, "checkbox", "preview.tsx", "export const metadata = {");
+    await eventually(() =>
+      expect(errors.at(-1)?.message ?? "").toMatch(/Cannot parse/),
     );
-  });
-  expect(errors).toStrictEqual([]);
-});
+    expect((await readCatalog(root)).catalog).toStrictEqual(initialCatalog);
 
-test("watch 校验 preview metadata 与必需文件，并在修正后恢复生成", async () => {
-  const root = fixture();
-  component(root, "checkbox");
-  const errors = [];
-  const watcher = await watchExampleIndexes(root, {
-    onError: (error) => errors.push(error),
-  });
-  onTestFinished(() => watcher.close());
-  const initialCatalog = (await readCatalog(root)).catalog;
+    write(
+      root,
+      "checkbox",
+      "preview.tsx",
+      preview({ title: "Updated", icon: "IconPlus" }),
+    );
+    await eventually(async () => {
+      expect((await readCatalog(root)).catalog[0].title).toBe("Updated");
+      expect(componentRegistrySource(root)).toMatch(/IconPlus/);
+    });
 
-  write(root, "checkbox", "preview.tsx", "export const metadata = {");
-  await eventually(() =>
-    expect(errors.at(-1)?.message ?? "").toMatch(/Cannot parse/),
-  );
-  expect((await readCatalog(root)).catalog).toStrictEqual(initialCatalog);
+    for (const filename of ["preview.tsx", "playground.tsx", "index.ts"]) {
+      const errorCount = errors.length;
+      const path = componentPath(root, "checkbox", filename);
+      const source = readFileSync(path, "utf8");
+      rmSync(path);
+      await eventually(() => {
+        expect(errors.length).toBeGreaterThan(errorCount);
+        expect(errors.at(-1).message).toMatch(
+          /Missing required UI catalog file/,
+        );
+      });
+      write(root, "checkbox", filename, source);
+      write(root, "checkbox", "preview.tsx", preview({ title: filename }));
+      await eventually(async () => {
+        expect((await readCatalog(root)).catalog[0].title).toBe(filename);
+      });
+    }
 
-  write(
-    root,
-    "checkbox",
-    "preview.tsx",
-    preview({ title: "Updated", icon: "IconPlus" }),
-  );
-  await eventually(async () => {
-    expect((await readCatalog(root)).catalog[0].title).toBe("Updated");
-    expect(componentRegistrySource(root)).toMatch(/IconPlus/);
-  });
+    rmSync(componentPath(root, "checkbox"), { recursive: true });
+    await eventually(() =>
+      expect(errors.at(-1)?.message ?? "").toMatch(
+        /Expected at least one UI catalog component directory/,
+      ),
+    );
+    component(root, "button");
+    await eventually(async () => {
+      expect(
+        (await readCatalog(root)).catalog.map(({ id }) => id),
+      ).toStrictEqual(["button"]);
+    });
+  },
+);
 
-  for (const filename of ["preview.tsx", "playground.tsx", "index.ts"]) {
+test(
+  "watch 在示例目录里新建子目录、改子目录里的文件时都报错",
+  { timeout: 15_000 },
+  async () => {
+    const root = fixture();
+    component(root, "checkbox");
+    const errors = [];
+    const watcher = await watchExampleIndexes(root, {
+      onError: (error) => errors.push(error),
+    });
+    onTestFinished(() => watcher.close());
+    const nested = /Expected only files in a UI catalog examples directory/;
+
+    mkdirSync(componentPath(root, "checkbox", "nested"));
+    await eventually(() =>
+      expect(errors.at(-1)?.message ?? "").toMatch(nested),
+    );
+
     const errorCount = errors.length;
-    const path = componentPath(root, "checkbox", filename);
-    const source = readFileSync(path, "utf8");
-    rmSync(path);
+    write(root, "checkbox", "nested/deeper/basic.example.tsx");
     await eventually(() => {
       expect(errors.length).toBeGreaterThan(errorCount);
-      expect(errors.at(-1).message).toMatch(/Missing required UI catalog file/);
+      expect(errors.at(-1).message).toMatch(nested);
     });
-    write(root, "checkbox", filename, source);
-    write(root, "checkbox", "preview.tsx", preview({ title: filename }));
-    await eventually(async () => {
-      expect((await readCatalog(root)).catalog[0].title).toBe(filename);
-    });
-  }
+  },
+);
 
-  rmSync(componentPath(root, "checkbox"), { recursive: true });
-  await eventually(() =>
-    expect(errors.at(-1)?.message ?? "").toMatch(
-      /Expected at least one UI catalog component directory/,
-    ),
-  );
-  component(root, "button");
-  await eventually(async () => {
-    expect((await readCatalog(root)).catalog.map(({ id }) => id)).toStrictEqual(
-      ["button"],
-    );
-  });
-});
+test(
+  "watch 首次生成失败时关闭监听并抛错，修好文件后也不再生成",
+  { timeout: 15_000 },
+  async () => {
+    const failed = fixture();
+    component(failed, "checkbox");
+    write(failed, "checkbox", "preview.tsx", "export const metadata = {");
+    const errors = [];
+    await expect(
+      watchExampleIndexes(failed, { onError: (error) => errors.push(error) }),
+    ).rejects.toThrow(/Cannot parse UI catalog metadata/);
+
+    // 对照：正常启动的 watcher 收到同样的修改会重新生成。两边防抖和生成的耗时相同，所以等对照组生成第二次：
+    // 失败的一侧要是还在监听，第一次修改这时早已生成完。
+    const control = fixture();
+    component(control, "checkbox");
+    const watcher = await watchExampleIndexes(control);
+    onTestFinished(() => watcher.close());
+
+    for (const title of ["Fixed", "Fixed again"]) {
+      for (const root of [failed, control])
+        write(root, "checkbox", "preview.tsx", preview({ title }));
+      await eventually(async () => {
+        expect((await readCatalog(control)).catalog[0].title).toBe(title);
+      });
+    }
+    expect(existsSync(catalogPath(failed))).toBe(false);
+    expect(errors).toStrictEqual([]);
+  },
+);

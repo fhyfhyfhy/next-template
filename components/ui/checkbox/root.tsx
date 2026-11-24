@@ -5,8 +5,10 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/cn";
 
+// focus-ring-offset 生成的 CSS 排在所有带 variant 的 class 前面，无效时 aria-invalid:ring-destructive/15 会盖住
+// 焦点 ring 的颜色；aria-invalid:focus-visible:ring-ring 让这时的焦点仍是醒目的 ring，不是多余的 class。
 const checkboxVariants = cva(
-  "group inline-flex shrink-0 items-center justify-center rounded-sm border border-input bg-card text-card-foreground transition-[background-color,border-color] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/15 data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground aria-invalid:data-checked:border-primary data-disabled:cursor-not-allowed data-disabled:opacity-40 data-indeterminate:border-primary data-indeterminate:bg-primary data-indeterminate:text-primary-foreground aria-invalid:data-indeterminate:border-primary",
+  "inline-flex shrink-0 items-center justify-center rounded-sm border border-input bg-card text-card-foreground focus-ring-offset transition-[background-color,border-color] aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/15 aria-invalid:focus-visible:ring-ring data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground aria-invalid:data-checked:border-primary data-disabled:cursor-not-allowed data-disabled:opacity-40 data-indeterminate:border-primary data-indeterminate:bg-primary data-indeterminate:text-primary-foreground aria-invalid:data-indeterminate:border-primary",
   {
     variants: {
       size: {

@@ -3,13 +3,16 @@
 "use client";
 
 import type { ExampleDefinition } from "../../types/examples";
-import { Example as Example0, metadata as metadata0 } from "./basic.example";
+import {
+  Example as Example0,
+  metadata as metadata0,
+} from "./first-invalid.example";
 
 export const examples = [
   {
     ...metadata0,
-    id: "basic",
-    filename: "basic.example.tsx",
+    id: "first-invalid",
+    filename: "first-invalid.example.tsx",
     component: Example0,
   },
 ] satisfies readonly ExampleDefinition[];
