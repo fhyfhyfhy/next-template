@@ -63,4 +63,9 @@ On sign-out or an account switch, `queryClient.clear()` clears only React Query;
 
 For an in-app transition, coordinate `queryClient.clear()` with the session's server refresh and router-cache invalidation before showing the new account. Cookie changes in a Server Action participate in [Next.js invalidation](framework-notes.md#server-action-invalidation); a backend or Route Handler response that changes a cookie does not itself run that Server Action path.
 
-Verify that revisiting a page, including Back/Forward, cannot restore the previous session's data.
+The session can also change outside the tab: in another tab of the app, or in another app on the same site, such as one that owns sign-in, or when it expires. The tab still shows the previous session's data, and Back/Forward can restore it, until it loads a page in full. Give each way it can change a way for the tab to notice, and on noticing, load the page in full rather than clearing caches one by one:
+
+- Another tab of the app: the tab that signs in or out posts on a `BroadcastChannel`, and the others reload when they hear it.
+- Outside the app: when the tab becomes visible again (`visibilitychange`), it asks the server who is signed in and reloads when the answer differs from the session it rendered with. A navigation that renders on the server can compare the same way, but a tab left open notices only on its next navigation, so it adds to the visibility check rather than replacing it. With single sign-on, use the provider's session and logout notifications, such as OpenID Connect Front-Channel or Back-Channel Logout.
+
+Verify that revisiting a page, including Back/Forward, cannot restore the previous session's data, and that a session changed in another tab shows in this one once it is visible again.
