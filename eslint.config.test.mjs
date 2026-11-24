@@ -2248,10 +2248,17 @@ describe("派生项目的 eslint.config.project.mjs 接在 template 的配置后
     );
     writeFileSync(
       join(fixture, "eslint.config.project.mjs"),
-      `import { TAILWIND_CLASS_RESTRICTIONS } from "./scripts/eslint/tailwind-classes.mjs";
+      `import { SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
+import { TAILWIND_CLASS_RESTRICTIONS } from "./scripts/eslint/tailwind-classes.mjs";
 
 export default [
   { files: ["probe/**"], rules: { "no-console": "error" } },
+  {
+    files: [SOURCE_GLOB],
+    rules: {
+      "architecture/wrapper-imports": ["error", { uiLibraries: ["probe-ui"] }],
+    },
+  },
   {
     files: ["components/**"],
     rules: {
@@ -2302,6 +2309,21 @@ export default [
         ),
       JSON.stringify(result.messages, null, 2),
     ).toStrictEqual(["palette", "PROBE"]);
+  });
+
+  test("项目追加的 UI 库和 template 的一样只能由 components/ui/ 引用", async () => {
+    const eslint = new ESLint({ cwd: fixture });
+    const source = `import { Probe } from "probe-ui";\nimport { Viewer } from "probe-ui/viewer";\nimport { toast } from "sonner";\n\nexport const probe = [Probe, Viewer, toast];\n`;
+    const reported = async (file) => {
+      const [result] = await eslint.lintText(source, {
+        filePath: join(fixture, file),
+      });
+      return result.messages
+        .filter(({ ruleId }) => ruleId === "architecture/wrapper-imports")
+        .map(({ line }) => line);
+    };
+    expect(await reported("lib/probe.ts")).toStrictEqual([1, 2, 3]);
+    expect(await reported("components/ui/probe.tsx")).toStrictEqual([]);
   });
 });
 

@@ -294,8 +294,9 @@ const APPLICATION_CODE = {
 // 派生项目自己的检查和忽略项写在 eslint.config.project.mjs（.agents/skills/derived-project/SKILL.md），它导出的
 // 配置接在 template 的规则后面、Prettier 之前；没有这个文件时只用 template 的配置。项目的限制写成自己插件里的独立
 // 规则：在那里给文件设置 no-restricted-imports 或 no-restricted-syntax，会整个替换下面给同一批文件设的选项。
-// 追加 Tailwind class 的限制见 scripts/eslint/tailwind-classes.mjs 的 TAILWIND_CLASS_RESTRICTIONS。
-// template 已有的东西从它的模块取，不要复制：template 升级改了那里，复制的那份不会跟着变。应用代码的目录取自
+// 追加 Tailwind class 的限制见 scripts/eslint/tailwind-classes.mjs 的 TAILWIND_CLASS_RESTRICTIONS；项目自己封装的 UI 库
+// 用 architecture/wrapper-imports 的 uiLibraries 选项追加，files 取 scripts/eslint/imports.mjs 的 SOURCE_GLOB，和下面
+// 设这条规则的范围一致。template 已有的东西从它的模块取，不要复制：template 升级改了那里，复制的那份不会跟着变。应用代码的目录取自
 // scripts/eslint/layers.mjs，给更多文件开的安全规则取自 security-plugin.mjs 的 SECURITY_RULES，判断中日韩文字的
 // 字符集取自 writing-style-plugin.mjs 的 CJK。
 const PROJECT_CONFIG = join(PROJECT_ROOT, "eslint.config.project.mjs");
