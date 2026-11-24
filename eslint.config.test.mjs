@@ -1413,6 +1413,15 @@ function createConfigFixture() {
     join(project, "scripts/ui-catalog/index-generator.mjs"),
     join(fixture, "scripts/ui-catalog/index-generator.mjs"),
   );
+  // docs 规则从这里取 Sample product 的路径，eslint.config.mjs 从 skills-lock.json 取它们跳过的第三方 skill。
+  copyFileSync(
+    join(project, "scripts/sample-product.mjs"),
+    join(fixture, "scripts/sample-product.mjs"),
+  );
+  copyFileSync(
+    join(project, "skills-lock.json"),
+    join(fixture, "skills-lock.json"),
+  );
   copyFileSync(join(project, "tsconfig.json"), join(fixture, "tsconfig.json"));
   // import/no-relative-packages 要找被 lint 文件所属的 package.json，找不到会直接抛错。
   copyFileSync(join(project, "package.json"), join(fixture, "package.json"));
@@ -1880,6 +1889,37 @@ describe("服务端代码不用 fetchApi 或 fetch 请求本 app 自己的接口
       reported: 1,
     },
     {
+      name: "feature 的 server/ 里的模块请求同源路径时报错",
+      file: "features/ui-catalog/server/probe.ts",
+      url: `"/api/tasks"`,
+      reported: 1,
+    },
+    {
+      name: "feature 的 server.ts 入口请求同源路径时报错",
+      file: "features/ui-catalog/server.ts",
+      url: `"/api/tasks"`,
+      reported: 1,
+    },
+    {
+      name: "app/ 以外 import 了 server-only 的模块请求同源路径时报错",
+      file: "lib/probe.ts",
+      directive: `import "server-only";\n\n`,
+      url: `"/api/tasks"`,
+      reported: 1,
+    },
+    {
+      name: "proxy.ts 请求同源路径时报错",
+      file: "proxy.ts",
+      url: `"/api/tasks"`,
+      reported: 1,
+    },
+    {
+      name: "instrumentation.ts 请求同源路径时报错",
+      file: "instrumentation.ts",
+      url: `"/api/tasks"`,
+      reported: 1,
+    },
+    {
       name: "服务端请求其他服务的完整 URL 不报",
       file: "features/ui-catalog/server/probe.ts",
       url: `"https://api.example.com/v1/items"`,
@@ -2208,10 +2248,17 @@ describe("派生项目的 eslint.config.project.mjs 接在 template 的配置后
     );
     writeFileSync(
       join(fixture, "eslint.config.project.mjs"),
-      `import { TAILWIND_CLASS_RESTRICTIONS } from "./scripts/eslint/tailwind-classes.mjs";
+      `import { SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
+import { TAILWIND_CLASS_RESTRICTIONS } from "./scripts/eslint/tailwind-classes.mjs";
 
 export default [
   { files: ["probe/**"], rules: { "no-console": "error" } },
+  {
+    files: [SOURCE_GLOB],
+    rules: {
+      "architecture/wrapper-imports": ["error", { uiLibraries: ["probe-ui"] }],
+    },
+  },
   {
     files: ["components/**"],
     rules: {
@@ -2262,6 +2309,21 @@ export default [
         ),
       JSON.stringify(result.messages, null, 2),
     ).toStrictEqual(["palette", "PROBE"]);
+  });
+
+  test("项目追加的 UI 库和 template 的一样只能由 components/ui/ 引用", async () => {
+    const eslint = new ESLint({ cwd: fixture });
+    const source = `import { Probe } from "probe-ui";\nimport { Viewer } from "probe-ui/viewer";\nimport { toast } from "sonner";\n\nexport const probe = [Probe, Viewer, toast];\n`;
+    const reported = async (file) => {
+      const [result] = await eslint.lintText(source, {
+        filePath: join(fixture, file),
+      });
+      return result.messages
+        .filter(({ ruleId }) => ruleId === "architecture/wrapper-imports")
+        .map(({ line }) => line);
+    };
+    expect(await reported("lib/probe.ts")).toStrictEqual([1, 2, 3]);
+    expect(await reported("components/ui/probe.tsx")).toStrictEqual([]);
   });
 });
 
@@ -2460,6 +2522,11 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
     expect(
       await lint(
         `  await page.reload();\n  await page.getByLabel("名称").fill("x");`,
+      ),
+    ).toStrictEqual([2]);
+    expect(
+      await lint(
+        `  await page.goto("/a");\n  await page.getByLabel("封面").setInputFiles("cover.png");`,
       ),
     ).toStrictEqual([2]);
   });
@@ -3225,6 +3292,158 @@ describe("agent 指令和 identifier 用英文写", () => {
   });
 });
 
+describe("文档的链接能打开，引用 template 的代码时带 GitHub 链接", () => {
+  const eslint = new ESLint({ cwd: project });
+  const base = "https://github.com/fhyfhyfhy/next-template";
+  const sha = "0123456789abcdef0123456789abcdef01234567";
+  const reported = async (file, source) => {
+    const [result] = await eslint.lintText(source, {
+      filePath: join(project, file),
+    });
+    expect(result.fatalErrorCount).toBe(0);
+    return result.messages
+      .filter(({ ruleId }) => ruleId?.startsWith("docs/"))
+      .map(({ ruleId, line, column }) => [ruleId, line, column]);
+  };
+
+  test("相对链接指向不存在的文件或标题时报告，代码里的不算", async () => {
+    expect(
+      await reported(
+        ".claude/rules/case.md",
+        [
+          "# Case",
+          "",
+          "[a](e2e.md#hydration) [b](missing.md) [c](e2e.md#no-such-heading) `[d](missing.md)`",
+          "[e](#case) [f](#no-such-heading) ![g](missing.png)",
+          "",
+          "[h]: missing.md",
+          "[i]: e2e.md#hydration",
+          "",
+          "```md",
+          "[j](missing.md)",
+          "```",
+          "",
+        ].join("\n"),
+      ),
+    ).toStrictEqual([
+      ["docs/relative-links", 3, 23],
+      ["docs/relative-links", 3, 39],
+      ["docs/relative-links", 4, 12],
+      ["docs/relative-links", 4, 34],
+      ["docs/relative-links", 6, 1],
+    ]);
+  });
+
+  test("GitHub 链接的文字写成另一个路径时报告，固定到某个提交的也一样", async () => {
+    // 只用派生项目也保留的文件，用例在 template 和派生项目里都成立。
+    expect(
+      await reported(
+        ".claude/rules/case.md",
+        [
+          `[\`lib/request/fetch.ts\`](${base}/blob/main/lib/request/fetch.ts)`,
+          `[\`app/[locale]/layout.tsx\`](${base}/blob/main/app/%5Blocale%5D/layout.tsx)`,
+          `[\`features/ui-catalog/\`](${base}/tree/main/features/ui-catalog)`,
+          `[\`lib/db.ts\`](${base}/blob/main/lib/request/fetch.ts)`,
+          `[\`lib/request/fetch.ts\`](${base}/blob/${sha}/lib/request/fetch.ts)`,
+          `[\`features/ui-catalog/\`](${base}/tree/${sha}/features/ui-catalog/constants)`,
+          `[the fetch wrapper](${base}/blob/main/lib/request/fetch.ts)`,
+        ].join("\n\n"),
+      ),
+    ).toStrictEqual([
+      ["docs/template-links", 7, 1],
+      ["docs/template-links", 11, 1],
+    ]);
+  });
+
+  test("agent 文档只用 GitHub 链接引用 Sample product 的路径", async () => {
+    const source = [
+      "`features/task/server/tasks.ts` and e2e/tasks.spec.ts.",
+      "",
+      `[\`features/upload/server.ts\`](${base}/blob/main/features/upload/server.ts)`,
+      "",
+      "```ts",
+      'import { tasks } from "@/features/task/server";',
+      "```",
+      "",
+    ].join("\n");
+    expect(await reported(".claude/rules/case.md", source)).toStrictEqual([
+      ["docs/sample-product-paths", 1, 2],
+      ["docs/sample-product-paths", 1, 37],
+    ]);
+    expect(
+      await reported(".agents/skill-patches/case.md", source),
+    ).toHaveLength(2);
+    expect(await reported("docs/adr/case.md", source)).toStrictEqual([]);
+  });
+
+  test("agent 文档不引用 README 和调研笔记，别的目录的 README.md 不算", async () => {
+    const source =
+      'read [Tests](../../README.md#tests), "Checks" in `README.md`, [sources](../../docs/research/2026-10-29-auth.md), and `plans/README.md`\n';
+    const cited = async (file) =>
+      (await reported(file, source))
+        .filter(([rule]) => rule === "docs/people-docs")
+        .map(([, , column]) => column);
+    expect(await cited(".claude/rules/case.md")).toStrictEqual([20, 51, 79]);
+    expect(await cited("CLAUDE.md")).toStrictEqual([20, 51, 79]);
+    // 它把 README.md 列为派生项目要改写的文件。
+    expect(await cited(".agents/skills/derived-project/case.md")).toStrictEqual(
+      [79],
+    );
+    expect(await cited("docs/features.md")).toStrictEqual([]);
+  });
+
+  test("第三方 skill 是上游原文，不检查", async () => {
+    expect(
+      await reported(
+        ".agents/skills/animate/case.md",
+        "[a](missing.md) `features/task/` README.md\n",
+      ),
+    ).toStrictEqual([]);
+  });
+
+  test("code-review.md 里写成行内代码的仓库路径和按名称指向的小节都要存在", async () => {
+    const source = [
+      "`.claude/rules/e2e.md`, `.claude/rules/missing.md`, `react-hooks/exhaustive-deps`, `messages/{locale}/`",
+      '**Test data** in `.claude/rules/e2e.md`, "Hydration" and "No such section" in `e2e.md`',
+      "**Setup** in `missing.md`",
+      "",
+      "```md",
+      "`.claude/rules/missing.md`",
+      "```",
+      "",
+    ].join("\n");
+    expect(await reported("docs/agents/code-review.md", source)).toStrictEqual([
+      ["docs/code-references", 1, 25],
+      ["docs/code-references", 2, 42],
+      ["docs/code-references", 3, 1],
+    ]);
+    // 别的文档里有示意用的路径，不检查。
+    expect(
+      (await reported("docs/agents/other.md", source)).filter(
+        ([rule]) => rule === "docs/code-references",
+      ),
+    ).toStrictEqual([]);
+  });
+
+  test("ESLint 消息里按名称指向的小节都要存在，插值的名字跳过", async () => {
+    const source = [
+      `const a = 'See "Hydration" in .claude/rules/e2e.md.';`,
+      'const b = `See "${section}" and "No such section" in .claude/rules/e2e.md.`;',
+      `const c = 'See "Hydration" in .claude/rules/missing.md.';`,
+      "",
+    ].join("\n");
+    expect(
+      await reported("scripts/eslint/probe-plugin.mjs", source),
+    ).toStrictEqual([
+      ["docs/section-pointers", 2, 16],
+      ["docs/section-pointers", 3, 16],
+    ]);
+    expect(
+      await reported("scripts/eslint/probe-plugin.test.mjs", source),
+    ).toStrictEqual([]);
+  });
+});
+
 describe("有封装的原生元素和控件 role 只在 components/ui/ 里渲染", () => {
   const component = (jsx) => `export function Probe() {\n  return ${jsx};\n}\n`;
   for (const { name, file, source, reported } of [
@@ -3346,7 +3565,7 @@ ${component(`(
   }
 
   test("原生元素、控件 role 和 UI 库的消息指向 design-system.md 的「Wrap a UI library」", async () => {
-    // 小节标题是否存在由 scripts/docs-links.test.mjs 检查。
+    // 小节标题是否存在由 docs/section-pointers 检查（scripts/eslint/docs-plugin.mjs）。
     const pointer =
       'See "Wrap a UI library" in .claude/rules/design-system.md.';
     const messages = (

@@ -60,7 +60,7 @@ features/orders/components/
     context.ts             ← private, read by the parts
 ```
 
-In the sample product, [`features/task/components/task-detail/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-detail) is a main component with private subcomponents, and [`features/task/components/task-list-navigation/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-list-navigation) a compound component whose parts share a context.
+In the sample product, [`features/task/components/task-detail/`](https://github.com/fhyfhyfhy/next-template/tree/main/features/task/components/task-detail) is a main component with private subcomponents; `components/navigation-transition/` is a compound component whose parts share a context.
 
 - The `index` is the directory's only entry: it exports by name each component, context, hook, and type that callers need, and nothing else.
 - Keep component-specific contexts, hooks, helpers, and types alongside its parts. Extract them to the appropriate layer within their owner when they acquire an independent reuse role.
@@ -84,7 +84,7 @@ Two kinds of directory stay whole however many files they hold: a compound compo
 
 ### Public API
 
-When a component's props start to switch what it renders, or its parts share state, read [React Composition Patterns](../../.agents/skills/vercel-composition-patterns/SKILL.md) and follow the files in its `rules/` that match. Where the skill differs from this project's rules, the rules win, as on where its patterns live and how parts are exported. A compound component's root holds the shared state and provides a context of just the values its parts read, as `TaskListNavigation` in [`features/task/components/task-list-navigation/root.tsx`](https://github.com/fhyfhyfhy/next-template/blob/main/features/task/components/task-list-navigation/root.tsx) does. Leave server data with its owner ([Copies](data-flow.md#copies)), and add a `state`/`actions`/`meta` interface once a second provider needs to implement it.
+When a component's props start to switch what it renders, or its parts share state, read [React Composition Patterns](../../.agents/skills/vercel-composition-patterns/SKILL.md) and follow the files in its `rules/` that match. Where the skill differs from this project's rules, the rules win, as on where its patterns live and how parts are exported. A compound component's root holds the shared state and provides a context of just the values its parts read, as `NavigationTransition` in `components/navigation-transition/root.tsx` does. Leave server data with its owner ([Copies](data-flow.md#copies)), and add a `state`/`actions`/`meta` interface once a second provider needs to implement it.
 
 - Declare components as named `export function` declarations. Files the framework loads follow its export convention, such as the default export of Next.js `page.tsx` and `layout.tsx`.
 - Keep controlled state in the caller: read the value from props on every render rather than copying it into local state. For uncontrolled use, accept a default-value prop and let the underlying primitive own the state. Pass the callback's arguments, event details, and cancellation through unchanged.

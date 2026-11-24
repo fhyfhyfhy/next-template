@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 import type { ComponentId } from "../../constants/catalog";
 import { serializeUiCatalogSearchParams } from "../../utils/ui-catalog-search-params";
-import { useUiCatalogSearchParams } from "../ui-catalog-navigation";
+import { useUiCatalogSearchParams } from "./use-ui-catalog-search-params";
 
 /** 目录里的一项。服务端返回新组件的示例之前，新的选择就已经高亮。 */
 export function ComponentNavigationLink({

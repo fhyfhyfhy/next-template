@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import markdown from "@eslint/markdown";
@@ -25,6 +25,7 @@ import withWrapperImports, {
   apiFileFactoriesRule,
   mutationCallbacksRule,
 } from "./scripts/eslint/data/query-plugin.mjs";
+import createDocsPlugin from "./scripts/eslint/docs-plugin.mjs";
 import e2ePlugin from "./scripts/eslint/e2e-plugin.mjs";
 import createI18nPlugin from "./scripts/eslint/i18n-plugin.mjs";
 import { SOURCE_EXTENSIONS, SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
@@ -34,7 +35,9 @@ import {
   ROOT_DIRECTORIES,
   ROOT_LAYERS,
 } from "./scripts/eslint/layers.mjs";
-import securityPlugin from "./scripts/eslint/security-plugin.mjs";
+import securityPlugin, {
+  SECURITY_RULES,
+} from "./scripts/eslint/security-plugin.mjs";
 import { TAILWIND_CLASS_RESTRICTIONS } from "./scripts/eslint/tailwind-classes.mjs";
 import writingStylePlugin from "./scripts/eslint/writing-style-plugin.mjs";
 
@@ -182,6 +185,22 @@ const AGENT_INSTRUCTIONS = [
   "docs/agents/**/*.md",
 ];
 
+// 检查相对链接和指向 template GitHub 的链接的文档。第三方 skill 是上游原文，只随升级变化（skills-lock.json），
+// 不在检查范围内；它们的 patch 在 .agents/skill-patches/，属于 agent 指令。
+const DOCS = [
+  "AGENTS.md",
+  "README.md",
+  "GLOSSARY.md",
+  "docs/**/*.md",
+  ".claude/rules/**/*.md",
+  ".agents/skills/**/*.md",
+];
+const THIRD_PARTY_SKILLS = Object.keys(
+  JSON.parse(readFileSync(join(PROJECT_ROOT, "skills-lock.json"), "utf8"))
+    .skills,
+).map((name) => `.agents/skills/${name}/**`);
+const docsPlugin = createDocsPlugin(PROJECT_ROOT);
+
 // i18n 里借用 no-restricted-imports、no-restricted-syntax 的几组限制。这两条规则还管着别的事，所以这几组合进
 // 下面的 RESTRICTED_IMPORTS 和 RESTRICTED_SYNTAX；i18n 的其余检查和这几组的例外在配置数组的「i18n」一段。
 //
@@ -275,8 +294,11 @@ const APPLICATION_CODE = {
 // 派生项目自己的检查和忽略项写在 eslint.config.project.mjs（.agents/skills/derived-project/SKILL.md），它导出的
 // 配置接在 template 的规则后面、Prettier 之前；没有这个文件时只用 template 的配置。项目的限制写成自己插件里的独立
 // 规则：在那里给文件设置 no-restricted-imports 或 no-restricted-syntax，会整个替换下面给同一批文件设的选项。
-// 追加 Tailwind class 的限制见 scripts/eslint/tailwind-classes.mjs 的 TAILWIND_CLASS_RESTRICTIONS。
-// 应用代码的目录从 scripts/eslint/layers.mjs 取，不要复制：template 升级改了层级表，复制的那份不会跟着变。
+// 追加 Tailwind class 的限制见 scripts/eslint/tailwind-classes.mjs 的 TAILWIND_CLASS_RESTRICTIONS；项目自己封装的 UI 库
+// 用 architecture/wrapper-imports 的 uiLibraries 选项追加，files 取 scripts/eslint/imports.mjs 的 SOURCE_GLOB，和下面
+// 设这条规则的范围一致。template 已有的东西从它的模块取，不要复制：template 升级改了那里，复制的那份不会跟着变。应用代码的目录取自
+// scripts/eslint/layers.mjs，给更多文件开的安全规则取自 security-plugin.mjs 的 SECURITY_RULES，判断中日韩文字的
+// 字符集取自 writing-style-plugin.mjs 的 CJK。
 const PROJECT_CONFIG = join(PROJECT_ROOT, "eslint.config.project.mjs");
 const projectConfig = existsSync(PROJECT_CONFIG)
   ? (await import(pathToFileURL(PROJECT_CONFIG).href)).default
@@ -351,11 +373,7 @@ const eslintConfig = defineConfig([
     plugins: { security: securityPlugin },
     rules: {
       "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX],
-      // 页面上的 HTML 只由 React 渲染：dangerouslySetInnerHTML 和 javascript: URL 都会把字符串当代码执行。
-      // 任何组件都查，因为组件可能把这个 prop 传给它渲染的元素；写进对象再展开的由 security/raw-html 查。
-      "react/no-danger": ["error", { customComponentNames: ["*"] }],
-      "security/raw-html": "error",
-      "no-script-url": "error",
+      ...SECURITY_RULES,
     },
   },
   {
@@ -866,6 +884,41 @@ const eslintConfig = defineConfig([
     language: "markdown/gfm",
     languageOptions: { frontmatter: "yaml" },
     rules: { "writing-style/english-only": "error" },
+  },
+  {
+    files: DOCS,
+    ignores: THIRD_PARTY_SKILLS,
+    plugins: { markdown, docs: docsPlugin },
+    language: "markdown/gfm",
+    languageOptions: { frontmatter: "yaml" },
+    rules: {
+      "docs/relative-links": "error",
+      "docs/template-links": "error",
+    },
+  },
+  {
+    files: AGENT_INSTRUCTIONS,
+    ignores: THIRD_PARTY_SKILLS,
+    plugins: { markdown, docs: docsPlugin },
+    language: "markdown/gfm",
+    languageOptions: { frontmatter: "yaml" },
+    rules: {
+      "docs/sample-product-paths": "error",
+      "docs/people-docs": "error",
+    },
+  },
+  {
+    files: ["docs/agents/code-review.md"],
+    plugins: { markdown, docs: docsPlugin },
+    language: "markdown/gfm",
+    rules: { "docs/code-references": "error" },
+  },
+  {
+    // ESLint 消息里用 See "小节" in <文件> 指向规则的写法。
+    files: ["eslint.config.mjs", "scripts/eslint/**/*.mjs"],
+    ignores: ["**/*.test.mjs"],
+    plugins: { docs: docsPlugin },
+    rules: { "docs/section-pointers": "error" },
   },
   // 项目级忽略项在 Next 默认项上加入 worktree，避免重复检查其他 checkout。
   globalIgnores([

@@ -707,15 +707,20 @@ test("编辑器里未保存的内容参与分析，磁盘上的文件变了结�
   const eslint = eslintFor(root);
   expect(await lint(root, eslint)).toStrictEqual({});
 
+  // 只有未保存的文本才有的问题：namespace 列表不是字面量。
   const [unsaved] = await eslint.lintText(
     PAGE(
-      `import { Greeting } from "./greeting";
-import { Cart } from "@/features/cart/cart";`,
-      "<Greeting /><Cart />",
+      `import { ClientMessages } from "@/lib/i18n/client-messages";
+import { Greeting } from "./greeting";
+import { Cart } from "@/features/cart/cart";
+const names = ["cart"];`,
+      "<ClientMessages namespaces={names}><Greeting /><Cart /></ClientMessages>",
     ),
     { filePath: join(root, "app/page.tsx") },
   );
-  expect(unsaved.messages).toStrictEqual([]);
+  expect(unsaved.messages.map(({ messageId }) => messageId)).toStrictEqual([
+    "literalList",
+  ]);
   writeFile(root, "features/cart/cart.tsx", CLIENT("Cart", "cart"));
   const [layout] = await eslint.lintText(read(root, "app/layout.tsx"), {
     filePath: join(root, "app/layout.tsx"),

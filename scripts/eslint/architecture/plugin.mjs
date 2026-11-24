@@ -395,9 +395,16 @@ export default function createArchitecturePlugin(projectRoot) {
       .join("/")
       .startsWith("components/ui/");
 
+  const uiLibrary = (name, openSubpaths = []) => ({
+    name,
+    isWrapper: isUiWrapper,
+    messageId: "uiLibrary",
+    openSubpaths,
+  });
+
   // 只能由封装文件引用的包。UI 库是 .claude/rules/libraries.md 里「used through their wrappers」那几个；
   // openSubpaths 是不渲染 UI 的工具，封装之外也能直接用。cn 只经 lib/cn.ts 引入，那里按项目主题合并 class 并处理
-  // 函数式 className。
+  // 函数式 className。派生项目自己封装的 UI 库由规则的 uiLibraries 选项追加，不改这里。
   const wrappedPackages = [
     {
       name: "@tanstack/react-query",
@@ -411,27 +418,34 @@ export default function createArchitecturePlugin(projectRoot) {
       isWrapper: (filename) => cnWrappers.has(filename),
       messageId: "wrapper",
     },
-    ...["@base-ui/react", "sonner", "input-otp"].map((name) => ({
-      name,
-      isWrapper: isUiWrapper,
-      messageId: "uiLibrary",
-      openSubpaths:
-        name === "@base-ui/react"
-          ? [
-              "merge-props",
-              "use-render",
-              "types",
-              "csp-provider",
-              "direction-provider",
-            ]
-          : [],
-    })),
+    uiLibrary("@base-ui/react", [
+      "merge-props",
+      "use-render",
+      "types",
+      "csp-provider",
+      "direction-provider",
+    ]),
+    uiLibrary("sonner"),
+    uiLibrary("input-otp"),
   ];
 
   const wrapperImportsRule = {
     meta: {
       type: "problem",
-      schema: [],
+      schema: [
+        {
+          type: "object",
+          properties: {
+            // 派生项目在 eslint.config.project.mjs 追加的 UI 库，和上面的一样只能由 components/ui/ 引用。
+            uiLibraries: {
+              type: "array",
+              items: { type: "string" },
+              uniqueItems: true,
+            },
+          },
+          additionalProperties: false,
+        },
+      ],
       messages: {
         wrapper:
           "Import from {{wrapper}}. Only that wrapper may access the original package.",
@@ -440,9 +454,11 @@ export default function createArchitecturePlugin(projectRoot) {
       },
     },
     create(context) {
-      const restricted = wrappedPackages.filter(
-        ({ isWrapper }) => !isWrapper(context.filename),
-      );
+      const { uiLibraries = [] } = context.options[0] ?? {};
+      const restricted = [
+        ...wrappedPackages,
+        ...uiLibraries.map((name) => uiLibrary(name)),
+      ].filter(({ isWrapper }) => !isWrapper(context.filename));
       if (!restricted.length) return {};
 
       return importVisitors((source) => {

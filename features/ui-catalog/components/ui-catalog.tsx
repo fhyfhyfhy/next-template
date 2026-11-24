@@ -1,12 +1,16 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
+import {
+  NavigationBusy,
+  NavigationTransition,
+} from "@/components/navigation-transition";
+
 import { catalog, type ComponentId } from "../constants/catalog";
 import type { ExampleSources } from "../types/examples";
 import { ComponentNavigation } from "./component-navigation";
 import { previewsByComponent } from "./component-registry.generated";
 import { ExampleList } from "./example-list";
-import { UiCatalogBusy, UiCatalogNavigation } from "./ui-catalog-navigation";
 
 /** 展示已验证的组件与对应源文件。 */
 export function UiCatalog({
@@ -31,11 +35,11 @@ export function UiCatalog({
         {t("ui-catalog.skipToContent")}
       </a>
       {header}
-      <UiCatalogNavigation>
+      <NavigationTransition>
         <div className="mx-auto grid max-w-[1600px] md:min-h-[calc(100dvh-5rem)] md:grid-cols-[208px_minmax(0,1fr)] lg:grid-cols-[248px_minmax(0,1fr)]">
           <ComponentNavigation />
           <main id="main-content" className="min-w-0 px-5 py-8 sm:px-8 lg:p-12">
-            <UiCatalogBusy>
+            <NavigationBusy>
               <div className="mb-9">
                 <div className="flex items-center gap-3 font-mono text-2xs tracking-[0.16em] text-muted-foreground">
                   <span>{t("ui-catalog.page.eyebrow")}</span>
@@ -60,7 +64,7 @@ export function UiCatalog({
                   sources={sources.examples}
                 />
               </div>
-            </UiCatalogBusy>
+            </NavigationBusy>
             <footer className="mt-12 flex justify-end border-t border-border pt-6 text-muted-foreground">
               <span className="font-mono text-2xs tracking-wide">
                 {t("ui-catalog.page.footer")}
@@ -68,7 +72,7 @@ export function UiCatalog({
             </footer>
           </main>
         </div>
-      </UiCatalogNavigation>
+      </NavigationTransition>
     </>
   );
 }
