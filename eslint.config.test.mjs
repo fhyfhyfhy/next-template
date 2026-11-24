@@ -1889,6 +1889,37 @@ describe("服务端代码不用 fetchApi 或 fetch 请求本 app 自己的接口
       reported: 1,
     },
     {
+      name: "feature 的 server/ 里的模块请求同源路径时报错",
+      file: "features/ui-catalog/server/probe.ts",
+      url: `"/api/tasks"`,
+      reported: 1,
+    },
+    {
+      name: "feature 的 server.ts 入口请求同源路径时报错",
+      file: "features/ui-catalog/server.ts",
+      url: `"/api/tasks"`,
+      reported: 1,
+    },
+    {
+      name: "app/ 以外 import 了 server-only 的模块请求同源路径时报错",
+      file: "lib/probe.ts",
+      directive: `import "server-only";\n\n`,
+      url: `"/api/tasks"`,
+      reported: 1,
+    },
+    {
+      name: "proxy.ts 请求同源路径时报错",
+      file: "proxy.ts",
+      url: `"/api/tasks"`,
+      reported: 1,
+    },
+    {
+      name: "instrumentation.ts 请求同源路径时报错",
+      file: "instrumentation.ts",
+      url: `"/api/tasks"`,
+      reported: 1,
+    },
+    {
       name: "服务端请求其他服务的完整 URL 不报",
       file: "features/ui-catalog/server/probe.ts",
       url: `"https://api.example.com/v1/items"`,
@@ -2469,6 +2500,11 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
     expect(
       await lint(
         `  await page.reload();\n  await page.getByLabel("名称").fill("x");`,
+      ),
+    ).toStrictEqual([2]);
+    expect(
+      await lint(
+        `  await page.goto("/a");\n  await page.getByLabel("封面").setInputFiles("cover.png");`,
       ),
     ).toStrictEqual([2]);
   });

@@ -35,7 +35,9 @@ import {
   ROOT_DIRECTORIES,
   ROOT_LAYERS,
 } from "./scripts/eslint/layers.mjs";
-import securityPlugin from "./scripts/eslint/security-plugin.mjs";
+import securityPlugin, {
+  SECURITY_RULES,
+} from "./scripts/eslint/security-plugin.mjs";
 import { TAILWIND_CLASS_RESTRICTIONS } from "./scripts/eslint/tailwind-classes.mjs";
 import writingStylePlugin from "./scripts/eslint/writing-style-plugin.mjs";
 
@@ -293,7 +295,9 @@ const APPLICATION_CODE = {
 // 配置接在 template 的规则后面、Prettier 之前；没有这个文件时只用 template 的配置。项目的限制写成自己插件里的独立
 // 规则：在那里给文件设置 no-restricted-imports 或 no-restricted-syntax，会整个替换下面给同一批文件设的选项。
 // 追加 Tailwind class 的限制见 scripts/eslint/tailwind-classes.mjs 的 TAILWIND_CLASS_RESTRICTIONS。
-// 应用代码的目录从 scripts/eslint/layers.mjs 取，不要复制：template 升级改了层级表，复制的那份不会跟着变。
+// template 已有的东西从它的模块取，不要复制：template 升级改了那里，复制的那份不会跟着变。应用代码的目录取自
+// scripts/eslint/layers.mjs，给更多文件开的安全规则取自 security-plugin.mjs 的 SECURITY_RULES，判断中日韩文字的
+// 字符集取自 writing-style-plugin.mjs 的 CJK。
 const PROJECT_CONFIG = join(PROJECT_ROOT, "eslint.config.project.mjs");
 const projectConfig = existsSync(PROJECT_CONFIG)
   ? (await import(pathToFileURL(PROJECT_CONFIG).href)).default
@@ -368,11 +372,7 @@ const eslintConfig = defineConfig([
     plugins: { security: securityPlugin },
     rules: {
       "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX],
-      // 页面上的 HTML 只由 React 渲染：dangerouslySetInnerHTML 和 javascript: URL 都会把字符串当代码执行。
-      // 任何组件都查，因为组件可能把这个 prop 传给它渲染的元素；写进对象再展开的由 security/raw-html 查。
-      "react/no-danger": ["error", { customComponentNames: ["*"] }],
-      "security/raw-html": "error",
-      "no-script-url": "error",
+      ...SECURITY_RULES,
     },
   },
   {

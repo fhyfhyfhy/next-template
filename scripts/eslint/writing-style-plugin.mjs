@@ -1,7 +1,10 @@
 // 文件语言的本地规则，规则本身见 .claude/rules/writing-style.md。
 
-// 中日韩文字和全角标点；英文里会用到的 → × “” 这类符号不算。
-const CJK =
+/**
+ * 中日韩文字和全角标点；英文里会用到的 → × “” 这类符号不算。派生项目检查别的文本的语言（比如代码注释）时也用它，
+ * 两边算的是同一批字符。带 g 标志：用 matchAll，不要用 test() 或 exec()，它们会沿用上一次调用的 lastIndex。
+ */
+export const CJK =
   /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}\u3000-\u303f\uff00-\uffef]+/gu;
 
 /**
