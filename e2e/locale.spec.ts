@@ -124,6 +124,17 @@ test("不支持的 locale 前缀返回 404，显示找不到页", async ({ page 
 test.describe("浏览器语言是英文", () => {
   test.use({ locale: "en-US" });
 
+  test("不存在的地址按浏览器语言显示找不到页，返回 404", async ({ page }) => {
+    const response = await page.goto("/no-such-page");
+
+    expect(response?.status()).toBe(404);
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Page not found",
+    );
+    await expect(page).toHaveTitle("Page not found · Next Template");
+  });
+
   test("没选过语言时按浏览器语言显示，不记成选择", async ({
     page,
     context,

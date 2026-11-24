@@ -9,7 +9,8 @@ import { fontVariables } from "./fonts";
 
 import "./globals.css";
 
-// 没有匹配任何路由时渲染。它在根 layout 之外，读不到 `[locale]`，只能用默认 locale。
+// 没有匹配任何路由时渲染。页面路径都由 app/[locale]/[...rest]/page.tsx 接住、按访客的语言显示 404，到这里的只剩
+// 进不了 `[locale]` 的请求，比如不存在的 /api/ 路径。它在根 layout 之外，读不到 `[locale]`，只能用默认 locale。
 const locale = routing.defaultLocale;
 
 export async function generateMetadata(): Promise<Metadata> {
