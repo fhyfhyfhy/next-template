@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { ApiErrorObject } from "./fetch";
 
 /**
@@ -58,6 +60,23 @@ export function badRequest(
   code: number = ErrorCode.BAD_REQUEST,
 ) {
   return new DomainError(400, code, message, details);
+}
+
+/**
+ * 按 `schema` 解析 `value` 的结果；解析不了时用 `badRequest` 拒绝，`param` 写第一个出错的字段（浏览器按它找字段）。
+ * 数据层用它校验参数：Server Action 和 Route Handler 传来的值来自浏览器，不管它们的 TypeScript 类型怎么写。
+ */
+export function parseInput<Schema extends z.ZodType>(
+  schema: Schema,
+  value: unknown,
+): z.output<Schema> {
+  const parsed = schema.safeParse(value);
+  if (parsed.success) return parsed.data;
+  const [issue] = parsed.error.issues;
+  throw badRequest(
+    z.prettifyError(parsed.error),
+    issue.path.length ? { param: issue.path.join(".") } : undefined,
+  );
 }
 
 export function notFound(message: string) {
