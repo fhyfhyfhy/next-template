@@ -1,6 +1,6 @@
 # Framework documentation differences
 
-These notes qualify specific claims in the bundled Next.js 16.4.3 documentation. Read the official guide first and use only the note relevant to the change. Recheck against the installed version on upgrades; remove a note when the official text accurately describes that version. New notes need a concrete conflicting claim and source or reproduction evidence.
+These notes qualify specific claims in the bundled Next.js 16.4.6 documentation. Read the official guide first and use only the note relevant to the change. Recheck against the installed version on upgrades; remove a note when the official text accurately describes that version. New notes need a concrete conflicting claim and source or reproduction evidence.
 
 Doc paths below are relative to `node_modules/next/dist/docs/01-app/`; implementation paths are relative to `node_modules/next/dist/`. These are version-specific observations, not additional framework guarantees.
 
@@ -29,15 +29,3 @@ For ordinary production HTML requests to a PPR App Router route marked `PARTIALL
 **Evidence:** `build/templates/app-page-runtime.js` selects the `render` path with `supportsDynamicResponse` enabled when `shouldForceDynamicPPRRender` is true. `server/app-render/app-render.js`, `renderToStream`, consequently sets `waitForAllReady` to false. `server/app-render/stream-ops.node.js` pipes at shell readiness and waits for all content only when that flag is true. `lib/metadata/metadata.js`, `MetadataBlocker`, waits for metadata. Compare `03-api-reference/05-config/01-next-config-js/htmlLimitedBots.md` for the metadata contract.
 
 **Recheck:** against `next start` and the deployment, request representative URLs with the target user agents. Check metadata placement, initial visible HTML, and deferred content arrival; JavaScript execution alone does not prove indexing. Remove this note when the example's conclusion includes the Cache Components qualification.
-
-## Response status
-
-**Documentation issue:** `02-guides/streaming.md`, “When does streaming start?”, says to place `notFound()` before any `await`, but its own example awaits params and an existence check first.
-
-For page HTML responses, follow `03-api-reference/03-file-conventions/loading.md`, “Status codes,” and `03-api-reference/04-functions/not-found.md`: complete the check before response headers are committed. Account for ancestor `loading.tsx` and Suspense boundaries that can flush while the check waits. For redirects, read `03-api-reference/04-functions/redirect.md`, which distinguishes page responses from Server Actions.
-
-With Partial Prerendering, a dynamic route whose params are not known at build time cannot meet that condition from the page: `next start` sends the prerendered App Shell with status 200 before the page reads its params, and `export const instant = false` does not change this. `notFound()` there streams the not-found UI with a `noindex` tag. For a real 404, 403, or 401 status on such a route, run the check in Proxy, as `loading.md` suggests. The sample product's task detail accepts the streamed not-found ([`app/[locale]/(tasks)/tasks/[id]/page.tsx`](https://github.com/fhyfhyfhy/next-template/blob/main/app/%5Blocale%5D/%28tasks%29/tasks/%5Bid%5D/page.tsx)).
-
-**Evidence:** on 16.4.3, `next start` answered the sample product's task detail for a task that did not exist, `/tasks/task-404`, with `200`, `x-nextjs-prerender: 1`, and `x-nextjs-postponed: 1`, both with the existence check at the top of the page under `instant = false` and inside `params.then` under Suspense; the body carried the route's `not-found.tsx` and `<meta name="robots" content="noindex">`.
-
-**Recheck:** verify the HTTP status against `next start`, including routes beneath ancestor loading boundaries and dynamic routes with unknown params. Remove this note when the streaming guide states the response-commitment constraint accurately.

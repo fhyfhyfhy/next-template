@@ -64,7 +64,7 @@ Choose how the server reads a server-owned read, and the server prefetch of a qu
 
 Show what the first view needs first. Render everything that waits for no read at once, await only the reads the first view needs, and stream the rest behind their own boundaries, a query-owned read as an unawaited prefetch. Start independent reads together, each in its own component or all before the first `await`: awaiting one before starting the next runs them in sequence.
 
-Place each `<Suspense>` close to the read it waits for, with a fallback the size of the finished content. A boundary high in the tree, such as a route's `loading.tsx`, satisfies Cache Components' build check but replaces the whole page with one skeleton. A missing record that must answer 404 is checked before any boundary ([Response status](framework-notes.md#response-status)).
+Place each `<Suspense>` close to the read it waits for, with a fallback the size of the finished content. A boundary high in the tree, such as a route's `loading.tsx`, satisfies Cache Components' build check but replaces the whole page with one skeleton. A missing record that must answer 404 at request time is checked in Proxy: with Cache Components, a check in the page runs after the shell has started a `200` response, and its `notFound()` streams the not-found UI with `noindex` (response status under [Framework guidance](#framework-guidance)).
 
 ## Refreshes
 
@@ -91,7 +91,7 @@ Read the relevant installed documentation before implementing framework behavior
 | Caching data that depends on the session | `02-guides/authentication-with-cache-components.md` |
 | Synchronous dynamic reads or execution that must wait for a real request | `03-api-reference/04-functions/io.md`, `03-api-reference/04-functions/connection.md` |
 | App Shell versus per-link prefetch versus navigation, including `prefetch()` and `navigation()` | `02-guides/optimizing-prefetching.md` |
-| Metadata, streamed content, response status, or crawler delivery | `02-guides/streaming.md`, `03-api-reference/04-functions/generate-metadata.md`; also read the [crawler](framework-notes.md#crawler-delivery) and [status](framework-notes.md#response-status) corrections when applicable |
+| Metadata, streamed content, response status, or crawler delivery | `02-guides/streaming.md`, `03-api-reference/03-file-conventions/loading.md` (Status codes), `03-api-reference/04-functions/generate-metadata.md`; also read the [crawler correction](framework-notes.md#crawler-delivery) when applicable |
 
 These guides own framework mechanisms. Keep local additions limited to project contracts or [verified documentation differences](framework-notes.md), with version and evidence. Re-check those differences when upgrading; remove a note once the installed guidance covers it accurately.
 
