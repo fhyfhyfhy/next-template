@@ -52,6 +52,50 @@ function isSameOriginPath(node) {
   return false;
 }
 
+/** 去掉 `as const`、`satisfies` 这类只影响类型的包装。 */
+function unwrapTypeOnly(node) {
+  let current = node;
+  while (
+    current.type === "TSAsExpression" ||
+    current.type === "TSSatisfiesExpression"
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
+/** 参数是同一作用域链里的 const 时，取它的初始值；其余情况原样返回。 */
+function resolveConst(node, context) {
+  const value = unwrapTypeOnly(node);
+  if (value.type !== "Identifier") return value;
+  for (
+    let scope = context.sourceCode.getScope(node);
+    scope;
+    scope = scope.upper
+  ) {
+    const variable = scope.set.get(value.name);
+    if (!variable) continue;
+    const [definition] = variable.defs;
+    return definition?.type === "Variable" &&
+      definition.parent.kind === "const" &&
+      definition.node.init
+      ? unwrapTypeOnly(definition.node.init)
+      : value;
+  }
+  return value;
+}
+
+/** 以 / 开头、没经 BASE_PATH 拼接的同源路径；// 开头的协议相对 URL 指向别的域名，不算。 */
+function isBarePath(node) {
+  const start =
+    node.type === "Literal" && typeof node.value === "string"
+      ? node.value
+      : node.type === "TemplateLiteral"
+        ? node.quasis[0].value.cooked
+        : null;
+  return start !== null && start.startsWith("/") && !start.startsWith("//");
+}
+
 const SOURCE_FILE = "[cm]?[jt]sx?$";
 const ACTION_MODULE = new RegExp(
   `^features/[^/]+/api/[^/]+-action\\.${SOURCE_FILE}`,
@@ -115,6 +159,41 @@ export default function createDataFlowPlugin(projectRoot) {
           );
           if (url && isSameOriginPath(url.value)) {
             context.report({ node: url.value, messageId: "selfFetch" });
+          }
+        },
+      };
+    },
+  };
+
+  // 浏览器里的裸 fetch 不经 fetchApi，同源路径要自己拼上 BASE_PATH（.claude/rules/data-flow.md 的 Transport）。
+  // 参数写成字面量、模板字符串，或者同一作用域链里这样初始化的 const 时能查到；经函数参数传进来的查不到。
+  const rawFetchBasePathRule = {
+    meta: {
+      type: "problem",
+      schema: [],
+      messages: {
+        missingBasePath:
+          "Start the app's own path with BASE_PATH from lib/base-path.ts, as in `${BASE_PATH}/api/...`: a raw fetch doesn't add it the way fetchApi does. See Transport in .claude/rules/data-flow.md.",
+      },
+    },
+    create(context) {
+      const path = relative(projectRoot, context.filename).split(sep).join("/");
+      let serverFile = false;
+      return {
+        Program(node) {
+          serverFile = isServerFile(path, node);
+        },
+        CallExpression(node) {
+          if (serverFile) return;
+          if (
+            node.callee.type !== "Identifier" ||
+            node.callee.name !== "fetch"
+          ) {
+            return;
+          }
+          const [input] = node.arguments;
+          if (input && isBarePath(resolveConst(input, context))) {
+            context.report({ node: input, messageId: "missingBasePath" });
           }
         },
       };
@@ -244,6 +323,7 @@ export default function createDataFlowPlugin(projectRoot) {
   return {
     rules: {
       "no-server-self-fetch": noServerSelfFetchRule,
+      "raw-fetch-base-path": rawFetchBasePathRule,
       "server-only": serverOnlyRule,
       "action-module": actionModuleRule,
       "search-params-imports": searchParamsImportsRule,

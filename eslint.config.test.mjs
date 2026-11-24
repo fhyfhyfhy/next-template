@@ -1786,6 +1786,70 @@ export async function probe(id: string) {
   }
 });
 
+describe("浏览器里的裸 fetch 请求本 app 的路径时以 BASE_PATH 开头", () => {
+  const eslint = new ESLint({
+    cwd: project,
+    overrideConfig: { rules: { "import/no-cycle": "off" } },
+  });
+  for (const {
+    name,
+    file = "features/ui-catalog/api/get-probe.ts",
+    body,
+    reported,
+  } of [
+    {
+      name: "字面量的同源路径报错",
+      body: `return fetch("/api/tasks");`,
+      reported: 1,
+    },
+    {
+      name: "模板字符串的同源路径报错",
+      body: "return fetch(`/api/tasks/${id}`);",
+      reported: 1,
+    },
+    {
+      name: "先存进 const 再传给 fetch 的同源路径也报错",
+      body: "const url = `/api/tasks/${id}/logs` as const;\n  return fetch(url);",
+      reported: 1,
+    },
+    {
+      name: "以 BASE_PATH 开头的路径不报",
+      body: "const url = `${BASE_PATH}/api/tasks/${id}/logs` as const;\n  return fetch(url);",
+      reported: 0,
+    },
+    {
+      name: "其他服务的完整 URL 和协议相对 URL 不报",
+      body: `await fetch("https://api.example.com/v1/items");\n  return fetch("//cdn.example.com/a.glb");`,
+      reported: 0,
+    },
+    {
+      name: "服务端文件交给 no-server-self-fetch，这条不报",
+      file: "features/ui-catalog/server/probe.ts",
+      body: `return fetch("/api/tasks");`,
+      reported: 0,
+    },
+  ]) {
+    test(name, async () => {
+      const source = `import { BASE_PATH } from "@/lib/base-path";
+
+export async function probe(id: string) {
+  void BASE_PATH;
+  ${body}
+}
+`;
+      const [result] = await eslint.lintText(source, {
+        filePath: join(project, file),
+      });
+      expect(
+        result.messages.filter(
+          ({ ruleId }) => ruleId === "data-flow/raw-fetch-base-path",
+        ),
+        JSON.stringify(result.messages, null, 2),
+      ).toHaveLength(reported);
+    });
+  }
+});
+
 describe("数据的文件约定", () => {
   const eslint = new ESLint({ cwd: project });
   const action = "export async function probeAction() {}\n";

@@ -1,3 +1,4 @@
+import { BASE_PATH } from "@/lib/base-path";
 import { ApiError } from "@/lib/request/fetch";
 
 /**
@@ -6,7 +7,7 @@ import { ApiError } from "@/lib/request/fetch";
  * 成功的响应是二进制，所以 2xx 上的 JSON 只可能是 error 对象。
  */
 export async function getTaskModel(taskId: string): Promise<Blob> {
-  const url = `/api/tasks/${taskId}/model` as const;
+  const url = `${BASE_PATH}/api/tasks/${taskId}/model` as const;
   const response = await fetch(url);
   if (!response.ok || isJson(response)) {
     const text = await response.text();
