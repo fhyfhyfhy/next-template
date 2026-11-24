@@ -19,7 +19,7 @@ UI libraries, used through their wrappers in `components/ui/` ([Wrap a UI librar
 - Toasts: `sonner`
 - OTP inputs: `input-otp`
 
-ESLint enforces this list through `wrappedPackages` in `scripts/eslint/architecture/plugin.mjs`: when the template wraps another UI library, change both together. A project made from the template adds a UI library it wraps itself through the `uiLibraries` option of `architecture/wrapper-imports` in its `eslint.config.project.mjs`, leaving `plugin.mjs` as it is.
+ESLint enforces this list through `wrappedPackages` in `scripts/eslint/architecture/plugin.mjs`; when you wrap another UI library, change both together.
 
 Used directly:
 
