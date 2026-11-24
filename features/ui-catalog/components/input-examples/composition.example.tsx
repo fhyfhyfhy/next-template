@@ -13,7 +13,7 @@ import { useHydrated } from "@/hooks/use-hydrated";
 
 export const metadata = {
   title: "受控输入与校验",
-  description: "输入一至两个字，查看关联的错误提示。",
+  description: "输入 1 到 2 个字，查看关联的错误提示。",
   order: 20,
 };
 

@@ -36,7 +36,7 @@ export function ExampleCard({
           size="icon-sm"
           aria-label={t("ui-catalog.examples.code", { title })}
           aria-expanded={showCode}
-          className="aria-expanded:bg-accent aria-expanded:text-accent-foreground"
+          className="aria-expanded:bg-accent"
           onClick={() => setShowCode(!showCode)}
         >
           <IconCode aria-hidden />

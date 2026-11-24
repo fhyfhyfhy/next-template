@@ -1447,8 +1447,9 @@ describe("架构依赖和 feature、组件导入约定", () => {
     // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
     // 组件入口的 namespace 用例会默认导出，import/no-default-export 由下方「组件写成具名的 function 声明」验证。
     // fixture 没有 docs/features.md，feature 依赖图由 scripts/eslint/architecture/feature-dependencies.test.mjs 验证。
-    // fixture 里 components/ui/ 的文件没有 UI catalog 示例目录，两者的对应由下方「components/ui/ 的组件和 UI catalog
-    // 的示例目录一一对应」验证。
+    // fixture 里 components/ui/ 的文件没有 UI catalog 示例目录：规则本身由
+    // scripts/eslint/architecture/catalog-examples.test.mjs 验证，项目配置开着它由下方「components/ui/ 的组件和
+    // UI catalog 的示例目录一一对应」验证。
     // fixture 的 server/ 和 -action 文件只为验证依赖方向，不写 import "server-only" 和 "use server"；这两条规则由
     // 下方独立用例验证。
     eslint = new ESLint({
@@ -2200,7 +2201,7 @@ export default [
   });
 });
 
-// 下面按规则分组的用例共用这一个实例，用项目自己的配置 lint 源码片段。
+// 用项目自己的配置 lint 源码片段；经 messagesFor 的用例共用这一个实例。
 const projectLinter = new ESLint({ cwd: project });
 
 /**

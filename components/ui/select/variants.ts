@@ -35,8 +35,10 @@ export const selectPopupVariants = cva(
   },
 );
 
+// 强制颜色模式去掉 bg-accent 时，data-highlighted:outline-hidden 改由一圈系统色的 outline 标出高亮项，平时不画
+// （见 app/globals.css 的 focus-ring）；负 offset 把它画在项内侧，不被会滚动的弹层裁掉。
 export const selectItemVariants = cva(
-  "relative flex cursor-default items-center gap-2 rounded-control wrap-anywhere outline-none data-disabled:opacity-40 data-highlighted:bg-accent data-highlighted:text-accent-foreground",
+  "relative flex cursor-default items-center gap-2 rounded-control wrap-anywhere outline-none data-disabled:opacity-40 data-highlighted:bg-accent data-highlighted:text-accent-foreground data-highlighted:outline-hidden data-highlighted:-outline-offset-2",
   {
     variants: {
       size: {

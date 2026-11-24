@@ -45,7 +45,7 @@ export function Playground({
           variant="ghost"
           size="sm"
           aria-expanded={showCode}
-          className="aria-expanded:bg-accent aria-expanded:text-accent-foreground"
+          className="aria-expanded:bg-accent"
           onClick={() => setShowCode(!showCode)}
         >
           <IconCode aria-hidden />

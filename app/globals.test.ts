@@ -48,6 +48,21 @@ function contrast(a: string, b: string) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+interface ColorPair {
+  label: string;
+  text: string;
+  background: string;
+}
+
+/** 断言每组文字色和背景的对比度都达到 WCAG 正文的 4.5:1；先收集再断言，一次报出所有不达标的组。 */
+function expectReadable(pairs: ColorPair[]) {
+  const failures = pairs.flatMap(({ label, text, background }) => {
+    const ratio = contrast(text, background);
+    return ratio >= 4.5 ? [] : [`${label} ${ratio.toFixed(2)}:1`];
+  });
+  expect(failures).toStrictEqual([]);
+}
+
 // [文字色, 它所在的背景色]：每个 foreground 和配对的背景，加上直接写在 background、card、muted 上的次要文字和
 // 错误文字，以及写在 background、card 上的 primary 文字（链接、任务名悬停）。背景叠了半透明颜色的搭配在
 // BLENDED_PAIRS 里。组件里新出现一种文字色和背景的搭配时，在这里或 BLENDED_PAIRS 里加一项。
@@ -73,16 +88,13 @@ const PAIRS = [
 test.each(Object.entries(THEMES))(
   "%s 主题里文字色和所在背景的对比度达到 WCAG 正文的 4.5:1",
   (_, tokens) => {
-    const failures = PAIRS.flatMap(([text, background]) => {
-      const ratio = contrast(
-        hexColor(tokens, text),
-        hexColor(tokens, background),
-      );
-      return ratio >= 4.5
-        ? []
-        : [`${text} 在 ${background} 上 ${ratio.toFixed(2)}:1`];
-    });
-    expect(failures).toStrictEqual([]);
+    expectReadable(
+      PAIRS.map(([text, background]) => ({
+        label: `${text} 在 ${background} 上`,
+        text: hexColor(tokens, text),
+        background: hexColor(tokens, background),
+      })),
+    );
   },
 );
 
@@ -108,19 +120,16 @@ const BLENDED_PAIRS = [
 test.each(Object.entries(THEMES))(
   "%s 主题里叠了半透明背景的文字，对比度也达到 4.5:1",
   (_, tokens) => {
-    const failures = BLENDED_PAIRS.flatMap(([text, overlay, alpha, base]) => {
-      const background = blend(
-        hexColor(tokens, overlay),
-        alpha,
-        hexColor(tokens, base),
-      );
-      const ratio = contrast(hexColor(tokens, text), background);
-      return ratio >= 4.5
-        ? []
-        : [
-            `${text} 在 ${base} 叠 ${overlay}/${alpha * 100} 上 ${ratio.toFixed(2)}:1`,
-          ];
-    });
-    expect(failures).toStrictEqual([]);
+    expectReadable(
+      BLENDED_PAIRS.map(([text, overlay, alpha, base]) => ({
+        label: `${text} 在 ${base} 叠 ${overlay}/${alpha * 100} 上`,
+        text: hexColor(tokens, text),
+        background: blend(
+          hexColor(tokens, overlay),
+          alpha,
+          hexColor(tokens, base),
+        ),
+      })),
+    );
   },
 );

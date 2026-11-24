@@ -3,6 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 import {
   clickForClientNavigation,
   expectNativelyDisabled,
+  expectTextContrast,
   holdRequests,
   isNavigation,
   openWithoutScripts,
@@ -67,16 +68,19 @@ function exampleCard(page: Page, title: string) {
   });
 }
 
-/** 展开 playground 的源码。按钮的名称固定为“代码”，展开与否由 aria-expanded 表示。 */
-async function openPlaygroundSource(page: Page) {
-  const toggle = playground(page).getByRole("button", {
-    name: "代码",
-    exact: true,
-  });
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+/** playground 展开源码的按钮。名称固定为“代码”，展开与否由 aria-expanded 表示。 */
+function playgroundCodeToggle(page: Page) {
+  return playground(page).getByRole("button", { name: "代码", exact: true });
+}
+
+function playgroundSource(page: Page) {
   return playground(page).getByRole("region", { name: "playground.tsx 源码" });
+}
+
+/** 展开 playground 的源码并返回它。 */
+async function openPlaygroundSource(page: Page) {
+  await playgroundCodeToggle(page).click();
+  return playgroundSource(page);
 }
 
 /** 在 Select 弹出的选项里选一项；弹层渲染在 body 下，不在 trigger 所在的区域里。 */
@@ -120,6 +124,26 @@ test("每个组件页都能渲染并 hydrate，不报错", async ({ page }) => {
   }
   expect(errors).toStrictEqual([]);
 });
+
+for (const { colorScheme, theme } of [
+  { colorScheme: "light", theme: "浅色" },
+  { colorScheme: "dark", theme: "深色" },
+] as const) {
+  test(`${theme}主题里，组件目录当前项的文字和它叠出来的背景对比度不低于 4.5:1`, async ({
+    page,
+  }) => {
+    // 主题默认跟随系统。
+    await page.emulateMedia({ colorScheme });
+    await openUiCatalog(page, "/ui?component=button");
+    const current = navigation(page).getByRole("link", {
+      name: "Button",
+      exact: true,
+    });
+    await expect(current).toHaveAttribute("aria-current", "page");
+
+    await expectTextContrast(current);
+  });
+}
 
 test("换组件后立即高亮新的一项，新示例到达前旧示例标记为更新中", async ({
   page,
@@ -201,6 +225,19 @@ test("重置也让可调预览自己保存的状态回到初始值", async ({ pa
   await resetButton(page).click();
 
   await expect(playground(page).getByText("已触发 0 次")).toBeVisible();
+});
+
+test("playground 的源码可以展开查看，代码按钮的名称不变，由 aria-expanded 表示展开", async ({
+  page,
+}) => {
+  await openComponent(page, "switch", "Switch");
+  const toggle = playgroundCodeToggle(page);
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+  await toggle.click();
+
+  await expect(playgroundSource(page)).toContainText('"label": "自动保存"');
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
 });
 
 test("示例的源码可以展开查看，按钮的名称不变，由 aria-expanded 表示展开", async ({
@@ -291,21 +328,19 @@ test.describe("复制源码", () => {
 
     await copyButton(page).click();
 
-    await expect(copyStatus(page)).toHaveText("复制失败，请手动选中代码复制");
+    await expect(copyStatus(page)).toHaveText("复制失败，请手动选中代码后复制");
     await expect(copyButton(page)).toBeVisible();
   });
 
-  test("复制失败的提示不随按钮复原的计时消失，保留到下一次复制", async ({
-    page,
-  }) => {
+  test("复制失败的提示不随按钮复原的计时消失", async ({ page }) => {
     await refuseClipboardWrites(page, 1);
     await openSwitchSource(page);
     await copyButton(page).click();
-    await expect(copyStatus(page)).toHaveText("复制失败，请手动选中代码复制");
+    await expect(copyStatus(page)).toHaveText("复制失败，请手动选中代码后复制");
 
     await page.clock.fastForward(3000);
 
-    await expect(copyStatus(page)).toHaveText("复制失败，请手动选中代码复制");
+    await expect(copyStatus(page)).toHaveText("复制失败，请手动选中代码后复制");
   });
 
   for (const { browser, setUp } of [
@@ -323,7 +358,7 @@ test.describe("复制源码", () => {
       await openSwitchSource(page);
       const status = copyStatus(page);
       await copyButton(page).click();
-      await expect(status).toHaveText("复制失败，请手动选中代码复制");
+      await expect(status).toHaveText("复制失败，请手动选中代码后复制");
       await status.evaluate((element) => {
         const texts: string[] = [];
         Object.assign(globalThis, { statusTexts: texts });
@@ -338,7 +373,7 @@ test.describe("复制源码", () => {
       // 文字从无到有，读屏才会重新播报。
       await expect
         .poll(() => page.evaluate(() => Reflect.get(globalThis, "statusTexts")))
-        .toStrictEqual(["", "复制失败，请手动选中代码复制"]);
+        .toStrictEqual(["", "复制失败，请手动选中代码后复制"]);
     });
   }
 
@@ -346,7 +381,7 @@ test.describe("复制源码", () => {
     await refuseClipboardWrites(page, 1);
     await openSwitchSource(page);
     await copyButton(page).click();
-    await expect(copyStatus(page)).toHaveText("复制失败，请手动选中代码复制");
+    await expect(copyStatus(page)).toHaveText("复制失败，请手动选中代码后复制");
 
     await copyButton(page).click();
 
@@ -417,7 +452,20 @@ test("进度未知时指示条播放滑动动画", async ({ page }) => {
     "[data-slot=progress-indicator]",
   );
 
-  await expect(indicator).toHaveCSS("animation-name", "progress-indeterminate");
+  // 切换时宽度的过渡也算一个 running 的动画，只认一直循环的那个。
+  await expect
+    .poll(() =>
+      indicator.evaluate((element) =>
+        element
+          .getAnimations()
+          .some(
+            (animation) =>
+              animation.playState === "running" &&
+              animation.effect?.getTiming().iterations === Infinity,
+          ),
+      ),
+    )
+    .toBe(true);
   await expect(indicator).not.toHaveCSS("animation-duration", "0s");
 });
 
@@ -435,7 +483,7 @@ test("减少动效时，进度未知的指示条静止在轨道中间，不贴�
     "0s",
   );
 
-  // 指示条的宽度由另一个用例量（三分之一），这里比较它左右两边到轨道的距离。
+  // 指示条的宽度由“进度未知时指示条只占轨道的三分之一，不是满条”量，这里比较它左右两边到轨道的距离。
   await expect
     .poll(async () => {
       const track = await box("progress-track");
@@ -533,47 +581,93 @@ test("hydration 之前 Input 页的受控输入框不可用", async ({ page }) =
   await htmlPage.close();
 });
 
-test("Form 提交失败时焦点移到第一个无效字段，第一次提交也一样", async ({
-  page,
-}) => {
+/** 打开 Form 页，等“聚焦第一个无效字段”示例 hydrate：它的提交按钮在 hydration 之后才可用。 */
+async function openFirstInvalidExample(page: Page) {
   await openUiCatalog(page, "/ui?component=form");
   const form = exampleCard(page, "聚焦第一个无效字段");
-  const email = form.getByRole("textbox", { name: "邮箱", exact: true });
   const submit = form.getByRole("button", { name: "提交", exact: true });
-  // 提交按钮在这个表单 hydrate 之后才可用。
   await expect(submit).toBeEnabled();
+  return {
+    form,
+    team: form.getByRole("combobox", { name: "团队", exact: true }),
+    email: form.getByRole("textbox", { name: "邮箱", exact: true }),
+    submit,
+  };
+}
 
-  // 第一次提交时字段还没校验过，Form 放行，TanStack Form 校验后才有无效字段。焦点越过填好的名称，
-  // 落在第一个无效字段“邮箱”上，不留在按钮上。
+test("Form 提交失败时焦点移到第一个无效字段可见的控件上，第一次提交也一样", async ({
+  page,
+}) => {
+  const { form, team, submit } = await openFirstInvalidExample(page);
+
+  // 第一次提交时字段还没校验过，Form 放行，TanStack Form 校验后才有无效字段。焦点越过填好的名称，落在第一个
+  // 无效字段“团队”可见的触发器上：留在按钮、落到 Select 给原生提交渲染的隐藏 input（带 aria-hidden，不算
+  // combobox）或后面同样无效的邮箱上，这里都不通过。
   await submit.click();
-  await expect(email).toBeFocused();
+  await expect(team).toBeFocused();
 
   // 字段已经无效时，Form 在调用 onSubmit 之前拦下提交，同样聚焦。
   await form.getByRole("textbox", { name: "名称", exact: true }).click();
   await submit.click();
-  await expect(email).toBeFocused();
+  await expect(team).toBeFocused();
 });
 
 test("Form 示例显示自己写的错误文案，提交成功后地址不变", async ({ page }) => {
-  await openUiCatalog(page, "/ui?component=form");
-  const form = exampleCard(page, "聚焦第一个无效字段");
-  const email = form.getByRole("textbox", { name: "邮箱", exact: true });
-  const submit = form.getByRole("button", { name: "提交", exact: true });
-  await expect(submit).toBeEnabled();
+  const { form, team, email, submit } = await openFirstInvalidExample(page);
 
   await submit.click();
+  await expect(form.getByText("请选择团队", { exact: true })).toBeVisible();
   await expect(form.getByText("请输入邮箱", { exact: true })).toBeVisible();
-  await expect(form.getByText("请输入团队", { exact: true })).toBeVisible();
   // 提交过一次以后，每次改动都重新校验。
   await email.fill("abc");
   await expect(form.getByText("邮箱格式不正确", { exact: true })).toBeVisible();
   await email.fill("someone@example.com");
-  await form.getByRole("textbox", { name: "团队", exact: true }).fill("设计组");
+  await chooseOption(page, team, "设计组");
   await submit.click();
 
   await expect(form.getByRole("status")).toHaveText("已提交");
   await expect(page).toHaveURL("/ui?component=form");
 });
+
+test("Form 示例提交成功后，再次提交被拦下时状态行清空", async ({ page }) => {
+  const { form, team, email, submit } = await openFirstInvalidExample(page);
+  await chooseOption(page, team, "设计组");
+  await email.fill("someone@example.com");
+  await submit.click();
+  await expect(form.getByRole("status")).toHaveText("已提交");
+  await email.fill("abc");
+  await expect(form.getByText("邮箱格式不正确", { exact: true })).toBeVisible();
+
+  await submit.click();
+
+  await expect(form.getByRole("status")).toHaveText("");
+});
+
+for (const { component, title, scope } of [
+  {
+    component: "form",
+    title: "Form 的“聚焦第一个无效字段”示例",
+    scope: (page: Page) => exampleCard(page, "聚焦第一个无效字段"),
+  },
+  { component: "form", title: "Form playground ", scope: playground },
+  {
+    component: "field",
+    title: "Field 的“配合 TanStack Form”示例",
+    scope: (page: Page) => exampleCard(page, "配合 TanStack Form"),
+  },
+  {
+    component: "field",
+    title: "Field 的“服务端返回的字段错误”示例",
+    scope: (page: Page) => exampleCard(page, "服务端返回的字段错误"),
+  },
+]) {
+  test(`${title}的状态行在提交之前就挂着，内容为空`, async ({ page }) => {
+    await openUiCatalog(page, `/ui?component=${component}`);
+
+    // 和文字一起挂载的 role="status" 读屏可能不播报，所以它在提交之前就要在。
+    await expect(scope(page).getByRole("status")).toHaveText("");
+  });
+}
 
 test("Form playground 显示自己写的错误文案，mode 决定第一次提交之前什么时候校验", async ({
   page,

@@ -44,7 +44,6 @@ export function Example() {
     onSubmit: async ({ value, formApi }) => {
       const result = await save(value.name);
       if (!result.ok) {
-        setSaved(null);
         if (result.code === "NAME_TAKEN") {
           // 记在 onSubmit 下：改动后重新校验通过时，TanStack Form 会清掉它。
           formApi.setErrorMap({
@@ -61,6 +60,9 @@ export function Example() {
   return (
     <Form
       className="w-full max-w-xs space-y-3"
+      // 在 Base UI 校验之前清空状态行：提交被拦下或服务端拒绝时，上一次的“已保存”不留在错误旁边；
+      // 保存成功后文字从无到有，每次成功读屏都会播报。
+      onSubmitCapture={() => setSaved(null)}
       onSubmit={(event) => {
         event.preventDefault();
         return form.handleSubmit();
@@ -87,21 +89,23 @@ export function Example() {
           </FieldRoot>
         )}
       </form.Field>
-      <form.Subscribe selector={(state) => state.isSubmitting}>
-        {(isSubmitting) => (
-          <Button
-            type="submit"
-            disabled={!hydrated || isSubmitting}
-            focusableWhenDisabled={hydrated}
-          >
-            {isSubmitting ? "保存中…" : "保存"}
-          </Button>
-        )}
-      </form.Subscribe>
-      {/* 状态行一直挂着、只换文字：和文字一起挂载的 role="status" 读屏可能不播报。 */}
-      <p role="status" className="text-sm text-muted-foreground">
-        {saved && `已保存：${saved}`}
-      </p>
+      <div className="flex items-center gap-3">
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button
+              type="submit"
+              disabled={!hydrated || isSubmitting}
+              focusableWhenDisabled={hydrated}
+            >
+              {isSubmitting ? "保存中…" : "保存"}
+            </Button>
+          )}
+        </form.Subscribe>
+        {/* 状态行一直挂着、只换文字：和文字一起挂载的 role="status" 读屏可能不播报。 */}
+        <p role="status" className="text-sm text-muted-foreground">
+          {saved && `已保存：${saved}`}
+        </p>
+      </div>
     </Form>
   );
 }

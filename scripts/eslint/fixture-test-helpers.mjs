@@ -2,8 +2,6 @@ import nextTs from "eslint-config-next/typescript";
 
 import { tempDir } from "../temp-dir-test-helpers.mjs";
 
-export { writeFile } from "../temp-dir-test-helpers.mjs";
-
 /** Next 的 ESLint 配置用的 TypeScript parser，给用自己的配置 lint 的测试用。 */
 export const { parser } = nextTs.find(
   (config) => config.languageOptions?.parser,

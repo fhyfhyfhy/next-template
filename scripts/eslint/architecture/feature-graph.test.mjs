@@ -2,7 +2,8 @@ import { utimesSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
 
-import { fixture, writeFile } from "../fixture-test-helpers.mjs";
+import { writeFile } from "../../temp-dir-test-helpers.mjs";
+import { fixture } from "../fixture-test-helpers.mjs";
 import {
   createFeatureGraphLoader,
   parseFeatureGraph,

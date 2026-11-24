@@ -2,11 +2,14 @@
 
 import { useTranslations } from "next-intl";
 
-import type { QueryLoadState } from "../utils/query-load-state";
+import {
+  isQueryRetrying,
+  type QueryLoadState,
+} from "../utils/query-load-state";
 import { LoadFailedAlert } from "./load-failed-alert";
 
 interface QueryLoadFailedProps {
-  /** 加载失败的 query：重试调它的 `refetch`，`fetchStatus` 不为 idle（请求中或暂停着，见 `isQueryLoadFailed`）算重试进行中。 */
+  /** 加载失败的 query：重试调它的 `refetch`，`isQueryRetrying` 期间按钮停用。 */
   query: QueryLoadState & { refetch: () => Promise<unknown> };
   /** 重试按钮的可访问名称，整句，比如“重试加载我的收藏”（见 `LoadFailedAlert`）。 */
   retryLabel: string;
@@ -22,7 +25,7 @@ export function QueryLoadFailed({ query, retryLabel }: QueryLoadFailedProps) {
     <LoadFailedAlert
       message={t("task.queryState.loadFailed")}
       retryLabel={retryLabel}
-      retrying={query.fetchStatus !== "idle"}
+      retrying={isQueryRetrying(query)}
       onRetry={() => void query.refetch()}
     />
   );

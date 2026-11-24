@@ -28,7 +28,7 @@ Next.js 模板。
 由 Rule、Lint、测试、Review 和 Skill 约束。
 
 - Rule：[components.md](.claude/rules/components.md)、[design-system.md](.claude/rules/design-system.md)、[react.md](.claude/rules/react.md)、[ui-catalog.md](.claude/rules/ui-catalog.md)、[libraries.md](.claude/rules/libraries.md)
-- Lint：[eslint.config.mjs](eslint.config.mjs) 的 UI 部分，[scripts/eslint/tailwind-classes.mjs](scripts/eslint/tailwind-classes.mjs)；组件目录、UI 库封装和 `architecture/catalog-examples`（每个 `components/ui` 组件都有 catalog 示例）的检查在架构部分
+- Lint：[eslint.config.mjs](eslint.config.mjs) 的 UI 部分，[scripts/eslint/tailwind-classes.mjs](scripts/eslint/tailwind-classes.mjs)；组件目录、UI 库封装和 `architecture/catalog-examples`（`components/ui` 的组件和 catalog 示例目录一一对应）的检查在架构部分
 - 测试：[lib/cn.test.mjs](lib/cn.test.mjs)、[app/globals.test.ts](app/globals.test.ts)、[scripts/ui-catalog/index-generator.test.mjs](scripts/ui-catalog/index-generator.test.mjs)、[scripts/ui-catalog/index-freshness.test.mjs](scripts/ui-catalog/index-freshness.test.mjs)、[features/ui-catalog/utils/example-source.test.mjs](features/ui-catalog/utils/example-source.test.mjs)、[e2e/ui-catalog.spec.ts](e2e/ui-catalog.spec.ts)
 - Skill
   - 组件：[vercel-composition-patterns](.agents/skills/vercel-composition-patterns/SKILL.md)

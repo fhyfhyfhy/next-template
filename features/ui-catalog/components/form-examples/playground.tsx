@@ -41,6 +41,9 @@ export function FormPlayground({
   return (
     <Form
       className="w-full max-w-xs space-y-3"
+      // 在 Base UI 校验之前清空状态行：字段已经无效、提交被拦下时，上一次的“已提交”不留在错误旁边；
+      // 成功后文字从无到有，每次成功读屏都会播报。
+      onSubmitCapture={() => setSubmitted(null)}
       onSubmit={(event) => {
         event.preventDefault();
         return form.handleSubmit();
@@ -68,13 +71,15 @@ export function FormPlayground({
           </FieldRoot>
         )}
       </form.Field>
-      <Button type="submit" disabled={!hydrated}>
-        提交
-      </Button>
-      {/* 状态行一直挂着、只换文字：和文字一起挂载的 role="status" 读屏可能不播报。 */}
-      <p role="status" className="text-sm text-muted-foreground">
-        {submitted && `已提交：${submitted}`}
-      </p>
+      <div className="flex items-center gap-3">
+        <Button type="submit" disabled={!hydrated}>
+          提交
+        </Button>
+        {/* 状态行一直挂着、只换文字：和文字一起挂载的 role="status" 读屏可能不播报。 */}
+        <p role="status" className="text-sm text-muted-foreground">
+          {submitted && `已提交：${submitted}`}
+        </p>
+      </div>
     </Form>
   );
 }

@@ -1,10 +1,11 @@
 import { instant } from "@next/playwright";
 import type { Page } from "@playwright/test";
 
-import { failQueriesWaitingFor, holdTable, unique } from "./backend";
+import { failServerRead, unique } from "./backend";
 import {
   delayRequests,
   expectNativelyDisabled,
+  expectTextContrast,
   failRequests,
   holdRequests,
   isNavigation,
@@ -60,6 +61,27 @@ test("整页打开时 header 标出当前页，详情页上“全部任务”标
   await expect(link("作品广场")).toHaveAttribute("aria-current", "page");
   await expect(link("全部任务")).not.toHaveAttribute("aria-current");
 });
+
+for (const { colorScheme, label } of [
+  { colorScheme: "light", label: "浅色主题" },
+  { colorScheme: "dark", label: "深色主题" },
+] as const) {
+  test.describe(label, () => {
+    test.use({ colorScheme });
+
+    test("header 当前页的文字和背景对比度不低于 4.5:1", async ({ page }) => {
+      await page.goto("/tasks");
+      const current = page
+        .getByRole("navigation", { name: "主要" })
+        .getByRole("link", { name: "全部任务" });
+      await expect(current).toHaveAttribute("aria-current", "page");
+      // next-themes 跟着系统（这里是 colorScheme）选主题，在 html 上加同名的 class。
+      await expect(page.locator("html")).toContainClass(colorScheme);
+
+      await expectTextContrast(current);
+    });
+  });
+}
 
 test("全部任务默认显示第一页", async ({ page }) => {
   await page.goto("/tasks");
@@ -181,16 +203,12 @@ test("创建任务后列表立即出现新任务，表单清空", async ({ page 
 test("header 徽标首次加载失败后，重新请求期间仍显示加载失败", async ({
   page,
 }) => {
-  // 徽标的数据由服务端预取。锁住任务表、取消等锁的读取让预取失败，浏览器没有数据就自己请求，这里也让它失败（4xx
-  // 不重试）。最近查看页的服务端渲染只有徽标读任务表，锁表不影响页面的其他部分。
+  // 徽标的数据由服务端预取。让服务端读任务表失败，预取跟着失败，浏览器没有数据就自己请求，这里也让它失败（4xx
+  // 不重试）。最近查看页的服务端渲染只有徽标读任务表，锁表和读取失败不影响页面的其他部分。
   await failRequests(page, isActiveTasksRequest, { status: 400 });
-  const release = await holdTable("tasks");
-  try {
-    await page.goto("/recent", { waitUntil: "commit" });
-    await expect.poll(() => failQueriesWaitingFor("tasks")).toBeGreaterThan(0);
-  } finally {
-    await release();
-  }
+  await failServerRead("tasks", () =>
+    page.goto("/recent", { waitUntil: "commit" }),
+  );
   const failed = page
     .getByRole("banner")
     .getByText("加载失败", { exact: true });
@@ -202,8 +220,9 @@ test("header 徽标首次加载失败后，重新请求期间仍显示加载失�
   await returnToTab(page);
   await polled;
 
-  // 重新请求一开始 React Query 就清空了 error，只看 error 的话徽标随即换成骨架屏。
-  // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言这段时间里加载失败一直显示，等待是断言的一部分。
+  // 重新请求一开始 React Query 就清空了 error，只看 error 的话徽标随即换成骨架屏。请求停着，放行之前徽标不会再变，
+  // 所以最后看一次就够。
+  // eslint-disable-next-line playwright/no-wait-for-timeout -- 等过这段时间仍显示加载失败，等待是断言的一部分。
   await page.waitForTimeout(500);
   await expect(failed).toBeVisible();
   releasePoll();
@@ -353,9 +372,7 @@ test("名称被占用后改了名字，离开再返回，改过的名字不会�
   await expect(page.getByText("名称已被其他任务占用")).toHaveCount(0);
 });
 
-test("名称为空时在浏览器里就拦下，焦点移到名称字段，不发请求", async ({
-  page,
-}) => {
+test("名称为空时在浏览器里就拦下，不发请求", async ({ page }) => {
   await openTasksPage(page);
   const prompt = unique("e2e prompt");
   // 列表的变化信号也会调 Server Action：只记带这次 prompt 的。
@@ -368,9 +385,17 @@ test("名称为空时在浏览器里就拦下，焦点移到名称字段，不�
   await page.getByRole("button", { name: "创建任务" }).click();
 
   await expect(page.getByText("请输入名称")).toBeVisible();
+  expect(actions).toStrictEqual([]);
+});
+
+test("名称为空时提交，焦点移到名称字段", async ({ page }) => {
+  await openTasksPage(page);
+  await page.getByLabel("Prompt").fill(unique("e2e prompt"));
+  await page.getByRole("button", { name: "创建任务" }).click();
+  await expect(page.getByText("请输入名称")).toBeVisible();
+
   // 点「创建任务」时焦点在按钮上，校验失败后移到第一个无效的字段。
   await expect(page.getByLabel("名称")).toBeFocused();
-  expect(actions).toStrictEqual([]);
 });
 
 test("创建出错时弹全局提示，填的内容还在，重试能成功", async ({ page }) => {

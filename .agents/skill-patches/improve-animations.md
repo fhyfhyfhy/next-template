@@ -68,7 +68,7 @@ Scope: `SKILL.md` and `PLAN-TEMPLATE.md`, as in `plans/README.md`, which becomes
 Plans are documents that people review, so they take the prose language `.claude/rules/writing-style.md` sets for plans; the skill and PLAN-TEMPLATE.md are in English, which would otherwise pull them into English.
 
 ```diff
-@@ end of ### Phase 4 — Write plans @@
+@@ after the `Finish by creating or updating plans/README.md` line in ### Phase 4 @@
  Finish by creating or updating `plans/README.md`: recommended execution order, dependencies between plans, and a status column.
 +
 +Write the plans and their README in the prose language that `.claude/rules/writing-style.md` sets for plans, translating PLAN-TEMPLATE.md's headings too, and keep code, paths, class names, and other terms as they are.

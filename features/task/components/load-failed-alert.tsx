@@ -20,7 +20,10 @@ interface LoadFailedAlertProps {
   onRetry: () => void;
 }
 
-/** 数据首次加载失败、没有内容可显示时的提示和重试按钮，各处的加载失败共用它，样子和读屏读到的说法才一致。 */
+/**
+ * 数据首次加载失败、没有内容可显示时的失败提示和重试按钮。要显示失败提示并带重试按钮时用它，样子和读屏读到的说法才和
+ * 别处一致。
+ */
 export function LoadFailedAlert({
   message,
   retryLabel,

@@ -1,8 +1,8 @@
-import { afterEach, expect, onTestFinished, test } from "vitest";
+import { afterEach, describe, expect, onTestFinished, test } from "vitest";
 
 import { onlineManager, QueryClient, QueryObserver } from "@/lib/react-query";
 
-import { isQueryLoadFailed } from "./query-load-state";
+import { isQueryLoadFailed, isQueryRetrying } from "./query-load-state";
 
 // 判断读的是 React Query 结果里的字段，字段在各种时刻的取值由 query-core 决定，所以用真实的 QueryObserver
 // 产生结果；请求由用例决定何时失败。
@@ -50,62 +50,95 @@ function unmountAll() {
   for (const unsubscribe of unsubscribers.splice(0)) unsubscribe();
 }
 
-test("首次请求还在进行、没有失败过：不算加载失败", () => {
-  const result = mount().getCurrentResult();
-
-  expect(result.fetchStatus).toBe("fetching");
-  expect(isQueryLoadFailed(result)).toBe(false);
-});
-
-test("首次请求失败：算加载失败", async () => {
-  const observer = mount();
-  await failRequest(observer);
-
-  expect(isQueryLoadFailed(observer.getCurrentResult())).toBe(true);
-});
-
-test("本次挂载里失败过，重试进行中 error 被清空，仍算加载失败", async () => {
-  const observer = mount();
-  await failRequest(observer);
-
-  void observer.refetch();
-  const result = observer.getCurrentResult();
-
-  expect(result.fetchStatus).toBe("fetching");
-  expect(result.error).toBeNull();
-  expect(isQueryLoadFailed(result)).toBe(true);
-});
-
-test("本次挂载里失败过，重试因为离线暂停、error 被清空，仍算加载失败", async () => {
-  const observer = mount();
-  await failRequest(observer);
+function goOffline() {
   onlineManager.setOnline(false);
   onTestFinished(() => onlineManager.setOnline(true));
+}
 
-  void observer.refetch();
-  const result = observer.getCurrentResult();
+describe("isQueryRetrying", () => {
+  test("请求进行中：算重试进行中", () => {
+    const result = mount().getCurrentResult();
 
-  expect(result.fetchStatus).toBe("paused");
-  expect(result.error).toBeNull();
-  expect(isQueryLoadFailed(result)).toBe(true);
+    expect(result.fetchStatus).toBe("fetching");
+    expect(isQueryRetrying(result)).toBe(true);
+  });
+
+  test("请求因为离线暂停：算重试进行中", () => {
+    goOffline();
+
+    const result = mount().getCurrentResult();
+
+    expect(result.fetchStatus).toBe("paused");
+    expect(isQueryRetrying(result)).toBe(true);
+  });
+
+  test("请求结束：不算重试进行中", async () => {
+    const observer = mount();
+    await failRequest(observer);
+    const result = observer.getCurrentResult();
+
+    expect(result.fetchStatus).toBe("idle");
+    expect(isQueryRetrying(result)).toBe(false);
+  });
 });
 
-test("有数据时刷新失败：不算加载失败，继续显示数据", async () => {
-  client.setQueryData(queryKey, "旧数据");
-  const observer = mount();
-  await failRequest(observer);
-  const result = observer.getCurrentResult();
+describe("isQueryLoadFailed", () => {
+  test("首次请求还在进行、没有失败过：不算加载失败", () => {
+    const result = mount().getCurrentResult();
 
-  expect(result.error).not.toBeNull();
-  expect(isQueryLoadFailed(result)).toBe(false);
-});
+    expect(result.fetchStatus).toBe("fetching");
+    expect(isQueryLoadFailed(result)).toBe(false);
+  });
 
-test("之前失败过的 query 重新挂载（新的 observer）、重新请求期间：不算加载失败，显示加载中", async () => {
-  await failRequest(mount());
-  unmountAll();
+  test("首次请求失败：算加载失败", async () => {
+    const observer = mount();
+    await failRequest(observer);
 
-  const result = mount().getCurrentResult();
+    expect(isQueryLoadFailed(observer.getCurrentResult())).toBe(true);
+  });
 
-  expect(result.fetchStatus).toBe("fetching");
-  expect(isQueryLoadFailed(result)).toBe(false);
+  test("本次挂载里失败过，重试进行中 error 被清空，仍算加载失败", async () => {
+    const observer = mount();
+    await failRequest(observer);
+
+    void observer.refetch();
+    const result = observer.getCurrentResult();
+
+    expect(result.fetchStatus).toBe("fetching");
+    expect(result.error).toBeNull();
+    expect(isQueryLoadFailed(result)).toBe(true);
+  });
+
+  test("本次挂载里失败过，重试因为离线暂停、error 被清空，仍算加载失败", async () => {
+    const observer = mount();
+    await failRequest(observer);
+    goOffline();
+
+    void observer.refetch();
+    const result = observer.getCurrentResult();
+
+    expect(result.fetchStatus).toBe("paused");
+    expect(result.error).toBeNull();
+    expect(isQueryLoadFailed(result)).toBe(true);
+  });
+
+  test("有数据时刷新失败：不算加载失败，继续显示数据", async () => {
+    client.setQueryData(queryKey, "旧数据");
+    const observer = mount();
+    await failRequest(observer);
+    const result = observer.getCurrentResult();
+
+    expect(result.error).not.toBeNull();
+    expect(isQueryLoadFailed(result)).toBe(false);
+  });
+
+  test("之前失败过的 query 重新挂载（新的 observer）、重新请求期间：不算加载失败，显示加载中", async () => {
+    await failRequest(mount());
+    unmountAll();
+
+    const result = mount().getCurrentResult();
+
+    expect(result.fetchStatus).toBe("fetching");
+    expect(isQueryLoadFailed(result)).toBe(false);
+  });
 });

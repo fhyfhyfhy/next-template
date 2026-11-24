@@ -137,3 +137,14 @@ test("进度未知时 ProgressValue 的函数 children 收到 null", () => {
 
   expect(visibleValue(html)).toBe("无");
 });
+
+test("进度未知时调用方的 getAriaValueText 收到空字符串和原始的 null", () => {
+  const html = render(
+    <ProgressRoot
+      value={null}
+      getAriaValueText={(text, value) => `[${text}]${String(value)}`}
+    />,
+  );
+
+  expect(html).toContain('aria-valuetext="[]null"');
+});
