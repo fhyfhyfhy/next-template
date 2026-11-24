@@ -73,7 +73,7 @@ Project reviews for the `code-review` skill, one per section.
 
 - **Runs when:** the diff changes source code, comments, or test descriptions.
 - **Standards:** `.claude/rules/code-comments.md` and `.claude/rules/writing-style.md`
-- **Brief:** Review the comments the diff adds or changes, and the ones it leaves stale; no lint checks comments.
+- **Brief:** Review the comments the diff adds or changes, and the ones it leaves stale. Lint already refuses an ESLint directive without a `-- <why>` description (`@eslint-community/eslint-comments/require-description`), and a `@ts-expect-error` without a description, or any `@ts-ignore` or `@ts-nocheck` (`@typescript-eslint/ban-ts-comment`).
   - **Needed**: each added comment holds what a maintainer would miss without it (section 1); it explains why rather than what, states what holds today rather than history, and stays short. Compare the change's share of comment lines with the file's.
   - **Still true**: read the comments in each changed file and at the definition of each changed function, type, and interface, including the interface docs of code whose use changed, and report each that no longer holds (section 6).
   - **Claims about other code**: a comment about another module's behavior names it specifically, and the behavior is as it says; check it.
