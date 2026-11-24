@@ -131,4 +131,4 @@ const { reset } = useQueryErrorResetBoundary();
 
 ## Signing out
 
-Signing out or switching accounts must discard the previous session's browser query data and user-specific Next.js router output, including prefetched pages and hydration snapshots. Follow [Session changes](../../.agents/skills/next-data-flow/refresh.md#session-changes) for cache coordination and verification.
+Signing out or switching accounts, in this tab or outside it, must discard the previous session's browser query data and user-specific Next.js router output, including prefetched pages and hydration snapshots. Follow [Session changes](../../.agents/skills/next-data-flow/refresh.md#session-changes) for cache coordination, noticing a change made elsewhere, and verification.

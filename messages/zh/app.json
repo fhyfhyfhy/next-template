@@ -11,9 +11,9 @@
     "home": "回到首页"
   },
   "pageError": {
-    "title": "页面加载失败",
-    "description": "可能是网络或服务暂时不可用，请稍后重试。",
-    "retry": "重试"
+    "title": "页面出错了",
+    "description": "重新加载通常就能恢复；如果还是出错，请稍后再试。",
+    "reload": "重新加载"
   },
   "tasks": {
     "title": "全部任务"

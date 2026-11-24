@@ -3,6 +3,7 @@ import { type Kysely, type Selectable, sql } from "kysely";
 import { nanoid } from "nanoid";
 import { DatabaseError } from "pg";
 import { cache } from "react";
+import { z } from "zod";
 
 import {
   attachUpload,
@@ -11,10 +12,10 @@ import {
   getAttachedUploadUrls,
 } from "@/features/upload/server";
 import {
-  badRequest,
   conflict,
   DomainError,
   notFound,
+  parseInput,
 } from "@/lib/request/domain-error";
 
 import {
@@ -284,16 +285,16 @@ export async function renameTask(id: string, input: { name: unknown }) {
   }
 }
 
+const favoriteInput = z.object({ favorite: z.boolean() });
+
 export async function setTaskFavorite(
   id: string,
   input: { favorite: unknown },
 ) {
-  if (typeof input.favorite !== "boolean") {
-    throw badRequest("favorite must be a boolean", { param: "favorite" });
-  }
+  const { favorite } = parseInput(favoriteInput, input);
   const row = await getTaskDb()
     .updateTable("tasks")
-    .set({ favorite: input.favorite, updated_at: new Date() })
+    .set({ favorite, updated_at: new Date() })
     .where("id", "=", id)
     .returningAll()
     .executeTakeFirst();
@@ -343,12 +344,11 @@ export async function deleteTask(id: string) {
     });
 }
 
+const coverInput = z.object({ uploadId: z.string().min(1) });
+
 /** 让任务用这次上传作为封面，替换原来的封面。上传的核对和幂等规则见 upload 的 `attachUpload`。 */
 export async function setTaskCover(id: string, input: { uploadId: unknown }) {
-  if (typeof input.uploadId !== "string" || !input.uploadId) {
-    throw badRequest("uploadId must be a string", { param: "uploadId" });
-  }
-  const uploadId = input.uploadId;
+  const { uploadId } = parseInput(coverInput, input);
   const row = await getTaskDb()
     .transaction()
     .execute(async (trx) => {
