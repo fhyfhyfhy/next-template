@@ -4,12 +4,14 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import {
+  NavigationBusy,
+  NavigationTransition,
+} from "@/components/navigation-transition";
+import {
   CreateTaskForm,
   loadTaskListSearchParams,
   PageHeading,
   TaskList,
-  TaskListBusy,
-  TaskListNavigation,
   TaskListSkeleton,
   TaskListToolbar,
   toTaskFilters,
@@ -30,12 +32,12 @@ export default function TasksPage({
       <PageHeading title={t("app.tasks.title")} className="mb-8" />
       <CreateTaskForm className="mb-8" />
       {/* page 保持同步，只在 Suspense 里读 URL：工具栏和列表以外的部分都能进静态 shell。 */}
-      <TaskListNavigation>
+      <NavigationTransition>
         {/* 工具栏用 useQueryStates 读 URL，它读 useSearchParams，预渲染时没有值。 */}
         <Suspense fallback={<div className="mb-4 h-8" />}>
           <TaskListToolbar className="mb-4" />
         </Suspense>
-        <TaskListBusy>
+        <NavigationBusy>
           <Suspense fallback={<TaskListSkeleton />}>
             {loadTaskListSearchParams(searchParams).then((params) => {
               return (
@@ -45,8 +47,8 @@ export default function TasksPage({
               );
             })}
           </Suspense>
-        </TaskListBusy>
-      </TaskListNavigation>
+        </NavigationBusy>
+      </NavigationTransition>
     </>
   );
 }
