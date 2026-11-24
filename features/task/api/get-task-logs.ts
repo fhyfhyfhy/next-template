@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { BASE_PATH } from "@/lib/base-path";
 import { ApiError } from "@/lib/request/fetch";
 
 import { taskStatusSchema } from "../types/task-filters";
@@ -19,7 +20,7 @@ export async function* streamTaskLogs(
   taskId: string,
   signal: AbortSignal,
 ): AsyncGenerator<TaskLogEvent> {
-  const url = `/api/tasks/${taskId}/logs` as const;
+  const url = `${BASE_PATH}/api/tasks/${taskId}/logs` as const;
   const response = await fetch(url, { signal });
   if (!response.ok || !response.body) {
     throw new ApiError({

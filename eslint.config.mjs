@@ -592,6 +592,8 @@ const eslintConfig = defineConfig([
     rules: {
       // 服务端代码直接调数据层，不用 fetchApi 或 fetch 请求本 app 自己的接口。
       "data-flow/no-server-self-fetch": "error",
+      // 浏览器里的裸 fetch 请求本 app 的路径时拼上 BASE_PATH，fetchApi 会自己加。
+      "data-flow/raw-fetch-base-path": "error",
       // feature 的 server/ 和 server.ts 只在服务端运行：import "server-only" 让它们进了浏览器的 bundle 就构建失败。
       "data-flow/server-only": "error",
       // feature 的 api/ 里 -action 文件是 Server Action 模块，以 "use server" 开头。
