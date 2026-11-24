@@ -7,7 +7,7 @@ description: Audit a self-hosted Next.js deployment (Node server, Docker, Kubern
 
 Features that work unchanged under one `next start` can break or degrade once the app runs on several instances, through a rollout, behind a buffering proxy or a CDN, or beside another app on one host. This audit finds which of them apply to this deployment and checks each one, in the repo and against a running deployment. It reports; it changes nothing unless the user asks for a fix.
 
-Documentation checked against installed `next` 16.4.3, from `node_modules/next/dist/docs/01-app/02-guides/self-hosting.md`, `cdn-caching.md`, `ppr-platform-guide.md`, and the references and source files each check cites. Historical runtime measurements are dated separately in [checks.md](checks.md). When `package.json` names another version, re-read the cited docs before relying on a check. When a doc or an observation contradicts a check, correct it in `checks.md` in the same change, and name the correction and its evidence in your report.
+Documentation checked against installed `next` 16.4.6, from `node_modules/next/dist/docs/01-app/02-guides/self-hosting.md`, `cdn-caching.md`, `ppr-platform-guide.md`, and the references and source files each check cites. Historical runtime measurements are dated separately in [checks.md](checks.md). When `package.json` names another version, re-read the cited docs before relying on a check. When a doc or an observation contradicts a check, correct it in `checks.md` in the same change, and name the correction and its evidence in your report.
 
 ## Steps
 
