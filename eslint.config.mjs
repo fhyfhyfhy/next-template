@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import markdown from "@eslint/markdown";
@@ -25,6 +25,7 @@ import withWrapperImports, {
   apiFileFactoriesRule,
   mutationCallbacksRule,
 } from "./scripts/eslint/data/query-plugin.mjs";
+import createDocsPlugin from "./scripts/eslint/docs-plugin.mjs";
 import e2ePlugin from "./scripts/eslint/e2e-plugin.mjs";
 import createI18nPlugin from "./scripts/eslint/i18n-plugin.mjs";
 import { SOURCE_EXTENSIONS, SOURCE_GLOB } from "./scripts/eslint/imports.mjs";
@@ -181,6 +182,22 @@ const AGENT_INSTRUCTIONS = [
   ".agents/**/*.md",
   "docs/agents/**/*.md",
 ];
+
+// 检查相对链接和指向 template GitHub 的链接的文档。第三方 skill 是上游原文，只随升级变化（skills-lock.json），
+// 不在检查范围内；它们的 patch 在 .agents/skill-patches/，属于 agent 指令。
+const DOCS = [
+  "AGENTS.md",
+  "README.md",
+  "GLOSSARY.md",
+  "docs/**/*.md",
+  ".claude/rules/**/*.md",
+  ".agents/skills/**/*.md",
+];
+const THIRD_PARTY_SKILLS = Object.keys(
+  JSON.parse(readFileSync(join(PROJECT_ROOT, "skills-lock.json"), "utf8"))
+    .skills,
+).map((name) => `.agents/skills/${name}/**`);
+const docsPlugin = createDocsPlugin(PROJECT_ROOT);
 
 // i18n 里借用 no-restricted-imports、no-restricted-syntax 的几组限制。这两条规则还管着别的事，所以这几组合进
 // 下面的 RESTRICTED_IMPORTS 和 RESTRICTED_SYNTAX；i18n 的其余检查和这几组的例外在配置数组的「i18n」一段。
@@ -866,6 +883,41 @@ const eslintConfig = defineConfig([
     language: "markdown/gfm",
     languageOptions: { frontmatter: "yaml" },
     rules: { "writing-style/english-only": "error" },
+  },
+  {
+    files: DOCS,
+    ignores: THIRD_PARTY_SKILLS,
+    plugins: { markdown, docs: docsPlugin },
+    language: "markdown/gfm",
+    languageOptions: { frontmatter: "yaml" },
+    rules: {
+      "docs/relative-links": "error",
+      "docs/template-links": "error",
+    },
+  },
+  {
+    files: AGENT_INSTRUCTIONS,
+    ignores: THIRD_PARTY_SKILLS,
+    plugins: { markdown, docs: docsPlugin },
+    language: "markdown/gfm",
+    languageOptions: { frontmatter: "yaml" },
+    rules: {
+      "docs/sample-product-paths": "error",
+      "docs/people-docs": "error",
+    },
+  },
+  {
+    files: ["docs/agents/code-review.md"],
+    plugins: { markdown, docs: docsPlugin },
+    language: "markdown/gfm",
+    rules: { "docs/code-references": "error" },
+  },
+  {
+    // ESLint 消息里用 See "小节" in <文件> 指向规则的写法。
+    files: ["eslint.config.mjs", "scripts/eslint/**/*.mjs"],
+    ignores: ["**/*.test.mjs"],
+    plugins: { docs: docsPlugin },
+    rules: { "docs/section-pointers": "error" },
   },
   // 项目级忽略项在 Next 默认项上加入 worktree，避免重复检查其他 checkout。
   globalIgnores([

@@ -4,7 +4,8 @@ import { relative } from "node:path";
 // 所有命令放在一个 glob 下按顺序执行：多个 glob 的任务会并行，同时改写和读取同一个文件会冲突。
 
 const CODE = /\.[cm]?[jt]sx?$/;
-// ESLint 还检查 agent 指令的 Markdown（eslint.config.mjs 的 AGENT_INSTRUCTIONS）；其他 .md 由 --no-warn-ignored 跳过。
+// ESLint 还检查 Markdown：agent 指令的写法和文档的链接（eslint.config.mjs 的 AGENT_INSTRUCTIONS、DOCS）；其他 .md 由
+// --no-warn-ignored 跳过。
 const LINTED = /\.(?:[cm]?[jt]sx?|md)$/;
 
 const args = (files) => files.map((file) => JSON.stringify(file)).join(" ");
@@ -36,7 +37,8 @@ const config = {
         "vitest run --project unit scripts/ui-catalog/index-freshness.test.mjs",
       );
     }
-    // docs-links 也检查 ESLint 消息指向的规则小节。
+    // 链接和 ESLint 消息里的 See "小节" in <文件> 指向别的文件（scripts/eslint/docs-plugin.mjs）：改了标题或规则文件，
+    // 断掉的是没暂存的文件里的引用，所以 lint 全部文档和 ESLint 消息所在的文件。
     if (
       files.some(
         (file) =>
@@ -45,7 +47,9 @@ const config = {
           file.startsWith("scripts/eslint/"),
       )
     ) {
-      commands.push("vitest run --project unit scripts/docs-links.test.mjs");
+      commands.push(
+        `eslint --no-warn-ignored "**/*.md" eslint.config.mjs "scripts/eslint/**/*.mjs"`,
+      );
     }
     return commands;
   },
