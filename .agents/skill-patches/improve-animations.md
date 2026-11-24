@@ -35,7 +35,7 @@ This repo keeps its motion conventions in `.claude/rules/components.md` and its 
 
 ## Plans are committed under `docs/`
 
-The skill writes its plans to a root `plans/` that it never commits, so `git worktree remove` refuses the worktree holding them, and the worktree that `execute <plan>` starts from main has none of them. This repo keeps its documents in `docs/`, so the plans go to `docs/animation-plans/` and reach main in a PR of their own, the one commit Hard Rule 2 allows. As documents, they take the prose language `.claude/rules/writing-style.md` sets for plans, which the English template would otherwise pull them away from.
+The skill writes its plans to a root `plans/` that it never commits, so `git worktree remove` refuses the worktree holding them, and the worktree that `execute <plan>` starts from main has none of them. This repo keeps its documents in `docs/`, so the plans go to `docs/animation-plans/` and reach main in a PR of their own, the one commit Hard Rule 2 allows.
 
 ```diff
 @@ ## Hard Rules @@
@@ -52,8 +52,6 @@ The skill writes its plans to a root `plans/` that it never commits, so `git wor
 @@ end of ### Phase 4 — Write plans @@
  Finish by creating or updating `plans/README.md`: recommended execution order, dependencies between plans, and a status column.
 +
-+Write the plans and their README in the prose language that `.claude/rules/writing-style.md` sets for plans, translating PLAN-TEMPLATE.md's headings too, and keep code, paths, class names, and other terms as they are.
-+
 +Commit the plans and their README in a PR of their own, and the changes a `reconcile` makes the same way: an executor's worktree starts from main, so `execute <plan>` takes a plan that has reached main. The PR that carries out a plan marks it DONE in the README.
  
  ## Invocation Variants
@@ -64,3 +62,14 @@ The skill writes its plans to a root `plans/` that it never commits, so `git wor
 | `plans/` | `docs/animation-plans/` |
 
 Scope: `SKILL.md` and `PLAN-TEMPLATE.md`, as in `plans/README.md`, which becomes `docs/animation-plans/README.md`.
+
+## Plans are written in the prose language
+
+Plans are documents that people review, so they take the prose language `.claude/rules/writing-style.md` sets for plans; the skill and PLAN-TEMPLATE.md are in English, which would otherwise pull them into English.
+
+```diff
+@@ end of ### Phase 4 — Write plans @@
+ Finish by creating or updating `plans/README.md`: recommended execution order, dependencies between plans, and a status column.
++
++Write the plans and their README in the prose language that `.claude/rules/writing-style.md` sets for plans, translating PLAN-TEMPLATE.md's headings too, and keep code, paths, class names, and other terms as they are.
+```

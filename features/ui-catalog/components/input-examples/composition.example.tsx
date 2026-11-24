@@ -13,7 +13,7 @@ import { useHydrated } from "@/hooks/use-hydrated";
 
 export const metadata = {
   title: "受控输入与校验",
-  description: "输入一至两个字符，查看关联的错误提示。",
+  description: "输入一至两个字，查看关联的错误提示。",
   order: 20,
 };
 
@@ -33,10 +33,10 @@ export function Example() {
       <Input
         value={value}
         onValueChange={setValue}
-        placeholder="输入至少 3 个字符"
+        placeholder="输入至少 3 个字"
       />
       <FieldDescription>用于显示在个人主页。</FieldDescription>
-      <FieldError match={invalid}>用户名至少需要 3 个字符。</FieldError>
+      <FieldError match={invalid}>用户名至少需要 3 个字。</FieldError>
     </FieldRoot>
   );
 }

@@ -13,8 +13,10 @@ import { format, resolveConfig } from "prettier";
 import ts from "typescript";
 
 const featurePath = "features/ui-catalog";
+/** 示例目录所在的目录，相对项目根目录；其中名字以 directorySuffix 结尾的目录各是一个组件的示例。 */
+export const examplesPath = `${featurePath}/components`;
+export const directorySuffix = "-examples";
 const exampleSuffix = ".example.tsx";
-const directorySuffix = "-examples";
 const requiredFiles = ["preview.tsx", "playground.tsx", "index.ts"];
 const componentIndexFile = "examples.generated.ts";
 const generatedHeader =
@@ -139,7 +141,7 @@ function readMetadata(directory) {
 }
 
 function discoverExamples(projectRoot) {
-  const componentsRoot = join(projectRoot, featurePath, "components");
+  const componentsRoot = join(projectRoot, examplesPath);
   const sourceHash = createHash("sha256");
   const components = entries(componentsRoot)
     .filter(
@@ -378,7 +380,7 @@ export async function watchExampleIndexes(
   let closed = false;
   let pending = Promise.resolve();
   const watcher = watch(
-    join(root, featurePath, "components"),
+    join(root, examplesPath),
     { recursive: true },
     (_event, filename) => {
       if (closed || !isSourceEvent(filename)) return;

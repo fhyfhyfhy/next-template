@@ -40,9 +40,9 @@ test("函数形式的 className 按 Field 状态求值", () => {
   ).not.toContain("italic");
 });
 
-test("调用方的 aria-describedby 交给 Field 合并，字段无效时 aria-invalid 以 Field 为准", () => {
-  // FieldDescription 在 layout effect 里登记 id，服务端渲染时还没有，所以这里只能看到调用方的 id；
-  // 和说明 id 拼接要在浏览器里检查。
+test("字段无效时 aria-invalid 以 Field 为准，调用方的 aria-describedby 保留", () => {
+  // FieldDescription 在 layout effect 里登记 id，服务端渲染时还没有。调用方的 id 和说明 id 的合并只有在浏览器里
+  // 才看得到，目前没有测试。
   const html = renderToString(
     <FieldRoot invalid>
       <Textarea aria-describedby="hint" aria-invalid={false} />

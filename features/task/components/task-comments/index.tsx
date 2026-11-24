@@ -3,16 +3,16 @@
 import { useTranslations } from "next-intl";
 import { Suspense, useRef } from "react";
 
+import { FocusAfterRetry } from "../focus-after-retry";
 import { QueryErrorBoundary } from "../query-error-boundary";
 import { CommentForm } from "./comment-form";
 import { CommentList } from "./comment-list";
-import { FocusAfterRetry } from "./focus-after-retry";
 
 /** 评论只在详情页显示，由 React Query 负责；服务端以 pending 状态 dehydrate，数据到了再流式出现。 */
 export function TaskComments({ taskId }: { taskId: string }) {
   const t = useTranslations();
   const headingRef = useRef<HTMLHeadingElement>(null);
-  // 重试时 Suspense 的 fallback 换掉了刚按的重试按钮，焦点掉到 body；评论显示出来后把焦点移到标题，键盘用户从这里继续。
+  // 重试后焦点的去处（FocusAfterRetry）：评论显示出来时移到标题，又失败时由错误边界移到新的重试按钮。
   const retriedRef = useRef(false);
   return (
     <section>
@@ -26,9 +26,7 @@ export function TaskComments({ taskId }: { taskId: string }) {
       <QueryErrorBoundary
         message={t("task.comments.loadFailed")}
         retryLabel={t("task.comments.retryLabel")}
-        onRetry={() => {
-          retriedRef.current = true;
-        }}
+        retriedRef={retriedRef}
       >
         <Suspense
           fallback={

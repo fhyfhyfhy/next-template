@@ -7,6 +7,10 @@ import { Example as Example0, metadata as metadata0 } from "./basic.example";
 import {
   Example as Example1,
   metadata as metadata1,
+} from "./file-count.example";
+import {
+  Example as Example2,
+  metadata as metadata2,
 } from "./indeterminate.example";
 
 export const examples = [
@@ -18,8 +22,14 @@ export const examples = [
   },
   {
     ...metadata1,
+    id: "file-count",
+    filename: "file-count.example.tsx",
+    component: Example1,
+  },
+  {
+    ...metadata2,
     id: "indeterminate",
     filename: "indeterminate.example.tsx",
-    component: Example1,
+    component: Example2,
   },
 ] satisfies readonly ExampleDefinition[];

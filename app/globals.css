@@ -108,10 +108,16 @@
   }
 }
 
-/* primitives 以外的可聚焦元素（链接、可滚动区域、程序聚焦的标题等）的键盘焦点环，见 .claude/rules/components.md 的
-   Styles and variants；primitives 在自己的 class 里写焦点环，有的还带 offset。 */
+/* 键盘焦点环，哪些元素用哪一个见 .claude/rules/components.md 的 Styles and variants。
+   outline-hidden 只加在 focus-visible 上：它平时不画 outline，强制颜色模式下画一圈系统色的 outline，代替被
+   去掉的 box-shadow ring；不带 variant 时每个控件一直带着这圈 outline，焦点仍然看不出来。 */
 @utility focus-ring {
-  @apply outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  @apply focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden;
+}
+
+/* --ring 和 --primary 同色，不留间隙时 primary、danger 等底色会和焦点环连成一片，所以隔开 2px 的 card 色。 */
+@utility focus-ring-offset {
+  @apply focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card;
 }
 
 @layer base {

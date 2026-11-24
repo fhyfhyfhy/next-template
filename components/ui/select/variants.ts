@@ -2,7 +2,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 // aria-invalid:focus-visible:ring-ring 让无效时的焦点仍有醒目的 ring（原因见 components/ui/input.tsx），不是多余的 class。
 export const selectTriggerVariants = cva(
-  "flex w-full items-center justify-between gap-3 rounded-control border border-input bg-card text-left whitespace-nowrap text-card-foreground transition-[border-color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/25 aria-invalid:border-destructive aria-invalid:focus-visible:ring-ring data-disabled:cursor-not-allowed data-disabled:opacity-40 data-placeholder:text-muted-foreground data-popup-open:border-ring [&_svg]:shrink-0",
+  "flex w-full items-center justify-between gap-3 rounded-control border border-input bg-card text-left whitespace-nowrap text-card-foreground transition-[border-color,box-shadow] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:outline-hidden aria-invalid:border-destructive aria-invalid:focus-visible:ring-ring data-disabled:cursor-not-allowed data-disabled:opacity-40 data-placeholder:text-muted-foreground data-popup-open:border-ring [&_svg]:shrink-0",
   {
     variants: {
       size: {

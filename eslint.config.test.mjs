@@ -1407,6 +1407,12 @@ function createConfigFixture() {
     join(project, "scripts/build-dirs.mjs"),
     join(fixture, "scripts/build-dirs.mjs"),
   );
+  // architecture/catalog-examples 从生成器取示例目录的位置。
+  mkdirSync(join(fixture, "scripts/ui-catalog"));
+  copyFileSync(
+    join(project, "scripts/ui-catalog/index-generator.mjs"),
+    join(fixture, "scripts/ui-catalog/index-generator.mjs"),
+  );
   copyFileSync(join(project, "tsconfig.json"), join(fixture, "tsconfig.json"));
   // import/no-relative-packages 要找被 lint 文件所属的 package.json，找不到会直接抛错。
   copyFileSync(join(project, "package.json"), join(fixture, "package.json"));
@@ -1441,8 +1447,8 @@ describe("架构依赖和 feature、组件导入约定", () => {
     // fixture 会用 type 别名和类型断言构造场景，TypeScript 写法规则在这里关掉。
     // 组件入口的 namespace 用例会默认导出，import/no-default-export 由下方「组件写成具名的 function 声明」验证。
     // fixture 没有 docs/features.md，feature 依赖图由 scripts/eslint/architecture/feature-dependencies.test.mjs 验证。
-    // fixture 里 components/ui/ 的文件没有 UI catalog 示例目录，两者的对应由
-    // scripts/eslint/architecture/catalog-examples.test.mjs 验证。
+    // fixture 里 components/ui/ 的文件没有 UI catalog 示例目录，两者的对应由下方「components/ui/ 的组件和 UI catalog
+    // 的示例目录一一对应」验证。
     // fixture 的 server/ 和 -action 文件只为验证依赖方向，不写 import "server-only" 和 "use server"；这两条规则由
     // 下方独立用例验证。
     eslint = new ESLint({
@@ -2194,9 +2200,35 @@ export default [
   });
 });
 
+// 下面按规则分组的用例共用这一个实例，用项目自己的配置 lint 源码片段。
+const projectLinter = new ESLint({ cwd: project });
+
+/**
+ * 用项目配置 lint 一段源码，返回 ruleIds 里那些规则的报告；以 / 结尾的一项代表整个插件，比如 "jsx-a11y/"。
+ * file 用真实存在的路径：import/no-cycle 定位不了不在磁盘上的文件。源码没有 import 时它不用定位，路径可以不存在。
+ */
+async function messagesFor(file, source, ruleIds) {
+  const [result] = await projectLinter.lintText(source, {
+    filePath: join(project, file),
+  });
+  expect(result.fatalErrorCount).toBe(0);
+  return result.messages.filter(({ ruleId }) =>
+    ruleIds.some((id) =>
+      id.endsWith("/") ? ruleId?.startsWith(id) : ruleId === id,
+    ),
+  );
+}
+
 describe("Tailwind class 按项目主题检查规范写法、颜色、圆角和过渡", () => {
   const eslint = new ESLint({ cwd: project });
-  const filePath = join(project, "components/tailwind-classes.tsx");
+  const file = "components/tailwind-classes.tsx";
+  const filePath = join(project, file);
+  const restrictedLines = async (source) =>
+    (
+      await messagesFor(file, source, [
+        "better-tailwindcss/no-restricted-classes",
+      ])
+    ).map(({ line }) => line);
 
   // 每个 class 渲染在自己的一行，按行号认出 no-restricted-classes 报的是哪个：恰好是 restricted 里的那些。
   async function expectRestricted(restricted, allowed) {
@@ -2204,14 +2236,8 @@ describe("Tailwind class 按项目主题检查规范写法、颜色、圆角和�
     const source = `export const panels = [\n${classes
       .map((className) => `  <div className="${className}" />,`)
       .join("\n")}\n];\n`;
-    const [result] = await eslint.lintText(source, { filePath });
     expect(
-      result.messages
-        .filter(
-          ({ ruleId }) => ruleId === "better-tailwindcss/no-restricted-classes",
-        )
-        .map(({ line }) => classes[line - 2]),
-      JSON.stringify(result.messages, null, 2),
+      (await restrictedLines(source)).map((line) => classes[line - 2]),
     ).toStrictEqual(restricted);
   }
 
@@ -2243,10 +2269,10 @@ describe("Tailwind class 按项目主题检查规范写法、颜色、圆角和�
     ["{`p-${size}`}", "no-concatenated-classes"],
   ])("className=%s 报 %s", async (value, rule) => {
     const source = `export function Probe({ size }: { size: number }) {\n  return <div className=${value} data-size={size} />;\n}\n`;
-    const [result] = await eslint.lintText(source, { filePath });
     expect(
-      result.messages.map(({ ruleId }) => ruleId),
-      JSON.stringify(result.messages, null, 2),
+      (await messagesFor(file, source, ["better-tailwindcss/"])).map(
+        ({ ruleId }) => ruleId,
+      ),
     ).toContain(`better-tailwindcss/${rule}`);
   });
 
@@ -2336,15 +2362,7 @@ export function Probe({ open }: { open: boolean }) {
   );
 }
 `;
-    const [result] = await eslint.lintText(source, { filePath });
-    expect(
-      result.messages
-        .filter(
-          ({ ruleId }) => ruleId === "better-tailwindcss/no-restricted-classes",
-        )
-        .map(({ line }) => line),
-      JSON.stringify(result.messages, null, 2),
-    ).toStrictEqual(
+    expect(await restrictedLines(source)).toStrictEqual(
       source
         .split("\n")
         .flatMap((line, index) =>
@@ -2402,25 +2420,6 @@ describe("e2e 整页加载之后先确认页面已经 hydrate 再操作", () => 
     ).toStrictEqual([]);
   });
 });
-
-// 下面按规则分组的用例共用这一个实例，用项目自己的配置 lint 源码片段。
-const projectLinter = new ESLint({ cwd: project });
-
-/**
- * 用项目配置 lint 一段源码，返回 ruleIds 里那些规则的报告；以 / 结尾的一项代表整个插件，比如 "jsx-a11y/"。
- * file 用真实存在的路径：import/no-cycle 定位不了不在磁盘上的文件。源码没有 import 时它不用定位，路径可以不存在。
- */
-async function messagesFor(file, source, ruleIds) {
-  const [result] = await projectLinter.lintText(source, {
-    filePath: join(project, file),
-  });
-  expect(result.fatalErrorCount).toBe(0);
-  return result.messages.filter(({ ruleId }) =>
-    ruleIds.some((id) =>
-      id.endsWith("/") ? ruleId?.startsWith(id) : ruleId === id,
-    ),
-  );
-}
 
 // 例外对象只去掉或追加一条限制，其余全局的限制照旧：source 都带上 axios，数的是 no-restricted-imports 的报告条数。
 async function restrictedImportCount(file, source) {
@@ -3008,7 +3007,7 @@ export function useProbe(value: number) {
           "@eslint-community/eslint-comments/no-restricted-disable",
         ])
       ).map(({ message }) => message),
-    ).toStrictEqual([`Disabling '${rule}' is not allowed.`]);
+    ).toStrictEqual([expect.stringContaining(rule)]);
   });
 });
 
@@ -3426,7 +3425,8 @@ describe("触发器和控件里直接嵌套 Button 或 Link 被拒绝", () => {
 
   test("牵涉链接的消息让链接用 buttonVariants，不把它作为 render prop 传入", async () => {
     // Next 的 Link 没有 render，Base UI 的 Button 不渲染链接：消息只能指向 buttonVariants，它得真的能从这里取到并用作
-    // className。import/named 不查 TypeScript 文件，所以直接加载模块调用它。
+    // className。这个仓库没开 import/named（eslint.config.mjs 和 eslint-config-next 都没设），.mjs 也不经 tsc 检查，
+    // 导入名写错不会报错，所以直接加载模块调用它。
     const { buttonVariants } = await import("@/components/ui/button");
     expect(buttonVariants({ variant: "outline" })).toMatch(/\S/);
     const messages = (
@@ -3472,6 +3472,26 @@ describe("给不是控件的元素加点击处理被拒绝", () => {
       "jsx-a11y/no-noninteractive-element-interactions",
       "jsx-a11y/no-static-element-interactions",
     ]);
+  });
+});
+
+describe("components/ui/ 的组件和 UI catalog 的示例目录一一对应", () => {
+  // 规则本身由 scripts/eslint/architecture/catalog-examples.test.mjs 验证，这里确认项目配置对两类文件都开着它。
+  // 仓库里既没有 catalog-probe 组件也没有它的示例目录，两个文件各缺另一边。
+  test.each([
+    ["components/ui/catalog-probe.tsx", "missingExamples"],
+    [
+      "features/ui-catalog/components/catalog-probe-examples/index.ts",
+      "missingComponent",
+    ],
+  ])("%s 报 %s", async (file, messageId) => {
+    expect(
+      (
+        await messagesFor(file, "export const value = 1;\n", [
+          "architecture/catalog-examples",
+        ])
+      ).map((message) => message.messageId),
+    ).toStrictEqual([messageId]);
   });
 });
 

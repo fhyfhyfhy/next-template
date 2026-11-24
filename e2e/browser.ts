@@ -172,3 +172,11 @@ export async function clickForClientNavigation(
   }
   expect(documents, "链接应当在浏览器里导航，不发整页请求").toStrictEqual([]);
 }
+
+/**
+ * 断言控件是原生停用的：带 `disabled` 属性。`toBeDisabled` 对 `aria-disabled` 也算通过，而只有 `aria-disabled` 的
+ * 控件照样响应原生操作，比如 hydration 之前的提交按钮仍能原生提交表单。
+ */
+export async function expectNativelyDisabled(locator: Locator) {
+  await expect(locator).toHaveAttribute("disabled");
+}

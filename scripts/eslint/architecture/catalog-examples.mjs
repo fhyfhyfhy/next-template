@@ -1,13 +1,14 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
+import {
+  directorySuffix,
+  examplesPath,
+} from "../../ui-catalog/index-generator.mjs";
 import { SOURCE_EXTENSIONS } from "../imports.mjs";
 
 const COMPONENTS = "components/ui/";
-// 和 scripts/ui-catalog/index-generator.mjs 的 featurePath、directorySuffix 一致：生成器把这里名字以 -examples 结尾的
-// 目录当作一个组件的示例。
-const EXAMPLES = "features/ui-catalog/components/";
-const EXAMPLES_SUFFIX = "-examples";
+const EXAMPLES = `${examplesPath}/`;
 
 const sourceFile = new RegExp(`\\.(?:${SOURCE_EXTENSIONS.join("|")})$`);
 const componentEntry = new RegExp(
@@ -32,9 +33,9 @@ function examplesId(path) {
   if (!path.startsWith(EXAMPLES)) return null;
   const parts = path.slice(EXAMPLES.length).split("/");
   return parts.length === 2 &&
-    parts[0].endsWith(EXAMPLES_SUFFIX) &&
+    parts[0].endsWith(directorySuffix) &&
     parts[1] === "index.ts"
-    ? parts[0].slice(0, -EXAMPLES_SUFFIX.length)
+    ? parts[0].slice(0, -directorySuffix.length)
     : null;
 }
 
@@ -45,7 +46,7 @@ function examplesId(path) {
  */
 export default function createCatalogExamplesRule(projectRoot) {
   const hasExamples = (id) =>
-    isDirectory(join(projectRoot, EXAMPLES, `${id}${EXAMPLES_SUFFIX}`));
+    isDirectory(join(projectRoot, EXAMPLES, `${id}${directorySuffix}`));
   const hasComponent = (id) => {
     const directory = join(projectRoot, COMPONENTS);
     return (
@@ -63,10 +64,8 @@ export default function createCatalogExamplesRule(projectRoot) {
       type: "problem",
       schema: [],
       messages: {
-        missingExamples:
-          "components/ui/{{id}} has no UI catalog examples. Add features/ui-catalog/components/{{id}}-examples/ in the same change, as .claude/rules/ui-catalog.md describes.",
-        missingComponent:
-          "features/ui-catalog/components/{{id}}-examples/ has no component to show: components/ui/ has no {{id}}. Name the directory after the component's ID, or remove it along with the component.",
+        missingExamples: `${COMPONENTS}{{id}} has no UI catalog examples. Add ${EXAMPLES}{{id}}${directorySuffix}/ in the same change, as .claude/rules/ui-catalog.md describes.`,
+        missingComponent: `${EXAMPLES}{{id}}${directorySuffix}/ has no component to show: ${COMPONENTS} has no {{id}}. Name the directory after the component's ID, or remove it along with the component.`,
       },
     },
     create(context) {

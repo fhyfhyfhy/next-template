@@ -22,7 +22,7 @@ export const initialConfig: FormConfig = (/* @example-config */ {
 } /* @end-example-config */);
 
 const schema = z.object({
-  name: z.string().trim().min(1, "请输入项目名称").min(3, "至少 3 个字符"),
+  name: z.string().trim().min(1, "请输入项目名称").min(3, "至少 3 个字"),
 });
 
 /** 不传参数时使用默认配置；UI catalog 页面传入同一份配置供面板与预览共享。 */
@@ -57,7 +57,7 @@ export function FormPlayground({
           >
             <FieldLabel>项目名称</FieldLabel>
             <Input
-              placeholder="至少 3 个字符"
+              placeholder="至少 3 个字"
               value={field.state.value}
               onValueChange={(value) => field.handleChange(value)}
               onBlur={field.handleBlur}
@@ -71,11 +71,10 @@ export function FormPlayground({
       <Button type="submit" disabled={!hydrated}>
         提交
       </Button>
-      {submitted && (
-        <p role="status" className="text-sm text-muted-foreground">
-          已提交：{submitted}
-        </p>
-      )}
+      {/* 状态行一直挂着、只换文字：和文字一起挂载的 role="status" 读屏可能不播报。 */}
+      <p role="status" className="text-sm text-muted-foreground">
+        {submitted && `已提交：${submitted}`}
+      </p>
     </Form>
   );
 }

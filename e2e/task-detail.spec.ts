@@ -3,6 +3,7 @@ import type { Locator, Page, Request } from "@playwright/test";
 import { failQueriesWaitingFor, holdTable, unique } from "./backend";
 import {
   delayRequests,
+  expectNativelyDisabled,
   failRequests,
   hasPath,
   holdRequests,
@@ -32,7 +33,7 @@ import { GLOBAL_ERROR_TOAST } from "./test";
 const comments = (page: Page) =>
   page.getByRole("list", { name: "评论" }).getByRole("listitem");
 const logs = (page: Page) => page.getByRole("log", { name: "生成日志" });
-/** 日志区里的每一行。 */
+/** 日志区里的段落：收到的每一行日志；还在推送、一行都没收到时是「等待日志…」占位。 */
 const logLines = (log: Locator) => log.getByRole("paragraph");
 
 /**
@@ -95,11 +96,7 @@ async function failRelatedTasksFirstLoad(page: Page, tasks: TaskData) {
  * 等锁的读取，像数据库读失败：流式送到浏览器的评论 query 跟着失败，浏览器重试时请求评论接口，这里也让它失败（4xx 不再
  * 重试），错误到达评论区的错误边界。
  */
-async function openTaskWithCommentsFailed(
-  page: Page,
-  tasks: TaskData,
-  taskId: string,
-) {
+async function openTaskWithCommentsFailed(page: Page, taskId: string) {
   const restore = await failRequests(
     page,
     hasPath(`/api/tasks/${taskId}/comments`),
@@ -275,7 +272,7 @@ test.describe("任务推进", () => {
     // 详情显示终态的那次渲染里日志重新订阅、状态回到推送中，之后出现的「日志已结束」来自读完整日志的这次订阅。
     await expect(page.getByTestId("task-status")).toHaveText("已完成");
     await expect(page.getByText("日志已结束")).toBeVisible();
-    // 比较完整的日志：重新订阅时没清空，或者收下了上一次订阅中止后交出的事件，都会出现重复的行。
+    // 比较完整的日志：重新订阅时没清空，就会出现重复的行。
     await expect(logLines(logs(page))).toHaveText([
       "开始生成",
       "解析 prompt",
@@ -418,7 +415,7 @@ test.describe("请求失败", () => {
   }) => {
     const task = await tasks.createTask({ status: "done" });
 
-    await openTaskWithCommentsFailed(page, tasks, task.id);
+    await openTaskWithCommentsFailed(page, task.id);
 
     await expect(
       page
@@ -434,7 +431,7 @@ test.describe("请求失败", () => {
   }) => {
     const task = await tasks.createTask({ status: "done" });
     await tasks.addComments(task.id, ["第一条评论"]);
-    const restore = await openTaskWithCommentsFailed(page, tasks, task.id);
+    const restore = await openTaskWithCommentsFailed(page, task.id);
     await restore();
 
     await page
@@ -446,6 +443,69 @@ test.describe("请求失败", () => {
     await expect(
       page.getByRole("heading", { name: "评论", exact: true }),
     ).toBeFocused();
+  });
+
+  test("评论重试又失败时，键盘焦点移到新的重试按钮", async ({
+    page,
+    tasks,
+  }) => {
+    const task = await tasks.createTask({ status: "done" });
+    await openTaskWithCommentsFailed(page, task.id);
+    const retry = page.getByRole("button", {
+      name: "重试加载评论",
+      exact: true,
+    });
+    // 浏览器的评论请求停住，等评论区换成加载中、旧的按钮已经卸载再放行，放行后照样失败。重试还会刷新页面，服务端再读
+    // 一次评论：锁住评论表并取消这次读取，它不会把评论送到浏览器。
+    const releaseRequest = await holdRequests(
+      page,
+      hasPath(`/api/tasks/${task.id}/comments`),
+    );
+    const releaseTable = await holdTable("task_comments");
+    try {
+      await retry.press("Enter");
+      await expect(page.getByText("评论加载中")).toBeVisible();
+      await expect
+        .poll(() => failQueriesWaitingFor("task_comments"))
+        .toBeGreaterThan(0);
+    } finally {
+      await releaseTable();
+    }
+    releaseRequest();
+
+    await expect(retry).toBeFocused();
+  });
+
+  test("评论重试期间焦点已移到别处时，评论出现后焦点留在原处", async ({
+    page,
+    tasks,
+  }) => {
+    const task = await tasks.createTask({ status: "done" });
+    await tasks.addComments(task.id, ["第一条评论"]);
+    const restore = await openTaskWithCommentsFailed(page, task.id);
+    await restore();
+    // 浏览器的评论请求停住，加载期间把焦点移到输入框。重试刷新页面时服务端读评论被锁住，评论只从这个请求到达。
+    const releaseRequest = await holdRequests(
+      page,
+      hasPath(`/api/tasks/${task.id}/comments`),
+    );
+    const releaseTable = await holdTable("task_comments");
+    try {
+      await page
+        .getByRole("button", { name: "重试加载评论", exact: true })
+        .press("Enter");
+      await expect(page.getByText("评论加载中")).toBeVisible();
+      await page.getByLabel("写评论").focus();
+    } finally {
+      await releaseTable();
+    }
+    releaseRequest();
+
+    await expect(comments(page)).toHaveText([/第一条评论/]);
+    // FocusAfterRetry 的 effect 在评论显示出来的那次提交之后才跑，等一会儿再看焦点有没有被移到标题。
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言这段时间里焦点没有被移走，等待是断言的一部分。
+    await page.waitForTimeout(500);
+    await expect(page.getByLabel("写评论")).toBeFocused();
   });
 
   test("已有数据时刷新失败，保留数据并弹全局提示", async ({ page, tasks }) => {
@@ -622,7 +682,7 @@ test.describe("写入", () => {
 
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("heading")).toContainText(task.name);
-    // 内容比对话框宽时，对话框能横向滚动：滚动宽度大于可见宽度。
+    // 标题换行后内容不比对话框宽：滚动宽度等于可见宽度，对话框没有横向溢出。
     expect(
       await dialog.evaluate(
         (element) => element.scrollWidth - element.clientWidth,
@@ -630,7 +690,7 @@ test.describe("写入", () => {
     ).toBe(0);
   });
 
-  test("重命名表单从当前数据开始编辑，撞名时在字段上提示", async ({
+  test("重命名表单从当前数据开始编辑，撞名时在字段上提示并把焦点移过去", async ({
     page,
     tasks,
   }) => {
@@ -644,6 +704,8 @@ test.describe("写入", () => {
     await input.fill("坐着的狐狸 v2");
     await page.getByRole("button", { name: "保存" }).click();
     await expect(page.getByText("名称已被其他任务占用")).toBeVisible();
+    // 点「保存」时焦点在按钮上，服务端报撞名后移到出错的字段。
+    await expect(input).toBeFocused();
     await expect(page.getByText("重命名任务失败，请稍后重试")).toHaveCount(0);
   });
 
@@ -831,6 +893,16 @@ test.describe("下载", () => {
 });
 
 test.describe("评论", () => {
+  test("首次加载出评论时，键盘焦点不移到评论区标题", async ({ page }) => {
+    await openTask(page, "task-01");
+    // 评论的时间在评论区 hydrate 之后才由浏览器填上：它出现时，和评论在同一个 Suspense 里的 FocusAfterRetry 已经挂载。
+    await expect(comments(page).first().locator("time")).not.toBeEmpty();
+
+    await expect(
+      page.getByRole("heading", { name: "评论", exact: true }),
+    ).not.toBeFocused();
+  });
+
   test("发表评论立即显示为发送中，成功后标记消失", async ({ page, tasks }) => {
     const task = await tasks.createTask({ status: "done" });
     await openTask(page, task.id);
@@ -906,11 +978,15 @@ test.describe("评论", () => {
     ]);
   });
 
-  test("空评论和超过 500 字的评论不能提交", async ({ page }) => {
+  test("空评论和超过 500 字的评论不能提交，空评论提交后焦点移到输入框", async ({
+    page,
+  }) => {
     await openTask(page, "task-01");
     const actions = recordRequests(page, isServerAction);
     await page.getByRole("button", { name: "发表" }).click();
     await expect(page.getByText("请输入评论")).toBeVisible();
+    // 点「发表」时焦点在按钮上，校验失败后移到输入框。
+    await expect(page.getByLabel("写评论")).toBeFocused();
 
     await page.getByLabel("写评论").fill("长".repeat(501));
     await page.getByRole("button", { name: "发表" }).click();
@@ -922,10 +998,9 @@ test.describe("评论", () => {
     const htmlPage = await openWithoutScripts(page, "/tasks/task-01");
 
     await expect(htmlPage.getByLabel("写评论")).toBeDisabled();
-    // 要原生的 disabled：toBeDisabled 对 aria-disabled 也算通过，那样的按钮在 hydration 之前仍能原生提交表单。
-    await expect(
+    await expectNativelyDisabled(
       htmlPage.getByRole("button", { name: "发表" }),
-    ).toHaveAttribute("disabled");
+    );
     await htmlPage.close();
   });
 });

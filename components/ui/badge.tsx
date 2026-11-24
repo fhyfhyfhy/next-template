@@ -4,10 +4,9 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/cn";
 
-// 渲染成链接或带 tabIndex 时 Badge 可聚焦。焦点环带 offset：模板的 --ring 和 --primary 同色，
-// 不留间隙时 primary、danger 的底色会和焦点环连成一片。
+// 渲染成链接或带 tabIndex 时 Badge 可聚焦，所以也带焦点环。
 const badgeVariants = cva(
-  "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card [&>svg]:pointer-events-none [&>svg]:size-3",
+  "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap focus-ring-offset [&>svg]:pointer-events-none [&>svg]:size-3",
   {
     variants: {
       // 名称沿用 Button 的 variant；muted 是 Badge 自己需要的低强调样式。

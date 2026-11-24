@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 
 /** 供 Server/Client 组件复用按钮外观；链接可应用这些样式并保留原生语义。 */
 export const buttonVariants = cva(
-  "inline-flex shrink-0 touch-manipulation items-center justify-center gap-2 rounded-control border font-medium whitespace-nowrap transition-[background-color,color,border-color,box-shadow,opacity,scale] duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card not-data-disabled:active:scale-98 data-disabled:cursor-not-allowed data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 touch-manipulation items-center justify-center gap-2 rounded-control border font-medium whitespace-nowrap focus-ring-offset transition-[background-color,color,border-color,box-shadow,opacity,scale] duration-150 select-none not-data-disabled:active:scale-98 data-disabled:cursor-not-allowed data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {

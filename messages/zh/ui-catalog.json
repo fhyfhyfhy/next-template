@@ -36,7 +36,7 @@
     "label": "{filename} 源码",
     "copy": "复制代码",
     "copied": "已复制",
-    "copyFailed": "复制失败，请手动选择"
+    "copyFailed": "复制失败，请手动选中代码复制"
   },
   "components": {
     "badge": {

@@ -1,9 +1,10 @@
 import { instant } from "@next/playwright";
 import type { Page } from "@playwright/test";
 
-import { unique } from "./backend";
+import { failQueriesWaitingFor, holdTable, unique } from "./backend";
 import {
   delayRequests,
+  expectNativelyDisabled,
   failRequests,
   holdRequests,
   isNavigation,
@@ -11,6 +12,7 @@ import {
   openWithoutScripts,
   recordRequests,
   requestBodyIncludes,
+  returnToTab,
   waitForServerAction,
 } from "./browser";
 import {
@@ -176,6 +178,37 @@ test("创建任务后列表立即出现新任务，表单清空", async ({ page 
   await expect(page.getByLabel("名称")).toHaveValue("");
 });
 
+test("header 徽标首次加载失败后，重新请求期间仍显示加载失败", async ({
+  page,
+}) => {
+  // 徽标的数据由服务端预取。锁住任务表、取消等锁的读取让预取失败，浏览器没有数据就自己请求，这里也让它失败（4xx
+  // 不重试）。最近查看页的服务端渲染只有徽标读任务表，锁表不影响页面的其他部分。
+  await failRequests(page, isActiveTasksRequest, { status: 400 });
+  const release = await holdTable("tasks");
+  try {
+    await page.goto("/recent", { waitUntil: "commit" });
+    await expect.poll(() => failQueriesWaitingFor("tasks")).toBeGreaterThan(0);
+  } finally {
+    await release();
+  }
+  const failed = page
+    .getByRole("banner")
+    .getByText("加载失败", { exact: true });
+  await expect(failed).toBeVisible();
+  const releasePoll = await holdRequests(page, isActiveTasksRequest);
+
+  // 回到标签页时徽标立即重新请求，请求停在浏览器里。
+  const polled = page.waitForRequest(isActiveTasksRequest);
+  await returnToTab(page);
+  await polled;
+
+  // 重新请求一开始 React Query 就清空了 error，只看 error 的话徽标随即换成骨架屏。
+  // eslint-disable-next-line playwright/no-wait-for-timeout -- 断言这段时间里加载失败一直显示，等待是断言的一部分。
+  await page.waitForTimeout(500);
+  await expect(failed).toBeVisible();
+  releasePoll();
+});
+
 test("停在列表上，新任务的状态一直推进到已完成，header 的进行中数同时更新", async ({
   page,
   tasks,
@@ -255,10 +288,9 @@ test("hydration 之前创建表单不可用", async ({ page }) => {
 
   await expect(htmlPage.getByLabel("名称")).toBeDisabled();
   await expect(htmlPage.getByLabel("Prompt")).toBeDisabled();
-  // 要原生的 disabled：toBeDisabled 对 aria-disabled 也算通过，那样的按钮在 hydration 之前仍能原生提交表单。
-  await expect(
+  await expectNativelyDisabled(
     htmlPage.getByRole("button", { name: "创建任务" }),
-  ).toHaveAttribute("disabled");
+  );
   await htmlPage.close();
 });
 
@@ -321,7 +353,9 @@ test("名称被占用后改了名字，离开再返回，改过的名字不会�
   await expect(page.getByText("名称已被其他任务占用")).toHaveCount(0);
 });
 
-test("名称为空时在浏览器里就拦下，不发请求", async ({ page }) => {
+test("名称为空时在浏览器里就拦下，焦点移到名称字段，不发请求", async ({
+  page,
+}) => {
   await openTasksPage(page);
   const prompt = unique("e2e prompt");
   // 列表的变化信号也会调 Server Action：只记带这次 prompt 的。
@@ -334,6 +368,8 @@ test("名称为空时在浏览器里就拦下，不发请求", async ({ page }) 
   await page.getByRole("button", { name: "创建任务" }).click();
 
   await expect(page.getByText("请输入名称")).toBeVisible();
+  // 点「创建任务」时焦点在按钮上，校验失败后移到第一个无效的字段。
+  await expect(page.getByLabel("名称")).toBeFocused();
   expect(actions).toStrictEqual([]);
 });
 

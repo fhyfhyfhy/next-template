@@ -96,7 +96,7 @@
     "deletedNotice": "This task has been deleted. Below is the last data it had.",
     "prompt": "Prompt",
     "createdAt": "Created",
-    "retryLabel": "Retry loading the task details"
+    "retryLabel": "Retry loading task details"
   },
   "taskProgress": {
     "queued": "Queued",

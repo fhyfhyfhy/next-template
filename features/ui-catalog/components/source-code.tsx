@@ -3,6 +3,7 @@
 import { useClipboard } from "@mantine/hooks";
 import { IconCheck, IconCopy } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,15 @@ export function SourceCode({
 }) {
   const t = useTranslations();
   const clipboard = useClipboard({ timeout: 2500 });
+  // 状态行显示的那次失败：点复制时清空，下一帧再写入新的 error（每次失败都是新对象），读屏先看到空的状态行，每次失败都重新播报。
+  // 不能直接显示 clipboard.error：没有 navigator.clipboard 时 copy() 同步设置 error，和清空合并进同一次渲染，文字不变。
+  const [shownError, setShownError] = useState<Error | null>(null);
+  useEffect(() => {
+    const error = clipboard.error;
+    if (!error) return;
+    const frame = requestAnimationFrame(() => setShownError(error));
+    return () => cancelAnimationFrame(frame);
+  }, [clipboard.error]);
   return (
     <div className="min-w-0 border-t border-border bg-background">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
@@ -24,15 +34,13 @@ export function SourceCode({
         </span>
         <div className="flex flex-wrap items-center gap-3">
           <p role="status" className="text-xs text-destructive">
-            {clipboard.error && t("ui-catalog.sourceCode.copyFailed")}
+            {shownError && t("ui-catalog.sourceCode.copyFailed")}
           </p>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
-              // 先清掉上一次的失败提示：再次失败时状态行的文字从无到有，读屏才会重新播报。
-              // 失败时 copied 已经是 false，reset 只清掉 error。
-              if (clipboard.error) clipboard.reset();
+              setShownError(null);
               clipboard.copy(source);
             }}
           >

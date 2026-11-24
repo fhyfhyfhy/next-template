@@ -31,12 +31,12 @@ const fields = [
 export function Example() {
   // 服务端渲染的表单在 hydration 之前提交，会变成浏览器原生的 GET 提交、刷新整页，所以先不可用。
   const hydrated = useHydrated();
-  const [submitted, setSubmitted] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const form = useForm({
     defaultValues: { name: "", email: "" },
     validationLogic: revalidateLogic(),
     validators: { onDynamic: schema },
-    onSubmit: ({ value }) => setSubmitted(value.name),
+    onSubmit: () => setSubmitted(true),
   });
   return (
     <Form
@@ -73,11 +73,10 @@ export function Example() {
       <Button type="submit" disabled={!hydrated}>
         提交
       </Button>
-      {submitted && (
-        <p role="status" className="text-sm text-muted-foreground">
-          已提交：{submitted}
-        </p>
-      )}
+      {/* 状态行一直挂着、只换文字：和文字一起挂载的 role="status" 读屏可能不播报。 */}
+      <p role="status" className="text-sm text-muted-foreground">
+        {submitted && "已提交"}
+      </p>
     </Form>
   );
 }

@@ -52,7 +52,7 @@ export function Textarea({
       render={<textarea {...props} />}
       // 触屏换成 text-base 的原因见 components/ui/input.tsx；aria-invalid:focus-visible:ring-ring 的原因同样见那里。
       className={cn(
-        "w-full min-w-0 rounded-control border border-input bg-card px-3 py-2 text-sm text-card-foreground transition-[border-color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:ring-ring pointer-coarse:text-base",
+        "w-full min-w-0 rounded-control border border-input bg-card px-3 py-2 text-sm text-card-foreground transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/15 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:ring-ring pointer-coarse:text-base",
         className,
       )}
     />

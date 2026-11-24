@@ -1,37 +1,18 @@
-import {
-  existsSync,
-  globSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, globSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import { describe, expect, onTestFinished, test } from "vitest";
+import { describe, expect, test } from "vitest";
 
 import { SAMPLE_PRODUCT } from "./sample-product.mjs";
+import { tempDir } from "./temp-dir-test-helpers.mjs";
 
 // agent 读的文档靠相对链接互相引用；移动或改名文件时，这里会指出失效的链接。指向本仓库 GitHub 的链接另外检查
 // （见 SAMPLE_PRODUCT），其他外部链接和 node_modules 里的安装文档不检查。
 
-// 下面的检查函数都按 root 读文件，默认是本仓库；自测传入 fixture() 建的临时目录，不依赖仓库文档的现状。
+// 下面的检查函数都按 root 读文件，默认是本仓库；自测传入 tempDir() 建的临时目录，不依赖仓库文档的现状。
 const projectRoot = join(import.meta.dirname, "..");
 const read = (file, root = projectRoot) =>
   readFileSync(join(root, file), "utf8").replace(/\r\n/g, "\n");
 
-/** 自测用的临时目录，files 是路径到内容的映射；当前测试结束时删除。 */
-function fixture(files) {
-  const root = mkdtempSync(join(tmpdir(), "docs-links-"));
-  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
-  for (const [file, text] of Object.entries(files)) {
-    mkdirSync(dirname(join(root, file)), { recursive: true });
-    writeFileSync(join(root, file), text, "utf8");
-  }
-  return root;
-}
 // 自测 fixture 里的规则文件。
 const GUIDE = {
   ".claude/rules/guide.md": "# Guide\n\n## Hydration\n\n## Test data\n",
@@ -116,7 +97,7 @@ test("检查本身能发现失效的链接和锚点", () => {
     brokenLinks(
       ".claude/rules/example.md",
       "[a](guide.md#hydration) [b](missing.md) [c](guide.md#no-such-heading) `[d](missing.md)`",
-      fixture(GUIDE),
+      tempDir(GUIDE),
     ),
   ).toStrictEqual(["missing.md", "guide.md#no-such-heading"]);
 });
@@ -194,7 +175,7 @@ test("检查本身能发现失效的路径和小节", () => {
         '**Test data** in `.claude/rules/guide.md`, "Hydration" and "No such section" in `guide.md`',
         "**Setup** in `missing.md`",
       ].join("\n"),
-      fixture(GUIDE),
+      tempDir(GUIDE),
     ),
   ).toStrictEqual([
     ".claude/rules/missing.md",
@@ -245,7 +226,7 @@ test("检查本身能发现 ESLint 消息里失效的小节", () => {
         'const b = `See "${section}" and "No such section" in .claude/rules/guide.md.`;',
         `const c = 'See "Hydration" in .claude/rules/missing.md.';`,
       ].join("\n"),
-      fixture(GUIDE),
+      tempDir(GUIDE),
     ),
   ).toStrictEqual([
     ".claude/rules/guide.md#no-such-section",

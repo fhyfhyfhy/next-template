@@ -2,7 +2,7 @@
 
 // 源码内容变化也要更新此模块，让开发服务器重新读取展示和复制用的源码。
 export const exampleSourceRevision =
-  "d009da4624f1a9bfa753692e1a7f2cdc7036a97fe08ab125fcd7b2b21e9035b7";
+  "d1fa6a8135e4f780920173fc12e89f50efa89ee3df09f80f06a0abf6227cbf4d";
 
 export const exampleFiles = {
   badge: [
@@ -36,6 +36,7 @@ export const exampleFiles = {
   ],
   progress: [
     { id: "basic", filename: "basic.example.tsx" },
+    { id: "file-count", filename: "file-count.example.tsx" },
     { id: "indeterminate", filename: "indeterminate.example.tsx" },
   ],
   select: [

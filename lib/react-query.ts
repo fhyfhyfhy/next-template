@@ -12,6 +12,7 @@ import {
 
 export type {
   DehydratedState,
+  FetchStatus,
   InfiniteData,
   QueryKey,
 } from "@tanstack/react-query";
@@ -24,6 +25,7 @@ export {
   keepPreviousData,
   mutationOptions,
   noop,
+  onlineManager,
   QueryClientProvider,
   QueryErrorResetBoundary,
   QueryObserver,

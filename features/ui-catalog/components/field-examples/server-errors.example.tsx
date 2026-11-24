@@ -98,11 +98,10 @@ export function Example() {
           </Button>
         )}
       </form.Subscribe>
-      {saved && (
-        <p role="status" className="text-sm text-muted-foreground">
-          已保存：{saved}
-        </p>
-      )}
+      {/* 状态行一直挂着、只换文字：和文字一起挂载的 role="status" 读屏可能不播报。 */}
+      <p role="status" className="text-sm text-muted-foreground">
+        {saved && `已保存：${saved}`}
+      </p>
     </Form>
   );
 }

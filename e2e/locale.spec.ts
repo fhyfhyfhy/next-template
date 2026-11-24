@@ -66,19 +66,27 @@ test("切换语言前后的页面，前进后退回去时地址不带 _rsc", asy
   }
 });
 
-test("切换语言后整页打开别的页面也按选择显示，在那里切回中文时地址不变", async ({
-  page,
-}) => {
+test("切换语言后整页打开别的页面也按选择显示", async ({ page }) => {
   await switchToEnglish(page);
 
   await page.goto("/ui?component=select");
-  // 标题后的句点只是装饰，不进可访问名称。
-  await expect(page.getByRole("heading", { name: "Select" })).toBeVisible();
+
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(
+    page.getByRole("navigation", { name: "Language" }),
+  ).toBeVisible();
+});
+
+test("在整页打开的别的页面上切回中文，地址不变", async ({ page }) => {
+  await switchToEnglish(page);
+  await page.goto("/ui?component=select");
   const englishSwitcher = page.getByRole("navigation", { name: "Language" });
   await expect(
     englishSwitcher.getByRole("link", { name: "中文" }),
   ).toBeVisible();
+
   await englishSwitcher.getByRole("link", { name: "中文" }).click();
+
   await expect(page).toHaveURL("/ui?component=select");
   await expect(page.locator("html")).toHaveAttribute("lang", "zh");
 });

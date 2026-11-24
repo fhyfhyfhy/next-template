@@ -36,7 +36,7 @@ Upstream: `skills/break-ui/` in `emilkowalski/skills`, as `npx skills update` in
 
 ## Dates and times go through `<DateTime>`
 
-`.claude/rules/i18n.md` ("Dates and numbers") shows a date or time only through `<DateTime>` from `@/components/date-time`, which renders it in the computer's time zone once the page has hydrated, and ESLint reports `Intl.DateTimeFormat`, `toLocale*String()`, `toDateString()`, and `toTimeString()` anywhere else. Relative times use next-intl's formatter.
+`.claude/rules/i18n.md` ("Dates and numbers") shows a date or time only through `DateTime` in `components/date-time.tsx`, which renders it in the computer's time zone once the page has hydrated, and ESLint reports `Intl.DateTimeFormat`, `toLocale*String()`, `toDateString()`, and `toTimeString()` anywhere else. Relative times use next-intl's formatter.
 
 File: CATALOG.md
 
@@ -45,7 +45,7 @@ File: CATALOG.md
  | Very long duration (`1,284 hours`) | Duration formatting that never rolls up to days |
  
 -Use `Intl.RelativeTimeFormat` and `Intl.DateTimeFormat`, not hand-built strings.
-+Show dates and times with `<DateTime>` from `@/components/date-time`, and relative times with next-intl's `useFormatter` or `getFormatter`, not hand-built strings (`.claude/rules/i18n.md`, "Dates and numbers").
++Show dates and times with `DateTime` in `components/date-time.tsx`, and relative times with next-intl's `useFormatter` or `getFormatter`, not hand-built strings (`.claude/rules/i18n.md`, "Dates and numbers").
  
  ## Images and media
 ```

@@ -7,8 +7,13 @@ import { SchemaValidationError } from "@/lib/request/fetch";
 
 import { handleRequestError } from "./providers";
 
-// 只测 e2e 观察不到的情况：服务端渲染、schema 不匹配的日志、按错误选文案。弹出的 toast 从 sonner 的
-// toast.getToasts() 读，也就是 <Toaster /> 要显示的那些。
+// 只测 e2e 观察不到的情况：服务端渲染、schema 不匹配的日志、按错误选文案。其余情况的 e2e：
+// - 通用文案：e2e/task-detail.spec.ts 的“已有数据时刷新失败，保留数据并弹全局提示”；
+// - 每个请求只留一个 toast：同一文件的“无关的请求同时失败各弹一个提示，同一个请求再次失败不增加提示”；
+// - 调用方给的文案：同一文件的“重试失败时恢复为失败，只弹一个全局提示”；
+// - suppressErrorToast 的 predicate 命中时不弹：同一文件的“任务在别处被删除后显示已删除，不弹通用提示”，
+//   e2e/recent.spec.ts 的“看过但已被删除的任务显示为已删除，不弹通用提示”。
+// 弹出的 toast 从 sonner 的 toast.getToasts() 读，也就是 <Toaster /> 要显示的那些。
 const runtimeIsServer = environmentManager.isServer();
 const request = { id: "request-1" };
 

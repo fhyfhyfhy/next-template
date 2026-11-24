@@ -1,6 +1,6 @@
 "use client";
 
-import { IconCode, IconEye } from "@tabler/icons-react";
+import { IconCode } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 
@@ -36,9 +36,10 @@ export function ExampleCard({
           size="icon-sm"
           aria-label={t("ui-catalog.examples.code", { title })}
           aria-expanded={showCode}
+          className="aria-expanded:bg-accent aria-expanded:text-accent-foreground"
           onClick={() => setShowCode(!showCode)}
         >
-          {showCode ? <IconEye aria-hidden /> : <IconCode aria-hidden />}
+          <IconCode aria-hidden />
         </Button>
       </div>
       <div className="flex min-h-40 flex-wrap items-center justify-center gap-4 p-6">
