@@ -2,7 +2,7 @@
 
 // 源码内容变化也要更新此模块，让开发服务器重新读取展示和复制用的源码。
 export const exampleSourceRevision =
-  "7cd4fb75f2e6955ca0f7ac41b45bff3b73311f3775bfb86b5e40f1bed98b820b";
+  "6aa5db1d57cd26484ae62f9fc6635b423923f1e99c20bbf16a335caa5c4b9c51";
 
 export const exampleFiles = {
   badge: [
@@ -21,10 +21,16 @@ export const exampleFiles = {
     { id: "icons", filename: "icons.example.tsx" },
     { id: "validation", filename: "validation.example.tsx" },
   ],
+  combobox: [
+    { id: "async", filename: "async.example.tsx" },
+    { id: "basic", filename: "basic.example.tsx" },
+    { id: "sizes", filename: "sizes.example.tsx" },
+  ],
   dialog: [
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
   ],
+  drawer: [{ id: "basic", filename: "basic.example.tsx" }],
   field: [
     { id: "server-errors", filename: "server-errors.example.tsx" },
     { id: "tanstack-form", filename: "tanstack-form.example.tsx" },
@@ -34,10 +40,22 @@ export const exampleFiles = {
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
   ],
+  menu: [
+    { id: "basic", filename: "basic.example.tsx" },
+    { id: "options", filename: "options.example.tsx" },
+  ],
+  popover: [
+    { id: "basic", filename: "basic.example.tsx" },
+    { id: "controlled", filename: "controlled.example.tsx" },
+  ],
   progress: [
     { id: "basic", filename: "basic.example.tsx" },
     { id: "file-count", filename: "file-count.example.tsx" },
     { id: "indeterminate", filename: "indeterminate.example.tsx" },
+  ],
+  "radio-group": [
+    { id: "basic", filename: "basic.example.tsx" },
+    { id: "plain", filename: "plain.example.tsx" },
   ],
   select: [
     { id: "basic", filename: "basic.example.tsx" },
@@ -50,9 +68,19 @@ export const exampleFiles = {
     { id: "basic", filename: "basic.example.tsx" },
     { id: "composition", filename: "composition.example.tsx" },
   ],
+  table: [{ id: "basic", filename: "basic.example.tsx" }],
+  tabs: [
+    { id: "basic", filename: "basic.example.tsx" },
+    { id: "links", filename: "links.example.tsx" },
+  ],
   textarea: [{ id: "basic", filename: "basic.example.tsx" }],
   toaster: [
     { id: "action", filename: "action.example.tsx" },
     { id: "basic", filename: "basic.example.tsx" },
   ],
+  toggle: [
+    { id: "basic", filename: "basic.example.tsx" },
+    { id: "controlled", filename: "controlled.example.tsx" },
+  ],
+  tooltip: [{ id: "basic", filename: "basic.example.tsx" }],
 } as const;

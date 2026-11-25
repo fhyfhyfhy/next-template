@@ -1,0 +1,38 @@
+"use client";
+
+import { usePlaygroundConfig } from "../../hooks/use-playground-config";
+import type { ComponentMetadata } from "../../types/examples";
+import { OptionControl } from "../option-control";
+import { Playground } from "../playground";
+import { TextControl } from "../text-control";
+import { ToggleControl } from "../toggle-control";
+import { ComboboxPlayground, initialConfig } from "./playground";
+
+export const metadata = {
+  title: "Combobox",
+  icon: "IconListSearch",
+} satisfies ComponentMetadata;
+
+/** Combobox 的可调预览与参数控制。 */
+export function Preview({ source }: { source: string }) {
+  const { config, field, playground } = usePlaygroundConfig(
+    initialConfig,
+    source,
+  );
+  return (
+    <Playground
+      {...playground}
+      controls={
+        <>
+          <OptionControl {...field("size")} options={["sm", "md", "lg"]} />
+          <TextControl {...field("label")} />
+          <TextControl {...field("placeholder")} />
+          <TextControl {...field("emptyText")} />
+          <ToggleControl {...field("disabled")} />
+        </>
+      }
+    >
+      <ComboboxPlayground config={config} />
+    </Playground>
+  );
+}

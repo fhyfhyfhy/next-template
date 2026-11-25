@@ -48,8 +48,14 @@
     "checkbox": {
       "description": "样式容易定制的复选框。"
     },
+    "combobox": {
+      "description": "可以输入筛选、再从列表里选一项的表单控件。"
+    },
     "dialog": {
       "description": "在整个页面之上打开的弹窗。"
+    },
+    "drawer": {
+      "description": "从页面一边滑出的面板，后面的页面仍然看得见。"
     },
     "field": {
       "description": "把标签、控件、说明和错误信息组合在一起，状态由 TanStack Form 提供。"
@@ -60,8 +66,17 @@
     "input": {
       "description": "原生 input 元素，放在 Field 里自动和它配合。"
     },
+    "menu": {
+      "description": "按钮打开的一组操作或选项，可以分组；点选后是否关上由 closeOnClick 决定。"
+    },
+    "popover": {
+      "description": "点击元素后在它旁边打开的浮层，放标题、说明或几个控件；点外面或按 Escape 关上。"
+    },
     "progress": {
       "description": "显示耗时较长的操作的进度。"
+    },
+    "radio-group": {
+      "description": "一组只能选中一项的选项，方向键在选项之间移动。"
     },
     "select": {
       "description": "从下拉菜单里选择预设值的表单控件。"
@@ -72,11 +87,23 @@
     "switch": {
       "description": "表示某项设置开启还是关闭的控件。"
     },
+    "table": {
+      "description": "面板上的数据表格，比页面宽时横向滚动。"
+    },
+    "tabs": {
+      "description": "在几个视图之间切换的一组 tab，也可以渲染成切换 URL 状态的链接。"
+    },
     "textarea": {
       "description": "多行文本输入框，放在 Field 里自动和它配合。"
     },
     "toaster": {
       "description": "短暂出现、和其他提示叠放的简短消息。"
+    },
+    "toggle": {
+      "description": "按下或弹起两种状态的按钮，比如一个格式选项。"
+    },
+    "tooltip": {
+      "description": "指针悬停或键盘聚焦时，在元素旁边出现的简短说明。"
     }
   }
 }

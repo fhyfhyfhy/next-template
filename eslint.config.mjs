@@ -120,7 +120,7 @@ const NATIVE_ELEMENTS = [
   // Base UI 没有文件选择和隐藏字段的组件，这两种 input 保持原生。
   nativeElement(
     "input",
-    "Input, Checkbox, or Switch from @/components/ui/; a radio or range input takes a wrapper of Base UI's Radio or Slider in components/ui/, adding it first if it is missing",
+    "Input, Checkbox, Switch, or the RadioGroup parts from @/components/ui/; a range input takes a wrapper of Base UI's Slider in components/ui/, adding it first if it is missing",
     ":not(:has(> JSXAttribute[name.name='type']:matches([value.value=/^(file|hidden)$/], [value.expression.value=/^(file|hidden)$/])))",
   ),
   // Base UI 没有多行输入的组件，textarea 由 components/ui/textarea.tsx 用 Field.Control 封装。
