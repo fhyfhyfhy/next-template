@@ -885,6 +885,14 @@ const eslintConfig = defineConfig([
     languageOptions: { frontmatter: "yaml" },
     rules: { "writing-style/english-only": "error" },
   },
+  // 第三方 skill 也查：patch 会改它们的 description，frontmatter 解析不了时 npx skills 跳过整个 skill。
+  {
+    files: AGENT_INSTRUCTIONS,
+    plugins: { markdown, docs: docsPlugin },
+    language: "markdown/gfm",
+    languageOptions: { frontmatter: "yaml" },
+    rules: { "docs/frontmatter": "error" },
+  },
   {
     files: DOCS,
     ignores: THIRD_PARTY_SKILLS,

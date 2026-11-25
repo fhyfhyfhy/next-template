@@ -1,11 +1,13 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
+import { parseDocument } from "yaml";
 
 import { SAMPLE_PRODUCT } from "../sample-product.mjs";
 
 // 文档链接的本地规则。agent 读的文档靠相对链接互相引用，移动或改名文件时 relative-links 指出失效的引用；
 // template-links 检查指向 template 在 GitHub 上的链接（见 SAMPLE_PRODUCT），其他外部链接和 node_modules 里的
-// 安装文档不检查。code-references 和 section-pointers 检查按名称指向规则小节的写法，这种写法不是链接。
+// 安装文档不检查。code-references 和 section-pointers 检查按名称指向规则小节的写法，这种写法不是链接。frontmatter
+// 检查 skill 和规则的 YAML 头。
 
 // template 在 GitHub 上的地址；从仓库根开始的路径跟在 ref 后面。
 const GITHUB_LINK =
@@ -27,18 +29,19 @@ function withoutCodeBlocks(text) {
 }
 
 /**
- * skill patch 里 diff 块的上下文行和 `-` 行在 text 里的 [起点, 终点) 区间。这些行原样引用上游，和第三方 skill 本身
- * 一样不算这个仓库写的话；`+` 行和 `@@` 后的位置说明是这个仓库写的。
+ * skill patch 里 diff 块的上下文行和 `-` 行在 text 里的 [起点, 终点) 区间。这些行原样引用上游，和 eslint.config.mjs
+ * 用 THIRD_PARTY_SKILLS 跳过的第三方 skill 一样不算这个仓库写的话；`+` 行和 `@@` 后的位置说明是这个仓库写的。
+ * 按 CommonMark，至少和开头一样长、后面没有别的文字的反引号行才闭合代码块。
  */
 function upstreamQuotes(text) {
   const ranges = [];
-  let fence;
+  let fence = 0;
   let offset = 0;
   for (const line of text.split("\n")) {
-    if (fence === undefined) {
-      fence = /^(`{3,})diff\s*$/.exec(line)?.[1];
-    } else if (line.trimEnd() === fence) {
-      fence = undefined;
+    if (fence === 0) {
+      fence = /^(`{3,})diff\s*$/.exec(line)?.[1].length ?? 0;
+    } else if ((/^(`{3,})\s*$/.exec(line)?.[1].length ?? 0) >= fence) {
+      fence = 0;
     } else if (line === "" || line[0] === " " || line[0] === "-") {
       ranges.push([offset, offset + line.length]);
     }
@@ -237,7 +240,7 @@ export default function createDocsPlugin(projectRoot) {
 
   // README 和 docs/research/ 下的调研笔记是给人看的：README 介绍项目、随时会改，调研笔记记的是某一天查到的背景和
   // 来源。agent 读的文档不引用它们，agent 要用的结论写在 agent 文档里。derived-project skill 把 README.md 列为派生
-  // 项目要改写成自己的文件，提到它不算引用；skill patch 引用上游原文的行也不算（upstreamQuotes）。
+  // 项目要改写成自己的文件，提到它不算引用；skill patch 的 diff 块里引用上游的上下文行和 `-` 行也不算（upstreamQuotes）。
   const peopleDocs = {
     meta: {
       type: "problem",
@@ -248,28 +251,19 @@ export default function createDocsPlugin(projectRoot) {
       },
     },
     create(context) {
-      const derivedProject = fromRoot(context.filename).startsWith(
-        ".agents/skills/derived-project/",
-      );
+      const path = fromRoot(context.filename);
+      const derivedProject = path.startsWith(".agents/skills/derived-project/");
       // 前面接着目录名的 README.md 是别的目录的，比如 skill 写的 plans/README.md；../ 接的仍是项目的 README。
       const pattern = derivedProject
         ? /docs\/research\/[^\s)`"]*/g
         : /(?<![\w-]\/|\w)README\.md[^\s)`"]*|docs\/research\/[^\s)`"]*/g;
-      const quotes = fromRoot(context.filename).startsWith(
-        ".agents/skill-patches/",
-      )
+      const quotes = path.startsWith(".agents/skill-patches/")
         ? upstreamQuotes(context.sourceCode.text)
         : [];
       return {
         "root:exit"() {
           for (const match of context.sourceCode.text.matchAll(pattern)) {
-            if (
-              quotes.some(
-                ([start, end]) => match.index >= start && match.index < end,
-              )
-            ) {
-              continue;
-            }
+            if (inside(quotes, match.index)) continue;
             reportAt(context, match.index, match[0].length, "cited", {
               reference: match[0],
             });
@@ -371,8 +365,42 @@ export default function createDocsPlugin(projectRoot) {
     },
   };
 
+  // npx skills 和 Codex 按严格的 YAML 读 frontmatter，解析不了就跳过整个 skill；@eslint/markdown 的 frontmatter
+  // 选项只认出这一块，不校验内容。最常见的是没加引号的值里带 `: `。
+  const frontmatter = {
+    meta: {
+      type: "problem",
+      schema: [],
+      messages: {
+        invalid:
+          "The frontmatter is not valid YAML, so `npx skills` and other strict parsers skip this file: {{message}}. Quote a value that contains `: `.",
+      },
+    },
+    create(context) {
+      return {
+        "root:exit"() {
+          const block = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(
+            context.sourceCode.text,
+          );
+          if (!block) return;
+          const start = block[0].indexOf(block[1]);
+          for (const error of parseDocument(block[1]).errors) {
+            const [from, to] = error.pos;
+            reportAt(context, start + from, Math.max(to - from, 1), "invalid", {
+              // yaml 在第一行末尾写的是 frontmatter 里的行列，报告的位置已经是文件里的。
+              message: error.message
+                .split("\n")[0]
+                .replace(/ at line \d+, column \d+:$/, ""),
+            });
+          }
+        },
+      };
+    },
+  };
+
   return {
     rules: {
+      frontmatter,
       "relative-links": relativeLinks,
       "template-links": templateLinks,
       "sample-product-paths": samplePaths,

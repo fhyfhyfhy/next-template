@@ -3392,22 +3392,65 @@ describe("文档的链接能打开，引用 template 的代码时带 GitHub 链�
     expect(await cited("docs/features.md")).toStrictEqual([]);
   });
 
-  test("skill patch 的 diff 里，引用上游的上下文行和 - 行不算引用 README，+ 行和正文算", async () => {
-    const source = [
-      "Upstream names `README.md`.",
-      "",
-      "````diff",
-      "@@ after the `README.md` line @@",
-      " Finish by updating `README.md` in the plan directory.",
-      "-Read `README.md` first.",
-      "+Read `README.md` last.",
-      "````",
-      "",
-    ].join("\n");
-    const cited = (await reported(".agents/skill-patches/case.md", source))
+  // 引用上游的行：3 和 4 个反引号的 diff 块里，以空格或 - 开头的行。闭合行可以比开头长，比开头短的不闭合。
+  const PATCH_WITH_QUOTES = [
+    "Upstream names `README.md`.",
+    "",
+    "```diff",
+    "@@ after the `README.md` line @@",
+    " Finish by updating `README.md` in the plan directory.",
+    "-Read `README.md` first.",
+    "+Read `README.md` last.",
+    "````",
+    "",
+    "- Then read `README.md`.",
+    "",
+    "````diff",
+    "```",
+    "-Read `README.md` inside.",
+    "````",
+    "",
+    "```md",
+    "- Read `README.md` in a sample.",
+    "```",
+    "",
+  ].join("\n");
+  const citedLines = async (file) =>
+    (await reported(file, PATCH_WITH_QUOTES))
       .filter(([rule]) => rule === "docs/people-docs")
       .map(([, line]) => line);
-    expect(cited).toStrictEqual([1, 4, 7]);
+
+  test("skill patch 的 diff 块里，引用上游的上下文行和 - 行不算引用 README；+ 行、@@ 行、diff 块外和别的代码块里的算", async () => {
+    expect(await citedLines(".agents/skill-patches/case.md")).toStrictEqual([
+      1, 4, 7, 10, 18,
+    ]);
+  });
+
+  test("只有 skill patch 的 diff 块算引用上游，别的 agent 文档照常检查", async () => {
+    expect(await citedLines(".claude/rules/case.md")).toStrictEqual([
+      1, 4, 5, 6, 7, 10, 14, 18,
+    ]);
+  });
+
+  test("frontmatter 不是合法的 YAML 时报告，第三方 skill 也查", async () => {
+    const frontmatter = (description) =>
+      `---\nname: case\ndescription: ${description}\n---\n\n# Case\n`;
+    const invalid = frontmatter("Projects made from x: which files they keep.");
+    for (const file of [
+      ".agents/skills/case/SKILL.md",
+      ".agents/skills/animate/SKILL.md",
+      ".claude/rules/case.md",
+    ]) {
+      expect(await reported(file, invalid)).toStrictEqual([
+        ["docs/frontmatter", 3, 14],
+      ]);
+    }
+    expect(
+      await reported(
+        ".agents/skills/case/SKILL.md",
+        frontmatter('"Projects made from x: which files they keep."'),
+      ),
+    ).toStrictEqual([]);
   });
 
   test("第三方 skill 是上游原文，不检查", async () => {
