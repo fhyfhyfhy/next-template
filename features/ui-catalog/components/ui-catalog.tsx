@@ -24,7 +24,8 @@ export function UiCatalog({
   sources: ExampleSources;
 }) {
   const t = useTranslations();
-  const item = catalog.find((entry) => entry.id === component) ?? catalog[0];
+  const item = catalog.find((entry) => entry.id === component);
+  if (!item) throw new Error("Unknown UI catalog component");
   const Preview = previewsByComponent[component];
   return (
     <>
@@ -34,45 +35,51 @@ export function UiCatalog({
       >
         {t("ui-catalog.skipToContent")}
       </a>
-      {header}
-      <NavigationTransition>
-        <div className="mx-auto grid max-w-[1600px] md:min-h-[calc(100dvh-5rem)] md:grid-cols-[208px_minmax(0,1fr)] lg:grid-cols-[248px_minmax(0,1fr)]">
-          <ComponentNavigation />
-          <main id="main-content" className="min-w-0 px-5 py-8 sm:px-8 lg:p-12">
-            <NavigationBusy>
-              <div className="mb-9">
-                <div className="flex items-center gap-3 font-mono text-2xs tracking-[0.16em] text-muted-foreground">
-                  <span>{t("ui-catalog.page.eyebrow")}</span>
-                  <span>/</span>
-                  <span className="text-primary">{item.title}</span>
+      {/* header 和下面的网格竖排，网格占满 header 以下的高度：侧栏的分隔线在内容短时也延伸到窗口底部。 */}
+      <div className="flex min-h-dvh flex-col">
+        {header}
+        <NavigationTransition>
+          <div className="mx-auto grid w-full max-w-[1600px] md:flex-1 md:grid-cols-[208px_minmax(0,1fr)] lg:grid-cols-[248px_minmax(0,1fr)]">
+            <ComponentNavigation />
+            <main
+              id="main-content"
+              className="min-w-0 px-5 py-8 sm:px-8 lg:p-12"
+            >
+              <NavigationBusy>
+                <div className="mb-9">
+                  <div className="flex items-center gap-3 font-mono text-2xs tracking-[0.16em] text-muted-foreground">
+                    <span>{t("ui-catalog.page.eyebrow")}</span>
+                    <span>/</span>
+                    <span className="text-primary">{item.title}</span>
+                  </div>
+                  <h1 className="mt-5 text-5xl font-medium tracking-[-0.055em] sm:text-6xl lg:text-7xl">
+                    {item.title}
+                    <span aria-hidden className="text-primary">
+                      .
+                    </span>
+                  </h1>
+                  <p className="mt-5 max-w-2xl text-base/7 text-muted-foreground">
+                    {t(`ui-catalog.components.${item.id}.description`)}
+                  </p>
                 </div>
-                <h1 className="mt-5 text-5xl font-medium tracking-[-0.055em] sm:text-6xl lg:text-7xl">
-                  {item.title}
-                  <span aria-hidden className="text-primary">
-                    .
-                  </span>
-                </h1>
-                <p className="mt-5 max-w-2xl text-base/7 text-muted-foreground">
-                  {t(`ui-catalog.components.${item.id}.description`)}
-                </p>
-              </div>
-              <div className="space-y-10">
-                <Preview key={component} source={sources.playground} />
-                <ExampleList
-                  key={`examples-${component}`}
-                  component={component}
-                  sources={sources.examples}
-                />
-              </div>
-            </NavigationBusy>
-            <footer className="mt-12 flex justify-end border-t border-border pt-6 text-muted-foreground">
-              <span className="font-mono text-2xs tracking-wide">
-                {t("ui-catalog.page.footer")}
-              </span>
-            </footer>
-          </main>
-        </div>
-      </NavigationTransition>
+                <div className="space-y-10">
+                  <Preview key={component} source={sources.playground} />
+                  <ExampleList
+                    key={`examples-${component}`}
+                    component={component}
+                    sources={sources.examples}
+                  />
+                </div>
+              </NavigationBusy>
+              <footer className="mt-12 flex justify-end border-t border-border pt-6 text-muted-foreground">
+                <span className="font-mono text-2xs tracking-wide">
+                  {t("ui-catalog.page.footer")}
+                </span>
+              </footer>
+            </main>
+          </div>
+        </NavigationTransition>
+      </div>
     </>
   );
 }

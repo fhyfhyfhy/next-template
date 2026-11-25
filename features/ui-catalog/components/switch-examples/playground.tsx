@@ -2,7 +2,7 @@
 
 import { type SetStateAction, useState } from "react";
 
-import { FieldDescription, FieldRoot } from "@/components/ui/field";
+import { FieldDescription, FieldLabel, FieldRoot } from "@/components/ui/field";
 import {
   SwitchRoot,
   type SwitchRootProps,
@@ -46,9 +46,10 @@ export function SwitchPlayground({
   const change = onConfigChange ?? setLocal;
   return (
     <div className="rounded-panel border border-border bg-card p-5 text-card-foreground">
-      {/* 说明放在 label 外面：label 里的文字都会进开关的名称。 */}
+      {/* 说明放在 label 外面：label 里的文字都会进开关的名称，说明由 Field 关联。label 是设置项的名称而不是字段标题，
+          所以换回正文的字号和颜色。 */}
       <FieldRoot disabled={state.disabled}>
-        <label className="flex items-center justify-between gap-5 text-sm">
+        <FieldLabel className="flex items-center justify-between gap-5 text-sm font-normal text-card-foreground">
           {state.label}
           <SwitchRoot
             size={state.size}
@@ -61,7 +62,7 @@ export function SwitchPlayground({
           >
             <SwitchThumb />
           </SwitchRoot>
-        </label>
+        </FieldLabel>
         <FieldDescription>{state.description}</FieldDescription>
       </FieldRoot>
     </div>

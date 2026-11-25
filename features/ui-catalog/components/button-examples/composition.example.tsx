@@ -14,7 +14,7 @@ export const metadata = {
 export function Example() {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Button variant="secondary">主要操作</Button>
+      <Button>主要操作</Button>
       <Button variant="outline">次要操作</Button>
       <Link
         href="/ui?component=dialog"

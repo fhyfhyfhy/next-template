@@ -10,9 +10,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { setTimeout } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
-import { expect, onTestFinished, test } from "vitest";
+import { expect, onTestFinished, test, vi } from "vitest";
 
 import {
   generateExampleIndexes,
@@ -121,17 +120,8 @@ function writtenIndexes(root, ids) {
 }
 
 // 用到它的用例，超时要比这 5 秒长：否则失败时报的是用例超时，看不到最后一次断言的差异。
-async function eventually(check) {
-  const deadline = Date.now() + 5000;
-  while (true) {
-    try {
-      await check();
-      return;
-    } catch (error) {
-      if (Date.now() >= deadline) throw error;
-      await setTimeout(20);
-    }
-  }
+function eventually(check) {
+  return vi.waitFor(check, { timeout: 5000, interval: 20 });
 }
 
 test("自动发现零个、一个和三个示例，忽略辅助文件", async () => {
@@ -559,7 +549,15 @@ test(
         (await readCatalog(root)).catalog.map(({ id }) => id),
       ).toStrictEqual(["anchor"]);
     });
-    expect(errors).toStrictEqual([]);
+    // 改名、删除目录的途中跑的那次生成可能发现文件少了一半，或在格式化时被删，于是整次作废、抛错
+    // （generateExampleIndexes），由下一个事件重试，结果就是上面断言的索引。其他错误都算失败。
+    const transient =
+      /^(UI catalog files changed during generation|Missing required UI catalog file)/;
+    expect(
+      errors.filter(
+        (error) => error.code !== "ENOENT" && !transient.test(error.message),
+      ),
+    ).toStrictEqual([]);
   },
 );
 

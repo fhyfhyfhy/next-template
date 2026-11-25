@@ -9,7 +9,7 @@ import type {
 import { OptionControl } from "../option-control";
 import { TextControl } from "../text-control";
 import { ToggleControl } from "../toggle-control";
-import type { SelectConfig } from "./playground";
+import { roles, type SelectConfig } from "./playground";
 
 /** 将选择器的内容、状态和定位参数呈现为可调控件。 */
 export function SelectControls({
@@ -32,7 +32,7 @@ export function SelectControls({
       <OptionControl
         label="value"
         value={config.values[0] ?? "none"}
-        options={["none", "design", "engineering", "product"]}
+        options={["none", ...roles]}
         onChange={(value) =>
           onChange({
             ...config,
@@ -52,7 +52,7 @@ export function SelectControls({
         }
       />
       {config.multiple &&
-        ["design", "engineering", "product"].map((value) => (
+        roles.map((value) => (
           <ToggleControl
             key={value}
             label={`selected: ${value}`}
