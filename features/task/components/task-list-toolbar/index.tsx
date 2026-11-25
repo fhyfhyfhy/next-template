@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
+import { TabsList, TabsRoot, TabsTab } from "@/components/ui/tabs";
 import { cn } from "@/lib/cn";
 
 import { TASK_STATUSES } from "../../constants/task-list";
@@ -24,23 +25,22 @@ export function TaskListToolbar({ className }: { className?: string }) {
         className,
       )}
     >
-      <nav
-        aria-label={t("task.taskListToolbar.statusFilter")}
-        className="flex flex-wrap gap-1"
-      >
-        {statusTabs.map((status) => (
-          <TaskListLink
-            key={status ?? "all"}
-            values={{ status, page: null }}
-            aria-current={selected === status ? "page" : undefined}
-            className="rounded-control px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-secondary aria-[current=page]:text-secondary-foreground"
-          >
-            {status
-              ? t(`task.taskStatus.${status}`)
-              : t("task.taskListToolbar.allStatuses")}
-          </TaskListLink>
-        ))}
-      </nav>
+      <TabsRoot value={selected ?? "all"}>
+        <TabsList size="sm" aria-label={t("task.taskListToolbar.statusFilter")}>
+          {statusTabs.map((status) => (
+            <TabsTab
+              key={status ?? "all"}
+              value={status ?? "all"}
+              nativeButton={false}
+              render={<TaskListLink values={{ status, page: null }} />}
+            >
+              {status
+                ? t(`task.taskStatus.${status}`)
+                : t("task.taskListToolbar.allStatuses")}
+            </TabsTab>
+          ))}
+        </TabsList>
+      </TabsRoot>
       <SortSelect />
     </div>
   );

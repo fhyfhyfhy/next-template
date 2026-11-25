@@ -325,8 +325,8 @@ export async function waitForTaskList(page: Page) {
 /** 在已经打开的全部任务页上点一个状态筛选，等新列表到达。 */
 export async function filterByStatus(page: Page, label: string, url: string) {
   await page
-    .getByRole("navigation", { name: "按状态筛选" })
-    .getByRole("link", { name: label })
+    .getByRole("tablist", { name: "按状态筛选" })
+    .getByRole("tab", { name: label })
     .click();
   await expect(page).toHaveURL(url);
   await waitForTaskList(page);
