@@ -1,17 +1,21 @@
+import { NextIntlClientProvider } from "next-intl";
+import type { ReactNode } from "react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { z } from "zod";
 
 import { toast } from "@/components/ui/toaster";
+import { loadMessages } from "@/lib/i18n/messages";
 import { environmentManager } from "@/lib/react-query";
 import { SchemaValidationError } from "@/lib/request/fetch";
+import zh from "@/messages/zh/app.json";
 
 import { handleRequestError } from "./providers";
 
-// 只测 e2e 观察不到的情况：服务端渲染、schema 不匹配的日志、按错误选文案。其余情况由 e2e 覆盖，都在
-// e2e/task-detail.spec.ts：通用文案、每个请求只留一个 toast（请求失败的用例），调用方给的文案（写入的用例），
-// suppressErrorToast 的 predicate 命中时不弹（任务在别处被删除的用例，e2e/recent.spec.ts 里看过的任务被删除的用例也是）。
+// 示例业务的 e2e 也会走到这里，但派生项目会删掉示例业务，所以每种情况都在这里测。
 // 弹出的 toast 从 sonner 的 toast.getToasts() 读，也就是 <Toaster /> 要显示的那些。
 const runtimeIsServer = environmentManager.isServer();
+const failure = new Error("failure");
 const request = { id: "request-1" };
 
 const shownToasts = () =>
@@ -31,6 +35,21 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+test("按请求弹 toast：同一个请求再次失败只留一个，别的请求各弹一个，文案用调用方给的", () => {
+  handleRequestError(failure, { errorMessage: "保存失败" }, request);
+  handleRequestError(failure, { errorMessage: "保存失败" }, request);
+  handleRequestError(
+    failure,
+    { errorMessage: "加载失败" },
+    { id: "request-2" },
+  );
+
+  expect(shownToasts()).toStrictEqual([
+    { id: "request-1", title: "保存失败" },
+    { id: "request-2", title: "加载失败" },
+  ]);
+});
+
 test("errorMessage 是函数时，按这次的错误选文案", () => {
   const notFound = new Error("not found");
   handleRequestError(
@@ -44,13 +63,40 @@ test("errorMessage 是函数时，按这次的错误选文案", () => {
   ]);
 });
 
-test("服务端不弹：那里的 toast 永远不会被关闭", () => {
-  environmentManager.setIsServer(() => true);
+test("调用方没给文案时显示通用文案", async () => {
+  handleRequestError(failure, {}, request);
+
+  const [shown] = shownToasts();
+  expect(shown?.id).toBe("request-1");
+  // 通用文案在 <Toaster /> 里渲染，那里在页面的 next-intl provider 之内。
+  const html = renderToString(
+    <NextIntlClientProvider locale="zh" messages={await loadMessages("zh")}>
+      {shown?.title as ReactNode}
+    </NextIntlClientProvider>,
+  );
+  expect(html).toBe(zh.requestError);
+});
+
+test.each([
+  ["总是不弹", true],
+  ["predicate 对这个错误返回 true", () => true],
+])("调用方关掉提示（%s）时不弹", (_case, suppressErrorToast) => {
+  handleRequestError(failure, { suppressErrorToast }, request);
+  expect(shownToasts()).toStrictEqual([]);
+});
+
+test("predicate 对这个错误返回 false 时照常弹", () => {
   handleRequestError(
-    new Error("failure"),
-    { errorMessage: "保存失败" },
+    failure,
+    { suppressErrorToast: () => false, errorMessage: "保存失败" },
     request,
   );
+  expect(shownToasts()).toStrictEqual([{ id: "request-1", title: "保存失败" }]);
+});
+
+test("服务端不弹：那里的 toast 永远不会被关闭", () => {
+  environmentManager.setIsServer(() => true);
+  handleRequestError(failure, { errorMessage: "保存失败" }, request);
   expect(shownToasts()).toStrictEqual([]);
 });
 
