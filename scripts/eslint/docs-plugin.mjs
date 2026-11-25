@@ -27,19 +27,36 @@ const MESSAGE_SECTION_REFERENCE =
   /((?:"[^"\n]+"(?:,? and |, ))*"[^"\n]+") in ((?:[\w.-]+\/)*[\w-]+\.md)\b/g;
 
 /**
- * 去掉围栏代码块的文本：代码块里的井号不是标题。也要处理磁盘上别的文件，那些没有 AST，所以照 CommonMark 手写：fence
- * 最多缩进 3 格；反引号 fence 的 info string 不含反引号；闭合行用同一种字符、至少一样长、后面只有空白；没闭合的一直
- * 到文本末尾。
+ * 去掉围栏代码块的文本：代码块里的井号不是标题。也要处理磁盘上别的文件，那些没有 AST，所以照 CommonMark 逐行判断：
+ * fence 最多缩进 3 格；反引号 fence 的 info string 不含反引号；闭合行用同一种字符、至少一样长、最多缩进 3 格、后面
+ * 只有空白。
  */
 function withoutCodeBlocks(text) {
-  return text.replace(
-    /^ {0,3}(`{3,})[^`\n]*\n[\s\S]*?(?:^ {0,3}\1`*[^\S\n]*$|(?![\s\S]))|^ {0,3}(~{3,})[^\n]*\n[\s\S]*?(?:^ {0,3}\2~*[^\S\n]*$|(?![\s\S]))/gm,
-    "",
-  );
+  const kept = [];
+  let open;
+  for (const line of text.split("\n")) {
+    if (!open) {
+      const opener = /^( {0,3})(?:(`{3,})[^`]*|(~{3,}).*)$/.exec(line);
+      const fence = opener?.[2] ?? opener?.[3];
+      if (fence) open = { fence, indented: opener[1] !== "", lines: [line] };
+      else kept.push(line);
+      continue;
+    }
+    const closer = /^ {0,3}(`{3,}|~{3,})\s*$/.exec(line)?.[1];
+    if (closer?.[0] === open.fence[0] && closer.length >= open.fence.length) {
+      open = undefined;
+    } else {
+      open.lines.push(line);
+    }
+  }
+  // 没闭合的 fence：顶格的一直到文本末尾；缩进的多半在列表项里，CommonMark 让它随列表项结束，这里认不出列表项，
+  // 原样留下。
+  if (open?.indented) kept.push(...open.lines);
+  return kept.join("\n");
 }
 
 /**
- * diff 代码块（AST 的 `code` 节点）里上下文行和 `-` 行在 text 里的 [起点, 终点) 区间。skill patch 的这些行原样引用
+ * diff 代码块（AST 的 `code` 节点）里上下文行和 `-` 行在文件文本里的 [起点, 终点) 区间。skill patch 的这些行原样引用
  * 上游，和 eslint.config.mjs 用 THIRD_PARTY_SKILLS 跳过的第三方 skill 一样不算这个仓库写的话；`+` 行和 `@@` 后的
  * 位置说明是这个仓库写的。代码块从哪开始、到哪结束由 markdown 解析器按 CommonMark 判断。
  */

@@ -98,46 +98,53 @@ test("链接目标里的代码块可以用波浪线、缩进 3 格以内，块�
   ).toStrictEqual(["in-backticks", "in-tildes", "in-indented"]);
 });
 
-test("链接目标里的代码块按 CommonMark 闭合：更长的闭合行能闭合，更短的、后面带文字的、换了字符的不能", async () => {
-  const target = [
-    "```md",
-    "# In backticks",
-    "````",
-    "",
-    "# Between",
-    "",
-    "````md",
-    "# After shorter",
-    "```",
-    "# After text",
-    "```` md",
-    "# Still inside",
-    "````",
-    "",
-    "```md",
-    "# After tilde",
-    "~~~",
-    "# Still in backticks",
-    "```",
-    "",
-  ].join("\n");
-  expect(
-    await missingAnchors(target, [
-      "between",
+test("链接目标里的代码块按 CommonMark 闭合：更长的闭合行能闭合，更短的、后面带文字的、换了字符的、缩进 4 格的不能", async () => {
+  for (const [fence, other] of [
+    ["```", "~~~"],
+    ["~~~", "```"],
+  ]) {
+    const longer = fence + fence[0];
+    const target = [
+      `${fence}md`,
+      "# In block",
+      longer,
+      "",
+      "# Between",
+      "",
+      `${longer}md`,
+      "# After shorter",
+      fence,
+      "# After text",
+      `${longer} md`,
+      "# After other",
+      other + other[0],
+      "# After deep indent",
+      `    ${longer}`,
+      "# Still inside",
+      longer,
+      "",
+    ].join("\n");
+    expect(
+      await missingAnchors(target, [
+        "between",
+        "after-shorter",
+        "after-text",
+        "after-other",
+        "after-deep-indent",
+        "still-inside",
+      ]),
+      fence,
+    ).toStrictEqual([
       "after-shorter",
       "after-text",
+      "after-other",
+      "after-deep-indent",
       "still-inside",
-      "still-in-backticks",
-    ]),
-  ).toStrictEqual([
-    "after-shorter",
-    "after-text",
-    "still-inside",
-    "still-in-backticks",
-  ]);
+    ]);
+  }
 });
 
-test("缩进 4 格的和 info string 带反引号的不是 fence，没闭合的 fence 一直到文件末尾", async () => {
+test("缩进 4 格的和 info string 带反引号的不是 fence，顶格没闭合的 fence 一直到文件末尾", async () => {
   for (const fence of ["```", "~~~"]) {
     const target = [
       "    ```md",
@@ -159,4 +166,17 @@ test("缩进 4 格的和 info string 带反引号的不是 fence，没闭合的 
       fence,
     ).toStrictEqual(["unclosed"]);
   }
+});
+
+test("列表项里没闭合的 fence 随列表项结束，后面的标题照样算", async () => {
+  const target = [
+    "- item",
+    "  ```md",
+    "  code",
+    "- next",
+    "",
+    "# After",
+    "",
+  ].join("\n");
+  expect(await missingAnchors(target, ["after"])).toStrictEqual([]);
 });

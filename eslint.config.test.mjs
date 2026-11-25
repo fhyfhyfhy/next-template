@@ -13,6 +13,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { parseDocument } from "yaml";
 
 const project = dirname(fileURLToPath(import.meta.url));
 
@@ -3458,13 +3459,16 @@ describe("docs 插件的规则（scripts/eslint/docs-plugin.mjs）", () => {
     ).toStrictEqual([4, 11]);
   });
 
-  test("skill patch 末尾没闭合、也没有换行的 diff 块照样算引用上游", async () => {
-    expect(
-      await citedLines(
-        ".agents/skill-patches/case.md",
-        "Intro.\n\n```diff\n-Read `README.md` at the end.",
-      ),
-    ).toStrictEqual([]);
+  test("skill patch 末尾没闭合、也没有换行的 diff 块照样算引用上游，空的也不出错", async () => {
+    for (const source of [
+      "Intro.\n\n```diff\n-Read `README.md` at the end.",
+      "Intro `README.md`.\n\n```diff",
+    ]) {
+      expect(
+        await citedLines(".agents/skill-patches/case.md", source),
+        source,
+      ).toStrictEqual(source.startsWith("Intro `") ? [1] : []);
+    }
   });
 
   const frontmatter = (description, eol = "\n") =>
@@ -3529,26 +3533,28 @@ describe("docs 插件的规则（scripts/eslint/docs-plugin.mjs）", () => {
   });
 
   test("frontmatter 的报告给出 yaml 的错误，只有值里带 : 时提示加引号", async () => {
-    const messages = async (file, source) =>
-      (await docsMessages(file, source))
-        .filter(({ ruleId }) => ruleId === "docs/frontmatter")
-        .map(({ message }) => message);
     const PREFIX = "The frontmatter is not valid YAML: ";
     const HINT = "Quote the value, which contains `: `.";
-    for (const [file, source, hinted] of [
-      [".agents/skills/case/SKILL.md", frontmatter(UNQUOTED), true],
-      [".agents/skills/case/SKILL.md", "---\nname: a\nname: b\n---\n", false],
-      // 缩进错了的 paths 列表：yaml 报的错误码和带 : 的值一样，但加引号修不好。
+    for (const [file, yaml, hinted] of [
       [
-        ".claude/rules/case.md",
-        '---\npaths:\n  - "app/**"\n- "lib/**"\n---\n',
-        false,
+        ".agents/skills/case/SKILL.md",
+        `name: case\ndescription: ${UNQUOTED}`,
+        true,
       ],
+      [".agents/skills/case/SKILL.md", "name: a\nname: b", false],
+      // 缩进错了的 paths 列表：yaml 报的错误码和带 : 的值一样，但加引号修不好。
+      [".claude/rules/case.md", 'paths:\n  - "app/**"\n- "lib/**"', false],
     ]) {
-      const [first] = await messages(file, source);
-      expect(first, source).toMatch(new RegExp(`^${PREFIX}`));
-      expect(first, source).not.toMatch(/ at line \d+, column \d+/);
-      expect(first.endsWith(HINT), source).toBe(hinted);
+      const [first] = (await docsMessages(file, `---\n${yaml}\n---\n`))
+        .filter(({ ruleId }) => ruleId === "docs/frontmatter")
+        .map(({ message }) => message);
+      // yaml 自己的说明，去掉它在第一行末尾写的 frontmatter 里的行列。
+      const [error] = parseDocument(yaml).errors;
+      const explanation = error.message.split(" at line ")[0];
+      expect(first, yaml).toMatch(new RegExp(`^${PREFIX}`));
+      expect(first.includes(explanation), yaml).toBe(true);
+      expect(first, yaml).not.toMatch(/ at line \d+, column \d+/);
+      expect(first.endsWith(HINT), yaml).toBe(hinted);
     }
   });
 
