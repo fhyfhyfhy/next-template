@@ -3,6 +3,7 @@
 import { type SetStateAction, useState } from "react";
 
 import {
+  TabsIndicator,
   TabsList,
   TabsPanel,
   TabsRoot,
@@ -64,6 +65,7 @@ export function TabsPlayground({
             {tab.label}
           </TabsTab>
         ))}
+        <TabsIndicator />
       </TabsList>
       {tabs.map((tab) => (
         <TabsPanel key={tab.value} value={tab.value} className="text-sm">

@@ -1,4 +1,10 @@
-import { TabsList, TabsPanel, TabsRoot, TabsTab } from "@/components/ui/tabs";
+import {
+  TabsIndicator,
+  TabsList,
+  TabsPanel,
+  TabsRoot,
+  TabsTab,
+} from "@/components/ui/tabs";
 
 export const metadata = {
   title: "基本用法",
@@ -8,7 +14,7 @@ export const metadata = {
 
 /**
  * TabsRoot 持有选中的 tab，这里由 defaultValue 交给它自己；每个 TabsTab 和同一 value 的 TabsPanel 对应。
- * 方向键在 tab 之间移动，Enter 或空格选中。
+ * TabsIndicator 放在各个 tab 之后，换 tab 时滑过去。方向键在 tab 之间移动，Enter 或空格选中。
  */
 export function Example() {
   return (
@@ -17,6 +23,7 @@ export function Example() {
         <TabsTab value="overview">概览</TabsTab>
         <TabsTab value="settings">参数</TabsTab>
         <TabsTab value="logs">日志</TabsTab>
+        <TabsIndicator />
       </TabsList>
       <TabsPanel value="overview" className="text-sm">
         任务的状态、创建时间和封面。

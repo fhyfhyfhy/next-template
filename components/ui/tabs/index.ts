@@ -6,5 +6,6 @@ export const TabsRoot = TabsPrimitive.Root;
 export { TabsList } from "./list";
 export type { TabsListProps } from "./list";
 export { TabsTab } from "./tab";
+export { TabsIndicator } from "./indicator";
 export { TabsPanel } from "./panel";
 export type { TabsSize } from "./variants";

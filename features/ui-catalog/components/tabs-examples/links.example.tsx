@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createSerializer, parseAsStringLiteral, useQueryStates } from "nuqs";
 
-import { TabsList, TabsRoot, TabsTab } from "@/components/ui/tabs";
+import {
+  TabsIndicator,
+  TabsList,
+  TabsRoot,
+  TabsTab,
+} from "@/components/ui/tabs";
 
 export const metadata = {
   title: "切换 URL 状态的链接",
@@ -52,6 +57,7 @@ export function Example() {
             {viewLabels[value]}
           </TabsTab>
         ))}
+        <TabsIndicator />
       </TabsList>
     </TabsRoot>
   );

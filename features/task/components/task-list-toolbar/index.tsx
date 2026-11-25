@@ -2,7 +2,12 @@
 
 import { useTranslations } from "next-intl";
 
-import { TabsList, TabsRoot, TabsTab } from "@/components/ui/tabs";
+import {
+  TabsIndicator,
+  TabsList,
+  TabsRoot,
+  TabsTab,
+} from "@/components/ui/tabs";
 import { cn } from "@/lib/cn";
 
 import { TASK_STATUSES } from "../../constants/task-list";
@@ -39,6 +44,7 @@ export function TaskListToolbar({ className }: { className?: string }) {
                 : t("task.taskListToolbar.allStatuses")}
             </TabsTab>
           ))}
+          <TabsIndicator />
         </TabsList>
       </TabsRoot>
       <SortSelect />
