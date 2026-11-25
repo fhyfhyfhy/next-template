@@ -19,12 +19,24 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("app.ui.title"), robots: { index: false } };
 }
 
-/** 品牌和语言切换属于整个应用，和任务页面一样在 app/ 里组合进 UI catalog 的 header。 */
+/**
+ * Suspense 的 fallback 和正式内容各渲染一个 header。同一个元素传给两处时，它到浏览器后变成对第一处的引用，
+ * React 的开发构建会在 `UiCatalog`（features/ui-catalog/components/ui-catalog.tsx）把它放进自己的元素里时报缺少 key。
+ */
 export default function UiCatalogPage({
   searchParams,
 }: PageProps<"/[locale]/ui">) {
+  return (
+    <Suspense fallback={<Header />}>
+      <UiCatalogContent header={<Header />} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+/** 品牌和语言切换属于整个应用，和任务页面一样在 app/ 里组合进 UI catalog 的 header。 */
+function Header() {
   const t = useTranslations();
-  const header = (
+  return (
     <UiCatalogHeader
       brand={
         <Link
@@ -44,11 +56,6 @@ export default function UiCatalogPage({
       }
       actions={<LocaleSwitcher />}
     />
-  );
-  return (
-    <Suspense fallback={header}>
-      <UiCatalogContent header={header} searchParams={searchParams} />
-    </Suspense>
   );
 }
 
