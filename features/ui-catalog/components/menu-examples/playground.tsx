@@ -19,13 +19,15 @@ import {
 export interface MenuConfig {
   side: "top" | "bottom" | "left" | "right";
   align: "start" | "center" | "end";
+  closeOnClick: boolean;
 }
 
 // 括号将结束标记保留在表达式内；UI catalog 页面只替换标记之间的 JSON 初始值。
 // prettier-ignore
 export const initialConfig: MenuConfig = (/* @example-config */ {
   "side": "bottom",
-  "align": "start"
+  "align": "start",
+  "closeOnClick": false
 } /* @end-example-config */);
 
 const sorts = [
@@ -34,7 +36,10 @@ const sorts = [
   { value: "name", label: "名称" },
 ];
 
-/** 不传参数时使用初始配置；UI catalog 页面传入面板里的配置。选中的排序方式由这里持有。 */
+/**
+ * 不传参数时使用初始配置；UI catalog 页面传入面板里的配置。选中的排序方式由这里持有。MenuRadioItem 和
+ * MenuCheckboxItem 默认点选后不关菜单，closeOnClick 让它关上；MenuItem 默认关上。
+ */
 export function MenuPlayground({
   config = initialConfig,
 }: { config?: MenuConfig } = {}) {
@@ -52,7 +57,11 @@ export function MenuPlayground({
               <MenuRadioGroup value={sort} onValueChange={setSort}>
                 <MenuGroupLabel>排序方式</MenuGroupLabel>
                 {sorts.map(({ value, label }) => (
-                  <MenuRadioItem key={value} value={value}>
+                  <MenuRadioItem
+                    key={value}
+                    value={value}
+                    closeOnClick={config.closeOnClick}
+                  >
                     {label}
                     <span className="ml-auto flex size-4 items-center justify-center">
                       <MenuRadioItemIndicator>
