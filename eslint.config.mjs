@@ -186,7 +186,8 @@ const AGENT_INSTRUCTIONS = [
 ];
 
 // 检查相对链接和指向 template GitHub 的链接的文档。第三方 skill（skills-lock.json）是上游原文加上 patch，链接和引用
-// 不查，frontmatter 照查（见 docs/frontmatter 那一段）；它们的 patch 在 .agents/skill-patches/，属于 agent 指令。
+// 不查，SKILL.md 的 frontmatter 照查（见 docs/frontmatter 那一段）；它们的 patch 在 .agents/skill-patches/，属于
+// agent 指令。
 const DOCS = [
   "AGENTS.md",
   "README.md",

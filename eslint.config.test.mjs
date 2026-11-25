@@ -3296,15 +3296,19 @@ describe("docs 插件的规则（scripts/eslint/docs-plugin.mjs）", () => {
   const eslint = new ESLint({ cwd: project });
   const base = "https://github.com/fhyfhyfhy/next-template";
   const sha = "0123456789abcdef0123456789abcdef01234567";
-  const reported = async (file, source) => {
+  const docsMessages = async (file, source) => {
     const [result] = await eslint.lintText(source, {
       filePath: join(project, file),
     });
     expect(result.fatalErrorCount).toBe(0);
-    return result.messages
-      .filter(({ ruleId }) => ruleId?.startsWith("docs/"))
-      .map(({ ruleId, line, column }) => [ruleId, line, column]);
+    return result.messages.filter(({ ruleId }) => ruleId?.startsWith("docs/"));
   };
+  const reported = async (file, source) =>
+    (await docsMessages(file, source)).map(({ ruleId, line, column }) => [
+      ruleId,
+      line,
+      column,
+    ]);
 
   test("相对链接指向不存在的文件或标题时报告，代码里的不算", async () => {
     expect(
@@ -3430,7 +3434,7 @@ describe("docs 插件的规则（scripts/eslint/docs-plugin.mjs）", () => {
     ).toStrictEqual([1, 4, 5, 6, 7, 11]);
   });
 
-  test("skill patch 的 diff 块按 CommonMark 闭合：更长的闭合行能闭合，更短的和后面带文字的不能", async () => {
+  test("skill patch 的 diff 块按 CommonMark 闭合：更长的闭合行能闭合，更短的和后面带文字的不能，波浪线的 diff 块也算", async () => {
     const source = [
       "```diff",
       "-Read `README.md` in a 3-backtick block.",
@@ -3452,6 +3456,15 @@ describe("docs 插件的规则（scripts/eslint/docs-plugin.mjs）", () => {
     expect(
       await citedLines(".agents/skill-patches/case.md", source),
     ).toStrictEqual([4, 11]);
+  });
+
+  test("skill patch 末尾没闭合、也没有换行的 diff 块照样算引用上游", async () => {
+    expect(
+      await citedLines(
+        ".agents/skill-patches/case.md",
+        "Intro.\n\n```diff\n-Read `README.md` at the end.",
+      ),
+    ).toStrictEqual([]);
   });
 
   const frontmatter = (description, eol = "\n") =>
@@ -3479,56 +3492,64 @@ describe("docs 插件的规则（scripts/eslint/docs-plugin.mjs）", () => {
     expect(
       await reported(
         ".agents/skills/case/SKILL.md",
-        frontmatter(UNQUOTED, "\r\n"),
-      ),
-      "CRLF",
-    ).toStrictEqual([["docs/frontmatter", 3, 14]]);
-    expect(
-      await reported(
-        ".agents/skills/case/SKILL.md",
         frontmatter(`"${UNQUOTED}"`),
       ),
     ).toStrictEqual([]);
   });
 
-  test("skill 里 SKILL.md 以外的文件、正文里的 --- 块不当 frontmatter 查", async () => {
+  test("CRLF 换行的 frontmatter 报在同样的位置", async () => {
+    expect(
+      await reported(
+        ".agents/skills/case/SKILL.md",
+        frontmatter(UNQUOTED, "\r\n"),
+      ),
+    ).toStrictEqual([["docs/frontmatter", 3, 14]]);
+  });
+
+  test("skill 里 SKILL.md 以外的文件不查 frontmatter", async () => {
     expect(
       await reported(
         ".agents/skills/vercel-composition-patterns/rules/case.md",
         frontmatter(UNQUOTED),
       ),
     ).toStrictEqual([]);
-    expect(
-      await reported(
-        ".agents/skills/case/SKILL.md",
-        "# Case\n\n---\nname: a: b\n---\n",
-      ),
-    ).toStrictEqual([]);
+  });
+
+  test("只有文件开头的 YAML 头算 frontmatter，正文里的 --- 块不算", async () => {
+    for (const source of [
+      "# Case\n\n---\nname: a: b\n---\n",
+      // 空的 frontmatter 后面跟着一个 --- 块：块里的内容在正文里。
+      "---\n---\n\nname: a: b\n---\n",
+    ]) {
+      expect(
+        await reported(".agents/skills/case/SKILL.md", source),
+        source,
+      ).toStrictEqual([]);
+    }
   });
 
   test("frontmatter 的报告给出 yaml 的错误，只有值里带 : 时提示加引号", async () => {
-    const messages = async (source) => {
-      const [result] = await eslint.lintText(source, {
-        filePath: join(project, ".agents/skills/case/SKILL.md"),
-      });
-      return result.messages
+    const messages = async (file, source) =>
+      (await docsMessages(file, source))
         .filter(({ ruleId }) => ruleId === "docs/frontmatter")
-        .map(({ line, column, message }) => [line, column, message]);
-    };
-    expect(await messages(frontmatter(UNQUOTED))).toStrictEqual([
+        .map(({ message }) => message);
+    const PREFIX = "The frontmatter is not valid YAML: ";
+    const HINT = "Quote the value, which contains `: `.";
+    for (const [file, source, hinted] of [
+      [".agents/skills/case/SKILL.md", frontmatter(UNQUOTED), true],
+      [".agents/skills/case/SKILL.md", "---\nname: a\nname: b\n---\n", false],
+      // 缩进错了的 paths 列表：yaml 报的错误码和带 : 的值一样，但加引号修不好。
       [
-        3,
-        14,
-        "The frontmatter is not valid YAML, so strict parsers skip this file: Nested mappings are not allowed in compact mappings. Quote the value, which contains `: `.",
+        ".claude/rules/case.md",
+        '---\npaths:\n  - "app/**"\n- "lib/**"\n---\n',
+        false,
       ],
-    ]);
-    expect(await messages("---\nname: a\nname: b\n---\n")).toStrictEqual([
-      [
-        3,
-        1,
-        "The frontmatter is not valid YAML, so strict parsers skip this file: Map keys must be unique.",
-      ],
-    ]);
+    ]) {
+      const [first] = await messages(file, source);
+      expect(first, source).toMatch(new RegExp(`^${PREFIX}`));
+      expect(first, source).not.toMatch(/ at line \d+, column \d+/);
+      expect(first.endsWith(HINT), source).toBe(hinted);
+    }
   });
 
   test("第三方 skill 不查链接、Sample product 路径和 README 引用", async () => {

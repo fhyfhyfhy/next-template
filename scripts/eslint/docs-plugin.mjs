@@ -5,12 +5,12 @@ import { parseDocument } from "yaml";
 import { SAMPLE_PRODUCT } from "../sample-product.mjs";
 
 // 文档的本地规则：
-// - relative-links：agent 读的文档靠相对链接互相引用，移动或改名文件时指出失效的引用。
-// - template-links：指向 template 在 GitHub 上的链接（见 SAMPLE_PRODUCT）；其他外部链接和 node_modules 里的安装文档
-//   不检查。
+// - relative-links：agent 读的文档靠相对链接互相引用，移动或改名文件时指出失效的引用；node_modules 里的安装文档不检查。
+// - template-links：指向 template 在 GitHub 上的链接（见 SAMPLE_PRODUCT）；其他外部链接不检查。
 // - sample-product-paths、people-docs：agent 文档怎么引用 Sample product 的路径，不引用给人看的文档。
-// - code-references、section-pointers：按名称指向规则小节的写法，这种写法不是链接。
-// - frontmatter：YAML 头能被严格解析。
+// - code-references：docs/agents/code-review.md 里行内代码写的仓库路径和按名称指向的规则小节都要存在。
+// - section-pointers：ESLint 消息里按名称指向的规则小节要存在。
+// - frontmatter：SKILL.md 和规则的 YAML 头能被严格解析。
 
 // template 在 GitHub 上的地址；从仓库根开始的路径跟在 ref 后面。
 const GITHUB_LINK =
@@ -27,19 +27,15 @@ const MESSAGE_SECTION_REFERENCE =
   /((?:"[^"\n]+"(?:,? and |, ))*"[^"\n]+") in ((?:[\w.-]+\/)*[\w-]+\.md)\b/g;
 
 /**
- * 去掉围栏代码块的文本：代码块里的井号不是标题。读的是磁盘上别的文件，没有 AST，所以照 CommonMark 手写：fence 最多
- * 缩进 3 格，闭合行用同一种字符、至少一样长、后面只有空白。
+ * 去掉围栏代码块的文本：代码块里的井号不是标题。也要处理磁盘上别的文件，那些没有 AST，所以照 CommonMark 手写：fence
+ * 最多缩进 3 格；反引号 fence 的 info string 不含反引号；闭合行用同一种字符、至少一样长、后面只有空白；没闭合的一直
+ * 到文本末尾。
  */
 function withoutCodeBlocks(text) {
   return text.replace(
-    /^ {0,3}(`{3,})[^\n]*\n[\s\S]*?^ {0,3}\1`*[^\S\n]*$|^ {0,3}(~{3,})[^\n]*\n[\s\S]*?^ {0,3}\2~*[^\S\n]*$/gm,
+    /^ {0,3}(`{3,})[^`\n]*\n[\s\S]*?(?:^ {0,3}\1`*[^\S\n]*$|(?![\s\S]))|^ {0,3}(~{3,})[^\n]*\n[\s\S]*?(?:^ {0,3}\2~*[^\S\n]*$|(?![\s\S]))/gm,
     "",
   );
-}
-
-/** text 里每一行开头的偏移；第 n 行（从 1 数）是下标 n - 1。 */
-function lineStarts(text) {
-  return [0, ...Array.from(text.matchAll(/\n/g), ({ index }) => index + 1)];
 }
 
 /**
@@ -47,15 +43,17 @@ function lineStarts(text) {
  * 上游，和 eslint.config.mjs 用 THIRD_PARTY_SKILLS 跳过的第三方 skill 一样不算这个仓库写的话；`+` 行和 `@@` 后的
  * 位置说明是这个仓库写的。代码块从哪开始、到哪结束由 markdown 解析器按 CommonMark 判断。
  */
-function upstreamQuotes(text, diffBlocks) {
-  const starts = lineStarts(text);
+function upstreamQuotes(sourceCode, diffBlocks) {
   return diffBlocks.flatMap(({ value, position }) =>
-    value.split(/\r?\n/).flatMap((line, index) => {
-      if (line !== "" && line[0] !== " " && line[0] !== "-") return [];
-      // 内容从开头 fence 的下一行开始：第 start.line + 1 行，下标正好是 start.line。
-      const row = position.start.line + index;
-      return [[starts[row], (starts[row + 1] ?? text.length + 1) - 1]];
-    }),
+    value === ""
+      ? []
+      : value.split(/\r?\n/).flatMap((line, index) => {
+          if (line !== "" && line[0] !== " " && line[0] !== "-") return [];
+          // 内容从开头 fence 的下一行开始。
+          const row = position.start.line + 1 + index;
+          const start = sourceCode.getIndexFromLoc({ line: row, column: 1 });
+          return [[start, start + sourceCode.lines[row - 1].length]];
+        }),
   );
 }
 
@@ -274,7 +272,7 @@ export default function createDocsPlugin(projectRoot) {
         },
         "root:exit"() {
           const { text } = context.sourceCode;
-          const quotes = upstreamQuotes(text, diffBlocks);
+          const quotes = upstreamQuotes(context.sourceCode, diffBlocks);
           for (const match of text.matchAll(pattern)) {
             if (inside(quotes, match.index)) continue;
             reportAt(context, match.index, match[0].length, "cited", {
@@ -378,35 +376,40 @@ export default function createDocsPlugin(projectRoot) {
     },
   };
 
-  // npx skills 用 yaml 包严格解析 skill 的 frontmatter，出错就跳过整个 skill；@eslint/markdown 的 frontmatter 选项
-  // 只把这一块认成 yaml 节点，不校验内容。最常见的错误是没加引号的值里带 `: `（BLOCK_AS_IMPLICIT_KEY）。
+  // frontmatter 解析不了时，npx skills 跳过整个 skill（它用 yaml 包严格解析）；规则的 paths 也写在 frontmatter 里，
+  // 解析不了就读不到。@eslint/markdown 的 frontmatter 选项只把这一块认成 yaml 节点，不校验内容。最常见的错误是没加
+  // 引号的值里带 `: `，yaml 报 "Nested mappings are not allowed in compact mappings"；它的错误码
+  // BLOCK_AS_IMPLICIT_KEY 也用于缩进错了的列表，所以按信息判断。
   const frontmatter = {
     meta: {
       type: "problem",
       schema: [],
       messages: {
-        invalid:
-          "The frontmatter is not valid YAML, so strict parsers skip this file: {{message}}.",
+        invalid: "The frontmatter is not valid YAML: {{message}}.",
         colon:
-          "The frontmatter is not valid YAML, so strict parsers skip this file: {{message}}. Quote the value, which contains `: `.",
+          "The frontmatter is not valid YAML: {{message}}. Quote the value, which contains `: `.",
       },
     },
     create(context) {
+      const { sourceCode } = context;
       return {
         yaml(node) {
-          // node.value 原样保留了换行，内容从开头 --- 的下一行开始，下标正好是 start.line。
-          const start = lineStarts(context.sourceCode.text)[
-            node.position.start.line
-          ];
+          // node.value 原样保留了换行，从开头 --- 的下一行开始。
+          const start = sourceCode.getIndexFromLoc({
+            line: node.position.start.line + 1,
+            column: 1,
+          });
           for (const error of parseDocument(node.value).errors) {
             const [from, to] = error.pos;
-            const messageId =
-              error.code === "BLOCK_AS_IMPLICIT_KEY" ? "colon" : "invalid";
+            // yaml 在第一行末尾写的是 frontmatter 里的行列，报告的位置已经是文件里的。
+            const message = error.message
+              .split("\n")[0]
+              .replace(/ at line \d+, column \d+:$/, "");
+            const messageId = message.startsWith("Nested mappings")
+              ? "colon"
+              : "invalid";
             reportAt(context, start + from, Math.max(to - from, 1), messageId, {
-              // yaml 在第一行末尾写的是 frontmatter 里的行列，报告的位置已经是文件里的。
-              message: error.message
-                .split("\n")[0]
-                .replace(/ at line \d+, column \d+:$/, ""),
+              message,
             });
           }
         },
