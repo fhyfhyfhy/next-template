@@ -48,8 +48,14 @@
     "checkbox": {
       "description": "An easily stylable checkbox."
     },
+    "combobox": {
+      "description": "A form control for typing to filter options and choosing one from the list."
+    },
     "dialog": {
       "description": "A popup that opens on top of the entire page."
+    },
+    "drawer": {
+      "description": "A panel that slides in from an edge of the page; the page stays in view behind it."
     },
     "field": {
       "description": "Groups a label, control, description, and error message; TanStack Form supplies the state."
@@ -60,8 +66,17 @@
     "input": {
       "description": "A native input element that works with Field automatically when placed inside it."
     },
+    "menu": {
+      "description": "A set of actions or choices a button opens, which can be grouped; closeOnClick decides whether picking one closes it."
+    },
+    "popover": {
+      "description": "A panel that opens beside an element when it is pressed, holding a title, a description, or a few controls; a press outside or Escape closes it."
+    },
     "progress": {
       "description": "Shows the progress of a long-running operation."
+    },
+    "radio-group": {
+      "description": "A set of choices of which one is picked; the arrow keys move between them."
     },
     "select": {
       "description": "A form control for choosing a predefined value from a dropdown menu."
@@ -72,11 +87,23 @@
     "switch": {
       "description": "A control that indicates whether a setting is on or off."
     },
+    "table": {
+      "description": "Rows of data on a panel that scrolls sideways when it is wider than the page."
+    },
+    "tabs": {
+      "description": "A set of tabs that switch between views, which can also render as links between a page's URL states."
+    },
     "textarea": {
       "description": "A multi-line text input that works with Field automatically when placed inside it."
     },
     "toaster": {
       "description": "A brief message that appears temporarily and stacks with others."
+    },
+    "toggle": {
+      "description": "A button that is either pressed or not, such as a formatting option."
+    },
+    "tooltip": {
+      "description": "A short label that appears beside an element under the pointer or on keyboard focus."
     }
   }
 }

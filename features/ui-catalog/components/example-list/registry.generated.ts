@@ -5,29 +5,47 @@
 import { examples as component0Examples } from "../badge-examples";
 import { examples as component1Examples } from "../button-examples";
 import { examples as component2Examples } from "../checkbox-examples";
-import { examples as component3Examples } from "../dialog-examples";
-import { examples as component4Examples } from "../field-examples";
-import { examples as component5Examples } from "../form-examples";
-import { examples as component6Examples } from "../input-examples";
-import { examples as component7Examples } from "../progress-examples";
-import { examples as component8Examples } from "../select-examples";
-import { examples as component9Examples } from "../skeleton-examples";
-import { examples as component10Examples } from "../switch-examples";
-import { examples as component11Examples } from "../textarea-examples";
-import { examples as component12Examples } from "../toaster-examples";
+import { examples as component3Examples } from "../combobox-examples";
+import { examples as component4Examples } from "../dialog-examples";
+import { examples as component5Examples } from "../drawer-examples";
+import { examples as component6Examples } from "../field-examples";
+import { examples as component7Examples } from "../form-examples";
+import { examples as component8Examples } from "../input-examples";
+import { examples as component9Examples } from "../menu-examples";
+import { examples as component10Examples } from "../popover-examples";
+import { examples as component11Examples } from "../progress-examples";
+import { examples as component12Examples } from "../radio-group-examples";
+import { examples as component13Examples } from "../select-examples";
+import { examples as component14Examples } from "../skeleton-examples";
+import { examples as component15Examples } from "../switch-examples";
+import { examples as component16Examples } from "../table-examples";
+import { examples as component17Examples } from "../tabs-examples";
+import { examples as component18Examples } from "../textarea-examples";
+import { examples as component19Examples } from "../toaster-examples";
+import { examples as component20Examples } from "../toggle-examples";
+import { examples as component21Examples } from "../tooltip-examples";
 
 export const examplesByComponent = {
   badge: component0Examples,
   button: component1Examples,
   checkbox: component2Examples,
-  dialog: component3Examples,
-  field: component4Examples,
-  form: component5Examples,
-  input: component6Examples,
-  progress: component7Examples,
-  select: component8Examples,
-  skeleton: component9Examples,
-  switch: component10Examples,
-  textarea: component11Examples,
-  toaster: component12Examples,
+  combobox: component3Examples,
+  dialog: component4Examples,
+  drawer: component5Examples,
+  field: component6Examples,
+  form: component7Examples,
+  input: component8Examples,
+  menu: component9Examples,
+  popover: component10Examples,
+  progress: component11Examples,
+  "radio-group": component12Examples,
+  select: component13Examples,
+  skeleton: component14Examples,
+  switch: component15Examples,
+  table: component16Examples,
+  tabs: component17Examples,
+  textarea: component18Examples,
+  toaster: component19Examples,
+  toggle: component20Examples,
+  tooltip: component21Examples,
 };

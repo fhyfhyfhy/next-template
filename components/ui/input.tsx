@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 
 // Tailwind v4 把 aria-* 排在 focus-visible 后面，无效时 aria-invalid:border-destructive 盖住 focus-visible:border-ring；
 // aria-invalid:focus-visible:ring-ring 让这时的焦点仍有醒目的 ring，不是多余的 class。
-const inputVariants = cva(
+export const inputVariants = cva(
   "w-full min-w-0 rounded-control border border-input bg-card text-card-foreground transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/15 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:ring-ring",
   {
     variants: {

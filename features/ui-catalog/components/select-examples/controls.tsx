@@ -2,6 +2,7 @@
 
 import type { Dispatch, SetStateAction } from "react";
 
+import { ALIGNS, SIDES } from "../../constants/positioner";
 import type {
   PlaygroundField,
   PlaygroundNumberField,
@@ -73,14 +74,8 @@ export function SelectControls({
       <ToggleControl {...field("open")} />
       <ToggleControl {...field("modal")} />
       <ToggleControl {...field("disableLastOption")} />
-      <OptionControl
-        {...field("side", "Positioner.side")}
-        options={["top", "bottom", "left", "right"]}
-      />
-      <OptionControl
-        {...field("align", "Positioner.align")}
-        options={["start", "center", "end"]}
-      />
+      <OptionControl {...field("side", "Positioner.side")} options={SIDES} />
+      <OptionControl {...field("align", "Positioner.align")} options={ALIGNS} />
       <OptionControl
         {...numberField("sideOffset", "Positioner.sideOffset")}
         options={["0", "6", "12", "24"]}

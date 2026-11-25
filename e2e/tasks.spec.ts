@@ -113,15 +113,15 @@ test("换筛选后立即显示新的选择，新列表到达前旧列表标记�
   // 新列表随导航请求从服务端返回，拖慢这个请求才看得到它到达之前的样子。
   await delayRequests(page, isNavigation, 2000);
   const failedTab = page
-    .getByRole("navigation", { name: "按状态筛选" })
-    .getByRole("link", { name: "失败" });
+    .getByRole("tablist", { name: "按状态筛选" })
+    .getByRole("tab", { name: "失败" });
   const busyList = page
     .locator('[aria-busy="true"]')
     .getByRole("list", { name: "任务列表" });
 
   await failedTab.click();
 
-  await expect(failedTab).toHaveAttribute("aria-current", "page");
+  await expect(failedTab).toHaveAttribute("aria-selected", "true");
   await expect(busyList).toBeVisible();
 
   await expect(page).toHaveURL("/tasks?status=failed");

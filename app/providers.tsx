@@ -6,6 +6,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 
 import { toast, Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   environmentManager,
   type FailedRequest,
@@ -83,7 +84,9 @@ export function Providers({ children }: ProvidersProps) {
       disableTransitionOnChange
     >
       <QueryClientProvider client={getQueryClient()}>
-        <NuqsAdapter>{children}</NuqsAdapter>
+        <TooltipProvider>
+          <NuqsAdapter>{children}</NuqsAdapter>
+        </TooltipProvider>
         <Toaster />
       </QueryClientProvider>
     </ThemeProvider>
