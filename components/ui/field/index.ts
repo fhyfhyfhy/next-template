@@ -2,7 +2,7 @@ import { Field as FieldPrimitive } from "@base-ui/react/field";
 
 export { FieldRoot } from "./root";
 export type { FieldRootProps } from "./root";
-export { FieldLabel } from "./label";
+export { FieldLabel, labelVariants } from "./label";
 export { FieldDescription } from "./description";
 export { FieldError } from "./error";
 
