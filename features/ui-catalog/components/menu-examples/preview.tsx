@@ -32,7 +32,7 @@ export function Preview({ source }: { source: string }) {
             {...field("align", "Positioner.align")}
             options={ALIGNS}
           />
-          <ToggleControl {...field("closeOnClick", "RadioItem.closeOnClick")} />
+          <ToggleControl {...field("closeOnClick")} />
         </>
       }
     >
