@@ -1,6 +1,6 @@
 ---
 name: derived-project
-description: Projects made from next-template: which of the template's files they keep, replace, or add, how to start one, and how to upgrade one to the template's latest version.
+description: "Projects made from next-template: which of the template's files they keep, replace, or add, how to start one, and how to upgrade one to the template's latest version."
 disable-model-invocation: true
 ---
 
