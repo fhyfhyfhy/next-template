@@ -34,5 +34,5 @@ Next.js 模板。
   - 组件：[vercel-composition-patterns](.agents/skills/vercel-composition-patterns/SKILL.md)
   - 选库：[pick-ui-library](.agents/skills/pick-ui-library/SKILL.md)
   - 设计：[emil-design-eng](.agents/skills/emil-design-eng/SKILL.md)、[apple-design](.agents/skills/apple-design/SKILL.md)、[mobile-native](.agents/skills/mobile-native/SKILL.md)、[break-ui](.agents/skills/break-ui/SKILL.md)
-  - 动效：[animate](.agents/skills/animate/SKILL.md)、[animation-performance](.agents/skills/animation-performance/SKILL.md)、[animation-vocabulary](.agents/skills/animation-vocabulary/SKILL.md)、[find-animation-opportunities](.agents/skills/find-animation-opportunities/SKILL.md)、[improve-animations](.agents/skills/improve-animations/SKILL.md)、[review-animations](.agents/skills/review-animations/SKILL.md)
+  - 动效：[animate](.agents/skills/animate/SKILL.md)、[animation-performance](.agents/skills/animation-performance/SKILL.md)、[animation-vocabulary](.agents/skills/animation-vocabulary/SKILL.md)、[choreograph](.agents/skills/choreograph/SKILL.md)、[find-animation-opportunities](.agents/skills/find-animation-opportunities/SKILL.md)、[improve-animations](.agents/skills/improve-animations/SKILL.md)、[review-animations](.agents/skills/review-animations/SKILL.md)
 - Review：[code-review.md 的 UI](docs/agents/code-review.md#ui)
