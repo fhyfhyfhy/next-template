@@ -135,15 +135,17 @@
     color: var(--primary-foreground);
   }
 
-  /* 有意全部归零而不是保留淡入淡出，组件的 CSS 动效因此不用各自处理（.claude/rules/components.md）；
-     JS 驱动的动画和 ::view-transition-* 伪元素不在它的范围内。 */
+  /* 有意把时长和延迟全部归零而不是保留淡入淡出，组件的 CSS 动效因此不用各自处理，错开入场的一组元素也一起出现
+     （.claude/rules/components.md）；JS 驱动的动画和 ::view-transition-* 伪元素不在它的范围内。 */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
       scroll-behavior: auto !important;
       transition-duration: 0s !important;
+      transition-delay: 0s !important;
       animation-duration: 0s !important;
+      animation-delay: 0s !important;
     }
   }
 }
