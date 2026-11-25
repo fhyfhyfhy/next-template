@@ -4,10 +4,13 @@ import { parseDocument } from "yaml";
 
 import { SAMPLE_PRODUCT } from "../sample-product.mjs";
 
-// 文档链接的本地规则。agent 读的文档靠相对链接互相引用，移动或改名文件时 relative-links 指出失效的引用；
-// template-links 检查指向 template 在 GitHub 上的链接（见 SAMPLE_PRODUCT），其他外部链接和 node_modules 里的
-// 安装文档不检查。code-references 和 section-pointers 检查按名称指向规则小节的写法，这种写法不是链接。frontmatter
-// 检查 skill 和规则的 YAML 头。
+// 文档的本地规则：
+// - relative-links：agent 读的文档靠相对链接互相引用，移动或改名文件时指出失效的引用。
+// - template-links：指向 template 在 GitHub 上的链接（见 SAMPLE_PRODUCT）；其他外部链接和 node_modules 里的安装文档
+//   不检查。
+// - sample-product-paths、people-docs：agent 文档怎么引用 Sample product 的路径，不引用给人看的文档。
+// - code-references、section-pointers：按名称指向规则小节的写法，这种写法不是链接。
+// - frontmatter：YAML 头能被严格解析。
 
 // template 在 GitHub 上的地址；从仓库根开始的路径跟在 ref 后面。
 const GITHUB_LINK =
@@ -23,31 +26,37 @@ const CODE_SECTION_REFERENCE =
 const MESSAGE_SECTION_REFERENCE =
   /((?:"[^"\n]+"(?:,? and |, ))*"[^"\n]+") in ((?:[\w.-]+\/)*[\w-]+\.md)\b/g;
 
-/** 去掉围栏代码块的文本：代码块里的井号不是标题。 */
+/**
+ * 去掉围栏代码块的文本：代码块里的井号不是标题。读的是磁盘上别的文件，没有 AST，所以照 CommonMark 手写：fence 最多
+ * 缩进 3 格，闭合行用同一种字符、至少一样长、后面只有空白。
+ */
 function withoutCodeBlocks(text) {
-  return text.replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[^\S\n]*$/gm, "");
+  return text.replace(
+    /^ {0,3}(`{3,})[^\n]*\n[\s\S]*?^ {0,3}\1`*[^\S\n]*$|^ {0,3}(~{3,})[^\n]*\n[\s\S]*?^ {0,3}\2~*[^\S\n]*$/gm,
+    "",
+  );
+}
+
+/** text 里每一行开头的偏移；第 n 行（从 1 数）是下标 n - 1。 */
+function lineStarts(text) {
+  return [0, ...Array.from(text.matchAll(/\n/g), ({ index }) => index + 1)];
 }
 
 /**
- * skill patch 里 diff 块的上下文行和 `-` 行在 text 里的 [起点, 终点) 区间。这些行原样引用上游，和 eslint.config.mjs
- * 用 THIRD_PARTY_SKILLS 跳过的第三方 skill 一样不算这个仓库写的话；`+` 行和 `@@` 后的位置说明是这个仓库写的。
- * 按 CommonMark，至少和开头一样长、后面没有别的文字的反引号行才闭合代码块。
+ * diff 代码块（AST 的 `code` 节点）里上下文行和 `-` 行在 text 里的 [起点, 终点) 区间。skill patch 的这些行原样引用
+ * 上游，和 eslint.config.mjs 用 THIRD_PARTY_SKILLS 跳过的第三方 skill 一样不算这个仓库写的话；`+` 行和 `@@` 后的
+ * 位置说明是这个仓库写的。代码块从哪开始、到哪结束由 markdown 解析器按 CommonMark 判断。
  */
-function upstreamQuotes(text) {
-  const ranges = [];
-  let fence = 0;
-  let offset = 0;
-  for (const line of text.split("\n")) {
-    if (fence === 0) {
-      fence = /^(`{3,})diff\s*$/.exec(line)?.[1].length ?? 0;
-    } else if ((/^(`{3,})\s*$/.exec(line)?.[1].length ?? 0) >= fence) {
-      fence = 0;
-    } else if (line === "" || line[0] === " " || line[0] === "-") {
-      ranges.push([offset, offset + line.length]);
-    }
-    offset += line.length + 1;
-  }
-  return ranges;
+function upstreamQuotes(text, diffBlocks) {
+  const starts = lineStarts(text);
+  return diffBlocks.flatMap(({ value, position }) =>
+    value.split(/\r?\n/).flatMap((line, index) => {
+      if (line !== "" && line[0] !== " " && line[0] !== "-") return [];
+      // 内容从开头 fence 的下一行开始：第 start.line + 1 行，下标正好是 start.line。
+      const row = position.start.line + index;
+      return [[starts[row], (starts[row + 1] ?? text.length + 1) - 1]];
+    }),
+  );
 }
 
 /** GitHub 给标题生成的锚点：小写，去掉标点，空格换成连字符。 */
@@ -257,12 +266,16 @@ export default function createDocsPlugin(projectRoot) {
       const pattern = derivedProject
         ? /docs\/research\/[^\s)`"]*/g
         : /(?<![\w-]\/|\w)README\.md[^\s)`"]*|docs\/research\/[^\s)`"]*/g;
-      const quotes = path.startsWith(".agents/skill-patches/")
-        ? upstreamQuotes(context.sourceCode.text)
-        : [];
+      const patch = path.startsWith(".agents/skill-patches/");
+      const diffBlocks = [];
       return {
+        code(node) {
+          if (patch && node.lang === "diff") diffBlocks.push(node);
+        },
         "root:exit"() {
-          for (const match of context.sourceCode.text.matchAll(pattern)) {
+          const { text } = context.sourceCode;
+          const quotes = upstreamQuotes(text, diffBlocks);
+          for (const match of text.matchAll(pattern)) {
             if (inside(quotes, match.index)) continue;
             reportAt(context, match.index, match[0].length, "cited", {
               reference: match[0],
@@ -365,28 +378,31 @@ export default function createDocsPlugin(projectRoot) {
     },
   };
 
-  // npx skills 和 Codex 按严格的 YAML 读 frontmatter，解析不了就跳过整个 skill；@eslint/markdown 的 frontmatter
-  // 选项只认出这一块，不校验内容。最常见的是没加引号的值里带 `: `。
+  // npx skills 用 yaml 包严格解析 skill 的 frontmatter，出错就跳过整个 skill；@eslint/markdown 的 frontmatter 选项
+  // 只把这一块认成 yaml 节点，不校验内容。最常见的错误是没加引号的值里带 `: `（BLOCK_AS_IMPLICIT_KEY）。
   const frontmatter = {
     meta: {
       type: "problem",
       schema: [],
       messages: {
         invalid:
-          "The frontmatter is not valid YAML, so `npx skills` and other strict parsers skip this file: {{message}}. Quote a value that contains `: `.",
+          "The frontmatter is not valid YAML, so strict parsers skip this file: {{message}}.",
+        colon:
+          "The frontmatter is not valid YAML, so strict parsers skip this file: {{message}}. Quote the value, which contains `: `.",
       },
     },
     create(context) {
       return {
-        "root:exit"() {
-          const block = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(
-            context.sourceCode.text,
-          );
-          if (!block) return;
-          const start = block[0].indexOf(block[1]);
-          for (const error of parseDocument(block[1]).errors) {
+        yaml(node) {
+          // node.value 原样保留了换行，内容从开头 --- 的下一行开始，下标正好是 start.line。
+          const start = lineStarts(context.sourceCode.text)[
+            node.position.start.line
+          ];
+          for (const error of parseDocument(node.value).errors) {
             const [from, to] = error.pos;
-            reportAt(context, start + from, Math.max(to - from, 1), "invalid", {
+            const messageId =
+              error.code === "BLOCK_AS_IMPLICIT_KEY" ? "colon" : "invalid";
+            reportAt(context, start + from, Math.max(to - from, 1), messageId, {
               // yaml 在第一行末尾写的是 frontmatter 里的行列，报告的位置已经是文件里的。
               message: error.message
                 .split("\n")[0]

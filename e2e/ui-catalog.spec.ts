@@ -500,7 +500,7 @@ test("减少动效时 CSS 的 delay 也归零，错开入场的一组元素一�
   page,
 }) => {
   await openUiCatalog(page, "/ui?component=button");
-  // 页面上还没有带 delay 的元素，放一个和错开入场写法一样的探针，读它算出来的 delay。
+  // 放一个和错开入场写法一样的探针，读它算出来的 delay，测试就不依赖哪个组件用了 delay。
   const delays = () =>
     page.evaluate(() => {
       const probe = document.createElement("div");
