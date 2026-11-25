@@ -9,7 +9,7 @@ Upstream: `skills/pick-ui-library/` in `emilkowalski/skills`, as `npx skills upd
 ```diff
 @@ frontmatter @@
  name: pick-ui-library
--description: Pick the right library for a given frontend task from a curated, opinionated list — numbers, OTP inputs, charts, command menus, virtualization, drag and drop, toasts, state, styling, and more. Only runs when explicitly invoked; it does not trigger on its own.
+-description: Pick the library for a frontend task from a curated list — primitives, toasts, drawers, command menus, OTP, numbers, charts, virtualization, drag and drop, state, styling.
 -disable-model-invocation: true
 +description: Choose the library for a frontend need that .claude/rules/libraries.md leaves open, from a curated list. Use before adding a dependency or writing code that needs one, such as command menus, animation, animated numbers, drag and drop, virtualization, or syntax highlighting.
  ---
@@ -48,6 +48,17 @@ The repo's chart pick is `@tanstack/react-charts`, listed in `.claude/rules/libr
 -The split: if data points arrive live and the chart scrolls with time, use Liveline. Everything else is recharts.
 -
  ### Interaction & performance
+```
+
+## Drawers come from Base UI
+
+`.claude/rules/libraries.md` takes UI primitives from `@base-ui/react`, and `components/ui/drawer/` wraps its Drawer, so the skill leaves drawers to it.
+
+```diff
+@@ ### UI components & primitives @@
+ | Toasts / notifications | [Sonner](https://sonner.emilkowal.ski) |
+-| Drawers / bottom sheets | [Vaul](https://vaul.emilkowal.ski) |
+ | One-time password / verification code inputs | [input-otp](https://input-otp.rodz.dev) |
 ```
 
 ## Class names come from the project's `cn`
@@ -96,7 +107,7 @@ Next.js builds OG images with `ImageResponse` from `next/og`, which runs Satori 
 ```diff
 @@ ### Motion & visuals @@
  | 3D globes | [Cobe](https://cobe.vercel.app) |
--| Dynamic OG images (HTML/CSS → SVG/PNG) | [Satori](https://github.com/vercel/satori) |
+-| Dynamic OG images (HTML/CSS → SVG) | [Satori](https://github.com/vercel/satori) |
 +| Dynamic OG images (HTML/CSS → PNG) | `ImageResponse` from `next/og`, built into Next.js, which runs [Satori](https://github.com/vercel/satori) |
  | Syntax highlighting | [shiki](https://shiki.style) |
 ```

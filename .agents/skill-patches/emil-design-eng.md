@@ -2,18 +2,6 @@
 
 Upstream: `skills/emil-design-eng/` in `emilkowalski/skills`, as `npx skills update` installs it.
 
-## Agents know when to load it
-
-The description names only topics, so an agent choosing skills on its own can't tell when this long skill is worth reading. It now names the moment, with no `: ` in it, which strict YAML parsers such as `npx skills` reject in a plain value.
-
-```diff
-@@ frontmatter @@
- name: emil-design-eng
--description: This skill encodes Emil Kowalski's philosophy on UI polish, component design, animation decisions, and the invisible details that make software feel great.
-+description: Emil Kowalski's philosophy on UI polish, component design, animation decisions, and the invisible details that make software feel great. Use when critiquing how an interface looks and feels, or polishing one that works but feels off.
- ---
-```
-
 ## No canned first reply
 
 An agent that invokes the skill mid-task needs the critique or the polish, not a greeting that waits for a question.
@@ -44,15 +32,3 @@ This repo keeps its motion conventions in `.claude/rules/components.md` and its 
 +
  ## Core Philosophy
 ```
-
-## Motion comes from the motion package
-
-pick-ui-library picks `motion`, which React code imports from `motion/react`; `framer-motion` is the package's old name.
-
-````diff
-@@ ### Spring-based mouse interactions @@
- ```jsx
--import { useSpring } from 'framer-motion';
-+import { useSpring } from 'motion/react';
- 
-````
