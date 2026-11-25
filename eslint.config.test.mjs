@@ -3392,6 +3392,24 @@ describe("文档的链接能打开，引用 template 的代码时带 GitHub 链�
     expect(await cited("docs/features.md")).toStrictEqual([]);
   });
 
+  test("skill patch 的 diff 里，引用上游的上下文行和 - 行不算引用 README，+ 行和正文算", async () => {
+    const source = [
+      "Upstream names `README.md`.",
+      "",
+      "````diff",
+      "@@ after the `README.md` line @@",
+      " Finish by updating `README.md` in the plan directory.",
+      "-Read `README.md` first.",
+      "+Read `README.md` last.",
+      "````",
+      "",
+    ].join("\n");
+    const cited = (await reported(".agents/skill-patches/case.md", source))
+      .filter(([rule]) => rule === "docs/people-docs")
+      .map(([, line]) => line);
+    expect(cited).toStrictEqual([1, 4, 7]);
+  });
+
   test("第三方 skill 是上游原文，不检查", async () => {
     expect(
       await reported(

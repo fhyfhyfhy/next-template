@@ -26,6 +26,27 @@ function withoutCodeBlocks(text) {
   return text.replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[^\S\n]*$/gm, "");
 }
 
+/**
+ * skill patch 里 diff 块的上下文行和 `-` 行在 text 里的 [起点, 终点) 区间。这些行原样引用上游，和第三方 skill 本身
+ * 一样不算这个仓库写的话；`+` 行和 `@@` 后的位置说明是这个仓库写的。
+ */
+function upstreamQuotes(text) {
+  const ranges = [];
+  let fence;
+  let offset = 0;
+  for (const line of text.split("\n")) {
+    if (fence === undefined) {
+      fence = /^(`{3,})diff\s*$/.exec(line)?.[1];
+    } else if (line.trimEnd() === fence) {
+      fence = undefined;
+    } else if (line === "" || line[0] === " " || line[0] === "-") {
+      ranges.push([offset, offset + line.length]);
+    }
+    offset += line.length + 1;
+  }
+  return ranges;
+}
+
 /** GitHub 给标题生成的锚点：小写，去掉标点，空格换成连字符。 */
 function slug(heading) {
   return heading
@@ -216,7 +237,7 @@ export default function createDocsPlugin(projectRoot) {
 
   // README 和 docs/research/ 下的调研笔记是给人看的：README 介绍项目、随时会改，调研笔记记的是某一天查到的背景和
   // 来源。agent 读的文档不引用它们，agent 要用的结论写在 agent 文档里。derived-project skill 把 README.md 列为派生
-  // 项目要改写成自己的文件，提到它不算引用。
+  // 项目要改写成自己的文件，提到它不算引用；skill patch 引用上游原文的行也不算（upstreamQuotes）。
   const peopleDocs = {
     meta: {
       type: "problem",
@@ -234,9 +255,21 @@ export default function createDocsPlugin(projectRoot) {
       const pattern = derivedProject
         ? /docs\/research\/[^\s)`"]*/g
         : /(?<![\w-]\/|\w)README\.md[^\s)`"]*|docs\/research\/[^\s)`"]*/g;
+      const quotes = fromRoot(context.filename).startsWith(
+        ".agents/skill-patches/",
+      )
+        ? upstreamQuotes(context.sourceCode.text)
+        : [];
       return {
         "root:exit"() {
           for (const match of context.sourceCode.text.matchAll(pattern)) {
+            if (
+              quotes.some(
+                ([start, end]) => match.index >= start && match.index < end,
+              )
+            ) {
+              continue;
+            }
             reportAt(context, match.index, match[0].length, "cited", {
               reference: match[0],
             });
