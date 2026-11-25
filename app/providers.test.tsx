@@ -1,5 +1,4 @@
 import { NextIntlClientProvider } from "next-intl";
-import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { z } from "zod";
@@ -68,10 +67,11 @@ test("调用方没给文案时显示通用文案", async () => {
 
   const [shown] = shownToasts();
   expect(shown?.id).toBe("request-1");
+  const title = shown?.title;
   // 通用文案在 <Toaster /> 里渲染，那里在页面的 next-intl provider 之内。
   const html = renderToString(
     <NextIntlClientProvider locale="zh" messages={await loadMessages("zh")}>
-      {shown?.title as ReactNode}
+      {typeof title === "function" ? title() : title}
     </NextIntlClientProvider>,
   );
   expect(html).toBe(zh.requestError);
