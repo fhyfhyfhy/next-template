@@ -19,12 +19,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+export const roles = ["design", "engineering", "product"] as const;
+export type Role = (typeof roles)[number];
+
 export interface SelectConfig {
   size: SelectSize;
   label: string;
   placeholder: string;
   firstOption: string;
-  values: string[];
+  values: Role[];
   multiple: boolean;
   disabled: boolean;
   readOnly: boolean;
@@ -77,14 +80,14 @@ export function SelectPlayground({
   const [local, setLocal] = useState(initialConfig);
   const state = config ?? local;
   const change = onConfigChange ?? setLocal;
-  const items = [
+  const items: { value: Role; label: string }[] = [
     { value: "design", label: state.firstOption },
     { value: "engineering", label: "开发者" },
     { value: "product", label: "产品经理" },
   ];
   return (
     <div className="space-y-2">
-      <SelectRoot<string, boolean>
+      <SelectRoot<Role, boolean>
         size={state.size}
         items={items}
         multiple={state.multiple}
@@ -129,12 +132,12 @@ export function SelectPlayground({
           >
             <SelectPopup>
               <SelectList>
-                {items.map((item) => (
+                {items.map((item, index) => (
                   <SelectItem
                     key={item.value}
                     value={item.value}
                     disabled={
-                      state.disableLastOption && item.value === "product"
+                      state.disableLastOption && index === items.length - 1
                     }
                   >
                     <SelectItemText>{item.label}</SelectItemText>
