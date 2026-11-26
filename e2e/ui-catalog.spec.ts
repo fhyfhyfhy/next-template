@@ -496,6 +496,29 @@ test("减少动效时，进度未知的指示条静止在轨道中间，不贴�
     .toBeLessThanOrEqual(1);
 });
 
+test("减少动效时 CSS 的 delay 也归零，错开入场的一组元素一起出现", async ({
+  page,
+}) => {
+  await openUiCatalog(page, "/ui?component=button");
+  // 放一个和错开入场写法一样的探针，读它算出来的 delay，测试就不依赖哪个组件用了 delay。
+  const delays = () =>
+    page.evaluate(() => {
+      const probe = document.createElement("div");
+      probe.style.cssText =
+        "animation: probe 1s 300ms both; transition: opacity 1s 200ms";
+      document.body.append(probe);
+      const { animationDelay, transitionDelay } = getComputedStyle(probe);
+      probe.remove();
+      return [animationDelay, transitionDelay];
+    });
+
+  // 先确认不减少动效时探针的 delay 生效，下面的 0s 才是减少动效归零的，不是探针没写对。
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  expect(await delays()).toStrictEqual(["0.3s", "0.2s"]);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(await delays()).toStrictEqual(["0s", "0s"]);
+});
+
 for (const { id, title, role, name } of [
   { id: "checkbox", title: "Checkbox", role: "checkbox", name: "接收产品更新" },
   { id: "input", title: "Input", role: "textbox", name: "项目名称" },

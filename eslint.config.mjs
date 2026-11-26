@@ -185,8 +185,9 @@ const AGENT_INSTRUCTIONS = [
   "docs/agents/**/*.md",
 ];
 
-// 检查相对链接和指向 template GitHub 的链接的文档。第三方 skill 是上游原文，只随升级变化（skills-lock.json），
-// 不在检查范围内；它们的 patch 在 .agents/skill-patches/，属于 agent 指令。
+// 检查相对链接和指向 template GitHub 的链接的文档。第三方 skill（skills-lock.json）是上游原文加上 patch，链接和引用
+// 不查，SKILL.md 的 frontmatter 照查（见 docs/frontmatter 那一段）；它们的 patch 在 .agents/skill-patches/，属于
+// agent 指令。
 const DOCS = [
   "AGENTS.md",
   "README.md",
@@ -884,6 +885,15 @@ const eslintConfig = defineConfig([
     language: "markdown/gfm",
     languageOptions: { frontmatter: "yaml" },
     rules: { "writing-style/english-only": "error" },
+  },
+  // 读 frontmatter 的是 skill 的 SKILL.md（npx skills）和规则（paths）；第三方 skill 也查，patch 会改它们的
+  // description。skill 里别的文件的 frontmatter 没有加载器读，不查。
+  {
+    files: [".agents/skills/*/SKILL.md", ".claude/rules/**/*.md"],
+    plugins: { markdown, docs: docsPlugin },
+    language: "markdown/gfm",
+    languageOptions: { frontmatter: "yaml" },
+    rules: { "docs/frontmatter": "error" },
   },
   {
     files: DOCS,

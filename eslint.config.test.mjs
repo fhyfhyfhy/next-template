@@ -13,6 +13,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { parseDocument } from "yaml";
 
 const project = dirname(fileURLToPath(import.meta.url));
 
@@ -1413,7 +1414,7 @@ function createConfigFixture() {
     join(project, "scripts/ui-catalog/index-generator.mjs"),
     join(fixture, "scripts/ui-catalog/index-generator.mjs"),
   );
-  // docs 规则从这里取 Sample product 的路径，eslint.config.mjs 从 skills-lock.json 取它们跳过的第三方 skill。
+  // docs 规则从这里取 Sample product 的路径，eslint.config.mjs 从 skills-lock.json 取链接和引用规则跳过的第三方 skill。
   copyFileSync(
     join(project, "scripts/sample-product.mjs"),
     join(fixture, "scripts/sample-product.mjs"),
@@ -3292,19 +3293,23 @@ describe("agent 指令和 identifier 用英文写", () => {
   });
 });
 
-describe("文档的链接能打开，引用 template 的代码时带 GitHub 链接", () => {
+describe("docs 插件的规则（scripts/eslint/docs-plugin.mjs）", () => {
   const eslint = new ESLint({ cwd: project });
   const base = "https://github.com/fhyfhyfhy/next-template";
   const sha = "0123456789abcdef0123456789abcdef01234567";
-  const reported = async (file, source) => {
+  const docsMessages = async (file, source) => {
     const [result] = await eslint.lintText(source, {
       filePath: join(project, file),
     });
     expect(result.fatalErrorCount).toBe(0);
-    return result.messages
-      .filter(({ ruleId }) => ruleId?.startsWith("docs/"))
-      .map(({ ruleId, line, column }) => [ruleId, line, column]);
+    return result.messages.filter(({ ruleId }) => ruleId?.startsWith("docs/"));
   };
+  const reported = async (file, source) =>
+    (await docsMessages(file, source)).map(({ ruleId, line, column }) => [
+      ruleId,
+      line,
+      column,
+    ]);
 
   test("相对链接指向不存在的文件或标题时报告，代码里的不算", async () => {
     expect(
@@ -3392,7 +3397,168 @@ describe("文档的链接能打开，引用 template 的代码时带 GitHub 链�
     expect(await cited("docs/features.md")).toStrictEqual([]);
   });
 
-  test("第三方 skill 是上游原文，不检查", async () => {
+  const citedLines = async (file, source) =>
+    (await reported(file, source))
+      .filter(([rule]) => rule === "docs/people-docs")
+      .map(([, line]) => line);
+  const PATCH_WITH_QUOTES = [
+    "Upstream names `README.md`.",
+    "",
+    "```diff",
+    "@@ after the `README.md` line @@",
+    " Finish by updating `README.md` in the plan directory.",
+    "-Read `README.md` first.",
+    "+Read `README.md` last.",
+    "```",
+    "",
+    "```md",
+    "- Read `README.md` in a sample.",
+    "```",
+    "",
+  ].join("\n");
+
+  test("skill patch 的 diff 块里，引用上游的上下文行和 - 行不算引用 README；+ 行、@@ 行、diff 块外和别的代码块里的算", async () => {
+    for (const eol of ["\n", "\r\n"]) {
+      expect(
+        await citedLines(
+          ".agents/skill-patches/case.md",
+          PATCH_WITH_QUOTES.replaceAll("\n", eol),
+        ),
+        JSON.stringify(eol),
+      ).toStrictEqual([1, 4, 7, 11]);
+    }
+  });
+
+  test("只有 skill patch 的 diff 块算引用上游，别的 agent 文档照常检查", async () => {
+    expect(
+      await citedLines(".claude/rules/case.md", PATCH_WITH_QUOTES),
+    ).toStrictEqual([1, 4, 5, 6, 7, 11]);
+  });
+
+  test("skill patch 的 diff 块按 CommonMark 闭合：更长的闭合行能闭合，更短的和后面带文字的不能，波浪线的 diff 块也算", async () => {
+    const source = [
+      "```diff",
+      "-Read `README.md` in a 3-backtick block.",
+      "````",
+      "- Then read `README.md`.",
+      "",
+      "````diff",
+      "```",
+      "````md",
+      "-Read `README.md` after a shorter fence and one with text.",
+      "````",
+      "- Then read `README.md` again.",
+      "",
+      "~~~diff",
+      "-Read `README.md` in a tilde block.",
+      "~~~",
+      "",
+    ].join("\n");
+    expect(
+      await citedLines(".agents/skill-patches/case.md", source),
+    ).toStrictEqual([4, 11]);
+  });
+
+  test("skill patch 末尾没闭合、也没有换行的 diff 块照样算引用上游，空的也不出错", async () => {
+    for (const source of [
+      "Intro.\n\n```diff\n-Read `README.md` at the end.",
+      "Intro `README.md`.\n\n```diff",
+    ]) {
+      expect(
+        await citedLines(".agents/skill-patches/case.md", source),
+        source,
+      ).toStrictEqual(source.startsWith("Intro `") ? [1] : []);
+    }
+  });
+
+  const frontmatter = (description, eol = "\n") =>
+    [
+      "---",
+      "name: case",
+      `description: ${description}`,
+      "---",
+      "",
+      "# Case",
+      "",
+    ].join(eol);
+  const UNQUOTED = "Projects made from x: which files they keep.";
+
+  test("frontmatter 不是合法的 YAML 时报告，第三方 skill 的 SKILL.md 和规则也查", async () => {
+    for (const file of [
+      ".agents/skills/case/SKILL.md",
+      ".agents/skills/animate/SKILL.md",
+      ".claude/rules/case.md",
+    ]) {
+      expect(await reported(file, frontmatter(UNQUOTED)), file).toStrictEqual([
+        ["docs/frontmatter", 3, 14],
+      ]);
+    }
+    expect(
+      await reported(
+        ".agents/skills/case/SKILL.md",
+        frontmatter(`"${UNQUOTED}"`),
+      ),
+    ).toStrictEqual([]);
+  });
+
+  test("CRLF 换行的 frontmatter 报在同样的位置", async () => {
+    expect(
+      await reported(
+        ".agents/skills/case/SKILL.md",
+        frontmatter(UNQUOTED, "\r\n"),
+      ),
+    ).toStrictEqual([["docs/frontmatter", 3, 14]]);
+  });
+
+  test("skill 里 SKILL.md 以外的文件不查 frontmatter", async () => {
+    expect(
+      await reported(
+        ".agents/skills/vercel-composition-patterns/rules/case.md",
+        frontmatter(UNQUOTED),
+      ),
+    ).toStrictEqual([]);
+  });
+
+  test("只有文件开头的 YAML 头算 frontmatter，正文里的 --- 块不算", async () => {
+    for (const source of [
+      "# Case\n\n---\nname: a: b\n---\n",
+      // 空的 frontmatter 后面跟着一个 --- 块：块里的内容在正文里。
+      "---\n---\n\nname: a: b\n---\n",
+    ]) {
+      expect(
+        await reported(".agents/skills/case/SKILL.md", source),
+        source,
+      ).toStrictEqual([]);
+    }
+  });
+
+  test("frontmatter 的报告给出 yaml 的错误，只有值里带 : 时提示加引号", async () => {
+    const PREFIX = "The frontmatter is not valid YAML: ";
+    const HINT = "Quote the value, which contains `: `.";
+    for (const [file, yaml, hinted] of [
+      [
+        ".agents/skills/case/SKILL.md",
+        `name: case\ndescription: ${UNQUOTED}`,
+        true,
+      ],
+      [".agents/skills/case/SKILL.md", "name: a\nname: b", false],
+      // 缩进错了的 paths 列表：yaml 报的错误码和带 : 的值一样，但加引号修不好。
+      [".claude/rules/case.md", 'paths:\n  - "app/**"\n- "lib/**"', false],
+    ]) {
+      const [first] = (await docsMessages(file, `---\n${yaml}\n---\n`))
+        .filter(({ ruleId }) => ruleId === "docs/frontmatter")
+        .map(({ message }) => message);
+      // yaml 自己的说明，去掉它在第一行末尾写的 frontmatter 里的行列。
+      const [error] = parseDocument(yaml).errors;
+      const explanation = error.message.split(" at line ")[0];
+      expect(first, yaml).toMatch(new RegExp(`^${PREFIX}`));
+      expect(first.includes(explanation), yaml).toBe(true);
+      expect(first, yaml).not.toMatch(/ at line \d+, column \d+/);
+      expect(first.endsWith(HINT), yaml).toBe(hinted);
+    }
+  });
+
+  test("第三方 skill 不查链接、Sample product 路径和 README 引用", async () => {
     expect(
       await reported(
         ".agents/skills/animate/case.md",

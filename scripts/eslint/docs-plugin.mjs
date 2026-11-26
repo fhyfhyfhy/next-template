@@ -1,11 +1,16 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
+import { parseDocument } from "yaml";
 
 import { SAMPLE_PRODUCT } from "../sample-product.mjs";
 
-// 文档链接的本地规则。agent 读的文档靠相对链接互相引用，移动或改名文件时 relative-links 指出失效的引用；
-// template-links 检查指向 template 在 GitHub 上的链接（见 SAMPLE_PRODUCT），其他外部链接和 node_modules 里的
-// 安装文档不检查。code-references 和 section-pointers 检查按名称指向规则小节的写法，这种写法不是链接。
+// 文档的本地规则：
+// - relative-links：agent 读的文档靠相对链接互相引用，移动或改名文件时指出失效的引用；node_modules 里的安装文档不检查。
+// - template-links：指向 template 在 GitHub 上的链接（见 SAMPLE_PRODUCT）；其他外部链接不检查。
+// - sample-product-paths、people-docs：agent 文档怎么引用 Sample product 的路径，不引用给人看的文档。
+// - code-references：docs/agents/code-review.md 里行内代码写的仓库路径和按名称指向的规则小节都要存在。
+// - section-pointers：ESLint 消息里按名称指向的规则小节要存在。
+// - frontmatter：SKILL.md 和规则的 YAML 头能被严格解析。
 
 // template 在 GitHub 上的地址；从仓库根开始的路径跟在 ref 后面。
 const GITHUB_LINK =
@@ -21,9 +26,52 @@ const CODE_SECTION_REFERENCE =
 const MESSAGE_SECTION_REFERENCE =
   /((?:"[^"\n]+"(?:,? and |, ))*"[^"\n]+") in ((?:[\w.-]+\/)*[\w-]+\.md)\b/g;
 
-/** 去掉围栏代码块的文本：代码块里的井号不是标题。 */
+/**
+ * 去掉围栏代码块的文本：代码块里的井号不是标题。也要处理磁盘上别的文件，那些没有 AST，所以照 CommonMark 逐行判断：
+ * fence 最多缩进 3 格；反引号 fence 的 info string 不含反引号；闭合行用同一种字符、至少一样长、最多缩进 3 格、后面
+ * 只有空白。
+ */
 function withoutCodeBlocks(text) {
-  return text.replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[^\S\n]*$/gm, "");
+  const kept = [];
+  let open;
+  for (const line of text.split("\n")) {
+    if (!open) {
+      const opener = /^( {0,3})(?:(`{3,})[^`]*|(~{3,}).*)$/.exec(line);
+      const fence = opener?.[2] ?? opener?.[3];
+      if (fence) open = { fence, indented: opener[1] !== "", lines: [line] };
+      else kept.push(line);
+      continue;
+    }
+    const closer = /^ {0,3}(`{3,}|~{3,})\s*$/.exec(line)?.[1];
+    if (closer?.[0] === open.fence[0] && closer.length >= open.fence.length) {
+      open = undefined;
+    } else {
+      open.lines.push(line);
+    }
+  }
+  // 没闭合的 fence：顶格的一直到文本末尾；缩进的多半在列表项里，CommonMark 让它随列表项结束，这里认不出列表项，
+  // 原样留下。
+  if (open?.indented) kept.push(...open.lines);
+  return kept.join("\n");
+}
+
+/**
+ * diff 代码块（AST 的 `code` 节点）里上下文行和 `-` 行在文件文本里的 [起点, 终点) 区间。skill patch 的这些行原样引用
+ * 上游，和 eslint.config.mjs 用 THIRD_PARTY_SKILLS 跳过的第三方 skill 一样不算这个仓库写的话；`+` 行和 `@@` 后的
+ * 位置说明是这个仓库写的。代码块从哪开始、到哪结束由 markdown 解析器按 CommonMark 判断。
+ */
+function upstreamQuotes(sourceCode, diffBlocks) {
+  return diffBlocks.flatMap(({ value, position }) =>
+    value === ""
+      ? []
+      : value.split(/\r?\n/).flatMap((line, index) => {
+          if (line !== "" && line[0] !== " " && line[0] !== "-") return [];
+          // 内容从开头 fence 的下一行开始。
+          const row = position.start.line + 1 + index;
+          const start = sourceCode.getIndexFromLoc({ line: row, column: 1 });
+          return [[start, start + sourceCode.lines[row - 1].length]];
+        }),
+  );
 }
 
 /** GitHub 给标题生成的锚点：小写，去掉标点，空格换成连字符。 */
@@ -216,7 +264,7 @@ export default function createDocsPlugin(projectRoot) {
 
   // README 和 docs/research/ 下的调研笔记是给人看的：README 介绍项目、随时会改，调研笔记记的是某一天查到的背景和
   // 来源。agent 读的文档不引用它们，agent 要用的结论写在 agent 文档里。derived-project skill 把 README.md 列为派生
-  // 项目要改写成自己的文件，提到它不算引用。
+  // 项目要改写成自己的文件，提到它不算引用；skill patch 的 diff 块里引用上游的上下文行和 `-` 行也不算（upstreamQuotes）。
   const peopleDocs = {
     meta: {
       type: "problem",
@@ -227,16 +275,23 @@ export default function createDocsPlugin(projectRoot) {
       },
     },
     create(context) {
-      const derivedProject = fromRoot(context.filename).startsWith(
-        ".agents/skills/derived-project/",
-      );
+      const path = fromRoot(context.filename);
+      const derivedProject = path.startsWith(".agents/skills/derived-project/");
       // 前面接着目录名的 README.md 是别的目录的，比如 skill 写的 plans/README.md；../ 接的仍是项目的 README。
       const pattern = derivedProject
         ? /docs\/research\/[^\s)`"]*/g
         : /(?<![\w-]\/|\w)README\.md[^\s)`"]*|docs\/research\/[^\s)`"]*/g;
+      const patch = path.startsWith(".agents/skill-patches/");
+      const diffBlocks = [];
       return {
+        code(node) {
+          if (patch && node.lang === "diff") diffBlocks.push(node);
+        },
         "root:exit"() {
-          for (const match of context.sourceCode.text.matchAll(pattern)) {
+          const { text } = context.sourceCode;
+          const quotes = upstreamQuotes(context.sourceCode, diffBlocks);
+          for (const match of text.matchAll(pattern)) {
+            if (inside(quotes, match.index)) continue;
             reportAt(context, match.index, match[0].length, "cited", {
               reference: match[0],
             });
@@ -338,8 +393,50 @@ export default function createDocsPlugin(projectRoot) {
     },
   };
 
+  // frontmatter 解析不了时，npx skills 跳过整个 skill（它用 yaml 包严格解析）；规则的 paths 也写在 frontmatter 里，
+  // 解析不了就读不到。@eslint/markdown 的 frontmatter 选项只把这一块认成 yaml 节点，不校验内容。最常见的错误是没加
+  // 引号的值里带 `: `，yaml 报 "Nested mappings are not allowed in compact mappings"；它的错误码
+  // BLOCK_AS_IMPLICIT_KEY 也用于缩进错了的列表，所以按信息判断。
+  const frontmatter = {
+    meta: {
+      type: "problem",
+      schema: [],
+      messages: {
+        invalid: "The frontmatter is not valid YAML: {{message}}.",
+        colon:
+          "The frontmatter is not valid YAML: {{message}}. Quote the value, which contains `: `.",
+      },
+    },
+    create(context) {
+      const { sourceCode } = context;
+      return {
+        yaml(node) {
+          // node.value 原样保留了换行，从开头 --- 的下一行开始。
+          const start = sourceCode.getIndexFromLoc({
+            line: node.position.start.line + 1,
+            column: 1,
+          });
+          for (const error of parseDocument(node.value).errors) {
+            const [from, to] = error.pos;
+            // yaml 在第一行末尾写的是 frontmatter 里的行列，报告的位置已经是文件里的。
+            const message = error.message
+              .split("\n")[0]
+              .replace(/ at line \d+, column \d+:$/, "");
+            const messageId = message.startsWith("Nested mappings")
+              ? "colon"
+              : "invalid";
+            reportAt(context, start + from, Math.max(to - from, 1), messageId, {
+              message,
+            });
+          }
+        },
+      };
+    },
+  };
+
   return {
     rules: {
+      frontmatter,
       "relative-links": relativeLinks,
       "template-links": templateLinks,
       "sample-product-paths": samplePaths,

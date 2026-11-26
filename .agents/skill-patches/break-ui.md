@@ -88,7 +88,7 @@ Pages here read the database, so a toggle in `app/` or `features/` is a data sta
  3. **One dataset, many failures.** A single worst-case dataset should hit every row of the catalog that applies to this component at once. Mix them across rows (row 1 is the long name, row 2 is the long email, row 3 is the one-letter name), as real data does.
 -4. **The toggle is dev-only.** It never ships to production. Gate it behind the dev environment or keep it inside a prototype route.
 +4. **No data switch in app code.** The worst case is a UI catalog example or records in the local database (Phase 3), never a branch in `app/` or `features/` that picks a fixture.
- 5. **Report before fixing.** Some breaks are design decisions (truncate or wrap? hide the role or show "—"?). List them all, propose a fix for each, then stop. Fix only when asked.
+ 5. **Report before fixing.** Some breaks are design decisions (truncate or wrap? hide the role or show "—"?). List them all, propose a fix for each, then stop. Fix only when asked: `fix all`, `fix 1, 3`, or a `+ fix` invocation.
 @@ ### Phase 2 — Build the worst case @@
 -Assemble a single worst-case fixture next to the existing demo data, shaped exactly like it (same type, same file conventions). The first few rows of a list matter most because that's what's on screen, so spread the different failures across them instead of stacking every one into row 1.
 +Assemble a single worst-case dataset shaped exactly like the demo data: the props of a UI catalog example for a component in `components/ui/`, or the records the page reads for anything else (Phase 3). The first few rows of a list matter most because that's what's on screen, so spread the different failures across them instead of stacking every one into row 1.
@@ -113,6 +113,9 @@ Pages here read the database, so a toggle in `app/` or `features/` is a data sta
 +
 +- **A component in `components/ui/`**: one `*.example.tsx` per state in `features/ui-catalog/components/<component-id>-examples/` (`.claude/rules/ui-catalog.md`), as `features/ui-catalog/components/select-examples/long-labels.example.tsx` is. The UI catalog page `/ui?component=<component-id>` then shows the demo examples and the worst case together.
 +- **A feature component or a page**: create the records in the local `dev` dataset only, through the app's own UI or SQL. `scripts/local-services/seed.sql` is the starting data that `pnpm db:reset` and the `test` and `e2e` datasets reset to, so it stays as it is. Empty, one, and 1,000 rows are states of that data too.
+ 
+-**Completion criterion:** every state renders its fixture, and a reload keeps the selection.
++**Completion criterion:** every state renders, in its UI catalog example or on the page that reads its records.
  
  ### Phase 4 — Break it
 @@ ### Phase 5 — Report and stop @@

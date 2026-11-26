@@ -26,7 +26,7 @@ A lookup skill. When invoked with a task ("I need toasts", "what should I use fo
 | Command menus (⌘K palettes) | [cmdk](https://cmdk.paco.me) |
 | Toasts / notifications | [Sonner](https://sonner.emilkowal.ski) |
 | One-time password / verification code inputs | [input-otp](https://input-otp.rodz.dev) |
-| Customizable GUIs / control panels | [Leva](https://github.com/pmndrs/leva) — [dialkit](https://joshpuckett.me/dialkit) is an alternative |
+| Customizable GUIs / control panels | [Leva](https://github.com/pmndrs/leva) |
 
 ### Motion & visuals
 
