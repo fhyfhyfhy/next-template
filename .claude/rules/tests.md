@@ -21,13 +21,14 @@ A test goes red when the behavior it covers breaks, and stays green through chan
 
 ## What to test
 
-Every behavior a change adds, changes, or fixes has a test that goes red when it breaks, in the change or already in the repo. A bug fix brings a regression test that is red on the commit before the fix; [Regression specs](e2e.md#regression-specs) runs an e2e spec there.
+Every behavior a change adds, changes, or fixes has a test that goes red when it breaks, in the change or already in the repo. A bug fix brings a regression test: write it first and run it red, then fix the bug and run it green. An e2e spec written after the fix runs red on the commit before it, as [Regression specs](e2e.md#regression-specs) describes.
 
 Test each behavior once, at the level where its failure shows:
 
 | Behavior | Test |
 | --- | --- |
 | A pure rule, such as a function in `utils/` | A unit test in a `*.test.ts` beside the module |
+| What a component or hook renders, such as markup, attributes, and text | A unit test in a `*.test.tsx` beside the module that renders it with `renderToString` from `react-dom/server`, as `components/date-time.test.tsx` does, and a hook through a probe component, as `hooks/use-hydrated.test.tsx` does. Unit tests run without a DOM, so effects and events belong to the browser row |
 | A rule of a feature's data layer in `server/` | A `*.db.test.ts` beside the module, against the real database ([Tests](server-data.md#tests)) |
 | What only a browser shows, such as hydration, streaming, caching, navigation, and focus | An e2e spec ([e2e.md](e2e.md)) |
 
