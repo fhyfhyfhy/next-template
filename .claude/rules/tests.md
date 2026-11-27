@@ -21,7 +21,7 @@ A test goes red when the behavior it covers breaks, and stays green through chan
 
 ## What to test
 
-Every behavior a change adds, changes, or fixes has a test that goes red when it breaks, in the change or already in the repo. A bug fix brings a regression test that is red on the commit before the fix.
+Every behavior a change adds, changes, or fixes has a test that goes red when it breaks, in the change or already in the repo. A bug fix brings a regression test that is red on the commit before the fix; [Regression specs](e2e.md#regression-specs) runs an e2e spec there.
 
 Test each behavior once, at the level where its failure shows:
 
@@ -36,8 +36,7 @@ Cover the cases that matter for the behavior, such as empty and boundary values,
 ## Assertions
 
 - Assert outcomes through the public interface of the code under test: what users see, what callers receive, or what is stored. A refactor that keeps the behavior then keeps the test green.
-- In the browser, find elements by role and accessible name.
-- Break the behavior, in your head or in the code, and find the assertion that goes red. An assertion on text shown elsewhere on the page, on a loading state the broken version shows too, or on a value the fixture already had stays green either way. Run a regression spec on the commit before its fix with `pnpm e2e:at` ([Regression specs](e2e.md#regression-specs)).
+- Break the behavior, in your head or in the code, and find the assertion that goes red. An assertion on text shown elsewhere on the page, on a loading state the broken version shows too, or on a value the fixture already had stays green either way.
 
 ## Determinism
 
@@ -47,4 +46,5 @@ Each test gives the same result in any order and at any time. Time and data come
 
 - Run against the real dependency where the repo provides one, such as the databases in [Test databases](data-setup.md#test-databases).
 - Stand in for a dependency only at a boundary the tests can't run, such as an outside service. Intercept it from the test, as `e2e/browser.ts` intercepts requests, and make it answer as the real one does.
-- Reuse the existing fixtures, helpers, and test entries ([Test and lint tooling](../../AGENTS.md#test-and-lint-tooling)), and share setup between tests.
+- Reuse the existing fixtures and helpers, and share setup between tests.
+- Run new tests through the existing test entries, choosing their scope with the runner's arguments, such as a Vitest project or a file path. Add an entry only for tests whose execution setup differs, as the e2e specs need a running server.

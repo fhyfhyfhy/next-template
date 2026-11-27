@@ -5,9 +5,9 @@ paths:
 
 # E2E specs
 
-Specs observe the app through the browser and import no application code. The data they need goes straight into the e2e database through a fixture that the feature's specs share, in a module beside them, as [`e2e/tasks.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/e2e/tasks.ts) is for the sample product's specs, built on `connectE2eDatabase` in `e2e/backend.ts`. That module also holds the page helpers its specs share.
+Specs observe the app through the browser and import no application code. The data they need goes straight into the e2e database through a fixture that the feature's specs share, in a module beside them, as [`e2e/tasks.ts`](https://github.com/fhyfhyfhy/next-template/blob/main/e2e/tasks.ts) is for the sample product's specs, built on `connectE2eDatabase` in `e2e/backend.ts`. That module also holds the page helpers its specs share. Specs find elements by role and accessible name.
 
-Use `test` and `expect` in `e2e/test.ts`, or in the feature's fixture module, which extends it. Its fixtures run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (`playwright.config.ts`); a test that needs another one sets `test.use({ locale })`, as `e2e/locale.spec.ts` does. `DateTime` in `components/date-time.tsx` renders dates and times in the browser's time zone after hydration: a spec that asserts one also sets `test.use({ timezoneId })`, as `e2e/date-time.spec.ts` does.
+Use `test` and `expect` in `e2e/test.ts`, or in the feature's fixture module, which extends it. The fixtures in `e2e/test.ts` run in every test; one fails the test when the page logs a next-intl `MISSING_MESSAGE` error. The browser's locale is `zh-CN` (`playwright.config.ts`); a test that needs another one sets `test.use({ locale })`, as `e2e/locale.spec.ts` does. `DateTime` in `components/date-time.tsx` renders dates and times in the browser's time zone after hydration: a spec that asserts one also sets `test.use({ timezoneId })`, as `e2e/date-time.spec.ts` does.
 
 ## Test data
 
@@ -39,13 +39,12 @@ Playwright pages stay in the foreground, so a return to the tab is simulated: us
 
 ## Waiting
 
-- Data changes only when the test or a background job that runs changes it: see [Test data](#test-data).
 - End each wait on the event that completes it, such as `waitForServerAction` in `e2e/browser.ts` for a Server Action. A fixed wait fits only a negative assertion, "nothing else happens within N ms", and its `eslint-disable` comment gives that reason.
 - To assert that the browser sent no request, record the requests with `recordRequests` in `e2e/browser.ts` before the action and check the list once the UI has answered.
 
 ## Regression specs
 
-A spec added for a bug goes red on the commit before the fix. Run it there with `pnpm e2e:at <commit> [playwright test args]`, which tests that commit's app code with this checkout's `e2e/` and Playwright config, and keep the spec once it fails there and passes on the fix.
+Run a regression spec ([What to test](tests.md#what-to-test)) on the commit before the fix with `pnpm e2e:at <commit> [playwright test args]`, which tests that commit's app code with this checkout's `e2e/` and Playwright config. Keep the spec once it fails there and passes on the fix.
 
 ## Debugging against a dev server
 

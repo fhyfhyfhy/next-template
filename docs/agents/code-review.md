@@ -57,7 +57,7 @@ Project reviews for the `code-review` skill, one per section.
 ## Tests
 
 - **Runs when:** the diff changes application behavior, tests, test fixtures or helpers, or test configuration.
-- **Standards:** `.claude/rules/tests.md`, `.claude/rules/e2e.md`, "Tests" in `.claude/rules/server-data.md`, "Test databases" in `.claude/rules/data-setup.md`, and "Test and lint tooling" in `AGENTS.md`
+- **Standards:** `.claude/rules/tests.md`, `.claude/rules/e2e.md`, "Tests" in `.claude/rules/server-data.md`, and "Test databases" in `.claude/rules/data-setup.md`
 - **Brief:** Judge the test design: whether the tests catch this change breaking, without breaking on changes that keep its behavior. For each behavior the diff adds, changes, or fixes, find its tests, in the diff or already in the repo, then check them against every section of `tests.md`, and the e2e specs also against `e2e.md`:
   - **What to test**: a behavior no test would notice breaking is a finding, and so is a bug fix without a regression test.
   - **Assertions**: for each test, break the behavior in your head and name the assertion that goes red; a test with none is a finding.

@@ -50,7 +50,7 @@ Next.js 模板。
 
 由 Rule、Lint 和 Review 约束。
 
-- Rule：[tests.md](.claude/rules/tests.md)、[e2e.md](.claude/rules/e2e.md)、[server-data.md 的 Tests](.claude/rules/server-data.md#tests)、[data-setup.md 的 Test databases](.claude/rules/data-setup.md#test-databases)、[AGENTS.md 的 Test and lint tooling](AGENTS.md#test-and-lint-tooling)
+- Rule：[tests.md](.claude/rules/tests.md)、[e2e.md](.claude/rules/e2e.md)、[server-data.md 的 Tests](.claude/rules/server-data.md#tests)、[data-setup.md 的 Test databases](.claude/rules/data-setup.md#test-databases)
 - 工具：[vitest.config.mts](vitest.config.mts) 的 unit 和 db 两个 project，[playwright.config.ts](playwright.config.ts)，e2e 的 fixture [e2e/test.ts](e2e/test.ts)、[e2e/backend.ts](e2e/backend.ts)，在修复前的提交上跑回归用例的 [scripts/e2e-at.mjs](scripts/e2e-at.mjs)
 - Lint：[eslint.config.mjs](eslint.config.mjs) 的测试部分，[scripts/eslint/e2e-plugin.mjs](scripts/eslint/e2e-plugin.mjs)；`e2e/` 不引入应用代码的检查在架构部分
 - Review：[code-review.md 的 Tests](docs/agents/code-review.md#tests)
