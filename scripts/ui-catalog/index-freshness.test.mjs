@@ -5,7 +5,7 @@ import { expect, onTestFinished, test } from "vitest";
 
 import { generateExampleIndexes } from "./index-generator.mjs";
 
-// 这项检查不写成 ESLint rule（AGENTS.md「Test and lint tooling」）：rule 同步执行，而生成器要等 Prettier 异步的
+// 这项检查不写成 ESLint rule（AGENTS.md「Lint tooling」）：rule 同步执行，而生成器要等 Prettier 异步的
 // format 才得到生成物该有的内容，rule 里只能另起 worker 阻塞等待。它不 import 示例文件，vitest related 选不到它，
 // 由 lint-staged.config.mjs 在 features/ui-catalog/ 有改动时单独跑。
 

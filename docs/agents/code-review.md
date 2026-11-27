@@ -57,16 +57,10 @@ Project reviews for the `code-review` skill, one per section.
 ## Tests
 
 - **Runs when:** the diff changes application behavior, tests, test fixtures or helpers, or test configuration.
-- **Standards:** `.claude/rules/e2e.md`, "Tests" in `.claude/rules/server-data.md`, "Test databases" in `.claude/rules/data-setup.md`, and "Test and lint tooling" in `AGENTS.md`
-- **Brief:** Judge the test design: whether the tests catch this change breaking, without breaking on changes that keep its behavior. For each behavior the diff adds, changes, or fixes, find its tests, in the diff or already in the repo, then check:
-  - **Missing**: a behavior no test would notice breaking is a finding, and so is a bug fix without a regression test.
-  - **Level**: each behavior is tested where its failure shows, and once: a pure rule in a unit test; a data-layer rule in a `*.db.test.ts` beside its module, against the real database; what only a browser shows, such as hydration, streaming, caching, navigation, and focus, in an e2e spec.
-  - **Fails for the right reason**: break the behavior in your head and find the assertion that notices. Watch for assertions that pass either way, such as on text shown elsewhere on the page, a loading state the broken version shows too, or a value the fixture already had. A regression spec fails on the commit before its fix (`pnpm e2e:at`).
-  - **Outcomes, not implementation**: assertions on what users see, what callers receive, or what is stored, through the public interface; none on internal calls or private state, and no test of a mock's own behavior. In the browser, find elements by role and accessible name.
-  - **Cases**: the cases that matter for the behavior, such as empty and boundary values, invalid input, a failing dependency, and concurrent writes the code guards against; one behavior per test, named by what it checks.
-  - **Determinism**: nothing depends on the wall clock, randomness, test order, or a fixed wait; time and data come from fixtures, such as records a test creates for itself and the writes of a background job the fixture stands in for, and each wait ends on the event that completes it, such as `expect.poll` on a background job that runs.
-  - **Stand-ins**: real dependencies where the repo provides them, such as the test databases in `data-setup.md`; a stand-in only at a boundary the tests can't run, intercepted rather than written into the app, and behaving as the real one does.
-  - **Fit**: existing fixtures, helpers, and test entries reused, and setup shared rather than copied.
+- **Standards:** `.claude/rules/tests.md`, `.claude/rules/e2e.md`, "Tests" in `.claude/rules/server-data.md`, and "Test databases" in `.claude/rules/data-setup.md`
+- **Brief:** Judge the test design: whether the tests catch this change breaking, without breaking on changes that keep its behavior. For each behavior the diff adds, changes, or fixes, find its tests, in the diff or already in the repo, then check them against every section of `tests.md`, and the e2e specs also against `e2e.md`:
+  - **What to test**: a behavior no test would notice breaking is a finding, and so is a bug fix without a regression test.
+  - **Assertions**: for each test, break the behavior in your head and name the assertion that goes red; a test with none is a finding.
 
 ## Comments
 
