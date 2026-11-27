@@ -2591,7 +2591,7 @@ export const probe = [axios, test];
 const RESTRICTION_NAMES = [
   ["Show a date or time", "date-time"],
   [
-    "Call useTranslations() and getTranslations() without a namespace",
+    "Call useTranslations(), getTranslations(), and createTranslator() without a namespace",
     "translator-namespace",
   ],
   ["List public API", "component-entry"],
@@ -2750,6 +2750,18 @@ export async function probe(locale: string) {
       reported: ["translator-namespace", "translator-namespace"],
     },
     {
+      name: "createTranslator 传 namespace 时报错",
+      file: "proxy.ts",
+      source: `import { createTranslator } from "next-intl";
+
+export function probe(messages: Record<string, string>) {
+  const t = createTranslator({ locale: "zh", messages, namespace: "app" });
+  return t("signIn.unchecked");
+}
+`,
+      reported: ["translator-namespace"],
+    },
+    {
       name: "不传 namespace、key 写完整路径时不报",
       file: "app/[locale]/page.tsx",
       source: `import { getTranslations } from "next-intl/server";
@@ -2838,6 +2850,30 @@ export function Probe() {
 
 export async function probe() {
   const t = await getTranslations();
+  return t("app.tasks.title");
+}
+`,
+      reported: [["noOwner", 5]],
+    },
+    {
+      name: "proxy 读 app 的 key；createTranslator 的结果也按 owner 查",
+      file: "proxy.ts",
+      source: `import { createTranslator } from "next-intl";
+
+export function probe(messages: Record<string, string>) {
+  const t = createTranslator({ locale: "zh", messages });
+  return [t("app.tasks.title"), t("ui.dialog.close")];
+}
+`,
+      reported: [["owner", 5]],
+    },
+    {
+      name: "没有 owner 的文件用 createTranslator 也不读文案",
+      file: "lib/request/fetch.ts",
+      source: `import { createTranslator } from "next-intl";
+
+export function probe(messages: Record<string, string>) {
+  const t = createTranslator({ locale: "zh", messages });
   return t("app.tasks.title");
 }
 `,

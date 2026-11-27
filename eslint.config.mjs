@@ -216,7 +216,7 @@ const DATE_TIME_FORMATTING = [
 // 翻译函数不按 namespace 取，key 写完整路径：整个 app 只有一种 t，可以传给任何 owner 的 options 工厂和
 // schema 工厂，它们读自己的文案。key 归谁由 i18n/message-keys 检查。
 const TRANSLATOR_NAMESPACE_MESSAGE =
-  "Call useTranslations() and getTranslations() without a namespace, and write each key's full path, starting with the namespace of the file's owner, such as t(\"task.comments.createFailed\"). See .claude/rules/i18n.md.";
+  "Call useTranslations(), getTranslations(), and createTranslator() without a namespace, and write each key's full path, starting with the namespace of the file's owner, such as t(\"task.comments.createFailed\"). See .claude/rules/i18n.md.";
 const TRANSLATOR_NAMESPACE = [
   {
     selector:
@@ -230,7 +230,7 @@ const TRANSLATOR_NAMESPACE = [
   },
   {
     selector:
-      "CallExpression[callee.name='getTranslations'] > ObjectExpression > Property[key.name='namespace']",
+      "CallExpression[callee.name=/^(getTranslations|createTranslator)$/] > ObjectExpression > Property[key.name='namespace']",
     message: TRANSLATOR_NAMESPACE_MESSAGE,
   },
 ];
@@ -762,7 +762,9 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    ...APPLICATION_CODE,
+    // proxy.ts 自己回应请求时也写文案，和「Layers」表里的目录一起查。
+    files: [...APPLICATION_CODE.files, ...ROOT_APP_FILES],
+    ignores: APPLICATION_CODE.ignores,
     plugins: { i18n: createI18nPlugin(PROJECT_ROOT) },
     rules: {
       // --fix 改写列表。分析整个项目，一个文件的结果取决于别的文件，lint 不能加 --cache。
