@@ -175,33 +175,7 @@ const CATALOG_RELATIVE_IMPORT_MESSAGE =
 
 // ---- UI 的常量结束 ----
 
-// agent 读的指令，用英文写。和 .claude/rules/writing-style.md「Language by content」表里 Agent instructions
-// 一行对应，改一边要同步另一边。
-const AGENT_INSTRUCTIONS = [
-  "AGENTS.md",
-  "CLAUDE.md",
-  ".claude/rules/**/*.md",
-  ".agents/**/*.md",
-  "docs/agents/**/*.md",
-];
-
-// 检查相对链接和指向 template GitHub 的链接的文档。第三方 skill（skills-lock.json）是上游原文加上 patch，链接和引用
-// 不查，SKILL.md 的 frontmatter 照查（见 docs/frontmatter 那一段）；它们的 patch 在 .agents/skill-patches/，属于
-// agent 指令。
-const DOCS = [
-  "AGENTS.md",
-  "README.md",
-  "GLOSSARY.md",
-  "docs/**/*.md",
-  ".claude/rules/**/*.md",
-  ".agents/skills/**/*.md",
-];
-const THIRD_PARTY_SKILLS = Object.keys(
-  JSON.parse(readFileSync(join(PROJECT_ROOT, "skills-lock.json"), "utf8"))
-    .skills,
-).map((name) => `.agents/skills/${name}/**`);
-const docsPlugin = createDocsPlugin(PROJECT_ROOT);
-
+// ---- i18n（.claude/rules/i18n.md）的常量，规则配置在下面配置数组的「i18n」一段 ----
 // i18n 里借用 no-restricted-imports、no-restricted-syntax 的几组限制。这两条规则还管着别的事，所以这几组合进
 // 下面的 RESTRICTED_IMPORTS 和 RESTRICTED_SYNTAX；i18n 的其余检查和这几组的例外在配置数组的「i18n」一段。
 //
@@ -260,6 +234,35 @@ const TRANSLATOR_NAMESPACE = [
     message: TRANSLATOR_NAMESPACE_MESSAGE,
   },
 ];
+
+// ---- i18n 的常量结束 ----
+
+// agent 读的指令，用英文写。和 .claude/rules/writing-style.md「Language by content」表里 Agent instructions
+// 一行对应，改一边要同步另一边。
+const AGENT_INSTRUCTIONS = [
+  "AGENTS.md",
+  "CLAUDE.md",
+  ".claude/rules/**/*.md",
+  ".agents/**/*.md",
+  "docs/agents/**/*.md",
+];
+
+// 检查相对链接和指向 template GitHub 的链接的文档。第三方 skill（skills-lock.json）是上游原文加上 patch，链接和引用
+// 不查，SKILL.md 的 frontmatter 照查（见 docs/frontmatter 那一段）；它们的 patch 在 .agents/skill-patches/，属于
+// agent 指令。
+const DOCS = [
+  "AGENTS.md",
+  "README.md",
+  "GLOSSARY.md",
+  "docs/**/*.md",
+  ".claude/rules/**/*.md",
+  ".agents/skills/**/*.md",
+];
+const THIRD_PARTY_SKILLS = Object.keys(
+  JSON.parse(readFileSync(join(PROJECT_ROOT, "skills-lock.json"), "utf8"))
+    .skills,
+).map((name) => `.agents/skills/${name}/**`);
+const docsPlugin = createDocsPlugin(PROJECT_ROOT);
 
 // 所有代码都受的 no-restricted-imports 限制。
 const RESTRICTED_IMPORTS = {

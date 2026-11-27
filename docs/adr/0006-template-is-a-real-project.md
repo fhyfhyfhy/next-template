@@ -9,7 +9,7 @@
 
 ## Consequences
 
-- 后端的连接参数是必填的环境变量（`lib/env.ts`）。本地开发连 `compose.yaml` 里的 Postgres 和对象存储：`pnpm dev` 启动它们、执行 migration，库里没有任务时写入种子数据。部署时由平台设置环境变量；build 会读库来预渲染作品广场的第一页，所以每个环境各自 build，`pnpm db:migrate` 在 build 之前执行（README 的 Deployment 一节）。
+- 后端的连接参数是必填的环境变量（`lib/env.ts`）。本地开发连 `compose.yaml` 里的 Postgres 和对象存储：`pnpm dev` 启动它们、执行 migration，库里没有任务时写入种子数据。部署时由平台设置环境变量；build 会读库来预渲染作品广场的第一页，所以每个环境各自 build，`pnpm db:migrate` 在 build 之前执行。
 - 应用没有账号：所有访客共享同一批任务，Server Action 校验输入，没有可以检查的授权主体。授权要等账号进来再加（TODO.md）。
 - migration 的历史重写成一份干净的初始结构：删掉了 Demo 期间的 `task_settings` 和故障实验室的几条 migration。这违反"不改已执行的 migration"，但没有库会受影响：本地数据集换了新库名（`app`、`app_e2e`、`app_test`），新代码不连旧的 `demo*` 库，部署环境也从来没有启用过 Demo backend。从这次起照常只往后加 migration。
 - 种子数据是一份 SQL（`scripts/local-services/seed.sql`）和它引用的文件（`scripts/local-services/seed-files/`），由本地服务的脚本直接写进库和 bucket，和 migration 一样不经过应用的代码；应用代码里没有写种子数据这件事，部署环境也就不会写。
