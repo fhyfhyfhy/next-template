@@ -30,6 +30,7 @@ Test each behavior once, at the level where its failure shows:
 | A pure rule, such as a function in `utils/` | A unit test in a `*.test.ts` beside the module |
 | What a component or hook renders, such as markup, attributes, and text | A unit test in a `*.test.tsx` beside the module that renders it with `renderToString` from `react-dom/server`, as `components/date-time.test.tsx` does, and a hook through a probe component, as `hooks/use-hydrated.test.tsx` does. Unit tests run without a DOM, so effects and events belong to the browser row |
 | A rule of a feature's data layer in `server/` | A `*.db.test.ts` beside the module, against the real database ([Tests](server-data.md#tests)) |
+| The server's answer itself, such as a status, a redirect, a header, or a cookie, and work that runs only inside the started server, such as a job listening on a connection of its own | A test against the started server that sends requests and reads the response or what is stored, without a browser, such as one using Playwright's `request` fixture in an e2e spec |
 | What only a browser shows, such as hydration, streaming, caching, navigation, and focus | An e2e spec ([e2e.md](e2e.md)) |
 
 Cover the cases that matter for the behavior, such as empty and boundary values, invalid input, a failing dependency, and the concurrent writes the code guards against. Each test checks one behavior, and its description names it.
@@ -46,6 +47,6 @@ Each test gives the same result in any order and at any time. Time and data come
 ## Dependencies
 
 - Run against the real dependency where the repo provides one, such as the databases in [Test databases](data-setup.md#test-databases).
-- Stand in for a dependency only at a boundary the tests can't run, such as an outside service. Intercept it from the test, as `e2e/browser.ts` intercepts requests, and make it answer as the real one does.
+- Stand in for a dependency only at a boundary the tests can't run, such as an outside service, and make the stand-in answer as the real one does. Keep it outside the app's code: intercept the calls from the test, as `e2e/browser.ts` intercepts requests, or run a fake server that the app's configuration points to.
 - Reuse the existing fixtures and helpers, and share setup between tests.
 - Run new tests through the existing test entries, choosing their scope with the runner's arguments, such as a Vitest project or a file path. Add an entry only for tests whose execution setup differs, as the e2e specs need a running server.

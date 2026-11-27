@@ -7,8 +7,12 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 // 对着生产构建运行：缓存新鲜度和 prefetch 只有在 next start 下才可信。build 之前先把 e2e 数据集恢复成种子数据，
 // 预渲染进静态 shell 的数据和测试开始时库里的一致。
-// 调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务，启动命令见 .claude/rules/e2e.md 的
-// Debugging against a dev server。
+// 调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务（.claude/rules/e2e.md 的 Debugging against a running
+// server）。按下面 webServer 的数据和环境变量起一个 dev server，在另一个终端跑用例：
+//   pnpm db:reset e2e
+//   LOCAL_DATASET=e2e TASK_GENERATOR_ENABLED=false UPLOAD_CLEANUP_ENABLED=false pnpm dev --port 3998
+//   E2E_REUSE_SERVER=1 pnpm test:e2e e2e/tasks.spec.ts
+// PowerShell 里每个变量写成 $env:NAME = "value"; 放在命令前。
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "test-results/e2e",

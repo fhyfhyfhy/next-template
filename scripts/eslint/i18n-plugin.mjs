@@ -27,10 +27,14 @@ const MESSAGES = {
 const KEY_MESSAGES = {
   owner: `Read only keys of this file's namespace, "{{namespace}}"; this key is in "{{found}}". To show another owner's text, render its component; to have its code read its own text, pass t to that code.`,
   dynamic: `Write the key as a string literal, or a template literal that starts with "{{namespace}}.", so its namespace can be checked.`,
-  noOwner: `Only code in features/, app/, and components/ reads messages: each of them owns one namespace.`,
+  noOwner: `Only code in features/, app/, components/, and proxy.ts reads messages, each with the namespace it owns; code elsewhere takes text its caller has translated.`,
 };
 
-const TRANSLATOR_HOOKS = new Set(["useTranslations", "getTranslations"]);
+const TRANSLATOR_HOOKS = new Set([
+  "useTranslations",
+  "getTranslations",
+  "createTranslator",
+]);
 const TRANSLATOR_METHODS = new Set(["rich", "has", "raw", "markup"]);
 
 /** 为项目创建 i18n 插件，规则说明见 .claude/rules/i18n.md「Namespaces and keys」「Reading messages」。 */
@@ -38,8 +42,8 @@ export default function createI18nPlugin(projectRoot) {
   const check = createClientNamespaceChecker(projectRoot);
   return {
     rules: {
-      // 每个 key 的第一段是文件 owner 的 namespace。t 指 useTranslations() 或 getTranslations() 的结果，
-      // 以及类型为 Translator 的参数。
+      // 每个 key 的第一段是文件 owner 的 namespace。t 指 useTranslations()、getTranslations() 或
+      // createTranslator() 的结果，以及类型为 Translator 的参数。
       "message-keys": {
         meta: {
           type: "problem",
