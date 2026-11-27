@@ -46,3 +46,23 @@ Playwright pages stay in the foreground, so a return to the tab is simulated: us
 ## Regression specs
 
 A spec added for a bug goes red on the commit before the fix. Run it there with `pnpm e2e:at <commit> [playwright test args]`, which tests that commit's app code with this checkout's `e2e/` and Playwright config, and keep the spec once it fails there and passes on the fix.
+
+## Debugging against a dev server
+
+`pnpm test:e2e` builds and starts a production server for every run. While debugging, start a dev server on the e2e dataset with the background jobs off, as `webServer` in `playwright.config.ts` does, and point the specs at it with `E2E_REUSE_SERVER=1`. The server keeps running, so the last command goes in another terminal:
+
+```bash
+pnpm db:reset e2e
+LOCAL_DATASET=e2e TASK_GENERATOR_ENABLED=false UPLOAD_CLEANUP_ENABLED=false pnpm dev --port 3998
+E2E_REUSE_SERVER=1 pnpm test:e2e e2e/tasks.spec.ts
+```
+
+In PowerShell:
+
+```powershell
+pnpm db:reset e2e
+$env:LOCAL_DATASET = "e2e"; $env:TASK_GENERATOR_ENABLED = "false"; $env:UPLOAD_CLEANUP_ENABLED = "false"; pnpm dev --port 3998
+$env:E2E_REUSE_SERVER = "1"; pnpm test:e2e e2e/tasks.spec.ts
+```
+
+Use the port `E2E_PORT` names when it is set. Specs that depend on production behavior, such as prefetching and `instant()`, fail against a dev server: confirm a fix with a plain `pnpm test:e2e`.

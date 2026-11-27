@@ -7,8 +7,8 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 // 对着生产构建运行：缓存新鲜度和 prefetch 只有在 next start 下才可信。build 之前先把 e2e 数据集恢复成种子数据，
 // 预渲染进静态 shell 的数据和测试开始时库里的一致。
-// 调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务（README 的 Tests 一节有 bash 和 PowerShell 的启动命令）；
-// 这时依赖生产行为的用例（如预取）会失败。
+// 调试时设 E2E_REUSE_SERVER=1 复用这个端口上已有的服务（.claude/rules/e2e.md 的 Debugging against a dev server
+// 有 bash 和 PowerShell 的启动命令）；这时依赖生产行为的用例（如预取）会失败。
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "test-results/e2e",

@@ -840,6 +840,8 @@ const eslintConfig = defineConfig([
     },
   },
   // ---- 数据结束 ----
+  // ---- 测试（.claude/rules/e2e.md）----
+  // e2e/ 不引入应用代码的检查在「架构」一段，和别的层级边界一起。
   // Playwright 推荐的 e2e 检查，比如不用固定时长的等待、expect.poll 必须 await。
   {
     ...playwright.configs["flat/recommended"],
@@ -882,6 +884,7 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // ---- 测试结束 ----
   {
     files: AGENT_INSTRUCTIONS,
     plugins: { markdown, "writing-style": writingStylePlugin },
