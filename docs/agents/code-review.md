@@ -47,13 +47,12 @@ Project reviews for the `code-review` skill, one per section.
 
 - **Runs when:** the diff changes `messages/`, or text, dates, or numbers that users see or hear.
 - **Standards:** `.claude/rules/i18n.md` and `messages/terms.json`
-- **Brief:** Review the text the diff adds, changes, or removes; ESLint checks JSX text and attributes, that each key belongs to its file's owner, the namespaces each route sends, and the date and time formatting that bypasses `DateTime`, and `messages/messages.test.ts` checks that every locale has the same keys and follows `terms.json`.
-  - **Translation quality**: set each changed message in every locale beside its source-locale text and check that it says the same thing, with nothing added or dropped; reads naturally in that language rather than word for word; keeps the register and capitalization of the namespace's other messages; translates each term the way the rest of the messages do; and fits where it shows, such as on a button. Hold the source text to the same measure.
-  - **Text outside JSX**: toasts, `metadata`, accessible names passed in props, labels in constants, and validation messages go through `t()`; user and backend content and developer-facing errors stay untranslated.
-  - **Errors**: users see the feature's message chosen by the error's `code`, never `ApiError.message`.
-  - **Removed and changed text**: the keys of removed code leave every locale, since nothing reports unused keys; changed source text is translated again in every locale.
-  - **Keys**: each named after what the text means, with separate keys for the same words in different meanings.
-  - **Dates and numbers**: a calendar date shown as the date it is, without a time zone; anything that depends on the time zone runs in the browser after hydration; relative times and numbers through next-intl's formatter.
+- **Brief:** Review the text the diff adds, changes, or removes against each item below. ESLint's i18n section in `eslint.config.mjs` and `messages/messages.test.ts` check the mechanical rules, such as JSX text, key owners, the namespaces each route sends, and matching keys in every locale: leave what they report to them.
+  - **Translation quality**: set each changed message in every locale beside its source-locale text and hold both to steps 2 and 3 of **Writing text**.
+  - **What gets translated** and **Errors**, all of each. ESLint reads only JSX, so look for text outside it, such as toasts, `metadata`, accessible names passed in props, labels in constants, and validation messages.
+  - **Removed and changed text**: step 4 of **Writing text**; nothing reports unused keys.
+  - **Keys**: the naming in **Namespaces and keys**.
+  - **Dates and numbers**, all of it.
 
 ## Tests
 

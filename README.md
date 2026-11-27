@@ -36,3 +36,12 @@ Next.js 模板。
   - 设计：[emil-design-eng](.agents/skills/emil-design-eng/SKILL.md)、[apple-design](.agents/skills/apple-design/SKILL.md)、[mobile-native](.agents/skills/mobile-native/SKILL.md)、[break-ui](.agents/skills/break-ui/SKILL.md)
   - 动效：[animate](.agents/skills/animate/SKILL.md)、[animation-performance](.agents/skills/animation-performance/SKILL.md)、[animation-vocabulary](.agents/skills/animation-vocabulary/SKILL.md)、[choreograph](.agents/skills/choreograph/SKILL.md)、[find-animation-opportunities](.agents/skills/find-animation-opportunities/SKILL.md)、[improve-animations](.agents/skills/improve-animations/SKILL.md)、[review-animations](.agents/skills/review-animations/SKILL.md)
 - Review：[code-review.md 的 UI](docs/agents/code-review.md#ui)
+
+### i18n
+
+由 Rule、Lint、测试和 Review 约束。
+
+- Rule：[i18n.md](.claude/rules/i18n.md)，术语表 [messages/terms.json](messages/terms.json)
+- Lint：[eslint.config.mjs](eslint.config.mjs) 的 i18n 部分，[scripts/eslint/i18n-plugin.mjs](scripts/eslint/i18n-plugin.mjs)、[scripts/eslint/client-namespaces.mjs](scripts/eslint/client-namespaces.mjs)、[scripts/eslint/message-owner.mjs](scripts/eslint/message-owner.mjs)
+- 测试：[messages/messages.test.ts](messages/messages.test.ts)、[lib/i18n/request.test.ts](lib/i18n/request.test.ts)、[scripts/eslint/client-namespaces.test.mjs](scripts/eslint/client-namespaces.test.mjs)、[components/locale-switcher/locale-items.test.tsx](components/locale-switcher/locale-items.test.tsx)、[components/date-time.test.tsx](components/date-time.test.tsx)、[e2e/locale.spec.ts](e2e/locale.spec.ts)、[e2e/date-time.spec.ts](e2e/date-time.spec.ts)；[e2e/test.ts](e2e/test.ts) 让每个 e2e 用例在页面报 `MISSING_MESSAGE` 时失败
+- Review：[code-review.md 的 i18n](docs/agents/code-review.md#i18n)

@@ -16,7 +16,7 @@
 
 ## 数据新鲜度
 
-- [ ] 进行中任务的集合每变一次，每个打开着的全部任务页都会调用一次 `expireTaskListAction`。refresh.md 的 Changes made elsewhere 建议改由后端事件失效缓存：generator（真实系统里是外部生成服务）推进任务时调用应用的 Route Handler 做 `revalidateTag`，浏览器只 `router.refresh()`。等部署成多实例、或者同时在线的访客多起来时再做，和共享的缓存 handler 一起考虑（README 的 Deployment 一节）。
+- [ ] 进行中任务的集合每变一次，每个打开着的全部任务页都会调用一次 `expireTaskListAction`。refresh.md 的 Changes made elsewhere 建议改由后端事件失效缓存：generator（真实系统里是外部生成服务）推进任务时调用应用的 Route Handler 做 `revalidateTag`，浏览器只 `router.refresh()`。等部署成多实例、或者同时在线的访客多起来时再做，和共享的缓存 handler 一起考虑。
 
 ## 文案、国际化与错误恢复
 
